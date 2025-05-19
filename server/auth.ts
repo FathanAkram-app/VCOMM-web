@@ -83,7 +83,7 @@ export async function setupAuth(app: express.Express) {
       // Store user in session (auto login)
       req.session.user = {
         id: user.id,
-        username: user.username,
+        callsign: user.callsign,
         rank: user.rank,
         branch: user.branch
       };
@@ -109,10 +109,10 @@ export async function setupAuth(app: express.Express) {
         });
       }
       
-      const { username, password } = parseResult.data;
+      const { callsign, password } = parseResult.data;
       
-      // Find user by username
-      const user = await storage.getUserByUsername(username);
+      // Find user by callsign
+      const user = await storage.getUserByCallsign(callsign);
       if (!user) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
