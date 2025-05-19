@@ -57,14 +57,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Membuat response yang membedakan percakapan grup vs percakapan langsung
       const formattedConversations = conversations.map(conv => {
-        // Konversi kolom last_message_time ke lastMessageTime untuk konsistensi
-        // dan last_message ke lastMessage
-        return {
+        // Konversi kolom database ke nama yang diharapkan di client
+        const conversation = {
           ...conv,
-          lastMessage: conv.lastMessage || conv.last_message,
-          lastMessageTime: conv.lastMessageTime || conv.last_message_time,
           type: conv.isGroup ? 'group' : 'direct'
         };
+        
+        // Pastikan lastMessage ada
+        if (conv.last_message && !conversation.lastMessage) {
+          conversation.lastMessage = conv.last_message;
+        }
+        
+        // Pastikan lastMessageTime ada
+        if (conv.last_message_time && !conversation.lastMessageTime) {
+          conversation.lastMessageTime = conv.last_message_time;
+        }
+        
+        return conversation;
       });
       
       console.log(`[API] Returning ${formattedConversations.length} conversations for user ${userId}`);

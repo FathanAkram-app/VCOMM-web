@@ -90,6 +90,9 @@ export default function ChatList({
     }
     
     if (conversations && Array.isArray(conversations) && conversations.length > 0) {
+      // Debug untuk lihat struktur data percakapan
+      console.log('Contoh data percakapan dari server:', conversations[0]);
+      
       // Filter percakapan berdasarkan aturan:
       // 1. Grup chat selalu ditampilkan
       // 2. Direct chat hanya ditampilkan jika ada pesan (lastMessage)
@@ -98,6 +101,8 @@ export default function ChatList({
         if (conversation.isGroup) return true;
         
         // Direct chat hanya tampil jika ada pesan
+        // lastMessage bisa berupa string atau object
+        if (typeof conversation.lastMessage === 'string' && conversation.lastMessage) return true;
         if (conversation.lastMessage?.content) return true;
         
         // Jika ini direct chat tanpa pesan, tidak ditampilkan
@@ -109,8 +114,10 @@ export default function ChatList({
         name: conversation.name || 'Unnamed Chat',
         isGroup: conversation.isGroup,
         members: conversation.memberCount || 2,
-        lastMessage: conversation.lastMessage?.content || '',
-        lastMessageTime: conversation.lastMessage?.createdAt,
+        lastMessage: typeof conversation.lastMessage === 'string' 
+          ? conversation.lastMessage 
+          : (conversation.lastMessage?.content || ''),
+        lastMessageTime: conversation.lastMessageTime || conversation.updatedAt,
         unread: conversation.unreadCount || 0,
         isOnline: false,
       }));
