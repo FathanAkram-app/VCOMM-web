@@ -351,14 +351,65 @@ export default function Chat() {
   
   // Handle selecting a chat
   const handleSelectChat = (id: number, isGroup: boolean) => {
+    console.log(`Selecting chat: id=${id}, isGroup=${isGroup}`);
     setActiveChat({ id, isGroup });
     setShowChatRoom(true);
+    
+    // Jika kita memiliki chat aktif, kita harus memuat pesan-pesan untuk chat tersebut
+    if (id) {
+      fetchMessagesForChat(id, isGroup);
+    }
+  };
+  
+  // Fungsi untuk mengambil pesan-pesan untuk chat tertentu
+  const fetchMessagesForChat = async (chatId: number, isGroup: boolean) => {
+    try {
+      setIsLoadingMessages(true);
+      console.log(`Fetching messages for chat ID: ${chatId}, isGroup: ${isGroup}`);
+      
+      // Buat endpoint sesuai tipe chat
+      const endpoint = `/api/conversations/${chatId}/messages`;
+      
+      const response = await fetch(endpoint, {
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const messages = await response.json();
+        console.log(`Fetched ${messages.length} messages for chat ${chatId}`);
+        
+        // Format pesan-pesan untuk tampilan
+        const formattedMessages = messages.map((msg: any) => ({
+          id: msg.id,
+          chatId: chatId,
+          senderId: msg.senderId,
+          content: msg.content,
+          timestamp: msg.createdAt,
+          isRead: msg.isRead || false
+        }));
+        
+        // Update state pesan
+        setDatabaseMessages(formattedMessages);
+      } else {
+        console.error(`Failed to fetch messages: ${response.status}`);
+        setDatabaseMessages([]);
+      }
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      setDatabaseMessages([]);
+    } finally {
+      setIsLoadingMessages(false);
+    }
   };
   
   // Handle going back to chat list
   const handleBackToList = () => {
     setActiveChat(null);
     setShowChatRoom(false);
+    setDatabaseMessages([]);
   };
   
   // View switchers
@@ -493,11 +544,116 @@ export default function Chat() {
           )}
           
           {activeView === 'chats' && showChatRoom && activeChat && (
-            <ChatRoom
-              chatId={activeChat.id}
-              isGroup={activeChat.isGroup}
-              onBack={handleBackToList}
-            />
+            <div className="h-full flex flex-col">
+              {/* Chat Header */}
+              <div className="p-3 border-b border-[#333] bg-[#1a1a1a] flex items-center">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="mr-2"
+                  onClick={handleBackToList}
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+                
+                <div className="flex-1">
+                  <h2 className="text-lg font-semibold text-[#8d9c6b]">
+                    {chats.find(c => c.id === activeChat.id)?.name || `Chat ${activeChat.id}`}
+                  </h2>
+                  <p className="text-xs text-gray-400">
+                    {activeChat.isGroup ? 'Group Chat' : 'Direct Message'}
+                  </p>
+                </div>
+                
+                <div className="flex space-x-2">
+                  {activeChat.isGroup && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => setShowGroupInfo(true)}
+                    >
+                      <Info className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+              
+              {/* Messages Area */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {isLoadingMessages ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-400">Memuat pesan...</p>
+                  </div>
+                ) : databaseMessages.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-400">Belum ada pesan. Mulai percakapan?</p>
+                  </div>
+                ) : (
+                  databaseMessages.map((message) => {
+                    const isCurrentUser = message.senderId === user?.id;
+                    return (
+                      <div 
+                        key={message.id} 
+                        className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div 
+                          className={`max-w-[70%] rounded-lg p-3 ${
+                            isCurrentUser 
+                              ? 'bg-[#2d3328] text-white ml-12' 
+                              : 'bg-[#1a1a1a] text-white mr-12'
+                          }`}
+                        >
+                          {!isCurrentUser && (
+                            <div className="text-xs text-[#8d9c6b] mb-1">
+                              {allUsers.find(u => u.id === message.senderId)?.callsign || `User ${message.senderId}`}
+                            </div>
+                          )}
+                          <div className="text-sm">{message.content}</div>
+                          <div className="text-xs text-gray-500 text-right mt-1">
+                            {new Date(message.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+                <div ref={bottomRef} />
+              </div>
+              
+              {/* Message Input */}
+              <div className="p-3 border-t border-[#333] bg-[#1a1a1a] flex items-center">
+                <Button variant="ghost" size="icon" className="text-gray-400">
+                  <PaperclipIcon className="h-5 w-5" />
+                </Button>
+                
+                <Input
+                  ref={messageInputRef}
+                  placeholder="Ketik pesan..."
+                  className="mx-2 bg-[#0a0a0a] border-[#333]"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey && newMessage.trim()) {
+                      e.preventDefault();
+                      // Kirim pesan
+                      // handleSendMessage();
+                    }
+                  }}
+                />
+                
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="text-[#8d9c6b]"
+                  disabled={!newMessage.trim()}
+                  onClick={() => {
+                    // handleSendMessage();
+                  }}
+                >
+                  <SendIcon className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
           )}
           
           {activeView === 'personnel' && (
