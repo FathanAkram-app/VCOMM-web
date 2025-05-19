@@ -12,11 +12,9 @@ export function useWebSocket() {
   useEffect(() => {
     if (!user) return;
 
-    // Buat URL WebSocket yang benar
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.host || "localhost:5000";
-    const wsUrl = `${protocol}//${host}/ws`;
-    console.log("Attempting to connect WebSocket to:", wsUrl);
+    // Gunakan URL WebSocket yang kita tahu sudah benar dan sederhana
+    const wsUrl = 'ws://localhost:5000/ws';
+    console.log("Attempting to connect WebSocket to simple URL:", wsUrl);
     
     // Create WebSocket connection with explicit error handling
     let socket: WebSocket;
