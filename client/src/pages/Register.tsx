@@ -3,8 +3,8 @@ import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { Shield, Lock, AlertTriangle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -85,44 +85,48 @@ export default function Register() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-      <div className="auth-container">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#171717]">
+      <div className="w-full max-w-md p-6">
         <div className="flex flex-col items-center mb-6">
-          <div className="military-logo mb-4">
-            <span className="text-xl font-bold text-white">
-              VCOMM
-            </span>
+          <div className="w-24 h-24 relative mb-4">
+            <div className="absolute inset-0 rounded-md bg-[#4d5d30] p-1">
+              <div className="w-full h-full flex items-center justify-center bg-[#5a6b38] rounded-sm">
+                <svg viewBox="0 0 100 100" className="w-16 h-16 text-[#e0e0b0]">
+                  <path fill="currentColor" d="M50,20 C60,20 70,25 75,35 C80,45 80,55 75,65 L90,80 L80,90 L65,75 C55,80 45,80 35,75 C25,70 20,60 20,50 C20,33 33,20 50,20 Z M45,45 C45,45 45,45 35,55 C35,55 35,55 45,65 C45,65 45,65 55,55 C55,55 55,55 45,45 Z" />
+                </svg>
+              </div>
+            </div>
           </div>
-          <h1 className="military-title">NXZZ COMMUNICATION SYSTEM</h1>
-          <p className="military-subtitle mt-1">SECURE MILITARY COMMUNICATIONS</p>
+          <h1 className="text-[#a6c455] text-xl font-bold tracking-wide">SECURE COMMS</h1>
+          <p className="text-gray-400 text-xs uppercase tracking-wide mt-1">MILITARY PERSONNEL AUTHENTICATION REQUIRED</p>
         </div>
         
-        <div className="auth-tabs">
-          <Link href="/login" className="auth-tab">
+        <div className="grid grid-cols-2 mb-6">
+          <Link href="/login" className="bg-[#33342f] py-3 font-bold text-center text-gray-400 uppercase">
             LOGIN
           </Link>
-          <Link href="/register" className="auth-tab active">
+          <Link href="/register" className="bg-[#4d5d30] py-3 font-bold text-center text-white uppercase">
             REGISTER
           </Link>
         </div>
         
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="callsign"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="auth-label">CALLSIGN</FormLabel>
+                  <FormLabel className="text-gray-400 uppercase text-sm font-medium">CALLSIGN / USERNAME</FormLabel>
                   <FormControl>
                     <Input 
                       type="text" 
-                      placeholder="Masukkan callsign Anda" 
-                      className="auth-input" 
+                      placeholder="ENTER CALLSIGN" 
+                      className="w-full bg-[#222222] border border-[#444444] p-3 text-white placeholder:text-[#555555]" 
                       {...field} 
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-red-500 text-xs" />
                 </FormItem>
               )}
             />
@@ -132,16 +136,16 @@ export default function Register() {
               name="nrp"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="auth-label">NRP/ID</FormLabel>
+                  <FormLabel className="text-gray-400 uppercase text-sm font-medium">NRP / PERSONNEL ID</FormLabel>
                   <FormControl>
                     <Input 
                       type="text" 
-                      placeholder="Masukkan NRP/ID Anda" 
-                      className="auth-input" 
+                      placeholder="ENTER NRP" 
+                      className="w-full bg-[#222222] border border-[#444444] p-3 text-white placeholder:text-[#555555]" 
                       {...field} 
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-red-500 text-xs" />
                 </FormItem>
               )}
             />
@@ -151,45 +155,45 @@ export default function Register() {
               name="fullName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="auth-label">NAMA LENGKAP</FormLabel>
+                  <FormLabel className="text-gray-400 uppercase text-sm font-medium">FULL NAME</FormLabel>
                   <FormControl>
                     <Input 
                       type="text" 
-                      placeholder="Masukkan nama lengkap Anda" 
-                      className="auth-input" 
+                      placeholder="ENTER FULL NAME" 
+                      className="w-full bg-[#222222] border border-[#444444] p-3 text-white placeholder:text-[#555555]" 
                       {...field} 
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-red-500 text-xs" />
                 </FormItem>
               )}
             />
             
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="rank"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="auth-label">PANGKAT</FormLabel>
+                    <FormLabel className="text-gray-400 uppercase text-sm font-medium">RANK</FormLabel>
                     <Select 
                       onValueChange={field.onChange} 
                       defaultValue={field.value}
                     >
                       <FormControl>
-                        <SelectTrigger className="auth-input">
-                          <SelectValue placeholder="Pilih pangkat" />
+                        <SelectTrigger className="w-full bg-[#222222] border border-[#444444] p-3 text-white placeholder:text-[#555555] h-12">
+                          <SelectValue placeholder="SELECT RANK" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent className="bg-[#222222] border border-[#444444] text-white">
                         {RANKS.map((rank) => (
-                          <SelectItem key={rank} value={rank}>
+                          <SelectItem key={rank} value={rank} className="focus:bg-[#4d5d30] focus:text-white">
                             {rank}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <FormMessage />
+                    <FormMessage className="text-red-500 text-xs" />
                   </FormItem>
                 )}
               />
@@ -199,25 +203,25 @@ export default function Register() {
                 name="branch"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="auth-label">SATUAN</FormLabel>
+                    <FormLabel className="text-gray-400 uppercase text-sm font-medium">BRANCH</FormLabel>
                     <Select 
                       onValueChange={field.onChange} 
                       defaultValue={field.value}
                     >
                       <FormControl>
-                        <SelectTrigger className="auth-input">
-                          <SelectValue placeholder="Pilih satuan" />
+                        <SelectTrigger className="w-full bg-[#222222] border border-[#444444] p-3 text-white placeholder:text-[#555555] h-12">
+                          <SelectValue placeholder="SELECT BRANCH" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent className="bg-[#222222] border border-[#444444] text-white">
                         {BRANCHES.map((branch) => (
-                          <SelectItem key={branch} value={branch}>
+                          <SelectItem key={branch} value={branch} className="focus:bg-[#4d5d30] focus:text-white">
                             {branch}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <FormMessage />
+                    <FormMessage className="text-red-500 text-xs" />
                   </FormItem>
                 )}
               />
@@ -228,16 +232,16 @@ export default function Register() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="auth-label">PASSWORD</FormLabel>
+                  <FormLabel className="text-gray-400 uppercase text-sm font-medium">SECURITY CODE / PASSWORD</FormLabel>
                   <FormControl>
                     <Input 
                       type="password" 
-                      placeholder="Masukkan password" 
-                      className="auth-input" 
+                      placeholder="ENTER SECURITY CODE" 
+                      className="w-full bg-[#222222] border border-[#444444] p-3 text-white placeholder:text-[#555555]" 
                       {...field} 
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-red-500 text-xs" />
                 </FormItem>
               )}
             />
@@ -247,33 +251,45 @@ export default function Register() {
               name="confirmPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="auth-label">KONFIRMASI PASSWORD</FormLabel>
+                  <FormLabel className="text-gray-400 uppercase text-sm font-medium">CONFIRM SECURITY CODE</FormLabel>
                   <FormControl>
                     <Input 
                       type="password" 
-                      placeholder="Konfirmasi password" 
-                      className="auth-input" 
+                      placeholder="CONFIRM SECURITY CODE" 
+                      className="w-full bg-[#222222] border border-[#444444] p-3 text-white placeholder:text-[#555555]" 
                       {...field} 
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-red-500 text-xs" />
                 </FormItem>
               )}
             />
             
-            <Button type="submit" disabled={isLoading} className="auth-btn mt-6 w-full">
-              {isLoading ? "MENDAFTARKAN..." : "REGISTER"}
+            <p className="text-[#7a7a7a] text-xs uppercase text-center mt-4">
+              BY REGISTERING, YOU ACCEPT ALL MILITARY COMMUNICATION PROTOCOLS.
+            </p>
+            
+            <Button type="submit" disabled={isLoading} className="w-full bg-[#4d5d30] hover:bg-[#5a6b38] text-white py-3 font-bold uppercase tracking-wider mt-2">
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <span>PROCESSING...</span>
+                </>
+              ) : (
+                <>
+                  <Shield className="mr-2 h-4 w-4" />
+                  <span>REGISTER PERSONNEL</span>
+                </>
+              )}
             </Button>
           </form>
         </Form>
         
-        <div className="mt-4 text-center">
-          <p className="military-notice">
-            HANYA UNTUK PERSONEL RESMI
-          </p>
-          <p className="military-notice mt-1">
-            AKSES TIDAK SAH AKAN DITINDAK SESUAI HUKUM YANG BERLAKU
-          </p>
+        <div className="mt-8 text-center">
+          <div className="flex items-center justify-center">
+            <AlertTriangle className="h-3 w-3 text-[#a6c455] mr-1" />
+            <p className="text-[#a6c455] text-[10px] uppercase font-medium">INTRANET COMMUNICATIONS ONLY - CLASSIFIED</p>
+          </div>
         </div>
       </div>
     </div>

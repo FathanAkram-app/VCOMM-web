@@ -12,7 +12,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 // Login validation schema
 const loginSchema = z.object({
   callsign: z.string().min(3, "Callsign minimal 3 karakter"),
-  nrp: z.string().min(3, "NRP minimal 3 karakter"),
   password: z.string().min(6, "Password minimal 6 karakter"),
 });
 
@@ -27,7 +26,6 @@ export default function Login() {
     resolver: zodResolver(loginSchema),
     defaultValues: {
       callsign: "",
-      nrp: "",
       password: "",
     },
   });
@@ -42,7 +40,6 @@ export default function Login() {
         },
         body: JSON.stringify({
           callsign: values.callsign,
-          nrp: values.nrp,
           password: values.password,
         }),
         credentials: "include"
@@ -119,24 +116,7 @@ export default function Login() {
               )}
             />
             
-            <FormField
-              control={form.control}
-              name="nrp"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-gray-400 uppercase text-sm font-medium">NRP / PERSONNEL ID</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="text" 
-                      placeholder="ENTER NRP" 
-                      className="w-full bg-[#222222] border border-[#444444] p-3 text-white placeholder:text-[#555555]" 
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage className="text-red-500 text-xs" />
-                </FormItem>
-              )}
-            />
+
             
             <FormField
               control={form.control}
