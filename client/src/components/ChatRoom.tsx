@@ -179,10 +179,18 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     }
     
     console.log("Processing message data for grouping:", messageData);
+    console.log("Total messages to process:", messageData.length);
+    
+    // Sortir pesan berdasarkan waktu (dari yang terlama ke yang terbaru)
+    const sortedMessages = [...messageData].sort((a, b) => {
+      const timeA = new Date(a.timestamp || a.createdAt).getTime();
+      const timeB = new Date(b.timestamp || b.createdAt).getTime();
+      return timeA - timeB;
+    });
     
     const groups: { [key: string]: ChatMessage[] } = {};
     
-    messageData.forEach((msg: any) => {
+    sortedMessages.forEach((msg: any) => {
       // For messages from the server, createdAt is used instead of timestamp
       const timestamp = msg.timestamp || msg.createdAt;
       
@@ -228,6 +236,10 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     }));
     
     console.log("Grouped messages:", result);
+    console.log("Total date groups:", result.length);
+    if (result.length > 0) {
+      console.log("Total messages in first group:", result[0].messages.length);
+    }
     return result;
   };
   

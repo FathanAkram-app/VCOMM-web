@@ -312,6 +312,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Temporarily disable access check for debugging
       // Sehingga semua pengguna bisa mengakses pesan dalam chat
       const messages = await storage.getMessagesByConversation(conversationId);
+      
+      // Log jumlah pesan yang ditemukan untuk debugging
+      console.log(`Found ${messages.length} messages for conversation ${conversationId}`);
+      
+      // Pastikan response-nya adalah array JSON yang valid
+      res.setHeader('Content-Type', 'application/json');
       res.json(messages);
     } catch (error) {
       console.error("Error fetching messages:", error);
