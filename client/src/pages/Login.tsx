@@ -45,9 +45,9 @@ export default function Login() {
         description: "Anda dialihkan ke halaman chat.",
       });
 
-      // Redirect to chat on successful login
+      // Redirect to chat on successful login dengan refresh halaman penuh
       console.log("Login berhasil, mengarahkan ke halaman chat...");
-      setLocation("/chat");
+      window.location.href = "/chat";
     } catch (error: any) {
       console.error("Login error:", error);
       toast({
