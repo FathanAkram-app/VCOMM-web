@@ -431,10 +431,129 @@ export default function Chat() {
     setActiveView('config');
   };
   
+  // Fungsi untuk mengirim pesan
+  const handleSendMessage = async () => {
+    if (!activeChat || !newMessage.trim() || !user) return;
+    
+    try {
+      console.log(`Mengirim pesan ke chat ${activeChat.id} (${activeChat.isGroup ? 'Group' : 'Direct'}): ${newMessage}`);
+      
+      // Tambahkan pesan lokal terlebih dahulu untuk UX yang responsif
+      const tempId = Date.now();
+      const tempMessage = {
+        id: tempId,
+        chatId: activeChat.id,
+        senderId: user.id,
+        content: newMessage,
+        timestamp: new Date().toISOString(),
+        isRead: false,
+        isSending: true // Flag untuk menandai bahwa pesan sedang dikirim
+      };
+      
+      // Update tampilan dengan pesan baru
+      setDatabaseMessages(prev => [...prev, tempMessage]);
+      
+      // Reset input
+      setNewMessage('');
+      
+      // Kirim pesan ke server
+      const response = await fetch('/api/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          conversationId: activeChat.id,
+          content: tempMessage.content
+        })
+      });
+      
+      if (response.ok) {
+        const sentMessage = await response.json();
+        console.log('Pesan berhasil dikirim:', sentMessage);
+        
+        // Update message list dengan mengganti pesan sementara dengan pesan yang benar dari server
+        setDatabaseMessages(prev => prev.map(msg => 
+          msg.id === tempId ? { ...sentMessage, chatId: activeChat.id, isSending: false } : msg
+        ));
+        
+        // Refresh chat list untuk memperbarui lastMessage dan lastMessageTime
+        fetchUserChats(user.id);
+      } else {
+        console.error(`Gagal mengirim pesan: ${response.status}`);
+        
+        // Update tampilan, tandai pesan sebagai gagal
+        setDatabaseMessages(prev => prev.map(msg => 
+          msg.id === tempId ? { ...msg, isSending: false, isError: true } : msg
+        ));
+      }
+    } catch (error) {
+      console.error('Error mengirim pesan:', error);
+    }
+  };
+  
+  // Fungsi untuk memulai direct chat dengan pengguna lain
+  const handleStartDirectChat = async (otherUserId: number) => {
+    if (!otherUserId || !user) {
+      console.error('Invalid otherUserId or currentUser');
+      return;
+    }
+
+    try {
+      setIsCreatingChat(true);
+      console.log('Creating new direct chat with user ID:', otherUserId);
+      
+      const response = await fetch('/api/direct-chats', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ 
+          otherUserId: Number(otherUserId) // Pastikan ini adalah number
+        }),
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        console.error(`Failed to create direct chat: ${response.status}`);
+        const errorText = await response.text();
+        console.error('Server response:', errorText);
+        throw new Error(`Failed to create direct chat: ${errorText}`);
+      }
+      
+      const newChat = await response.json();
+      console.log('Direct chat created successfully:', newChat);
+      
+      // Refresh chat list
+      fetchUserChats(user.id);
+      setShowNewDirectChatDialog(false);
+      setSelectedUserId(null);
+      
+      // Buka chat baru yang dibuat
+      if (newChat && newChat.id) {
+        setActiveChat({ id: newChat.id, isGroup: false });
+        setShowChatRoom(true);
+        setActiveView('chats');
+        fetchMessagesForChat(newChat.id, false);
+      }
+    } catch (error) {
+      console.error('Error creating direct chat:', error);
+      alert('Gagal membuat chat. Silakan coba lagi.');
+    } finally {
+      setIsCreatingChat(false);
+    }
+  };
+  
   // Handle logout
   const handleLogout = async () => {
     try {
-      await fetch('/api/logout', { credentials: 'include' });
+      await fetch('/api/auth/logout', { 
+        method: 'POST',
+        credentials: 'include' 
+      });
       window.location.href = '/login';
     } catch (error) {
       console.error('Error logging out:', error);
@@ -635,8 +754,7 @@ export default function Chat() {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey && newMessage.trim()) {
                       e.preventDefault();
-                      // Kirim pesan
-                      // handleSendMessage();
+                      handleSendMessage();
                     }
                   }}
                 />
@@ -646,9 +764,7 @@ export default function Chat() {
                   size="icon" 
                   className="text-[#8d9c6b]"
                   disabled={!newMessage.trim()}
-                  onClick={() => {
-                    // handleSendMessage();
-                  }}
+                  onClick={handleSendMessage}
                 >
                   <SendIcon className="h-5 w-5" />
                 </Button>
