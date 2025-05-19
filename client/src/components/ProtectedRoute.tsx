@@ -9,8 +9,11 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, isLoading, isAuthenticated } = useAuth();
+  const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
+  
+  // Langsung periksa apakah user ada, bukan menggunakan isAuthenticated
+  const isAuthenticated = !!user;
 
   useEffect(() => {
     // Debug status autentikasi
@@ -33,17 +36,17 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !isLoading) {
+    // Langsung arahkan ke halaman login
+    setLocation("/login");
+    
+    // Tampilkan loading screen sampai redirect selesai
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#171717]">
         <div className="flex flex-col items-center space-y-4 p-8 bg-[#222222] rounded-lg">
           <h1 className="text-[#a6c455] text-xl font-bold">Military Communications</h1>
-          <p className="text-white">You need to log in to use this application.</p>
-          <Button 
-            onClick={() => setLocation("/login")} 
-            className="bg-[#4d5d30] hover:bg-[#5a6b38] text-white py-2 px-4 rounded">
-            Back to Login
-          </Button>
+          <p className="text-white">Redirecting to login page...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#a6c455]"></div>
         </div>
       </div>
     );

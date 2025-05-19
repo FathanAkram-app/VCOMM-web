@@ -13,15 +13,16 @@ import NotFound from "@/pages/not-found";
 function Router() {
   return (
     <Switch>
-      <Route path="/">
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
+      
+      <Route path="/chat">
         <ProtectedRoute>
           <Chat />
         </ProtectedRoute>
       </Route>
-      <Route path="/login" component={Login} />
-      <Route path="/register" component={Register} />
-
-      <Route path="/chat">
+      
+      <Route path="/">
         <ProtectedRoute>
           <Chat />
         </ProtectedRoute>
