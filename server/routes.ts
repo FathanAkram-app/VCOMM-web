@@ -67,18 +67,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/conversations/:id', isAuthenticated, async (req: AuthRequest, res) => {
     try {
       const conversationId = parseInt(req.params.id);
-      const isGroup = req.query.isGroup === 'true';
+      const userId = req.session.user.id;
       
       if (isNaN(conversationId)) {
         return res.status(400).json({ message: "Invalid conversation ID" });
       }
       
-      const conversation = await storage.getConversation(conversationId, isGroup);
+      const conversation = await storage.getConversation(conversationId);
       if (!conversation) {
         return res.status(404).json({ message: "Conversation not found" });
       }
       
-      res.json(conversation);
+      // Get members of this conversation
+      const members = await storage.getConversationMembers(conversationId);
+      const memberIds = members.map(member => member.userId);
+      
+      // Check if user is a member of this conversation
+      if (!memberIds.includes(userId)) {
+        return res.status(403).json({ message: "You are not a member of this conversation" });
+      }
+      
+      // If it's a direct chat, add information about the other user
+      let otherUser = null;
+      if (!conversation.isGroup && members.length === 2) {
+        const otherUserId = memberIds.find(id => id !== userId);
+        if (otherUserId) {
+          otherUser = await storage.getUser(otherUserId);
+          
+          // Update the conversation name to show the other user's name
+          conversation.name = otherUser?.fullName || otherUser?.callsign || 'Unknown User';
+        }
+      }
+      
+      const result = {
+        ...conversation,
+        members: members.length,
+        otherUser: otherUser,
+        otherUserId: otherUser?.id || null,
+      };
+      
+      res.json(result);
     } catch (error) {
       console.error("Error fetching conversation:", error);
       res.status(500).json({ message: "Failed to fetch conversation" });

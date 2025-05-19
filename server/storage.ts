@@ -240,24 +240,31 @@ export class DatabaseStorage implements IStorage {
       .where(eq(directChats.id, id));
   }
   
-  // Generic conversation operations
-  async getConversation(id: number, isGroup: boolean): Promise<Conversation | undefined> {
-    if (isGroup) {
-      return this.getRoom(id);
-    } else {
-      return this.getDirectChat(id);
-    }
+  // Conversation operations
+  async getConversation(id: number): Promise<Conversation | undefined> {
+    const [conversation] = await db
+      .select()
+      .from(conversations)
+      .where(eq(conversations.id, id));
+    return conversation;
   }
   
   async getUserConversations(userId: number): Promise<Conversation[]> {
-    // Get user's rooms
-    const userRooms = await this.getUserRooms(userId);
-    
-    // Get user's direct chats
-    const userDirectChats = await this.getUserDirectChats(userId);
-    
-    // Combine and return
-    return [...userRooms, ...userDirectChats];
+    // Dapatkan ID semua percakapan yang user menjadi anggotanya
+    const members = await db
+      .select()
+      .from(conversationMembers)
+      .where(eq(conversationMembers.userId, userId));
+
+    if (members.length === 0) {
+      return [];
+    }
+
+    const conversationIds = members.map(member => member.conversationId);
+    return await db
+      .select()
+      .from(conversations)
+      .where(inArray(conversations.id, conversationIds));
   }
 
   // Message operations
@@ -271,32 +278,18 @@ export class DatabaseStorage implements IStorage {
     return message;
   }
 
-  async getMessagesByRoom(roomId: number): Promise<Message[]> {
+  async getMessagesByConversation(conversationId: number): Promise<Message[]> {
     return await db
       .select()
       .from(messages)
-      .where(eq(messages.roomId, roomId))
+      .where(eq(messages.conversationId, conversationId))
       .orderBy(messages.createdAt);
   }
   
-  async getMessagesByDirectChat(directChatId: number): Promise<Message[]> {
-    return await db
-      .select()
-      .from(messages)
-      .where(eq(messages.directChatId, directChatId))
-      .orderBy(messages.createdAt);
-  }
-  
-  async clearRoomMessages(roomId: number): Promise<void> {
+  async clearConversationMessages(conversationId: number): Promise<void> {
     await db
       .delete(messages)
-      .where(eq(messages.roomId, roomId));
-  }
-  
-  async clearDirectChatMessages(directChatId: number): Promise<void> {
-    await db
-      .delete(messages)
-      .where(eq(messages.directChatId, directChatId));
+      .where(eq(messages.conversationId, conversationId));
   }
 }
 
