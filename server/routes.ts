@@ -45,7 +45,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Conversations routes (both group chats and direct chats)
   app.get('/api/conversations', isAuthenticated, async (req: AuthRequest, res) => {
     try {
-      const userId = req.user?.id || 0;
+      // Perbaikan: Gunakan session.user.id bukan user.id yang kosong
+      const userId = req.session?.user?.id;
+      console.log(`[API] Getting conversations for user ID from session: ${userId}`);
+      
+      if (!userId) {
+        return res.status(400).json({ message: "User ID not found in session" });
+      }
+      
       const conversations = await storage.getUserConversations(userId);
       
       // Membuat response yang membedakan percakapan grup vs percakapan langsung
@@ -54,6 +61,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: conv.isGroup ? 'group' : 'direct'
       }));
       
+      console.log(`[API] Returning ${formattedConversations.length} conversations for user ${userId}`);
       res.json(formattedConversations);
     } catch (error) {
       console.error("Error fetching conversations:", error);
@@ -64,9 +72,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Specific route untuk group chats (filter dari conversations)
   app.get('/api/rooms', isAuthenticated, async (req: AuthRequest, res) => {
     try {
-      const userId = req.user?.id || 0;
+      // Perbaikan: Gunakan session.user.id bukan user.id yang kosong
+      const userId = req.session?.user?.id;
+      
+      if (!userId) {
+        return res.status(400).json({ message: "User ID not found in session" });
+      }
+      
       const conversations = await storage.getUserConversations(userId);
       const rooms = conversations.filter(conv => conv.isGroup);
+      console.log(`[API] Returning ${rooms.length} group chats for user ${userId}`);
       res.json(rooms);
     } catch (error) {
       console.error("Error fetching rooms:", error);
@@ -77,9 +92,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Specific route untuk direct chats (filter dari conversations)
   app.get('/api/direct-chats', isAuthenticated, async (req: AuthRequest, res) => {
     try {
-      const userId = req.user?.id || 0;
+      // Perbaikan: Gunakan session.user.id bukan user.id yang kosong
+      const userId = req.session?.user?.id;
+      
+      if (!userId) {
+        return res.status(400).json({ message: "User ID not found in session" });
+      }
+      
       const conversations = await storage.getUserConversations(userId);
       const directChats = conversations.filter(conv => !conv.isGroup);
+      console.log(`[API] Returning ${directChats.length} direct chats for user ${userId}`);
       res.json(directChats);
     } catch (error) {
       console.error("Error fetching direct chats:", error);
@@ -284,7 +306,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/messages', isAuthenticated, async (req: AuthRequest, res) => {
     try {
-      const userId = req.session.user.id;
+      const userId = req.session?.user?.id;
+      
+      if (!userId) {
+        return res.status(400).json({ message: "User ID not found in session" });
+      }
+      
+      console.log(`[API] Creating message from user ${userId} for conversation ${req.body.conversationId}`);
+      
       const parseResult = insertMessageSchema.safeParse({
         ...req.body,
         senderId: userId
@@ -298,6 +327,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const message = await storage.createMessage(parseResult.data);
+      console.log(`[API] Message created: ${message.id} in conversation ${message.conversationId}`);
       
       // Broadcast to WebSocket clients
       broadcastToConversation(message.conversationId, {
