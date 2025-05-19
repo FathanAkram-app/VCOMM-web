@@ -79,10 +79,16 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     }
   });
   
-  // Fetch other user data when chat changes (for direct chats)
-  const { data: otherUserData } = useQuery({
+  // Fetch all users to find the other user in direct chats
+  const { data: allUsers } = useQuery({
     queryKey: [`/api/all-users`],
     enabled: !!user && !isGroup,
+  });
+
+  // Fetch conversation members
+  const { data: conversationMembers } = useQuery({
+    queryKey: [`/api/conversations/${chatId}/members`],
+    enabled: !!chatId && !!user,
   });
 
   // Update chat data when chat changes
@@ -90,14 +96,22 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     if (chat && typeof chat === 'object') {
       const chatObj = chat as Conversation;
       
-      // For direct chats, try to get the other user's name
+      // Default chat name
       let chatName = chatObj.name || 'Chat';
       
-      if (!isGroup && otherUserData && Array.isArray(otherUserData)) {
-        // Try to find the other user in the conversation
-        const otherUser = otherUserData.find(u => u.id !== user?.id);
-        if (otherUser) {
-          chatName = otherUser.callsign || otherUser.firstName || chatName;
+      if (!isGroup && conversationMembers && Array.isArray(conversationMembers) && allUsers && Array.isArray(allUsers)) {
+        // Find the other member in the conversation (not the current user)
+        const otherMemberId = conversationMembers.find(member => member.userId !== user?.id)?.userId;
+        
+        if (otherMemberId) {
+          // Find the other user's data
+          const otherUser = allUsers.find(u => u.id === otherMemberId);
+          
+          if (otherUser) {
+            // Use the other user's callsign for the chat name
+            chatName = otherUser.callsign || chatName;
+            console.log("Setting chat name to other user's callsign:", chatName);
+          }
         }
       }
       
@@ -107,7 +121,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
         isGroup: typeof chatObj.isGroup === 'boolean' ? chatObj.isGroup : isGroup
       });
     }
-  }, [chat, isGroup, chatId, otherUserData, user?.id]);
+  }, [chat, isGroup, chatId, conversationMembers, allUsers, user?.id]);
   
   // Auto-scroll to bottom when messages change
   const scrollToBottom = () => {
@@ -180,7 +194,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   const messageGroups = groupMessagesByDate(Array.isArray(messages) ? messages : []);
   
   return (
-    <div className="flex flex-col h-full bg-[#171717]">
+    <div className="flex flex-col h-screen bg-[#171717] relative">
       {/* Chat header */}
       <div className="flex items-center px-4 py-3 border-b border-[#333333] bg-[#1a1a1a]">
         <Button onClick={onBack} variant="ghost" size="icon" className="mr-2 text-[#a6c455]">
@@ -213,8 +227,8 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
         </Button>
       </div>
       
-      {/* Messages container with extra padding at bottom to make room for input */}
-      <div className="flex-1 overflow-y-auto p-4 pb-24 md:pb-4 space-y-6">
+      {/* Messages container with space for input at bottom */}
+      <div className="flex-1 overflow-y-auto p-4 pb-32 space-y-6">
         {messageGroups.map(group => (
           <div key={group.date} className="space-y-3">
             <div className="flex justify-center">
@@ -280,8 +294,8 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
         <div ref={messagesEndRef} />
       </div>
       
-      {/* Message input */}
-      <div className="border-t border-[#333333] p-3 bg-[#1a1a1a]">
+      {/* Message input - positioned fixed for mobile */}
+      <div className="border-t border-[#333333] p-3 bg-[#1a1a1a] fixed bottom-0 left-0 right-0 z-10">
         <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
           <Button 
             type="button"
