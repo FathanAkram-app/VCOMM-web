@@ -209,15 +209,14 @@ export class DatabaseStorage implements IStorage {
         })
         .returning();
       
-      // Now update the conversation with the latest message
-      await tx
-        .update(conversations)
-        .set({
-          updatedAt: new Date(),
-          lastMessage: message.content,
-          lastMessageTime: message.createdAt
-        })
-        .where(eq(conversations.id, message.conversationId));
+      // Now update the conversation with the latest message using raw SQL untuk mengatasi TypeScript errors
+      await tx.execute(
+        sql`UPDATE conversations 
+            SET updated_at = NOW(), 
+                last_message = ${message.content}, 
+                last_message_time = ${new Date()} 
+            WHERE id = ${message.conversationId}`
+      );
       
       return message;
     });

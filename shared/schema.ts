@@ -49,6 +49,8 @@ export const conversations = pgTable("conversations", {
   name: varchar("name"),
   description: text("description"),
   classification: varchar("classification"),
+  lastMessage: text("last_message"),
+  lastMessageTime: timestamp("last_message_time"),
 });
 
 // Conversation members table
