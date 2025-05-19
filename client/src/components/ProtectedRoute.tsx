@@ -40,16 +40,17 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   }
 
   if (!isAuthenticated && !isLoading) {
-    // Langsung arahkan ke halaman login
-    setLocation("/login");
-    
-    // Tampilkan loading screen sampai redirect selesai
+    // Tampilkan tombol login manual alih-alih redirect otomatis
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#171717]">
         <div className="flex flex-col items-center space-y-4 p-8 bg-[#222222] rounded-lg">
           <h1 className="text-[#a6c455] text-xl font-bold">Military Communications</h1>
-          <p className="text-white">Redirecting to login page...</p>
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#a6c455]"></div>
+          <p className="text-white">You need to log in to use this application.</p>
+          <Button 
+            onClick={() => setLocation("/login")} 
+            className="bg-[#4d5d30] hover:bg-[#5a6b38] text-white py-2 px-4 rounded">
+            Back to Login
+          </Button>
         </div>
       </div>
     );

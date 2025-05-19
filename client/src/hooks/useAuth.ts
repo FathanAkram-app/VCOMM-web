@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { User } from "@shared/schema";
 import { useToast } from "./use-toast";
+import { useLocation } from "wouter";
 
 interface AuthState {
   user: User | null;
@@ -69,6 +70,8 @@ export function useAuth(): AuthState & {
     }
   };
 
+  const [, setLocation] = useLocation();
+
   // Fungsi untuk logout
   const logout = async (): Promise<void> => {
     try {
@@ -88,6 +91,9 @@ export function useAuth(): AuthState & {
           title: "Logout berhasil",
           description: "Anda telah keluar dari sistem",
         });
+        
+        // Redirect ke login setelah logout berhasil
+        setLocation("/login");
       } else {
         throw new Error("Gagal logout");
       }
@@ -98,6 +104,9 @@ export function useAuth(): AuthState & {
         title: "Logout gagal",
         description: "Terjadi kesalahan saat logout",
       });
+      
+      // Jika logout gagal, tetap coba redirect ke login
+      setLocation("/login");
     }
   };
 
