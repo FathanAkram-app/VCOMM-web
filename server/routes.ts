@@ -56,10 +56,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const conversations = await storage.getUserConversations(userId);
       
       // Membuat response yang membedakan percakapan grup vs percakapan langsung
-      const formattedConversations = conversations.map(conv => ({
-        ...conv,
-        type: conv.isGroup ? 'group' : 'direct'
-      }));
+      const formattedConversations = conversations.map(conv => {
+        // Konversi kolom last_message_time ke lastMessageTime untuk konsistensi
+        // dan last_message ke lastMessage
+        return {
+          ...conv,
+          lastMessage: conv.lastMessage || conv.last_message,
+          lastMessageTime: conv.lastMessageTime || conv.last_message_time,
+          type: conv.isGroup ? 'group' : 'direct'
+        };
+      });
       
       console.log(`[API] Returning ${formattedConversations.length} conversations for user ${userId}`);
       res.json(formattedConversations);
