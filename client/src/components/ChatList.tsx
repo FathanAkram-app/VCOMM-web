@@ -54,20 +54,42 @@ export default function ChatList({
   const [isLoadingChats, setIsLoadingChats] = useState(false);
   const [chatItems, setChatItems] = useState<ChatItem[]>([]);
   
-  // Fetch conversations from API
+  // Pindahkan SEMUA hooks ke level atas komponen
   const { data: conversations, isLoading } = useQuery({
     queryKey: ['/api/conversations'],
     enabled: !!user,
   });
   
-  // Load chat list from API
+  const { data: allUsers } = useQuery({
+    queryKey: ['/api/all-users'],
+    enabled: !!user,
+  });
+  
+  // Fungsi untuk mengubah format nama chat
+  const getPartnerName = (chatName: string) => {
+    if (!chatName || !chatName.startsWith('Direct Chat') || !user || !allUsers) return chatName || 'Chat';
+    
+    // Extract ID dari format "Direct Chat X-Y"
+    const match = chatName.match(/Direct Chat (\d+)-(\d+)/);
+    if (!match) return chatName;
+    
+    const [_, id1, id2] = match;
+    const myId = user.id;
+    const partnerId = parseInt(id1) === myId ? parseInt(id2) : parseInt(id1);
+    
+    // Cari pengguna berdasarkan ID
+    const partner = allUsers.find((u: any) => u.id === partnerId);
+    return partner?.callsign || partner?.fullName || chatName;
+  };
+  
+  // Load chat list dari API
   useEffect(() => {
     if (isLoading) {
       setIsLoadingChats(true);
       return;
     }
     
-    if (conversations && conversations.length > 0) {
+    if (conversations && Array.isArray(conversations) && conversations.length > 0) {
       const formattedChats = conversations.map((conversation: any) => ({
         id: conversation.id,
         name: conversation.name || 'Unnamed Chat',
@@ -76,8 +98,17 @@ export default function ChatList({
         lastMessage: conversation.lastMessage?.content || '',
         lastMessageTime: conversation.lastMessage?.createdAt,
         unread: conversation.unreadCount || 0,
-        isOnline: false, // We'll set this separately
+        isOnline: false,
       }));
+      
+      // Ubah nama chat langsung di effect ini
+      if (allUsers && Array.isArray(allUsers)) {
+        formattedChats.forEach(chat => {
+          if (!chat.isGroup) {
+            chat.name = getPartnerName(chat.name);
+          }
+        });
+      }
       
       setChatItems(formattedChats);
     } else {
@@ -85,7 +116,7 @@ export default function ChatList({
     }
     
     setIsLoadingChats(false);
-  }, [conversations, isLoading]);
+  }, [conversations, isLoading, allUsers, user]);
   
   // Handler untuk memilih chat
   const handleSelectChat = (id: number, isGroup: boolean) => {
@@ -123,7 +154,7 @@ export default function ChatList({
   }
   
   // Render empty state
-  if (chatItems.length === 0) {
+  if (!chatItems || chatItems.length === 0) {
     return (
       <div className="flex flex-col h-full items-center justify-center p-4 space-y-4">
         <MessageSquare className="w-12 h-12 text-[#a6c455]" />
@@ -136,44 +167,18 @@ export default function ChatList({
     );
   }
   
-  // Dapatkan data pengguna untuk mengubah nama chat - PINDAHKAN HOOK KE ATAS
-  const { data: allUsers } = useQuery({
-    queryKey: ['/api/all-users'],
-    enabled: !!user,
-  });
-  
   // Deduplikasi chat items
   // Pertama, ambil chat group
   const groupChats = chatItems.filter(chat => chat.isGroup);
   
   // Kemudian ambil direct chats tanpa duplikasi nama
   const uniqueUserNames = new Set();
-  const uniqueDirectChats = [];
-  
-  // Fungsi untuk mengubah format nama chat
-  const getPartnerName = (chatName: string) => {
-    if (!chatName || !chatName.startsWith('Direct Chat') || !user || !allUsers) return chatName || 'Chat';
-    
-    // Extract ID dari format "Direct Chat X-Y"
-    const match = chatName.match(/Direct Chat (\d+)-(\d+)/);
-    if (!match) return chatName;
-    
-    const [_, id1, id2] = match;
-    const myId = user.id;
-    const partnerId = parseInt(id1) === myId ? parseInt(id2) : parseInt(id1);
-    
-    // Cari pengguna berdasarkan ID
-    const partner = allUsers.find((u: any) => u.id === partnerId);
-    return partner?.callsign || partner?.fullName || chatName;
-  };
+  const uniqueDirectChats: ChatItem[] = [];
   
   // Filter direct chats
   chatItems.filter(chat => !chat.isGroup).forEach(chat => {
-    // Ubah nama sebelum deduplikasi
-    const chatName = getPartnerName(chat.name || '');
-    chat.name = chatName;
-    
-    const lowerName = chatName.toLowerCase();
+    // Nama chat sudah diubah di useEffect
+    const lowerName = (chat.name || '').toLowerCase();
     if (lowerName && !uniqueUserNames.has(lowerName)) {
       uniqueUserNames.add(lowerName);
       uniqueDirectChats.push(chat);
