@@ -15,18 +15,11 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   // Langsung periksa apakah user ada, bukan menggunakan isAuthenticated
   const isAuthenticated = !!user;
 
+  // Hilangkan efek redirect otomatis, biarkan user klik tombol login manual
   useEffect(() => {
     // Debug status autentikasi
     console.log("ProtectedRoute status:", { isLoading, isAuthenticated, user });
-    
-    if (!isLoading && !isAuthenticated) {
-      console.log("Not authenticated, redirecting to login");
-      // Gunakan timeout untuk mencegah redirect loop
-      setTimeout(() => {
-        setLocation("/login");
-      }, 100);
-    }
-  }, [isLoading, isAuthenticated, user, setLocation]);
+  }, [isLoading, isAuthenticated, user]);
 
   if (isLoading) {
     return (
