@@ -115,21 +115,32 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getUserConversations(userId: number): Promise<Conversation[]> {
+    console.log(`[Storage] Getting conversations for user ID: ${userId}`);
+    
     // Get all conversations where user is a member
     const members = await db
       .select()
       .from(conversationMembers)
       .where(eq(conversationMembers.userId, userId));
 
+    console.log(`[Storage] Found ${members.length} memberships for user ${userId}`);
+    
     if (members.length === 0) {
+      console.log(`[Storage] No memberships found for user ${userId}`);
       return [];
     }
 
     const conversationIds = members.map(member => member.conversationId);
-    return await db
+    console.log(`[Storage] Found conversation IDs for user ${userId}:`, conversationIds);
+    
+    const userConversations = await db
       .select()
       .from(conversations)
       .where(inArray(conversations.id, conversationIds));
+    
+    console.log(`[Storage] Retrieved ${userConversations.length} conversations for user ${userId}`);
+    
+    return userConversations;
   }
   
   async deleteConversation(id: number): Promise<void> {
