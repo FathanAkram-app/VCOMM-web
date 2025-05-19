@@ -90,8 +90,8 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db
       .update(users)
       .set({ 
-        isOnline: status === 'online',
-        lastSeen: new Date()
+        status: status,
+        updatedAt: new Date()
       })
       .where(eq(users.id, userId))
       .returning();
