@@ -13,11 +13,14 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [, setLocation] = useLocation();
 
   useEffect(() => {
+    // Debug status autentikasi
+    console.log("ProtectedRoute status:", { isLoading, isAuthenticated, user });
+    
     if (!isLoading && !isAuthenticated) {
       console.log("Not authenticated, redirecting to login");
       setLocation("/login");
     }
-  }, [isLoading, isAuthenticated, setLocation]);
+  }, [isLoading, isAuthenticated, user, setLocation]);
 
   if (isLoading) {
     return (

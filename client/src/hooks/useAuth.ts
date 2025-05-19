@@ -23,8 +23,15 @@ export function useAuth(): AuthState & {
   const { data: user, isLoading: isQueryLoading, refetch } = useQuery<User | null>({
     queryKey: ["/api/auth/user"],
     retry: false,
-    staleTime: 1000 * 60 * 5, // 5 menit
-    gcTime: 0 // Tidak menyimpan cache, selalu fetch baru
+    staleTime: 0, // Tidak menyimpan cache, selalu fetch baru
+    gcTime: 0, 
+    refetchOnWindowFocus: true, // Refresh data ketika window aktif kembali
+    onError: () => {
+      console.log("Error fetching user data");
+    },
+    onSuccess: (data) => {
+      console.log("User data fetched successfully:", data);
+    }
   });
 
   // Memperbarui status loading global
@@ -52,9 +59,13 @@ export function useAuth(): AuthState & {
       }
 
       const userData = await response.json();
+      console.log("Login berhasil, data user:", userData);
       
-      // Refresh user data
+      // Refresh user data dalam cache
       queryClient.setQueryData(["/api/auth/user"], userData);
+      
+      // Paksa refresh data user
+      await refetch();
       
       // Return user data
       return userData;
