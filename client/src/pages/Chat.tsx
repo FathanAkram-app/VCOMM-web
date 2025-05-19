@@ -231,6 +231,8 @@ export default function Chat() {
         setActiveChat({ id: existingChat.id, isGroup: false });
         setShowChatRoom(true);
         setActiveView('chats');
+        setShowNewDirectChatDialog(false);
+        setSelectedUserId(null);
         return;
       }
       
@@ -243,42 +245,36 @@ export default function Chat() {
           'Accept': 'application/json'
         },
         credentials: 'include',
-        body: JSON.stringify({ otherUserId })
+        body: JSON.stringify({ 
+          otherUserId: Number(otherUserId) // Pastikan ini adalah number
+        })
       });
       
-      if (response.ok) {
-        const newChat = await response.json();
-        console.log(`Created new direct chat:`, newChat);
-        
-        // Add this chat to our list
-        const formattedChat = {
-          id: newChat.id,
-          name: otherUser.callsign || otherUser.firstName || `User ${otherUserId}`,
-          isGroup: false,
-          lastMessage: "Secure channel established.",
-          lastMessageTime: new Date().toISOString(),
-          unread: 0,
-          otherUserId
-        };
-        
-        // Update chats list
-        const updatedChats = [...chats, formattedChat];
-        setChats(updatedChats);
-        
-        // Open the new chat
+      if (!response.ok) {
+        console.error(`Failed to create direct chat: ${response.status}`);
+        const errorText = await response.text();
+        console.error('Server response:', errorText);
+        throw new Error(`Failed to create direct chat: ${errorText}`);
+      }
+      
+      const newChat = await response.json();
+      console.log('Direct chat created successfully:', newChat);
+      
+      // Refresh chat list
+      fetchUserChats(user.id);
+      setShowNewDirectChatDialog(false);
+      setSelectedUserId(null);
+      
+      // Buka chat baru yang dibuat
+      if (newChat && newChat.id) {
         setActiveChat({ id: newChat.id, isGroup: false });
         setShowChatRoom(true);
         setActiveView('chats');
-        
-        // Refresh chat list to get the new chat
-        fetchUserChats(user.id);
-      } else {
-        console.error(`Failed to create direct chat: ${response.status} ${response.statusText}`);
-        alert("Failed to create direct chat. Please try again.");
+        fetchMessagesForChat(newChat.id, false);
       }
     } catch (error) {
       console.error('Error creating direct chat:', error);
-      alert("An error occurred. Please try again.");
+      alert('Gagal membuat chat. Silakan coba lagi.');
     } finally {
       setIsCreatingChat(false);
       setShowNewDirectChatDialog(false);
@@ -476,15 +472,20 @@ export default function Chat() {
         
         // Update message list dengan mengganti pesan sementara dengan pesan yang benar dari server
         setDatabaseMessages(prev => prev.map(msg => 
-          msg.id === tempId ? { ...sentMessage, chatId: activeChat.id, isSending: false } : msg
+          msg.id === tempId ? { 
+            ...msg, 
+            id: sentMessage.id,
+            timestamp: sentMessage.createdAt,
+            isSending: false
+          } : msg
         ));
         
-        // Refresh chat list untuk memperbarui lastMessage dan lastMessageTime
+        // Refresh chat list untuk memperbarui pesan terakhir
         fetchUserChats(user.id);
       } else {
-        console.error(`Gagal mengirim pesan: ${response.status}`);
+        console.error(`Failed to send message: ${response.status}`);
         
-        // Update tampilan, tandai pesan sebagai gagal
+        // Tandai pesan sebagai gagal kirim
         setDatabaseMessages(prev => prev.map(msg => 
           msg.id === tempId ? { ...msg, isSending: false, isError: true } : msg
         ));
@@ -493,8 +494,6 @@ export default function Chat() {
       console.error('Error mengirim pesan:', error);
     }
   };
-  
-  // Fungsi sudah dideklarasikan sebelumnya, jadi dihapus untuk menghindari duplikasi
   
   // Handle logout
   const handleLogout = async () => {
@@ -512,343 +511,344 @@ export default function Chat() {
   return (
     <div className="flex flex-col h-screen bg-black text-gray-100">
       {/* Header */}
-      <div className="flex justify-between items-center p-3 bg-[#1a1a1a] border-b border-[#333]">
+      <div className="flex justify-between items-center p-3 bg-[#1a1a1a] border-b border-[#333] h-16">
         <div className="flex items-center">
-          <img src={chatIcon} alt="NXZZ-VComm" className="h-8 w-8 mr-2" />
-          <h1 className="text-xl font-bold text-[#8d9c6b]">NXZZ-VComm</h1>
+          <img src={chatIcon} alt="NXZZ" className="h-8 w-8 mr-2" />
+          <h1 className="text-2xl font-bold text-[#8d9c6b]">NXZZ-VComm</h1>
         </div>
         
-        {user && (
-          <div className="flex items-center space-x-2">
-            <span className="text-sm hidden md:inline">{user.callsign || user.email}</span>
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={user.profileImageUrl} />
-              <AvatarFallback className="bg-[#2d3328] text-[#8d9c6b]">
-                {user.callsign?.substring(0, 2) || user.firstName?.substring(0, 1) || "U"}
-              </AvatarFallback>
-            </Avatar>
-          </div>
-        )}
+        <div className="flex space-x-2">
+          {user && (
+            <div className="flex items-center">
+              <span className="mr-2 text-sm hidden md:inline">{user.callsign || user.firstName}</span>
+              <Avatar className="h-8 w-8 bg-[#2d3328] text-[#8d9c6b]">
+                <AvatarFallback>{user.callsign?.[0] || user.firstName?.[0] || 'U'}</AvatarFallback>
+              </Avatar>
+            </div>
+          )}
+        </div>
       </div>
       
       {/* Main Content */}
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-        {/* Navigation Sidebar */}
-        <div className="md:w-16 bg-[#1a1a1a] flex md:flex-col items-center justify-between p-2 border-r border-[#333]">
-          <div className="flex md:flex-col space-x-3 md:space-x-0 md:space-y-4">
-            <Button
-              variant={activeView === 'chats' ? "default" : "ghost"}
-              size="icon"
-              className={activeView === 'chats' ? "bg-[#2d3328] text-[#8d9c6b]" : "text-gray-500"}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <div className="hidden md:flex flex-col w-16 bg-[#1a1a1a] border-r border-[#333]">
+          <div className="flex flex-col items-center space-y-6 mt-6">
+            <button 
+              className={`p-3 rounded-lg ${activeView === 'chats' ? 'bg-[#2d3328] text-[#8d9c6b]' : 'text-gray-500 hover:bg-[#262626]'}`}
               onClick={handleShowChats}
             >
-              <MessageSquare className="h-5 w-5" />
-            </Button>
+              <MessageSquare className="h-6 w-6" />
+            </button>
             
-            <Button
-              variant={activeView === 'calls' ? "default" : "ghost"}
-              size="icon"
-              className={activeView === 'calls' ? "bg-[#2d3328] text-[#8d9c6b]" : "text-gray-500"}
+            <button 
+              className={`p-3 rounded-lg ${activeView === 'calls' ? 'bg-[#2d3328] text-[#8d9c6b]' : 'text-gray-500 hover:bg-[#262626]'}`}
               onClick={handleShowCalls}
             >
-              <PhoneIcon className="h-5 w-5" />
-            </Button>
+              <PhoneIcon className="h-6 w-6" />
+            </button>
             
-            <Button
-              variant={activeView === 'personnel' ? "default" : "ghost"}
-              size="icon"
-              className={activeView === 'personnel' ? "bg-[#2d3328] text-[#8d9c6b]" : "text-gray-500"}
+            <button 
+              className={`p-3 rounded-lg ${activeView === 'personnel' ? 'bg-[#2d3328] text-[#8d9c6b]' : 'text-gray-500 hover:bg-[#262626]'}`}
               onClick={handleShowPersonnel}
             >
-              <Users className="h-5 w-5" />
-            </Button>
+              <User className="h-6 w-6" />
+            </button>
             
-            <Button
-              variant={activeView === 'config' ? "default" : "ghost"}
-              size="icon"
-              className={activeView === 'config' ? "bg-[#2d3328] text-[#8d9c6b]" : "text-gray-500"}
+            <button 
+              className={`p-3 rounded-lg ${activeView === 'config' ? 'bg-[#2d3328] text-[#8d9c6b]' : 'text-gray-500 hover:bg-[#262626]'}`}
               onClick={handleShowConfig}
             >
-              <Settings className="h-5 w-5" />
-            </Button>
+              <Settings className="h-6 w-6" />
+            </button>
           </div>
           
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-gray-500 md:mt-auto"
-            onClick={handleLogout}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
+          <div className="mt-auto mb-6 flex justify-center">
+            <button 
+              className="p-3 text-red-500 hover:bg-[#2d2121] rounded-lg"
+              onClick={handleLogout}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </button>
+          </div>
         </div>
         
-        {/* Main Panel */}
-        <div className="flex-1 overflow-hidden">
-          {activeView === 'chats' && !showChatRoom && (
-            <div className="h-full flex flex-col">
-              <div className="p-4 flex justify-between items-center">
-                <h2 className="text-xl font-bold text-[#8d9c6b]">Komunikasi</h2>
-                <Button 
-                  size="sm" 
-                  onClick={() => setShowNewChatMenu(true)}
-                  className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  <span className="text-xs">PESAN BARU</span>
-                </Button>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto">
-                <ChatList
-                  activeChat={activeChat}
-                  onSelectChat={handleSelectChat}
-                  onChatDeleted={(id, isGroup) => fetchUserChats(user?.id)}
-                  onClearChatHistory={(id, isGroup) => fetchUserChats(user?.id)}
-                  onCreateGroup={() => setShowNewGroupDialog(true)}
-                />
-              </div>
-            </div>
-          )}
+        {/* Mobile Bottom Navigation */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#1a1a1a] border-t border-[#333] flex justify-around p-2 z-10">
+          <button 
+            className={`p-3 rounded-lg ${activeView === 'chats' ? 'text-[#8d9c6b]' : 'text-gray-500'}`}
+            onClick={handleShowChats}
+          >
+            <MessageSquare className="h-6 w-6" />
+          </button>
           
-          {activeView === 'chats' && showChatRoom && activeChat && (
-            <div className="h-full flex flex-col">
-              {/* Chat Header */}
-              <div className="p-3 border-b border-[#333] bg-[#1a1a1a] flex items-center">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="mr-2"
-                  onClick={handleBackToList}
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                </Button>
-                
-                <div className="flex-1">
-                  <h2 className="text-lg font-semibold text-[#8d9c6b]">
-                    {chats.find(c => c.id === activeChat.id)?.name || `Chat ${activeChat.id}`}
-                  </h2>
-                  <p className="text-xs text-gray-400">
-                    {activeChat.isGroup ? 'Group Chat' : 'Direct Message'}
-                  </p>
-                </div>
-                
-                <div className="flex space-x-2">
-                  {activeChat.isGroup && (
+          <button 
+            className={`p-3 rounded-lg ${activeView === 'calls' ? 'text-[#8d9c6b]' : 'text-gray-500'}`}
+            onClick={handleShowCalls}
+          >
+            <PhoneIcon className="h-6 w-6" />
+          </button>
+          
+          <button 
+            className={`p-3 rounded-lg ${activeView === 'personnel' ? 'text-[#8d9c6b]' : 'text-gray-500'}`}
+            onClick={handleShowPersonnel}
+          >
+            <User className="h-6 w-6" />
+          </button>
+          
+          <button 
+            className={`p-3 rounded-lg ${activeView === 'config' ? 'text-[#8d9c6b]' : 'text-gray-500'}`}
+            onClick={handleShowConfig}
+          >
+            <Settings className="h-6 w-6" />
+          </button>
+        </div>
+        
+        {/* Main View Area */}
+        <div className="flex-1 flex flex-col bg-[#111]">
+          {/* Chat View */}
+          {activeView === 'chats' && (
+            <>
+              {!showChatRoom ? (
+                <div className="flex flex-col h-full">
+                  <div className="flex justify-between items-center p-4 border-b border-[#333]">
+                    <h2 className="text-xl font-semibold text-[#8d9c6b]">Chat</h2>
                     <Button 
-                      variant="ghost" 
-                      size="icon"
-                      onClick={() => setShowGroupInfo(true)}
+                      variant="outline" 
+                      className="bg-[#2d3328] text-[#8d9c6b] border-none hover:bg-[#3d4338]"
+                      onClick={() => setShowNewChatMenu(true)}
                     >
-                      <Info className="h-4 w-4" />
+                      <Plus className="h-5 w-5" />
                     </Button>
+                  </div>
+                  
+                  <div className="flex-1 overflow-y-auto">
+                    <ChatList 
+                      activeChat={activeChat}
+                      onSelectChat={handleSelectChat}
+                      onChatDeleted={(id, isGroup) => {
+                        // Handle chat deletion
+                        console.log(`Delete chat: ${id}, isGroup: ${isGroup}`);
+                        // Refresh chat list
+                        if (user) fetchUserChats(user.id);
+                      }}
+                      onClearChatHistory={(id, isGroup) => {
+                        // Handle clearing chat history
+                        console.log(`Clear chat history: ${id}, isGroup: ${isGroup}`);
+                        // Refresh chat list and messages if this is active chat
+                        if (user) fetchUserChats(user.id);
+                        if (activeChat?.id === id) {
+                          setDatabaseMessages([]);
+                        }
+                      }}
+                      onCreateGroup={() => setShowNewGroupDialog(true)}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col h-full">
+                  {activeChat && (
+                    <ChatRoom 
+                      chatId={activeChat.id} 
+                      isGroup={activeChat.isGroup} 
+                      onBack={handleBackToList}
+                    />
                   )}
                 </div>
-              </div>
-              
-              {/* Messages Area */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {isLoadingMessages ? (
-                  <div className="text-center py-8">
-                    <p className="text-gray-400">Memuat pesan...</p>
-                  </div>
-                ) : databaseMessages.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-gray-400">Belum ada pesan. Mulai percakapan?</p>
-                  </div>
-                ) : (
-                  databaseMessages.map((message) => {
-                    const isCurrentUser = message.senderId === user?.id;
-                    return (
-                      <div 
-                        key={message.id} 
-                        className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div 
-                          className={`max-w-[70%] rounded-lg p-3 ${
-                            isCurrentUser 
-                              ? 'bg-[#2d3328] text-white ml-12' 
-                              : 'bg-[#1a1a1a] text-white mr-12'
-                          }`}
-                        >
-                          {!isCurrentUser && (
-                            <div className="text-xs text-[#8d9c6b] mb-1">
-                              {allUsers.find(u => u.id === message.senderId)?.callsign || `User ${message.senderId}`}
-                            </div>
-                          )}
-                          <div className="text-sm">{message.content}</div>
-                          <div className="text-xs text-gray-500 text-right mt-1">
-                            {new Date(message.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-                <div ref={bottomRef} />
-              </div>
-              
-              {/* Message Input */}
-              <div className="p-3 border-t border-[#333] bg-[#1a1a1a] flex items-center">
-                <Button variant="ghost" size="icon" className="text-gray-400">
-                  <PaperclipIcon className="h-5 w-5" />
-                </Button>
-                
-                <Input
-                  ref={messageInputRef}
-                  placeholder="Ketik pesan..."
-                  className="mx-2 bg-[#0a0a0a] border-[#333]"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey && newMessage.trim()) {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
-                />
-                
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="text-[#8d9c6b]"
-                  disabled={!newMessage.trim()}
-                  onClick={handleSendMessage}
-                >
-                  <SendIcon className="h-5 w-5" />
-                </Button>
+              )}
+            </>
+          )}
+          
+          {/* Call View */}
+          {activeView === 'calls' && (
+            <div className="flex flex-col items-center justify-center h-full">
+              <div className="bg-[#1a1a1a] p-8 rounded-lg shadow-lg">
+                <h2 className="text-xl font-semibold text-[#8d9c6b] mb-4">Fitur Panggilan</h2>
+                <p className="text-gray-400 mb-4">Fitur panggilan sedang dalam pengembangan.</p>
+                <div className="flex justify-center">
+                  <PhoneIcon className="h-24 w-24 text-[#8d9c6b] opacity-50" />
+                </div>
               </div>
             </div>
           )}
           
+          {/* Personnel/Users View */}
           {activeView === 'personnel' && (
-            <div className="h-full flex flex-col">
-              <div className="p-4 border-b border-[#333]">
-                <h2 className="text-xl font-bold text-[#8d9c6b]">Personnel</h2>
-                <p className="text-sm text-gray-400">Daftar personel yang terdaftar dalam sistem</p>
-              </div>
-              
-              <div className="p-4">
+            <div className="flex flex-col h-full">
+              <div className="flex justify-between items-center p-4 border-b border-[#333]">
+                <h2 className="text-xl font-semibold text-[#8d9c6b]">Personel</h2>
                 <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
-                  <Input
+                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
+                  <Input 
+                    className="pl-8 bg-[#262626] border-[#333] text-gray-300 w-[200px]"
                     placeholder="Cari personel..."
-                    className="pl-10 bg-[#1a1a1a] border-[#333]"
+                    value={filterText}
                     onChange={(e) => setFilterText(e.target.value)}
                   />
                 </div>
               </div>
               
-              <div className="flex-1 overflow-y-auto p-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {isLoadingPersonnel ? (
-                    <div className="col-span-full text-center py-8">
-                      <p className="text-gray-400">Memuat daftar personel...</p>
-                    </div>
-                  ) : allUsers.length === 0 ? (
-                    <div className="col-span-full text-center py-8">
-                      <p className="text-gray-400">Tidak ada personel yang terdaftar</p>
-                    </div>
-                  ) : (
-                    allUsers
-                      .filter(p => !filterText || 
-                        p.callsign?.toLowerCase().includes(filterText.toLowerCase()) ||
-                        p.firstName?.toLowerCase().includes(filterText.toLowerCase()) ||
-                        p.lastName?.toLowerCase().includes(filterText.toLowerCase()) ||
-                        p.rank?.toLowerCase().includes(filterText.toLowerCase())
-                      )
+              <div className="flex-1 overflow-y-auto p-2">
+                {isLoadingPersonnel ? (
+                  <div className="flex justify-center items-center h-full">
+                    <p className="text-gray-400">Memuat daftar personel...</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {allUsers
+                      .filter(u => u.id !== user?.id) // Exclude current user
+                      .filter(personnel => {
+                        // Filter berdasarkan input pencarian
+                        if (!filterText) return true;
+                        return (
+                          (personnel.callsign && personnel.callsign.toLowerCase().includes(filterText.toLowerCase())) ||
+                          (personnel.firstName && personnel.firstName.toLowerCase().includes(filterText.toLowerCase())) ||
+                          (personnel.lastName && personnel.lastName.toLowerCase().includes(filterText.toLowerCase())) ||
+                          (personnel.rank && personnel.rank.toLowerCase().includes(filterText.toLowerCase())) ||
+                          (personnel.branch && personnel.branch.toLowerCase().includes(filterText.toLowerCase()))
+                        );
+                      })
                       .map(personnel => (
-                        <div 
-                          key={personnel.id}
-                          className="bg-[#1a1a1a] rounded-lg p-4 border border-[#333] flex flex-col"
-                        >
-                          <div className="flex items-center mb-3">
-                            <Avatar className="h-10 w-10 mr-3">
-                              <AvatarImage src={personnel.profileImageUrl} />
-                              <AvatarFallback className="bg-[#2d3328] text-[#8d9c6b]">
-                                {personnel.callsign?.substring(0, 2) || personnel.firstName?.substring(0, 1) || "P"}
-                              </AvatarFallback>
+                        <div key={personnel.id} className="bg-[#1a1a1a] rounded-lg p-3 border border-[#333] hover:border-[#8d9c6b] transition-colors">
+                          <div className="flex items-start space-x-3">
+                            <Avatar className="h-12 w-12 bg-[#2d3328] text-[#8d9c6b]">
+                              <AvatarFallback>{personnel.callsign?.[0] || personnel.firstName?.[0] || 'U'}</AvatarFallback>
                             </Avatar>
-                            <div>
-                              <h3 className="font-semibold">{personnel.callsign || personnel.firstName}</h3>
-                              <p className="text-xs text-[#8d9c6b]">{personnel.rank || 'Military Personnel'}</p>
+                            <div className="flex-1">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <h3 className="font-semibold text-[#8d9c6b]">{personnel.callsign || "Unnamed"}</h3>
+                                  <p className="text-xs text-gray-400">
+                                    {personnel.rank && <span className="mr-1">{personnel.rank}</span>}
+                                    {personnel.firstName} {personnel.lastName}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {personnel.branch && <span className="mr-1">{personnel.branch}</span>}
+                                    {personnel.nrp && <span>NRP: {personnel.nrp}</span>}
+                                  </p>
+                                </div>
+                                <Badge className="bg-[#2d3328] text-[#8d9c6b]">
+                                  {personnel.status || "Aktif"}
+                                </Badge>
+                              </div>
+                              <div className="flex justify-end mt-2">
+                                <Button 
+                                  size="sm" 
+                                  className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338] mt-2 self-end"
+                                  onClick={() => handleStartDirectChat(personnel.id)}
+                                  disabled={isCreatingChat}
+                                >
+                                  <MessageSquare className="w-4 h-4 mr-1" />
+                                  Chat
+                                </Button>
+                              </div>
                             </div>
                           </div>
-                          
-                          {personnel.id !== user?.id && (
-                            <Button 
-                              size="sm" 
-                              className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338] mt-2 self-end"
-                              onClick={() => handleStartDirectChat(personnel.id)}
-                              disabled={isCreatingChat}
-                            >
-                              <MessageSquare className="w-4 h-4 mr-1" />
-                              <span className="text-xs">CHAT</span>
-                            </Button>
-                          )}
                         </div>
-                      ))
+                      ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {/* Config View */}
+          {activeView === 'config' && (
+            <div className="flex flex-col h-full">
+              <div className="flex justify-between items-center p-4 border-b border-[#333]">
+                <h2 className="text-xl font-semibold text-[#8d9c6b]">Pengaturan</h2>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-4">
+                <div className="bg-[#1a1a1a] rounded-lg p-4 mb-4">
+                  <h3 className="text-lg font-medium text-[#8d9c6b] mb-2">Profil Pengguna</h3>
+                  {user && (
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-4">
+                        <Avatar className="h-16 w-16 bg-[#2d3328] text-[#8d9c6b]">
+                          <AvatarFallback>{user.callsign?.[0] || user.firstName?.[0] || 'U'}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <h4 className="font-semibold text-[#8d9c6b]">{user.callsign}</h4>
+                          <p className="text-sm text-gray-400">
+                            {user.rank} {user.firstName} {user.lastName}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {user.branch} • NRP: {user.nrp}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <Separator className="bg-[#333]" />
+                      
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-400 mb-2">Informasi Kontak</h4>
+                        <p className="text-sm">
+                          <span className="text-gray-500">Email:</span> {user.email || 'Tidak tersedia'}
+                        </p>
+                      </div>
+                    </div>
                   )}
                 </div>
-              </div>
-            </div>
-          )}
-          
-          {activeView === 'calls' && (
-            <div className="h-full flex items-center justify-center">
-              <div className="text-center">
-                <PhoneIcon className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-                <h2 className="text-xl font-bold text-[#8d9c6b] mb-2">Panggilan</h2>
-                <p className="text-gray-400">Fitur panggilan akan segera tersedia</p>
-              </div>
-            </div>
-          )}
-          
-          {activeView === 'config' && (
-            <div className="h-full flex flex-col p-4">
-              <h2 className="text-xl font-bold text-[#8d9c6b] mb-4">Pengaturan</h2>
-              
-              {user && (
-                <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#333]">
-                  <h3 className="font-semibold mb-4">Profil Pengguna</h3>
-                  
-                  <div className="flex items-center mb-4">
-                    <Avatar className="h-16 w-16 mr-4">
-                      <AvatarImage src={user.profileImageUrl} />
-                      <AvatarFallback className="bg-[#2d3328] text-[#8d9c6b] text-xl">
-                        {user.callsign?.substring(0, 2) || user.firstName?.substring(0, 1) || "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                    
-                    <div>
-                      <h4 className="font-bold text-lg">{user.callsign || user.firstName}</h4>
-                      <p className="text-[#8d9c6b]">{user.rank || "Military Personnel"}</p>
-                      <p className="text-sm text-gray-400">{user.email}</p>
-                    </div>
-                  </div>
-                  
-                  <Separator className="my-4 bg-[#333]" />
-                  
+                
+                <div className="bg-[#1a1a1a] rounded-lg p-4 mb-4">
+                  <h3 className="text-lg font-medium text-[#8d9c6b] mb-2">Pengaturan Aplikasi</h3>
                   <div className="space-y-4">
                     <div>
-                      <h4 className="text-sm font-medium mb-1">Status</h4>
-                      <Badge className="bg-green-700 hover:bg-green-800">Online</Badge>
+                      <label className="text-sm text-gray-400 block mb-1">Status</label>
+                      <Select defaultValue="active">
+                        <SelectTrigger className="bg-[#262626] border-[#333] text-gray-300">
+                          <SelectValue placeholder="Pilih status" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#262626] border-[#333] text-gray-300">
+                          <SelectItem value="active">Aktif</SelectItem>
+                          <SelectItem value="busy">Sibuk</SelectItem>
+                          <SelectItem value="away">Tidak di tempat</SelectItem>
+                          <SelectItem value="offline">Offline</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     
                     <div>
-                      <h4 className="text-sm font-medium mb-1">Keamanan</h4>
-                      <Badge className="bg-blue-700 hover:bg-blue-800">End-to-End Encrypted</Badge>
+                      <label className="text-sm text-gray-400 block mb-1">Tema</label>
+                      <Select defaultValue="dark">
+                        <SelectTrigger className="bg-[#262626] border-[#333] text-gray-300">
+                          <SelectValue placeholder="Pilih tema" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#262626] border-[#333] text-gray-300">
+                          <SelectItem value="dark">Gelap (Default)</SelectItem>
+                          <SelectItem value="high-contrast">Kontras Tinggi</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
-                  
+                </div>
+                
+                <div className="bg-[#1a1a1a] rounded-lg p-4 mb-4">
+                  <h3 className="text-lg font-medium text-[#8d9c6b] mb-2">Keamanan</h3>
+                  <Button className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]">
+                    Ubah Kata Sandi
+                  </Button>
+                </div>
+                
+                <div className="bg-[#1a1a1a] rounded-lg p-4 mb-4">
+                  <h3 className="text-lg font-medium text-[#8d9c6b] mb-2">Sesi</h3>
                   <Button 
-                    className="w-full mt-6 bg-[#a01919] hover:bg-[#b02929] text-white"
+                    variant="destructive" 
+                    className="w-full bg-[#3b2828] text-red-400 hover:bg-[#4b3434]"
                     onClick={handleLogout}
                   >
                     Keluar
                   </Button>
                 </div>
-              )}
+                
+                <div className="text-center text-xs text-gray-600 mt-6">
+                  <p>NXZZ-VComm v1.0</p>
+                  <p>© {new Date().getFullYear()} Restricted Military Use</p>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -949,39 +949,40 @@ export default function Chat() {
           <div className="mt-4 space-y-4">
             <div>
               <label className="text-sm mb-1 block">Nama Grup</label>
-              <Input
-                placeholder="Masukkan nama grup..."
+              <Input 
+                className="bg-[#262626] border-[#333] text-gray-300"
+                placeholder="Masukkan nama grup"
                 value={newGroupName}
                 onChange={(e) => setNewGroupName(e.target.value)}
-                className="bg-[#262626] border-[#333]"
               />
             </div>
             
             <div>
               <label className="text-sm mb-1 block">Pilih Anggota</label>
-              <div className="max-h-48 overflow-y-auto bg-[#262626] border border-[#333] rounded-md p-2">
+              <div className="max-h-40 overflow-y-auto bg-[#262626] border border-[#333] rounded-md p-2">
                 {allUsers
                   .filter(u => u.id !== user?.id)
                   .map(user => (
-                    <div key={user.id} className="flex items-center py-2">
-                      <input
-                        type="checkbox"
+                    <div key={user.id} className="flex items-center p-1">
+                      <input 
+                        type="checkbox" 
                         id={`user-${user.id}`}
+                        className="mr-2"
                         checked={selectedUserIds.includes(user.id)}
-                        onChange={() => {
-                          if (selectedUserIds.includes(user.id)) {
-                            setSelectedUserIds(selectedUserIds.filter(id => id !== user.id));
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedUserIds(prev => [...prev, user.id]);
                           } else {
-                            setSelectedUserIds([...selectedUserIds, user.id]);
+                            setSelectedUserIds(prev => prev.filter(id => id !== user.id));
                           }
                         }}
-                        className="mr-2"
                       />
-                      <label htmlFor={`user-${user.id}`} className="flex-1">
+                      <label htmlFor={`user-${user.id}`}>
                         {user.callsign || user.firstName || `User ${user.id}`}
                       </label>
                     </div>
-                  ))}
+                  ))
+                }
               </div>
             </div>
           </div>
@@ -1008,5 +1009,3 @@ export default function Chat() {
     </div>
   );
 }
-
-// Pindahkan state variabel ke dalam komponen utama
