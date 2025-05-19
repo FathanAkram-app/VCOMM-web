@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { 
   MessageSquare, PhoneIcon, Settings, Plus, User, 
-  ArrowLeft, PaperclipIcon, SendIcon, Users, Search
+  ArrowLeft, PaperclipIcon, SendIcon, Users, Search, Info
 } from 'lucide-react';
 import ChatList from '../components/ChatList';
 import chatIcon from '@assets/Icon Chat NXXZ.png';
@@ -15,14 +15,19 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Chat() {
   const [user, setUser] = useState<any>(null);
   const [, navigate] = useLocation();
   const [activeChat, setActiveChat] = useState<{ id: number; isGroup: boolean } | null>(null);
   const [chats, setChats] = useState<any[]>([]);
+  const [databaseMessages, setDatabaseMessages] = useState<any[]>([]);
   const [showChatRoom, setShowChatRoom] = useState(false);
   const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const messageInputRef = useRef<HTMLInputElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
   
   // View management
   const [activeView, setActiveView] = useState<'chats' | 'calls' | 'personnel' | 'config'>('chats');
@@ -30,6 +35,14 @@ export default function Chat() {
   // Personnel state
   const [filterText, setFilterText] = useState("");
   const [isLoadingPersonnel, setIsLoadingPersonnel] = useState(false);
+  
+  // State untuk loading status
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  
+  // State untuk WebSocket
+  const [wsConnected, setWsConnected] = useState(false);
+  const [socket, setSocket] = useState<WebSocket | null>(null);
+  const [lastMessageId, setLastMessageId] = useState<number>(0);
   
   // Dialog states
   const [showNewGroupDialog, setShowNewGroupDialog] = useState(false);
@@ -39,6 +52,18 @@ export default function Chat() {
   const [newGroupName, setNewGroupName] = useState("");
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
   const [isCreatingChat, setIsCreatingChat] = useState(false);
+  
+  // Profile and Group management states
+  const [showUserProfile, setShowUserProfile] = useState(false);
+  const [showGroupInfo, setShowGroupInfo] = useState(false);
+  const [selectedProfileUserId, setSelectedProfileUserId] = useState<number | null>(null);
+  
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // State untuk melacak ID pesan terakhir
+  const lastMessageIdRef = useRef<number | null>(null);
+  const [userScrolled, setUserScrolled] = useState(false);
   
   // Authentication check
   useEffect(() => {

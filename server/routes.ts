@@ -180,12 +180,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Route untuk membuat direct chat
   app.post('/api/direct-chats', isAuthenticated, async (req: AuthRequest, res) => {
     try {
-      // Pastikan kita memiliki user ID yang valid dari request
-      if (!req.user?.id) {
+      // Dalam auth.ts, kita menyimpan user di req.session.user bukan di req.user
+      if (!req.session?.user?.id) {
         return res.status(401).json({ message: "Unauthorized, invalid user ID" });
       }
       
-      const userId = req.user.id;
+      const userId = req.session.user.id;
       const { otherUserId } = req.body;
       
       if (!otherUserId) {
