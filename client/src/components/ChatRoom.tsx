@@ -180,7 +180,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   const messageGroups = groupMessagesByDate(Array.isArray(messages) ? messages : []);
   
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] fixed inset-0 bg-[#171717]">
+    <div className="flex flex-col h-full bg-[#171717]">
       {/* Chat header */}
       <div className="flex items-center px-4 py-3 border-b border-[#333333] bg-[#1a1a1a]">
         <Button onClick={onBack} variant="ghost" size="icon" className="mr-2 text-[#a6c455]">
@@ -213,8 +213,8 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
         </Button>
       </div>
       
-      {/* Chat messages - Add extra bottom padding on mobile for the input area */}
-      <div className="flex-1 overflow-y-auto p-4 pb-24 space-y-6">
+      {/* Messages container with extra padding at bottom to make room for input */}
+      <div className="flex-1 overflow-y-auto p-4 pb-24 md:pb-4 space-y-6">
         {messageGroups.map(group => (
           <div key={group.date} className="space-y-3">
             <div className="flex justify-center">
