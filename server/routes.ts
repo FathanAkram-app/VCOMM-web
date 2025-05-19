@@ -178,6 +178,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to create message" });
     }
   });
+  
+  // Delete conversation endpoint
+  app.delete('/api/conversations/:id', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      const userId = req.session.user.id;
+      
+      if (isNaN(conversationId)) {
+        return res.status(400).json({ message: "Invalid conversation ID" });
+      }
+      
+      // Check if conversation exists
+      const conversation = await storage.getConversation(conversationId);
+      if (!conversation) {
+        return res.status(404).json({ message: "Conversation not found" });
+      }
+      
+      // Only allow creator or admin to delete
+      if (conversation.createdById !== userId) {
+        return res.status(403).json({ message: "Not authorized to delete this conversation" });
+      }
+      
+      // Delete conversation
+      await storage.deleteConversation(conversationId);
+      
+      res.json({ message: "Conversation deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
+      res.status(500).json({ message: "Failed to delete conversation" });
+    }
+  });
+  
+  // Clear chat history endpoint
+  app.post('/api/conversations/:id/clear', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      const userId = req.session.user.id;
+      
+      if (isNaN(conversationId)) {
+        return res.status(400).json({ message: "Invalid conversation ID" });
+      }
+      
+      // Check if conversation exists
+      const conversation = await storage.getConversation(conversationId);
+      if (!conversation) {
+        return res.status(404).json({ message: "Conversation not found" });
+      }
+      
+      // Clear messages
+      await storage.clearConversationMessages(conversationId);
+      
+      res.json({ message: "Chat history cleared successfully" });
+    } catch (error) {
+      console.error("Error clearing chat history:", error);
+      res.status(500).json({ message: "Failed to clear chat history" });
+    }
+  });
 
   // Users route
   app.get('/api/users', isAuthenticated, async (_req, res) => {

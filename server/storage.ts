@@ -30,6 +30,7 @@ export interface IStorage {
   getConversation(id: number): Promise<Conversation | undefined>;
   createConversation(data: InsertConversation): Promise<Conversation>;
   getUserConversations(userId: number): Promise<Conversation[]>;
+  deleteConversation(id: number): Promise<void>;
   
   // Conversation members operations
   addMemberToConversation(data: InsertConversationMember): Promise<ConversationMember>;
@@ -38,6 +39,7 @@ export interface IStorage {
   // Message operations
   createMessage(data: InsertMessage): Promise<Message>;
   getMessagesByConversation(conversationId: number): Promise<Message[]>;
+  clearConversationMessages(conversationId: number): Promise<void>;
 }
 
 // Database storage implementation
@@ -181,6 +183,27 @@ export class DatabaseStorage implements IStorage {
       .from(messages)
       .where(eq(messages.conversationId, conversationId))
       .orderBy(messages.createdAt);
+  }
+  
+  async clearConversationMessages(conversationId: number): Promise<void> {
+    await db
+      .delete(messages)
+      .where(eq(messages.conversationId, conversationId));
+  }
+  
+  async deleteConversation(id: number): Promise<void> {
+    // First delete all messages
+    await this.clearConversationMessages(id);
+    
+    // Then delete all members
+    await db
+      .delete(conversationMembers)
+      .where(eq(conversationMembers.conversationId, id));
+    
+    // Finally delete the conversation
+    await db
+      .delete(conversations)
+      .where(eq(conversations.id, id));
   }
 }
 
@@ -342,6 +365,30 @@ export class MemStorage implements IStorage {
       .sort((a, b) => {
         return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       });
+  }
+  
+  async clearConversationMessages(conversationId: number): Promise<void> {
+    // Filter messages by conversation ID and remove them from the store
+    Array.from(this.messagesStore.entries()).forEach(([id, message]) => {
+      if (message.conversationId === conversationId) {
+        this.messagesStore.delete(id);
+      }
+    });
+  }
+  
+  async deleteConversation(id: number): Promise<void> {
+    // First delete all messages for this conversation
+    await this.clearConversationMessages(id);
+    
+    // Then delete all conversation members
+    Array.from(this.conversationMembersStore.entries()).forEach(([memberId, member]) => {
+      if (member.conversationId === id) {
+        this.conversationMembersStore.delete(memberId);
+      }
+    });
+    
+    // Finally delete the conversation itself
+    this.conversationsStore.delete(id);
   }
 }
 
