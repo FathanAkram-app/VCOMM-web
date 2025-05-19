@@ -53,6 +53,11 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     refetchInterval: 3000, // Polling every 3 seconds
   });
   
+  // Add console log to debug message data
+  useEffect(() => {
+    console.log("Messages data received:", messages);
+  }, [messages]);
+  
   // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
