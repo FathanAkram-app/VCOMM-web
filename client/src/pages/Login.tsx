@@ -1,18 +1,18 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
+import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { Shield, Lock, AlertTriangle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
 // Login validation schema
 const loginSchema = z.object({
-  callsign: z.string().min(1, "Callsign diperlukan"),
-  password: z.string().min(1, "Password diperlukan"),
+  callsign: z.string().min(3, "Callsign minimal 3 karakter"),
+  password: z.string().min(6, "Password minimal 6 karakter"),
 });
 
 type LoginValues = z.infer<typeof loginSchema>;
@@ -33,19 +33,35 @@ export default function Login() {
   const onSubmit = async (values: LoginValues) => {
     setIsLoading(true);
     try {
-      await apiRequest("/api/auth/login", {
+      const response = await fetch("/api/auth/login", {
         method: "POST",
-        body: JSON.stringify(values),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          callsign: values.callsign,
+          password: values.password,
+        }),
       });
-      
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Login gagal");
+      }
+
+      toast({
+        title: "Login Berhasil",
+        description: "Anda dialihkan ke halaman chat.",
+      });
+
       // Redirect to chat on successful login
       setLocation("/chat");
     } catch (error: any) {
       console.error("Login error:", error);
       toast({
         variant: "destructive",
-        title: "Login gagal",
-        description: error.message || "Callsign atau password tidak valid",
+        title: "Login Gagal",
+        description: error.message || "Kredensial tidak valid. Akses ditolak.",
       });
     } finally {
       setIsLoading(false);
@@ -75,7 +91,7 @@ export default function Login() {
         </div>
         
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-6">
             <FormField
               control={form.control}
               name="callsign"
@@ -100,11 +116,17 @@ export default function Login() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="auth-label">PASSWORD</FormLabel>
+                  <div className="flex items-center justify-between">
+                    <FormLabel className="auth-label">SECURITY CODE</FormLabel>
+                    <div className="flex items-center space-x-1 text-[10px] bg-[#3a3a3a] px-2 py-1 rounded text-gray-400">
+                      <Lock className="w-3 h-3" />
+                      <span>ENCRYPTED</span>
+                    </div>
+                  </div>
                   <FormControl>
                     <Input 
                       type="password" 
-                      placeholder="Masukkan password Anda" 
+                      placeholder="Masukkan security code" 
                       className="auth-input" 
                       {...field} 
                     />
@@ -115,7 +137,17 @@ export default function Login() {
             />
             
             <Button type="submit" disabled={isLoading} className="auth-btn mt-6 w-full">
-              {isLoading ? "MENGAUTENTIKASI..." : "LOGIN"}
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <span>AUTHENTICATING...</span>
+                </>
+              ) : (
+                <>
+                  <Shield className="mr-2 h-4 w-4" />
+                  <span>SECURE LOGIN</span>
+                </>
+              )}
             </Button>
           </form>
         </Form>

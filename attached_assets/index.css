@@ -75,7 +75,6 @@
   }
 }
 
-/* Military theme styling */
 .military-button {
   @apply bg-[#5c6249] text-white py-3 font-bold uppercase tracking-wider hover:bg-[#6b7257] transition-colors rounded focus:outline-none focus:ring-2 focus:ring-[#8d9c6b] focus:ring-opacity-50;
 }
@@ -96,18 +95,6 @@
   @apply bg-[#5c6249] p-6 text-center text-white;
 }
 
-.military-title {
-  @apply text-xl font-bold text-[#9eb36b] uppercase;
-}
-
-.military-subtitle {
-  @apply text-sm text-gray-400 uppercase;
-}
-
-.military-logo {
-  @apply w-20 h-20 mx-auto bg-[#3f4433] rounded-full flex items-center justify-center border-4 border-[#5c6249];
-}
-
 .military-tabs {
   @apply grid grid-cols-2 border-b border-[#414438];
 }
@@ -120,77 +107,16 @@
   @apply bg-[#414438] text-white;
 }
 
-.auth-label {
-  @apply text-sm font-medium uppercase text-gray-400;
-}
-
-.auth-input {
+.military-input {
   @apply w-full bg-[#28292a] border border-[#414438] p-3 text-[#e4e6e3] placeholder:text-[#666666] rounded;
 }
 
-.auth-btn {
-  @apply bg-[#5c6249] text-white py-3 font-bold uppercase tracking-wider hover:bg-[#6b7257] transition-colors rounded focus:outline-none focus:ring-2 focus:ring-[#8d9c6b] focus:ring-opacity-50;
-}
-
-.auth-container {
-  @apply bg-[#1f1f1e] border border-[#414438] p-8 rounded-lg w-full max-w-md shadow-lg;
-}
-
 .military-notice {
-  @apply text-[#8d9c6b] text-xs font-bold uppercase;
+  @apply mt-2 p-2 bg-[#28292a] border border-[#414438] text-[#8d9c6b] text-xs rounded;
 }
 
 .military-footer {
   @apply p-3 bg-[#1f1f1e] text-[#8d9c6b] text-xs text-center border-t border-[#414438];
-}
-
-/* Chat interface styling */
-.chat-container {
-  @apply bg-[#1f1f1e] border border-[#414438] rounded-lg;
-}
-
-.chat-header {
-  @apply bg-[#3f4433] p-4 flex items-center justify-between text-white rounded-t-lg;
-}
-
-.chat-footer {
-  @apply bg-[#2a2b23] p-3 flex items-center rounded-b-lg border-t border-[#414438];
-}
-
-.message-input {
-  @apply bg-[#28292a] border border-[#414438] rounded-lg p-3 flex-grow text-white;
-}
-
-.message-bubble {
-  @apply rounded-lg p-3 max-w-[80%] relative;
-}
-
-.message-bubble.sent {
-  @apply bg-[#5c6249] text-white ml-auto;
-}
-
-.message-bubble.received {
-  @apply bg-[#28292a] text-white;
-}
-
-.message-timestamp {
-  @apply text-xs text-gray-400 mt-1;
-}
-
-.chat-list-item {
-  @apply p-3 border-b border-[#414438] hover:bg-[#28292a] cursor-pointer transition-colors;
-}
-
-.chat-list-item.active {
-  @apply bg-[#3f4433];
-}
-
-.chat-list-item-name {
-  @apply text-white font-medium;
-}
-
-.chat-list-item-message {
-  @apply text-gray-400 text-sm truncate;
 }
 
 .custom-scrollbar {
