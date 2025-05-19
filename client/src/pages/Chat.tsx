@@ -101,7 +101,33 @@ export default function Chat() {
       
       let allChats: any[] = [];
       
-      // 1. Fetch direct chats
+      // 1. Fetch all conversations (direct and group chats)
+      try {
+        console.log('Fetching all conversations for user ID:', userId);
+        const conversationsUrl = `/api/conversations`;
+        
+        const conversationsResponse = await fetch(conversationsUrl, {
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json'
+          },
+          cache: 'no-cache'
+        });
+        
+        if (conversationsResponse.ok) {
+          const conversations = await conversationsResponse.json();
+          console.log('All conversations from server:', conversations);
+          
+          if (conversations && Array.isArray(conversations)) {
+            // Save all conversations for processing
+            allChats = [...allChats, ...conversations];
+          }
+        }
+      } catch (conversationsError) {
+        console.error('Error fetching conversations:', conversationsError);
+      }
+      
+      // 2. Fetch direct chats (as backup if conversations API doesn't return all chats)
       try {
         console.log('Fetching direct chats from server for user ID:', userId);
         const directChatUrl = `/api/direct-chats`;
@@ -130,7 +156,12 @@ export default function Chat() {
               otherUserId: chat.otherUserId
             }));
             
-            allChats = [...allChats, ...formattedDirectChats];
+            // Add direct chats that aren't already in the allChats array
+            formattedDirectChats.forEach(directChat => {
+              if (!allChats.some(chat => chat.id === directChat.id)) {
+                allChats.push(directChat);
+              }
+            });
           }
         }
       } catch (directChatError) {
