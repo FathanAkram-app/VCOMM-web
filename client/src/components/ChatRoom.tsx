@@ -47,16 +47,28 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   });
   
   // Fetch messages
-  const { data: messages = [] } = useQuery({
+  const { data: messages = [], refetch: refetchMessages } = useQuery({
     queryKey: [`/api/conversations/${chatId}/messages`],
     enabled: !!chatId && !!user,
     refetchInterval: 3000, // Polling every 3 seconds
+    retry: 3, // Coba lagi jika gagal
+    staleTime: 10 * 1000, // Data dianggap stale setelah 10 detik
   });
+  
+  // Memastikan pesan dimuat ulang saat chat diubah
+  useEffect(() => {
+    if (chatId) {
+      refetchMessages();
+    }
+  }, [chatId, refetchMessages]);
   
   // Add console log to debug message data
   useEffect(() => {
     console.log("Messages data received:", messages);
-  }, [messages]);
+    if (Array.isArray(messages)) {
+      console.log(`Fetched ${messages.length} messages for chat ${chatId}`);
+    }
+  }, [messages, chatId]);
   
   // Send message mutation
   const sendMessageMutation = useMutation({
