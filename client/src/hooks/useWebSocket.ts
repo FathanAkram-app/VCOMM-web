@@ -16,20 +16,36 @@ export function useWebSocket() {
     const wsUrl = `${protocol}//${window.location.host}/ws`;
     console.log("Attempting to connect WebSocket to:", wsUrl);
     
-    const socket = new WebSocket(wsUrl);
+    // Create WebSocket connection with explicit error handling
+    let socket: WebSocket;
+    try {
+      socket = new WebSocket(wsUrl);
+      console.log("WebSocket instance created");
+    } catch (e) {
+      console.error("Error creating WebSocket:", e);
+      setError(`Failed to create WebSocket: ${e}`);
+      return;
+    }
     socketRef.current = socket;
     
     socket.addEventListener('open', () => {
+      console.log("WebSocket connection opened successfully");
       setIsConnected(true);
       setError(null);
       
       // Send authentication message
-      socket.send(JSON.stringify({
-        type: 'auth',
-        payload: {
-          userId: user.id
-        }
-      }));
+      try {
+        const authMessage = JSON.stringify({
+          type: 'auth',
+          payload: {
+            userId: user.id
+          }
+        });
+        console.log("Sending auth message:", authMessage);
+        socket.send(authMessage);
+      } catch (e) {
+        console.error("Error sending auth message:", e);
+      }
     });
     
     socket.addEventListener('error', (event) => {

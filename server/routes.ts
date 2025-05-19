@@ -397,15 +397,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Store active connections
   const clients = new Map<number, AuthenticatedWebSocket>();
   
-  wss.on('connection', (ws: AuthenticatedWebSocket) => {
+  wss.on('connection', (ws: AuthenticatedWebSocket, req) => {
+    console.log("WebSocket connection received");
+    
+    // Log connection status for debugging
+    ws.on('open', () => console.log('WebSocket connection opened'));
+    ws.on('error', (error) => console.error('WebSocket error:', error));
+    ws.on('close', () => console.log('WebSocket connection closed'));
+    
     ws.on('message', async (message) => {
       try {
+        console.log('Received message:', message.toString());
         const data = JSON.parse(message.toString()) as WebSocketMessage;
         
         // Handle authentication message
-        if (data.type === 'auth' || data.type === 'new_message' || data.type === 'user_status' || data.type === 'typing' || data.type === 'read_receipt') {
+        if (data.type === 'auth') {
           const { userId } = data.payload;
           if (userId) {
+            console.log(`User ${userId} authenticated via WebSocket`);
             ws.userId = userId;
             clients.set(userId, ws);
             

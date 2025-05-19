@@ -29,12 +29,15 @@ export function getSession() {
     cookie: {
       httpOnly: true,
       maxAge: sessionTtl,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax'
     },
   });
 }
 
 export const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.session.user) {
+  console.log("Checking authentication:", req.session?.user ? "User found" : "No user in session");
+  if (!req.session || !req.session.user) {
     return res.status(401).json({ message: "Unauthorized" });
   }
   next();
