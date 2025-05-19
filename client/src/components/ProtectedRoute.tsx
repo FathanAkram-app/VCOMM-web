@@ -21,7 +21,10 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     
     if (!isLoading && !isAuthenticated) {
       console.log("Not authenticated, redirecting to login");
-      setLocation("/login");
+      // Gunakan timeout untuk mencegah redirect loop
+      setTimeout(() => {
+        setLocation("/login");
+      }, 100);
     }
   }, [isLoading, isAuthenticated, user, setLocation]);
 
