@@ -14,21 +14,18 @@ interface AuthState {
  */
 export function useAuth(): AuthState & {
   logout: () => Promise<void>;
+  login: (callsign: string, password: string) => Promise<User>;
 } {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
 
-  const { data: user, isLoading: isQueryLoading } = useQuery<User | null>({
+  const { data: user, isLoading: isQueryLoading, refetch } = useQuery<User | null>({
     queryKey: ["/api/auth/user"],
     retry: false,
     staleTime: 1000 * 60 * 5, // 5 menit
-    onError: () => {
-      setIsLoading(false);
-    },
-    onSuccess: () => {
-      setIsLoading(false);
-    }
+    gcTime: 0, // Tidak menyimpan cache, selalu fetch baru
+    initialData: null
   });
 
   // Memperbarui status loading global
@@ -37,6 +34,36 @@ export function useAuth(): AuthState & {
       setIsLoading(false);
     }
   }, [isQueryLoading]);
+
+  // Fungsi untuk login
+  const login = async (callsign: string, password: string): Promise<User> => {
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ callsign, password }),
+        credentials: "include"
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Login gagal");
+      }
+
+      const userData = await response.json();
+      
+      // Refresh user data
+      queryClient.setQueryData(["/api/auth/user"], userData);
+      
+      // Return user data
+      return userData;
+    } catch (error: any) {
+      console.error("Login error:", error);
+      throw error;
+    }
+  };
 
   // Fungsi untuk logout
   const logout = async (): Promise<void> => {
@@ -47,16 +74,16 @@ export function useAuth(): AuthState & {
       });
 
       if (response.ok) {
-        // Invalidate query cache
+        // Clear query cache
         queryClient.clear();
+        
+        // Set user data to null
+        queryClient.setQueryData(["/api/auth/user"], null);
         
         toast({
           title: "Logout berhasil",
           description: "Anda telah keluar dari sistem",
         });
-        
-        // Redirect ke halaman login
-        window.location.href = "/login";
       } else {
         throw new Error("Gagal logout");
       }
@@ -72,8 +99,9 @@ export function useAuth(): AuthState & {
 
   return {
     user: user || null,
-    isLoading: isLoading || isQueryLoading,
+    isLoading: isLoading && isQueryLoading,
     isAuthenticated: !!user,
-    logout
+    logout,
+    login
   };
 }
