@@ -94,20 +94,9 @@ export default function ChatList({
       console.log('Contoh data percakapan dari server:', conversations[0]);
       
       // Filter percakapan berdasarkan aturan:
-      // 1. Grup chat selalu ditampilkan
-      // 2. Direct chat hanya ditampilkan jika ada pesan (lastMessage)
-      const chatsFiltered = conversations.filter((conversation: any) => {
-        // Jika ini percakapan grup, selalu tampilkan
-        if (conversation.isGroup) return true;
-        
-        // Direct chat hanya tampil jika ada pesan
-        // lastMessage bisa berupa string atau object
-        if (typeof conversation.lastMessage === 'string' && conversation.lastMessage) return true;
-        if (conversation.lastMessage?.content) return true;
-        
-        // Jika ini direct chat tanpa pesan, tidak ditampilkan
-        return false;
-      });
+      // 1. Grup chat selalu ditampilkan jika pengguna adalah anggota grup tersebut
+      // 2. Direct chat selalu ditampilkan jika pengguna adalah anggota percakapan tersebut
+      const chatsFiltered = conversations;
       
       const formattedChats = chatsFiltered.map((conversation: any) => ({
         id: conversation.id,

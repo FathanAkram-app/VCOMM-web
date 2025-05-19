@@ -63,15 +63,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: conv.isGroup ? 'group' : 'direct'
         };
         
-        // Pastikan lastMessage ada
-        if (conv.last_message && !conversation.lastMessage) {
-          conversation.lastMessage = conv.last_message;
-        }
-        
-        // Pastikan lastMessageTime ada
-        if (conv.last_message_time && !conversation.lastMessageTime) {
-          conversation.lastMessageTime = conv.last_message_time;
-        }
+        // Kita menggunakan nama kolom yang konsisten: lastMessage dan lastMessageTime
+        // Tidak perlu konversi ini karena schema di database sudah benar
         
         return conversation;
       });
@@ -177,10 +170,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create a new conversation (group or direct chat)
+  // Create a new conversation (group chat saja, direct chat ditangani oleh /api/direct-chats)
   app.post('/api/conversations', isAuthenticated, async (req: AuthRequest, res) => {
     try {
+      if (!req.session?.user?.id) {
+        return res.status(401).json({ message: "Unauthorized, invalid user ID" });
+      }
+      
       const userId = req.session.user.id;
+      
+      // Konversasi yang dibuat melalui API ini harus berupa grup
+      if (req.body.isGroup !== true) {
+        return res.status(400).json({ 
+          message: "This endpoint is for creating group chats only. For direct chats, use /api/direct-chats"
+        });
+      }
+      
       const parseResult = insertConversationSchema.safeParse(req.body);
       
       if (!parseResult.success) {
@@ -190,24 +195,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      console.log(`[API] Creating new group chat "${req.body.name}" by user ${userId}`);
+      
       // Create the conversation
       const conversation = await storage.createConversation({
         ...parseResult.data,
         createdById: userId
       });
       
+      console.log(`[API] Created new group with ID ${conversation.id}`);
+      
       // Add creator as a member
       await storage.addMemberToConversation({
         conversationId: conversation.id,
-        userId: userId
+        userId: userId,
+        role: 'admin'  // Creator is admin by default
       });
       
-      // If it's a direct chat, also add the other user
-      if (!conversation.isGroup && req.body.otherUserId) {
-        await storage.addMemberToConversation({
-          conversationId: conversation.id,
-          userId: req.body.otherUserId
-        });
+      console.log(`[API] Added creator ${userId} as admin to group ${conversation.id}`);
+      
+      // Tambahkan anggota lain jika ada
+      if (req.body.members && Array.isArray(req.body.members)) {
+        for (const memberId of req.body.members) {
+          if (memberId !== userId) {  // Jangan tambahkan creator lagi
+            await storage.addMemberToConversation({
+              conversationId: conversation.id,
+              userId: memberId,
+              role: 'member'
+            });
+            console.log(`[API] Added member ${memberId} to group ${conversation.id}`);
+          }
+        }
       }
       
       res.status(201).json(conversation);
@@ -239,8 +257,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // PERBAIKAN: Cek apakah sudah ada direct chat antara kedua user ini
-      const conversations = await storage.getUserConversations(userId);
-      const directChats = conversations.filter(c => !c.isGroup);
+      const userConversations = await storage.getUserConversations(userId);
+      
+      // Debug
+      console.log(`[API] Checking for existing direct chat between users ${userId} and ${otherUserId}`);
+      console.log(`[API] User ${userId} has ${userConversations.length} conversations`);
+      
+      // Filter untuk direct chats saja
+      const directChats = userConversations.filter(c => c.isGroup === false);
+      console.log(`[API] User ${userId} has ${directChats.length} direct chats`);
       
       let existingChat = null;
       
@@ -250,11 +275,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const members = await storage.getConversationMembers(chat.id);
         const memberIds = members.map(m => m.userId);
         
+        console.log(`[API] Checking conversation ${chat.id} with members: ${memberIds.join(', ')}`);
+        
         // Jika percakapan berisi tepat 2 anggota (user saat ini dan user tujuan)
         if (memberIds.length === 2 && 
             memberIds.includes(userId) && 
             memberIds.includes(otherUserId)) {
           existingChat = chat;
+          console.log(`[API] Found existing conversation ${chat.id} between users ${userId} and ${otherUserId}`);
           break;
         }
       }
@@ -276,8 +304,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: chatName,
         isGroup: false,
         description: null,
-        classification: null
+        classification: null,
+        createdById: userId
       });
+      
+      console.log(`[API] Created new conversation with ID ${conversation.id}`);
       
       // Tambahkan kedua user ke conversation
       await storage.addMemberToConversation({
@@ -285,10 +316,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: userId
       });
       
+      console.log(`[API] Added user ${userId} to conversation ${conversation.id}`);
+      
       await storage.addMemberToConversation({
         conversationId: conversation.id,
         userId: otherUserId
       });
+      
+      console.log(`[API] Added user ${otherUserId} to conversation ${conversation.id}`);
+      console.log(`[API] Direct chat setup complete: ${conversation.id}`);
       
       res.status(201).json(conversation);
     } catch (error) {
