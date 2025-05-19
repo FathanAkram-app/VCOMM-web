@@ -1,45 +1,61 @@
 import {
   users,
-  conversations,
-  conversationMembers,
+  rooms,
+  roomMembers,
+  directChats,
   messages,
   type User,
   type UpsertUser,
-  type Conversation,
-  type InsertConversation,
-  type ConversationMember,
-  type InsertConversationMember,
+  type Room,
+  type InsertRoom,
+  type RoomMember,
+  type InsertRoomMember,
+  type DirectChat,
+  type InsertDirectChat,
   type Message,
   type InsertMessage,
   type RegisterUser,
+  type Conversation,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, or, inArray } from "drizzle-orm";
 
 // Storage interface
 export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
-  getUserByCallsign(callsign: string): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
   getUserByNrp(nrp: string): Promise<User | undefined>;
   createUser(user: RegisterUser): Promise<User>;
   updateUserStatus(userId: number, status: string): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
 
-  // Conversation operations
-  getConversation(id: number): Promise<Conversation | undefined>;
-  createConversation(data: InsertConversation): Promise<Conversation>;
-  getUserConversations(userId: number): Promise<Conversation[]>;
-  deleteConversation(id: number): Promise<void>;
+  // Room operations (group chats)
+  getRoom(id: number): Promise<Room | undefined>;
+  createRoom(data: InsertRoom): Promise<Room>;
+  getUserRooms(userId: number): Promise<Room[]>;
+  deleteRoom(id: number): Promise<void>;
   
-  // Conversation members operations
-  addMemberToConversation(data: InsertConversationMember): Promise<ConversationMember>;
-  getConversationMembers(conversationId: number): Promise<ConversationMember[]>;
+  // Room members operations
+  addMemberToRoom(data: InsertRoomMember): Promise<RoomMember>;
+  getRoomMembers(roomId: number): Promise<RoomMember[]>;
+  
+  // Direct chat operations
+  getDirectChat(id: number): Promise<DirectChat | undefined>;
+  createDirectChat(data: InsertDirectChat): Promise<DirectChat>;
+  getUserDirectChats(userId: number): Promise<DirectChat[]>;
+  deleteDirectChat(id: number): Promise<void>;
+  
+  // Generic conversation operations (works for both rooms and direct chats)
+  getConversation(id: number, isGroup: boolean): Promise<Conversation | undefined>;
+  getUserConversations(userId: number): Promise<Conversation[]>;
   
   // Message operations
   createMessage(data: InsertMessage): Promise<Message>;
-  getMessagesByConversation(conversationId: number): Promise<Message[]>;
-  clearConversationMessages(conversationId: number): Promise<void>;
+  getMessagesByRoom(roomId: number): Promise<Message[]>;
+  getMessagesByDirectChat(directChatId: number): Promise<Message[]>;
+  clearRoomMessages(roomId: number): Promise<void>;
+  clearDirectChatMessages(directChatId: number): Promise<void>;
 }
 
 // Database storage implementation
@@ -50,8 +66,8 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getUserByCallsign(callsign: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.callsign, callsign));
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
     return user;
   }
 
@@ -65,8 +81,6 @@ export class DatabaseStorage implements IStorage {
       .insert(users)
       .values({
         ...userData,
-        createdAt: new Date(),
-        updatedAt: new Date(),
       })
       .returning();
     return user;
@@ -76,8 +90,8 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db
       .update(users)
       .set({ 
-        status, 
-        updatedAt: new Date() 
+        isOnline: status === 'online',
+        lastSeen: new Date()
       })
       .where(eq(users.id, userId))
       .returning();
@@ -88,57 +102,70 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(users);
   }
 
-  // Conversation operations
-  async getConversation(id: number): Promise<Conversation | undefined> {
-    const [conversation] = await db.select().from(conversations).where(eq(conversations.id, id));
-    return conversation;
+  // Room operations (group chats)
+  async getRoom(id: number): Promise<Room | undefined> {
+    const [room] = await db.select().from(rooms).where(eq(rooms.id, id));
+    return room;
   }
 
-  async createConversation(data: InsertConversation): Promise<Conversation> {
-    const [conversation] = await db
-      .insert(conversations)
+  async createRoom(data: InsertRoom): Promise<Room> {
+    const [room] = await db
+      .insert(rooms)
       .values({
         ...data,
-        createdAt: new Date(),
-        updatedAt: new Date(),
       })
       .returning();
-    return conversation;
+    return room;
   }
 
-  async getUserConversations(userId: number): Promise<Conversation[]> {
-    // Find all conversation members for this user
+  async getUserRooms(userId: number): Promise<Room[]> {
+    // Find all room members for this user
     const members = await db
       .select()
-      .from(conversationMembers)
-      .where(eq(conversationMembers.userId, userId));
+      .from(roomMembers)
+      .where(eq(roomMembers.userId, userId));
     
     if (members.length === 0) {
       return [];
     }
     
-    // Get all conversations for those memberships
-    const conversationIds = members.map(member => member.conversationId);
-    const userConversations = await Promise.all(
-      conversationIds.map(async (id) => {
-        const [conv] = await db.select().from(conversations).where(eq(conversations.id, id));
-        return conv;
-      })
-    );
+    // Get all rooms for those memberships
+    const roomIds = members.map(member => member.roomId);
+    if (roomIds.length === 0) return [];
     
-    return userConversations.filter(Boolean) as Conversation[];
+    return await db
+      .select()
+      .from(rooms)
+      .where(inArray(rooms.id, roomIds));
+  }
+  
+  async deleteRoom(id: number): Promise<void> {
+    // First delete all messages referencing this room
+    await db
+      .delete(messages)
+      .where(eq(messages.roomId, id));
+    
+    // Then delete all members
+    await db
+      .delete(roomMembers)
+      .where(eq(roomMembers.roomId, id));
+    
+    // Finally delete the room
+    await db
+      .delete(rooms)
+      .where(eq(rooms.id, id));
   }
 
-  // Conversation members operations
-  async addMemberToConversation(data: InsertConversationMember): Promise<ConversationMember> {
+  // Room members operations
+  async addMemberToRoom(data: InsertRoomMember): Promise<RoomMember> {
     // Check if member already exists
     const [existingMember] = await db
       .select()
-      .from(conversationMembers)
+      .from(roomMembers)
       .where(
         and(
-          eq(conversationMembers.conversationId, data.conversationId),
-          eq(conversationMembers.userId, data.userId)
+          eq(roomMembers.roomId, data.roomId),
+          eq(roomMembers.userId, data.userId)
         )
       );
     
@@ -148,20 +175,105 @@ export class DatabaseStorage implements IStorage {
     
     // Add new member
     const [member] = await db
-      .insert(conversationMembers)
+      .insert(roomMembers)
       .values({
         ...data,
-        joinedAt: new Date(),
       })
       .returning();
     return member;
   }
 
-  async getConversationMembers(conversationId: number): Promise<ConversationMember[]> {
+  async getRoomMembers(roomId: number): Promise<RoomMember[]> {
     return await db
       .select()
-      .from(conversationMembers)
-      .where(eq(conversationMembers.conversationId, conversationId));
+      .from(roomMembers)
+      .where(eq(roomMembers.roomId, roomId));
+  }
+  
+  // Direct chat operations
+  async getDirectChat(id: number): Promise<DirectChat | undefined> {
+    const [directChat] = await db
+      .select()
+      .from(directChats)
+      .where(eq(directChats.id, id));
+    return directChat;
+  }
+  
+  async createDirectChat(data: InsertDirectChat): Promise<DirectChat> {
+    // Check if a chat already exists between these users
+    // In both directions (user1<->user2 and user2<->user1)
+    const [existingChat] = await db
+      .select()
+      .from(directChats)
+      .where(
+        or(
+          and(
+            eq(directChats.user1Id, data.user1Id),
+            eq(directChats.user2Id, data.user2Id)
+          ),
+          and(
+            eq(directChats.user1Id, data.user2Id),
+            eq(directChats.user2Id, data.user1Id)
+          )
+        )
+      );
+    
+    if (existingChat) {
+      return existingChat;
+    }
+    
+    // Create new direct chat
+    const [directChat] = await db
+      .insert(directChats)
+      .values({
+        ...data,
+      })
+      .returning();
+    return directChat;
+  }
+  
+  async getUserDirectChats(userId: number): Promise<DirectChat[]> {
+    return await db
+      .select()
+      .from(directChats)
+      .where(
+        or(
+          eq(directChats.user1Id, userId),
+          eq(directChats.user2Id, userId)
+        )
+      );
+  }
+  
+  async deleteDirectChat(id: number): Promise<void> {
+    // First delete all messages
+    await db
+      .delete(messages)
+      .where(eq(messages.directChatId, id));
+    
+    // Then delete the direct chat
+    await db
+      .delete(directChats)
+      .where(eq(directChats.id, id));
+  }
+  
+  // Generic conversation operations
+  async getConversation(id: number, isGroup: boolean): Promise<Conversation | undefined> {
+    if (isGroup) {
+      return this.getRoom(id);
+    } else {
+      return this.getDirectChat(id);
+    }
+  }
+  
+  async getUserConversations(userId: number): Promise<Conversation[]> {
+    // Get user's rooms
+    const userRooms = await this.getUserRooms(userId);
+    
+    // Get user's direct chats
+    const userDirectChats = await this.getUserDirectChats(userId);
+    
+    // Combine and return
+    return [...userRooms, ...userDirectChats];
   }
 
   // Message operations
@@ -170,40 +282,37 @@ export class DatabaseStorage implements IStorage {
       .insert(messages)
       .values({
         ...data,
-        createdAt: new Date(),
-        updatedAt: new Date(),
       })
       .returning();
     return message;
   }
 
-  async getMessagesByConversation(conversationId: number): Promise<Message[]> {
+  async getMessagesByRoom(roomId: number): Promise<Message[]> {
     return await db
       .select()
       .from(messages)
-      .where(eq(messages.conversationId, conversationId))
+      .where(eq(messages.roomId, roomId))
       .orderBy(messages.createdAt);
   }
   
-  async clearConversationMessages(conversationId: number): Promise<void> {
-    await db
-      .delete(messages)
-      .where(eq(messages.conversationId, conversationId));
+  async getMessagesByDirectChat(directChatId: number): Promise<Message[]> {
+    return await db
+      .select()
+      .from(messages)
+      .where(eq(messages.directChatId, directChatId))
+      .orderBy(messages.createdAt);
   }
   
-  async deleteConversation(id: number): Promise<void> {
-    // First delete all messages
-    await this.clearConversationMessages(id);
-    
-    // Then delete all members
+  async clearRoomMessages(roomId: number): Promise<void> {
     await db
-      .delete(conversationMembers)
-      .where(eq(conversationMembers.conversationId, id));
-    
-    // Finally delete the conversation
+      .delete(messages)
+      .where(eq(messages.roomId, roomId));
+  }
+  
+  async clearDirectChatMessages(directChatId: number): Promise<void> {
     await db
-      .delete(conversations)
-      .where(eq(conversations.id, id));
+      .delete(messages)
+      .where(eq(messages.directChatId, directChatId));
   }
 }
 

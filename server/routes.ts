@@ -3,7 +3,13 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./auth";
-import { WebSocketMessage, insertMessageSchema, insertConversationSchema, insertConversationMemberSchema } from "@shared/schema";
+import { 
+  WebSocketMessage, 
+  insertMessageSchema, 
+  insertRoomSchema, 
+  insertRoomMemberSchema, 
+  insertDirectChatSchema 
+} from "@shared/schema";
 
 interface AuthenticatedWebSocket extends WebSocket {
   userId?: number;
@@ -38,11 +44,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/conversations/:id', isAuthenticated, async (req: AuthRequest, res) => {
     try {
       const conversationId = parseInt(req.params.id);
+      const isGroup = req.query.isGroup === 'true';
+      
       if (isNaN(conversationId)) {
         return res.status(400).json({ message: "Invalid conversation ID" });
       }
       
-      const conversation = await storage.getConversation(conversationId);
+      const conversation = await storage.getConversation(conversationId, isGroup);
       if (!conversation) {
         return res.status(404).json({ message: "Conversation not found" });
       }

@@ -56,10 +56,10 @@ export async function setupAuth(app: express.Express) {
         });
       }
       
-      // Check if callsign already exists
-      const existingUserByCallsign = await storage.getUserByCallsign(parseResult.data.callsign);
-      if (existingUserByCallsign) {
-        return res.status(400).json({ message: "Callsign already taken" });
+      // Check if username already exists
+      const existingUserByUsername = await storage.getUserByUsername(parseResult.data.username);
+      if (existingUserByUsername) {
+        return res.status(400).json({ message: "Username already taken" });
       }
       
       // Check if NRP already exists
@@ -83,7 +83,7 @@ export async function setupAuth(app: express.Express) {
       // Store user in session (auto login)
       req.session.user = {
         id: user.id,
-        callsign: user.callsign,
+        username: user.username,
         rank: user.rank,
         branch: user.branch
       };
@@ -109,10 +109,10 @@ export async function setupAuth(app: express.Express) {
         });
       }
       
-      const { callsign, password } = parseResult.data;
+      const { username, password } = parseResult.data;
       
-      // Find user by callsign
-      const user = await storage.getUserByCallsign(callsign);
+      // Find user by username
+      const user = await storage.getUserByUsername(username);
       if (!user) {
         return res.status(401).json({ message: "Invalid credentials" });
       }

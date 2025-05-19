@@ -1,34 +1,12 @@
-import {
-  pgTable,
-  text,
-  varchar,
-  serial,
-  integer,
-  boolean,
-  timestamp,
-  jsonb,
-  index,
-  unique,
-} from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-
-// Session storage table
-export const sessions = pgTable(
-  "sessions",
-  {
-    sid: varchar("sid").primaryKey(),
-    sess: jsonb("sess").notNull(),
-    expire: timestamp("expire").notNull(),
-  },
-  (table) => [index("IDX_session_expire").on(table.expire)],
-);
 
 // Users table
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
-  password: text("password").notNull(), 
+  password: text("password").notNull(),
   nrp: text("nrp"),                         // ID Personel/NRP
   fullName: text("full_name"),              // Nama lengkap
   rank: text("rank"),                       // Pangkat
@@ -39,11 +17,27 @@ export const users = pgTable("users", {
   lastSeen: timestamp("last_seen").defaultNow(),
 });
 
+export const insertUserSchema = createInsertSchema(users).pick({
+  username: true,
+  password: true,
+  nrp: true,
+  fullName: true,
+  rank: true,
+  branch: true,
+  role: true,
+  deviceInfo: true,
+});
+
 // Rooms (group chats) table
 export const rooms = pgTable("rooms", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  // Hanya gunakan kolom yang benar-benar ada di database
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertRoomSchema = createInsertSchema(rooms).pick({
+  name: true,
 });
 
 // Room members table
@@ -59,6 +53,12 @@ export const roomMembers = pgTable("room_members", {
   };
 });
 
+export const insertRoomMemberSchema = createInsertSchema(roomMembers).pick({
+  roomId: true,
+  userId: true,
+  isAdmin: true,
+});
+
 // Direct chats (one-to-one) table
 export const directChats = pgTable("direct_chats", {
   id: serial("id").primaryKey(),
@@ -69,6 +69,11 @@ export const directChats = pgTable("direct_chats", {
   return {
     userPairUnique: unique().on(table.user1Id, table.user2Id),
   };
+});
+
+export const insertDirectChatSchema = createInsertSchema(directChats).pick({
+  user1Id: true,
+  user2Id: true,
 });
 
 // Messages table (works for both direct chats and room chats)
@@ -89,6 +94,17 @@ export const messages = pgTable("messages", {
   isDeleted: boolean("is_deleted").default(false), // Soft delete flag
 });
 
+export const insertMessageSchema = createInsertSchema(messages).pick({
+  content: true,
+  senderId: true,
+  directChatId: true,
+  roomId: true,
+  replyToId: true,
+  forwardedFromId: true,
+  classificationType: true,
+  expiresAt: true,
+});
+
 // Call history table
 export const calls = pgTable("calls", {
   id: serial("id").primaryKey(),
@@ -102,68 +118,6 @@ export const calls = pgTable("calls", {
   duration: integer("duration"), // in seconds
 });
 
-// Schema types
-export type User = typeof users.$inferSelect;
-export type UpsertUser = typeof users.$inferInsert;
-
-// Create schema for user registration
-export const registerUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-  nrp: true,
-  fullName: true,
-  rank: true,
-  branch: true,
-});
-export type RegisterUser = z.infer<typeof registerUserSchema>;
-
-// Login schema
-export const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
-});
-export type LoginCredentials = z.infer<typeof loginSchema>;
-
-// Room types
-export type Room = typeof rooms.$inferSelect;
-export const insertRoomSchema = createInsertSchema(rooms).pick({
-  name: true,
-});
-export type InsertRoom = z.infer<typeof insertRoomSchema>;
-
-// Room member types
-export type RoomMember = typeof roomMembers.$inferSelect;
-export const insertRoomMemberSchema = createInsertSchema(roomMembers).pick({
-  roomId: true,
-  userId: true,
-  isAdmin: true,
-});
-export type InsertRoomMember = z.infer<typeof insertRoomMemberSchema>;
-
-// Direct chat types
-export type DirectChat = typeof directChats.$inferSelect;
-export const insertDirectChatSchema = createInsertSchema(directChats).pick({
-  user1Id: true,
-  user2Id: true,
-});
-export type InsertDirectChat = z.infer<typeof insertDirectChatSchema>;
-
-// Message types
-export type Message = typeof messages.$inferSelect;
-export const insertMessageSchema = createInsertSchema(messages).pick({
-  content: true,
-  senderId: true,
-  directChatId: true,
-  roomId: true,
-  replyToId: true,
-  forwardedFromId: true,
-  classificationType: true,
-  expiresAt: true,
-});
-export type InsertMessage = z.infer<typeof insertMessageSchema>;
-
-// Call types
-export type Call = typeof calls.$inferSelect;
 export const insertCallSchema = createInsertSchema(calls).pick({
   callerId: true,
   receiverId: true,
@@ -171,30 +125,54 @@ export const insertCallSchema = createInsertSchema(calls).pick({
   type: true,
   status: true,
 });
+
+// Export types for the schema
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+
+export type Room = typeof rooms.$inferSelect;
+export type InsertRoom = z.infer<typeof insertRoomSchema>;
+
+export type RoomMember = typeof roomMembers.$inferSelect;
+export type InsertRoomMember = z.infer<typeof insertRoomMemberSchema>;
+
+export type DirectChat = typeof directChats.$inferSelect;
+export type InsertDirectChat = z.infer<typeof insertDirectChatSchema>;
+
+export type Message = typeof messages.$inferSelect;
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
+
+export type Call = typeof calls.$inferSelect;
 export type InsertCall = z.infer<typeof insertCallSchema>;
 
-// For backward compatibility with existing code
-export type Conversation = Room | DirectChat;
-export type ConversationMember = RoomMember;
+// Frontend types
+export interface ChatListItem {
+  id: number;
+  name: string;
+  lastMessage?: string;
+  lastMessageTime?: string;
+  unreadCount: number;
+  isRoom: boolean;
+  isOnline: boolean;
+  avatar?: string;
+  otherUserId?: number; // ID of the other user in a direct chat
+}
 
-// WebSocket message types
-export type WebSocketMessage = {
-  type: 'new_message' | 'user_status' | 'typing' | 'read_receipt';
-  payload: any;
-};
+export interface ContactWithStatus extends User {
+  isOnline: boolean;
+}
 
-// Military ranks for dropdown select
-export const RANKS = [
-  "PVT", "PFC", "SPC", "CPL", "SGT", "SSG", "SFC", "MSG", "1SG", "SGM", "CSM",
-  "2LT", "1LT", "CPT", "MAJ", "LTC", "COL", "BG", "MG", "LTG", "GEN"
-] as const;
+export interface MessageWithSender extends Message {
+  sender: User;
+}
 
-// Military branches for dropdown select
-export const BRANCHES = [
-  "ARMY", "NAVY", "AIR FORCE", "MARINES", "SPECIAL FORCES", "INTELLIGENCE", "CYBER"
-] as const;
+export interface RoomWithMembers extends Room {
+  members: User[];
+  onlineCount: number;
+}
 
-// Classification levels for messages and conversations
-export const CLASSIFICATION_LEVELS = [
-  "UNCLASSIFIED", "CONFIDENTIAL", "SECRET", "TOP SECRET"
-] as const;
+export interface WebRTCSession {
+  peer: string;
+  type: 'video' | 'audio';
+  initiator: boolean;
+}
