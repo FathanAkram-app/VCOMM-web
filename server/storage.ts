@@ -1,21 +1,17 @@
 import {
   users,
-  rooms,
-  roomMembers,
-  directChats,
+  conversations,
+  conversationMembers,
   messages,
   type User,
   type UpsertUser,
-  type Room,
-  type InsertRoom,
-  type RoomMember,
-  type InsertRoomMember,
-  type DirectChat,
-  type InsertDirectChat,
   type Message,
   type InsertMessage,
   type RegisterUser,
   type Conversation,
+  type InsertConversation,
+  type ConversationMember,
+  type InsertConversationMember,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, inArray } from "drizzle-orm";
@@ -30,32 +26,20 @@ export interface IStorage {
   updateUserStatus(userId: number, status: string): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
 
-  // Room operations (group chats)
-  getRoom(id: number): Promise<Room | undefined>;
-  createRoom(data: InsertRoom): Promise<Room>;
-  getUserRooms(userId: number): Promise<Room[]>;
-  deleteRoom(id: number): Promise<void>;
-  
-  // Room members operations
-  addMemberToRoom(data: InsertRoomMember): Promise<RoomMember>;
-  getRoomMembers(roomId: number): Promise<RoomMember[]>;
-  
-  // Direct chat operations
-  getDirectChat(id: number): Promise<DirectChat | undefined>;
-  createDirectChat(data: InsertDirectChat): Promise<DirectChat>;
-  getUserDirectChats(userId: number): Promise<DirectChat[]>;
-  deleteDirectChat(id: number): Promise<void>;
-  
-  // Generic conversation operations (works for both rooms and direct chats)
-  getConversation(id: number, isGroup: boolean): Promise<Conversation | undefined>;
+  // Conversation operations (both groups and direct)
+  getConversation(id: number): Promise<Conversation | undefined>;
+  createConversation(data: InsertConversation): Promise<Conversation>;
   getUserConversations(userId: number): Promise<Conversation[]>;
+  deleteConversation(id: number): Promise<void>;
+  
+  // Conversation members operations
+  addMemberToConversation(data: InsertConversationMember): Promise<ConversationMember>;
+  getConversationMembers(conversationId: number): Promise<ConversationMember[]>;
   
   // Message operations
   createMessage(data: InsertMessage): Promise<Message>;
-  getMessagesByRoom(roomId: number): Promise<Message[]>;
-  getMessagesByDirectChat(directChatId: number): Promise<Message[]>;
-  clearRoomMessages(roomId: number): Promise<void>;
-  clearDirectChatMessages(directChatId: number): Promise<void>;
+  getMessagesByConversation(conversationId: number): Promise<Message[]>;
+  clearConversationMessages(conversationId: number): Promise<void>;
 }
 
 // Database storage implementation

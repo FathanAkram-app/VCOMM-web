@@ -5,10 +5,9 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./auth";
 import { 
   WebSocketMessage, 
-  insertMessageSchema, 
-  insertRoomSchema, 
-  insertRoomMemberSchema, 
-  insertDirectChatSchema 
+  insertMessageSchema,
+  insertConversationSchema,
+  insertConversationMemberSchema
 } from "@shared/schema";
 
 interface AuthenticatedWebSocket extends WebSocket {

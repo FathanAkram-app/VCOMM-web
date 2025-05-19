@@ -39,67 +39,35 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Rooms (group chats) table
-export const rooms = pgTable("rooms", {
+// Conversations table (both group chats and direct chats)
+export const conversations = pgTable("conversations", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull(),
+  createdById: integer("created_by_id").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  isGroup: boolean("is_group").default(false),
+  name: varchar("name"),
+  description: text("description"),
+  classification: varchar("classification"),
 });
 
-// Room members table
-export const roomMembers = pgTable("room_members", {
+// Conversation members table
+export const conversationMembers = pgTable("conversation_members", {
   id: serial("id").primaryKey(),
-  roomId: integer("room_id").notNull().references(() => rooms.id),
-  userId: integer("user_id").notNull().references(() => users.id),
-  isAdmin: boolean("is_admin").default(false),
+  conversationId: integer("conversation_id").references(() => conversations.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
   joinedAt: timestamp("joined_at").defaultNow(),
-}, (table) => {
-  return {
-    roomUserUnique: unique().on(table.roomId, table.userId),
-  };
 });
 
-// Direct chats (one-to-one) table
-export const directChats = pgTable("direct_chats", {
-  id: serial("id").primaryKey(),
-  user1Id: integer("user1_id").notNull().references(() => users.id),
-  user2Id: integer("user2_id").notNull().references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => {
-  return {
-    userPairUnique: unique().on(table.user1Id, table.user2Id),
-  };
-});
-
-// Messages table (works for both direct chats and room chats)
+// Messages table
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
   content: text("content").notNull(),
   senderId: integer("sender_id").notNull().references(() => users.id),
-  directChatId: integer("direct_chat_id").references(() => directChats.id),
-  roomId: integer("room_id").references(() => rooms.id),
+  conversationId: integer("conversation_id").references(() => conversations.id),
   createdAt: timestamp("created_at").defaultNow(),
-  read: boolean("read").default(false),
-  // Message forwarding
-  replyToId: integer("reply_to_id").references(() => messages.id),
-  forwardedFromId: integer("forwarded_from_id").references(() => messages.id),
-  // Message classification and retention
-  classificationType: text("classification_type").default("routine"), // routine, sensitive, classified
-  expiresAt: timestamp("expires_at"), // When null, message doesn't expire
-  isDeleted: boolean("is_deleted").default(false), // Soft delete flag
-});
-
-// Call history table
-export const calls = pgTable("calls", {
-  id: serial("id").primaryKey(),
-  callerId: integer("caller_id").notNull().references(() => users.id),
-  receiverId: integer("receiver_id").references(() => users.id),
-  roomId: integer("room_id").references(() => rooms.id),
-  type: text("type").notNull(), // 'audio' or 'video'
-  status: text("status").notNull(), // 'missed', 'answered', 'declined'
-  startTime: timestamp("start_time").defaultNow(),
-  endTime: timestamp("end_time"),
-  duration: integer("duration"), // in seconds
+  updatedAt: timestamp("updated_at").defaultNow(),
+  classification: varchar("classification"),
 });
 
 // Schema types
@@ -124,58 +92,33 @@ export const loginSchema = z.object({
 });
 export type LoginCredentials = z.infer<typeof loginSchema>;
 
-// Room types
-export type Room = typeof rooms.$inferSelect;
-export const insertRoomSchema = createInsertSchema(rooms).pick({
-  name: true,
-});
-export type InsertRoom = z.infer<typeof insertRoomSchema>;
-
-// Room member types
-export type RoomMember = typeof roomMembers.$inferSelect;
-export const insertRoomMemberSchema = createInsertSchema(roomMembers).pick({
-  roomId: true,
-  userId: true,
-  isAdmin: true,
-});
-export type InsertRoomMember = z.infer<typeof insertRoomMemberSchema>;
-
-// Direct chat types
-export type DirectChat = typeof directChats.$inferSelect;
-export const insertDirectChatSchema = createInsertSchema(directChats).pick({
-  user1Id: true,
-  user2Id: true,
-});
-export type InsertDirectChat = z.infer<typeof insertDirectChatSchema>;
-
 // Message types
 export type Message = typeof messages.$inferSelect;
 export const insertMessageSchema = createInsertSchema(messages).pick({
   content: true,
   senderId: true,
-  directChatId: true,
-  roomId: true,
-  replyToId: true,
-  forwardedFromId: true,
-  classificationType: true,
-  expiresAt: true,
+  conversationId: true,
+  classification: true,
 });
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 
-// Call types
-export type Call = typeof calls.$inferSelect;
-export const insertCallSchema = createInsertSchema(calls).pick({
-  callerId: true,
-  receiverId: true,
-  roomId: true,
-  type: true,
-  status: true,
+// Create schema for conversations
+export type Conversation = typeof conversations.$inferSelect;
+export const insertConversationSchema = createInsertSchema(conversations).pick({
+  name: true,
+  isGroup: true,
+  description: true,
+  classification: true,
 });
-export type InsertCall = z.infer<typeof insertCallSchema>;
+export type InsertConversation = z.infer<typeof insertConversationSchema>;
 
-// For backward compatibility with existing code
-export type Conversation = Room | DirectChat;
-export type ConversationMember = RoomMember;
+// Conversation members types
+export type ConversationMember = typeof conversationMembers.$inferSelect;
+export const insertConversationMemberSchema = createInsertSchema(conversationMembers).pick({
+  conversationId: true,
+  userId: true,
+});
+export type InsertConversationMember = z.infer<typeof insertConversationMemberSchema>;
 
 // WebSocket message types
 export type WebSocketMessage = {
