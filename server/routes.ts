@@ -16,7 +16,11 @@ interface AuthenticatedWebSocket extends WebSocket {
 
 // Type for requests with authenticated user
 interface AuthRequest extends Request {
-  session: {
+  user?: {
+    id: number;
+    claims?: any;
+  };
+  session?: {
     user?: any;
   }
 }
@@ -27,11 +31,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Auth routes are defined in auth.ts
 
-  // Rooms (group chats) routes
+  // Conversations routes (both group chats and direct chats)
+  app.get('/api/conversations', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user?.id || 0;
+      const conversations = await storage.getUserConversations(userId);
+      
+      // Membuat response yang membedakan percakapan grup vs percakapan langsung
+      const formattedConversations = conversations.map(conv => ({
+        ...conv,
+        type: conv.isGroup ? 'group' : 'direct'
+      }));
+      
+      res.json(formattedConversations);
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+      res.status(500).json({ message: "Failed to fetch conversations" });
+    }
+  });
+  
+  // Specific route untuk group chats (filter dari conversations)
   app.get('/api/rooms', isAuthenticated, async (req: AuthRequest, res) => {
     try {
-      const userId = req.session.user.id;
-      const rooms = await storage.getUserRooms(userId);
+      const userId = req.user?.id || 0;
+      const conversations = await storage.getUserConversations(userId);
+      const rooms = conversations.filter(conv => conv.isGroup);
       res.json(rooms);
     } catch (error) {
       console.error("Error fetching rooms:", error);
@@ -39,11 +63,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Direct chats routes
+  // Specific route untuk direct chats (filter dari conversations)
   app.get('/api/direct-chats', isAuthenticated, async (req: AuthRequest, res) => {
     try {
-      const userId = req.session.user.id;
-      const directChats = await storage.getUserDirectChats(userId);
+      const userId = req.user?.id || 0;
+      const conversations = await storage.getUserConversations(userId);
+      const directChats = conversations.filter(conv => !conv.isGroup);
       res.json(directChats);
     } catch (error) {
       console.error("Error fetching direct chats:", error);
@@ -51,23 +76,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // All conversations (both rooms and direct chats)
-  app.get('/api/conversations', isAuthenticated, async (req: AuthRequest, res) => {
-    try {
-      const userId = req.session.user.id;
-      const conversations = await storage.getUserConversations(userId);
-      res.json(conversations);
-    } catch (error) {
-      console.error("Error fetching conversations:", error);
-      res.status(500).json({ message: "Failed to fetch conversations" });
-    }
-  });
-  
-  // Get single conversation
+  // Get single conversation with members
   app.get('/api/conversations/:id', isAuthenticated, async (req: AuthRequest, res) => {
     try {
       const conversationId = parseInt(req.params.id);
-      const userId = req.session.user.id;
+      const userId = req.user?.id || 0;
       
       if (isNaN(conversationId)) {
         return res.status(400).json({ message: "Invalid conversation ID" });
@@ -113,60 +126,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create a new room (group chat)
-  app.post('/api/rooms', isAuthenticated, async (req: AuthRequest, res) => {
+  // Create a new conversation (group or direct chat)
+  app.post('/api/conversations', isAuthenticated, async (req: AuthRequest, res) => {
     try {
       const userId = req.session.user.id;
-      const parseResult = insertRoomSchema.safeParse(req.body);
+      const parseResult = insertConversationSchema.safeParse(req.body);
       
       if (!parseResult.success) {
         return res.status(400).json({ 
-          message: "Invalid room data",
+          message: "Invalid conversation data",
           errors: parseResult.error.format()
         });
       }
       
-      // Create the room
-      const room = await storage.createRoom({
-        ...parseResult.data
+      // Create the conversation
+      const conversation = await storage.createConversation({
+        ...parseResult.data,
+        createdById: userId
       });
       
       // Add creator as a member
-      await storage.addMemberToRoom({
-        roomId: room.id,
+      await storage.addMemberToConversation({
+        conversationId: conversation.id,
         userId: userId
       });
       
-      res.status(201).json(room);
-    } catch (error) {
-      console.error("Error creating room:", error);
-      res.status(500).json({ message: "Failed to create room" });
-    }
-  });
-  
-  // Create a new direct chat
-  app.post('/api/direct-chats', isAuthenticated, async (req: AuthRequest, res) => {
-    try {
-      const userId = req.session.user.id;
-      const parseResult = insertDirectChatSchema.safeParse(req.body);
-      
-      if (!parseResult.success) {
-        return res.status(400).json({ 
-          message: "Invalid direct chat data",
-          errors: parseResult.error.format()
+      // If it's a direct chat, also add the other user
+      if (!conversation.isGroup && req.body.otherUserId) {
+        await storage.addMemberToConversation({
+          conversationId: conversation.id,
+          userId: req.body.otherUserId
         });
       }
       
-      // Check if a direct chat already exists between these users
-      const otherUserId = parseResult.data.user2Id;
+      res.status(201).json(conversation);
+    } catch (error) {
+      console.error("Error creating conversation:", error);
+      res.status(500).json({ message: "Failed to create conversation" });
+    }
+  });
+  
+  // Route untuk membuat direct chat
+  app.post('/api/direct-chats', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user?.id || 0;
+      const { otherUserId } = req.body;
       
-      // Create the direct chat
-      const directChat = await storage.createDirectChat({
-        user1Id: userId,
-        user2Id: otherUserId
+      if (!otherUserId) {
+        return res.status(400).json({ message: "otherUserId is required" });
+      }
+      
+      // Buat conversation baru dengan tipe direct chat (isGroup=false)
+      const conversation = await storage.createConversation({
+        name: null,
+        isGroup: false,
+        description: null,
+        classification: null
       });
       
-      res.status(201).json(directChat);
+      // Tambahkan kedua user ke conversation
+      await storage.addMemberToConversation({
+        conversationId: conversation.id,
+        userId: userId
+      });
+      
+      await storage.addMemberToConversation({
+        conversationId: conversation.id,
+        userId: otherUserId
+      });
+      
+      res.status(201).json(conversation);
     } catch (error) {
       console.error("Error creating direct chat:", error);
       res.status(500).json({ message: "Failed to create direct chat" });
