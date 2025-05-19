@@ -197,15 +197,30 @@ export class DatabaseStorage implements IStorage {
   
   // Message operations
   async createMessage(data: InsertMessage): Promise<Message> {
-    const [message] = await db
-      .insert(messages)
-      .values({
-        ...data,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      })
-      .returning();
-    return message;
+    // Begin a transaction to ensure data consistency
+    return await db.transaction(async (tx) => {
+      // Insert the new message
+      const [message] = await tx
+        .insert(messages)
+        .values({
+          ...data,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        .returning();
+      
+      // Now update the conversation with the latest message
+      await tx
+        .update(conversations)
+        .set({
+          updatedAt: new Date(),
+          lastMessage: message.content,
+          lastMessageTime: message.createdAt
+        })
+        .where(eq(conversations.id, message.conversationId));
+      
+      return message;
+    });
   }
 
   async getMessagesByConversation(conversationId: number): Promise<Message[]> {
