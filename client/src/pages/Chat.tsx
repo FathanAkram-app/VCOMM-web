@@ -494,58 +494,7 @@ export default function Chat() {
     }
   };
   
-  // Fungsi untuk memulai direct chat dengan pengguna lain
-  const handleStartDirectChat = async (otherUserId: number) => {
-    if (!otherUserId || !user) {
-      console.error('Invalid otherUserId or currentUser');
-      return;
-    }
-
-    try {
-      setIsCreatingChat(true);
-      console.log('Creating new direct chat with user ID:', otherUserId);
-      
-      const response = await fetch('/api/direct-chats', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ 
-          otherUserId: Number(otherUserId) // Pastikan ini adalah number
-        }),
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        console.error(`Failed to create direct chat: ${response.status}`);
-        const errorText = await response.text();
-        console.error('Server response:', errorText);
-        throw new Error(`Failed to create direct chat: ${errorText}`);
-      }
-      
-      const newChat = await response.json();
-      console.log('Direct chat created successfully:', newChat);
-      
-      // Refresh chat list
-      fetchUserChats(user.id);
-      setShowNewDirectChatDialog(false);
-      setSelectedUserId(null);
-      
-      // Buka chat baru yang dibuat
-      if (newChat && newChat.id) {
-        setActiveChat({ id: newChat.id, isGroup: false });
-        setShowChatRoom(true);
-        setActiveView('chats');
-        fetchMessagesForChat(newChat.id, false);
-      }
-    } catch (error) {
-      console.error('Error creating direct chat:', error);
-      alert('Gagal membuat chat. Silakan coba lagi.');
-    } finally {
-      setIsCreatingChat(false);
-    }
-  };
+  // Fungsi sudah dideklarasikan sebelumnya, jadi dihapus untuk menghindari duplikasi
   
   // Handle logout
   const handleLogout = async () => {
