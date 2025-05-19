@@ -161,39 +161,62 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   
   // Group messages by date
   const groupMessagesByDate = (messageData: any[]) => {
-    if (!Array.isArray(messageData)) return [];
+    if (!Array.isArray(messageData)) {
+      console.log("messageData is not an array:", messageData);
+      return [];
+    }
+    
+    console.log("Processing message data for grouping:", messageData);
     
     const groups: { [key: string]: ChatMessage[] } = {};
     
     messageData.forEach((msg: any) => {
-      if (!msg || !msg.timestamp) return;
+      // For messages from the server, createdAt is used instead of timestamp
+      const timestamp = msg.timestamp || msg.createdAt;
+      
+      if (!msg || !timestamp) {
+        console.log("Skipping message without timestamp:", msg);
+        return;
+      }
       
       try {
-        const date = new Date(msg.timestamp);
+        const date = new Date(timestamp);
         const dateStr = date.toDateString();
         
         if (!groups[dateStr]) {
           groups[dateStr] = [];
         }
         
+        // Try to get the sender name from allUsers
+        let senderName = 'Unknown';
+        if (allUsers && Array.isArray(allUsers)) {
+          const sender = allUsers.find(u => u.id === msg.senderId);
+          if (sender) {
+            senderName = sender.callsign || sender.fullName || 'Unknown';
+          }
+        }
+        
         groups[dateStr].push({
           id: msg.id || Math.random(),
           senderId: msg.senderId || 0,
-          senderName: msg.senderName || 'Unknown',
+          senderName: senderName,
           content: msg.content || '',
-          timestamp: msg.timestamp,
+          timestamp: timestamp,
           isRead: msg.isRead || false,
           classification: msg.classification || 'UNCLASSIFIED'
         });
       } catch (e) {
-        console.error('Error processing message:', e);
+        console.error('Error processing message:', e, msg);
       }
     });
     
-    return Object.entries(groups).map(([date, messages]) => ({
+    const result = Object.entries(groups).map(([date, messages]) => ({
       date,
       messages
     }));
+    
+    console.log("Grouped messages:", result);
+    return result;
   };
   
   const messageGroups = groupMessagesByDate(Array.isArray(messages) ? messages : []);
