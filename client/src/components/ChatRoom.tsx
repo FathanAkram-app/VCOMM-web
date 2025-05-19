@@ -80,14 +80,14 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   
   // Update chat data when chat changes
   useEffect(() => {
-    if (chat) {
+    if (chat && typeof chat === 'object') {
       setChatData({
-        id: chat.id,
+        id: chat.id || chatId,
         name: chat.name || 'Chat',
-        isGroup: chat.isGroup || isGroup
+        isGroup: typeof chat.isGroup === 'boolean' ? chat.isGroup : isGroup
       });
     }
-  }, [chat, isGroup]);
+  }, [chat, isGroup, chatId]);
   
   // Auto-scroll to bottom when messages change
   const scrollToBottom = () => {
@@ -121,18 +121,34 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   };
   
   // Group messages by date
-  const groupMessagesByDate = (messages: ChatMessage[]) => {
+  const groupMessagesByDate = (messageData: any[]) => {
+    if (!Array.isArray(messageData)) return [];
+    
     const groups: { [key: string]: ChatMessage[] } = {};
     
-    messages.forEach(msg => {
-      const date = new Date(msg.timestamp);
-      const dateStr = date.toDateString();
+    messageData.forEach((msg: any) => {
+      if (!msg || !msg.timestamp) return;
       
-      if (!groups[dateStr]) {
-        groups[dateStr] = [];
+      try {
+        const date = new Date(msg.timestamp);
+        const dateStr = date.toDateString();
+        
+        if (!groups[dateStr]) {
+          groups[dateStr] = [];
+        }
+        
+        groups[dateStr].push({
+          id: msg.id || Math.random(),
+          senderId: msg.senderId || 0,
+          senderName: msg.senderName || 'Unknown',
+          content: msg.content || '',
+          timestamp: msg.timestamp,
+          isRead: msg.isRead || false,
+          classification: msg.classification || 'UNCLASSIFIED'
+        });
+      } catch (e) {
+        console.error('Error processing message:', e);
       }
-      
-      groups[dateStr].push(msg);
     });
     
     return Object.entries(groups).map(([date, messages]) => ({
@@ -141,7 +157,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     }));
   };
   
-  const messageGroups = groupMessagesByDate(messages);
+  const messageGroups = groupMessagesByDate(messages || []);
   
   return (
     <div className="flex flex-col h-full bg-[#171717]">
