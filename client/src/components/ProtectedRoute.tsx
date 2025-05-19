@@ -1,4 +1,4 @@
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
@@ -11,6 +11,7 @@ interface ProtectedRouteProps {
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
+  const [redirectAttempts, setRedirectAttempts] = useState(0);
   
   // Langsung periksa apakah user ada
   const isAuthenticated = !!user;
@@ -21,10 +22,17 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     
     // Redirect ke login jika tidak terautentikasi dan loading selesai
     if (!isLoading && !isAuthenticated) {
-      console.log("Pengguna tidak terautentikasi, mengarahkan ke login");
-      setLocation("/login");
+      // Jika sudah terlalu banyak mencoba redirect, jangan terus menerus redirect
+      if (redirectAttempts < 3) {
+        console.log("Pengguna tidak terautentikasi, mengarahkan ke login");
+        setRedirectAttempts(prev => prev + 1);
+        setLocation("/login");
+      }
+    } else if (isAuthenticated) {
+      // Reset counter jika autentikasi berhasil
+      setRedirectAttempts(0);
     }
-  }, [isLoading, isAuthenticated, user, setLocation]);
+  }, [isLoading, isAuthenticated, user, setLocation, redirectAttempts]);
 
   if (isLoading) {
     return (
@@ -37,6 +45,6 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  // Tampilkan konten halaman jika sudah terautentikasi
+  // Jika sudah terautentikasi ATAU terlalu banyak percobaan redirect, tampilkan konten
   return <>{children}</>;
 }

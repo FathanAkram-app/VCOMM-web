@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '../hooks/useAuth';
 import ChatRoom from '../components/ChatRoom';
 
-export default function SimpleViewFixed() {
+export default function Chat() {
   const [user, setUser] = useState<any>(null);
   const [, navigate] = useLocation();
   const [activeChat, setActiveChat] = useState<{ id: number; isRoom: boolean } | null>(null);
