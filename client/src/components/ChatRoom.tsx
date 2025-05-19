@@ -79,17 +79,35 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     }
   });
   
+  // Fetch other user data when chat changes (for direct chats)
+  const { data: otherUserData } = useQuery({
+    queryKey: [`/api/all-users`],
+    enabled: !!user && !isGroup,
+  });
+
   // Update chat data when chat changes
   useEffect(() => {
     if (chat && typeof chat === 'object') {
       const chatObj = chat as Conversation;
+      
+      // For direct chats, try to get the other user's name
+      let chatName = chatObj.name || 'Chat';
+      
+      if (!isGroup && otherUserData && Array.isArray(otherUserData)) {
+        // Try to find the other user in the conversation
+        const otherUser = otherUserData.find(u => u.id !== user?.id);
+        if (otherUser) {
+          chatName = otherUser.callsign || otherUser.firstName || chatName;
+        }
+      }
+      
       setChatData({
         id: chatObj.id || chatId,
-        name: chatObj.name || 'Chat',
+        name: chatName,
         isGroup: typeof chatObj.isGroup === 'boolean' ? chatObj.isGroup : isGroup
       });
     }
-  }, [chat, isGroup, chatId]);
+  }, [chat, isGroup, chatId, otherUserData, user?.id]);
   
   // Auto-scroll to bottom when messages change
   const scrollToBottom = () => {
@@ -162,7 +180,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   const messageGroups = groupMessagesByDate(Array.isArray(messages) ? messages : []);
   
   return (
-    <div className="flex flex-col h-full bg-[#171717]">
+    <div className="flex flex-col h-[calc(100vh-4rem)] fixed inset-0 bg-[#171717]">
       {/* Chat header */}
       <div className="flex items-center px-4 py-3 border-b border-[#333333] bg-[#1a1a1a]">
         <Button onClick={onBack} variant="ghost" size="icon" className="mr-2 text-[#a6c455]">
@@ -177,14 +195,14 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
               <span className="text-white text-xs font-semibold">G</span>
             ) : (
               <span className="text-white text-xs font-semibold">
-                {chatData?.name?.substring(0, 2).toUpperCase() || 'U'}
+                {chatData?.name?.charAt(0).toUpperCase() || 'U'}
               </span>
             )}
           </div>
         </div>
         
         <div className="ml-3 flex-1">
-          <h3 className="text-white font-medium truncate">{chatData?.name || 'Chat'}</h3>
+          <h3 className="text-[#9bb26b] font-medium truncate">{chatData?.name || 'Chat'}</h3>
           <p className="text-gray-400 text-xs">
             {isGroup ? 'Group chat' : 'Direct message'}
           </p>
@@ -195,8 +213,8 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
         </Button>
       </div>
       
-      {/* Chat messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+      {/* Chat messages - Add extra bottom padding on mobile for the input area */}
+      <div className="flex-1 overflow-y-auto p-4 pb-24 space-y-6">
         {messageGroups.map(group => (
           <div key={group.date} className="space-y-3">
             <div className="flex justify-center">
