@@ -14,6 +14,7 @@ import {
   type InsertConversationMember,
 } from "@shared/schema";
 import { db } from "./db";
+import { sql } from "drizzle-orm";
 import { eq, and, or, inArray, desc } from "drizzle-orm";
 
 // Storage interface
@@ -197,29 +198,26 @@ export class DatabaseStorage implements IStorage {
   
   // Message operations
   async createMessage(data: InsertMessage): Promise<Message> {
-    // Begin a transaction to ensure data consistency
-    return await db.transaction(async (tx) => {
-      // Insert the new message
-      const [message] = await tx
-        .insert(messages)
-        .values({
-          ...data,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        })
-        .returning();
-      
-      // Now update the conversation with the latest message using raw SQL untuk mengatasi TypeScript errors
-      await tx.execute(
-        sql`UPDATE conversations 
-            SET updated_at = NOW(), 
-                last_message = ${message.content}, 
-                last_message_time = ${new Date()} 
-            WHERE id = ${message.conversationId}`
-      );
-      
-      return message;
-    });
+    // Insert the new message
+    const [message] = await db
+      .insert(messages)
+      .values({
+        ...data,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    
+    // Now update the conversation with the latest message
+    await db.execute(
+      sql`UPDATE conversations 
+          SET updated_at = NOW(), 
+              last_message = ${message.content}, 
+              last_message_time = NOW() 
+          WHERE id = ${message.conversationId}`
+    );
+    
+    return message;
   }
 
   async getMessagesByConversation(conversationId: number): Promise<Message[]> {
