@@ -54,24 +54,38 @@ export default function Chat() {
   const [searchQuery, setSearchQuery] = useState("");
   
   useEffect(() => {
-    // Load user data from localStorage
-    const userData = localStorage.getItem('currentUser');
-    if (userData) {
+    // Langsung periksa session/autentikasi dari server
+    async function checkAuth() {
       try {
-        const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
+        const response = await fetch('/api/auth/user', {
+          credentials: 'include'
+        });
         
-        // Load chats data
-        fetchUserChats(parsedUser.id);
-        fetchAllUsers();
-        
-        // WebSocket dinonaktifkan, menggunakan polling sebagai alternatif
-        console.log("ℹ️ WebSocket dinonaktifkan, menggunakan polling untuk update chat");
+        if (response.ok) {
+          const userData = await response.json();
+          console.log("User data from session:", userData);
+          setUser(userData);
+          
+          // Load chats data
+          fetchUserChats(userData.id);
+          fetchAllUsers();
+          
+          // Simpan user ke localStorage untuk backup
+          localStorage.setItem('currentUser', JSON.stringify(userData));
+          
+          // WebSocket dinonaktifkan, menggunakan polling sebagai alternatif
+          console.log("ℹ️ WebSocket dinonaktifkan, menggunakan polling untuk update chat");
+        } else {
+          console.error('Failed to get user session, redirecting to login');
+          window.location.href = '/login';
+        }
       } catch (error) {
-        console.error('Error parsing user data:', error);
-        localStorage.removeItem('currentUser');
+        console.error('Error checking authentication:', error);
+        window.location.href = '/login';
       }
     }
+    
+    checkAuth();
     
     // Cleanup WebSocket pada unmount
     return () => {

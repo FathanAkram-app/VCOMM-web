@@ -31,7 +31,8 @@ export function getSession() {
       maxAge: sessionTtl,
       // Disable secure for development
       secure: false,
-      sameSite: 'lax'
+      sameSite: 'lax',
+      path: '/'
     },
   });
 }
