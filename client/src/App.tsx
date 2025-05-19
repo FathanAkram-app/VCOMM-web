@@ -1,34 +1,56 @@
-import { Switch, Route, useLocation, Redirect } from "wouter";
-import { ReactNode, useEffect } from "react";
+import { Switch, Route } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
-import { useAuth } from "@/hooks/useAuth";
+import React, { useState, useEffect } from "react";
 
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import Chat from "@/pages/Chat";
 import NotFound from "@/pages/not-found";
-import ProtectedRoute from "@/components/ProtectedRoute";
 
-// Komponen untuk redirect berdasarkan status otentikasi
-function AuthenticatedRedirect() {
-  const { isAuthenticated, isLoading } = useAuth();
-  const [, setLocation] = useLocation();
+// Komponen sederhana untuk mengecek login
+function AuthCheck({ children }: { children: React.ReactNode }) {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    if (!isLoading) {
-      if (isAuthenticated) {
-        console.log("User terautentikasi, mengarahkan ke /chat");
-        setLocation("/chat");
-      } else {
-        console.log("User tidak terautentikasi, mengarahkan ke /login");
-        setLocation("/login");
+    async function checkLogin() {
+      try {
+        const response = await fetch('/api/auth/user', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          setIsLoggedIn(true);
+        } else {
+          setIsLoggedIn(false);
+          // Redirect to login if needed
+          window.location.href = '/login';
+        }
+      } catch (error) {
+        console.error('Error checking login status:', error);
+        setIsLoggedIn(false);
+      } finally {
+        setIsLoading(false);
       }
     }
-  }, [isAuthenticated, isLoading, setLocation]);
+    
+    checkLogin();
+  }, []);
   
-  return null;
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#171717]">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-10 h-10 border-4 border-[#8d9c6b] border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-lg font-medium text-[#8d9c6b]">AUTHENTICATING...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  return isLoggedIn ? children : null;
 }
 
 function Router() {
@@ -37,12 +59,12 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/chat">
-        <ProtectedRoute>
+        <AuthCheck>
           <Chat />
-        </ProtectedRoute>
+        </AuthCheck>
       </Route>
       <Route path="/">
-        <AuthenticatedRedirect />
+        <Login />
       </Route>
       <Route component={NotFound} />
     </Switch>
