@@ -255,12 +255,12 @@ export default function Chat() {
       // 1. Ambil direct chats
       try {
         console.log('Fetching direct chats from server for user ID:', userId);
-        const directChatUrl = `/api/chat/direct-chats/user/${userId}`;
+        const directChatUrl = `/api/direct-chats`;
         console.log(`Direct chat API URL: ${directChatUrl}`);
         
         const directChatsResponse = await fetch(directChatUrl, {
+          credentials: 'include',
           headers: {
-            'Authorization': `Bearer ${userId}`,
             'Accept': 'application/json'
           },
           cache: 'no-cache'
@@ -291,12 +291,12 @@ export default function Chat() {
       // 2. Ambil group chats/rooms
       try {
         console.log('Fetching group chats/rooms for user ID:', userId);
-        const roomsUrl = `/api/rooms/user/${userId}`;
+        const roomsUrl = `/api/rooms`;
         console.log(`Rooms API URL: ${roomsUrl}`);
         
         const roomsResponse = await fetch(roomsUrl, {
+          credentials: 'include',
           headers: {
-            'Authorization': `Bearer ${userId}`,
             'Accept': 'application/json'
           },
           cache: 'no-cache'
