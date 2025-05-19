@@ -522,7 +522,7 @@ export default function Chat() {
             <div className="flex items-center">
               <span className="mr-2 text-sm hidden md:inline">{user.callsign || user.firstName}</span>
               <Avatar className="h-8 w-8 bg-[#2d3328] text-[#8d9c6b]">
-                <AvatarFallback>{user.callsign?.[0] || user.firstName?.[0] || 'U'}</AvatarFallback>
+                <AvatarFallback>{user.callsign ? user.callsign[0].toUpperCase() : (user.firstName ? user.firstName[0].toUpperCase() : 'U')}</AvatarFallback>
               </Avatar>
             </div>
           )}
@@ -714,7 +714,7 @@ export default function Chat() {
                         <div key={personnel.id} className="bg-[#1a1a1a] rounded-lg p-3 border border-[#333] hover:border-[#8d9c6b] transition-colors">
                           <div className="flex items-start space-x-3">
                             <Avatar className="h-12 w-12 bg-[#2d3328] text-[#8d9c6b]">
-                              <AvatarFallback>{personnel.callsign?.[0] || personnel.firstName?.[0] || 'U'}</AvatarFallback>
+                              <AvatarFallback>{personnel.callsign ? personnel.callsign[0].toUpperCase() : (personnel.firstName ? personnel.firstName[0].toUpperCase() : 'U')}</AvatarFallback>
                             </Avatar>
                             <div className="flex-1">
                               <div className="flex justify-between items-start">
