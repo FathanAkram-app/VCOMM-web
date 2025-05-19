@@ -12,14 +12,19 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
   
-  // Langsung periksa apakah user ada, bukan menggunakan isAuthenticated
+  // Langsung periksa apakah user ada
   const isAuthenticated = !!user;
 
-  // Hilangkan efek redirect otomatis, biarkan user klik tombol login manual
   useEffect(() => {
     // Debug status autentikasi
     console.log("ProtectedRoute status:", { isLoading, isAuthenticated, user });
-  }, [isLoading, isAuthenticated, user]);
+    
+    // Redirect ke login jika tidak terautentikasi dan loading selesai
+    if (!isLoading && !isAuthenticated) {
+      console.log("Pengguna tidak terautentikasi, mengarahkan ke login");
+      setLocation("/login");
+    }
+  }, [isLoading, isAuthenticated, user, setLocation]);
 
   if (isLoading) {
     return (
@@ -27,23 +32,6 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
         <div className="flex flex-col items-center space-y-4">
           <Loader2 className="w-10 h-10 text-[#8d9c6b] animate-spin" />
           <p className="text-lg font-medium text-[#8d9c6b]">AUTHENTICATING...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated && !isLoading) {
-    // Tampilkan tombol login manual alih-alih redirect otomatis
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#171717]">
-        <div className="flex flex-col items-center space-y-4 p-8 bg-[#222222] rounded-lg">
-          <h1 className="text-[#a6c455] text-xl font-bold">Military Communications</h1>
-          <p className="text-white">You need to log in to use this application.</p>
-          <Button 
-            onClick={() => setLocation("/login")} 
-            className="bg-[#4d5d30] hover:bg-[#5a6b38] text-white py-2 px-4 rounded">
-            Back to Login
-          </Button>
         </div>
       </div>
     );
