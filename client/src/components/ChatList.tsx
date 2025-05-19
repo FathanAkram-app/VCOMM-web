@@ -136,6 +136,12 @@ export default function ChatList({
     );
   }
   
+  // Dapatkan data pengguna untuk mengubah nama chat - PINDAHKAN HOOK KE ATAS
+  const { data: allUsers } = useQuery({
+    queryKey: ['/api/all-users'],
+    enabled: !!user,
+  });
+  
   // Deduplikasi chat items
   // Pertama, ambil chat group
   const groupChats = chatItems.filter(chat => chat.isGroup);
@@ -144,15 +150,9 @@ export default function ChatList({
   const uniqueUserNames = new Set();
   const uniqueDirectChats = [];
   
-  // Dapatkan data pengguna untuk mengubah nama chat
-  const { data: allUsers } = useQuery({
-    queryKey: ['/api/all-users'],
-    enabled: !!user,
-  });
-  
   // Fungsi untuk mengubah format nama chat
   const getPartnerName = (chatName: string) => {
-    if (!chatName.startsWith('Direct Chat') || !user || !allUsers) return chatName;
+    if (!chatName || !chatName.startsWith('Direct Chat') || !user || !allUsers) return chatName || 'Chat';
     
     // Extract ID dari format "Direct Chat X-Y"
     const match = chatName.match(/Direct Chat (\d+)-(\d+)/);
