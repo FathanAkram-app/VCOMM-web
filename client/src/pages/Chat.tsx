@@ -952,7 +952,7 @@ export default function SimpleViewFixed() {
             {/* Chat List */}
             <div className="flex-1 overflow-y-auto bg-[#121212]">
               {chats.length > 0 ? (
-                <WhatsAppStyleChatList 
+                <ChatList 
                   chats={chats} 
                   onSelectChat={handleSelectChat}
                   onChatDeleted={handleDeleteChat}
@@ -1067,14 +1067,28 @@ ${dummyMembers.filter(m => !m.isAdmin).map(m =>
                     </div>
                   </div>
                 ) : (
-                  <MessageList 
-                    messages={databaseMessages.map(msg => ({
-                      ...msg,
-                      // Fix untuk memastikan timestamp selalu valid
-                      timestamp: msg.timestamp || new Date().toISOString()
-                    }))} 
-                    currentUserId={user?.id} 
-                  />
+                  <div className="flex flex-col gap-2 p-4">
+                    {databaseMessages.map(msg => (
+                      <div 
+                        key={msg.id}
+                        className={`flex ${msg.senderId === user?.id ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div 
+                          className={`max-w-[85%] rounded-lg p-3 ${
+                            msg.senderId === user?.id 
+                              ? 'bg-[#35402b] text-white' 
+                              : 'bg-[#1a1a1a] text-[#d3dfbb] border border-[#35402b]'
+                          }`}
+                        >
+                          <div className="text-sm font-medium mb-1">{msg.senderName || 'Unknown'}</div>
+                          <div>{msg.content}</div>
+                          <div className="text-xs opacity-70 text-right mt-1">
+                            {new Date(msg.timestamp || new Date()).toLocaleTimeString()}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
                 
                 {/* Empty div for scrolling to bottom */}
