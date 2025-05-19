@@ -953,10 +953,11 @@ export default function SimpleViewFixed() {
             <div className="flex-1 overflow-y-auto bg-[#121212]">
               {chats.length > 0 ? (
                 <ChatList 
-                  chats={chats} 
+                  activeChat={activeChat}
                   onSelectChat={handleSelectChat}
                   onChatDeleted={handleDeleteChat}
                   onClearChatHistory={handleClearChatHistory}
+                  onCreateGroup={() => setShowNewChatMenu(true)}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-[#8d9c6b]">
@@ -1380,7 +1381,7 @@ ${dummyMembers.filter(m => !m.isAdmin).map(m =>
           variant="ghost" 
           className={`flex-1 flex flex-col items-center py-2 ${activeView === 'personnel' ? 'text-[#8d9c6b]' : 'text-gray-500'}`}
         >
-          <UsersIcon className="h-5 w-5 mb-1" />
+          <Users className="h-5 w-5 mb-1" />
           <span className="text-xs">PERSONNEL</span>
         </Button>
         
