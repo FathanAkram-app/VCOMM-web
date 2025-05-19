@@ -678,15 +678,31 @@ export default function SimpleViewFixed() {
   };
   
   // Function to handle app logout
-  const handleLogout = () => {
-    // Hapus data user dari localStorage
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userChats');
-    localStorage.removeItem('userMessages');
-    
-    // Redirect ke halaman login
-    window.location.href = '/';
+  const handleLogout = async () => {
+    try {
+      // Panggil API logout
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        console.log('Logout berhasil');
+        
+        // Hapus data user dari localStorage
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userChats');
+        localStorage.removeItem('userMessages');
+        
+        // Redirect ke halaman login menggunakan wouter
+        navigate('/login');
+      } else {
+        console.error('Gagal logout');
+      }
+    } catch (error) {
+      console.error('Error saat logout:', error);
+    }
   };
   
   // Function to go back to chat list from chat room
