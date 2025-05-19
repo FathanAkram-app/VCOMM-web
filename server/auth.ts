@@ -24,12 +24,13 @@ export function getSession() {
   return session({
     secret: process.env.SESSION_SECRET || 'vcomm-military-secret-key',
     store: sessionStore,
-    resave: false,
-    saveUninitialized: false,
+    resave: true,
+    saveUninitialized: true,
     cookie: {
       httpOnly: true,
       maxAge: sessionTtl,
-      secure: process.env.NODE_ENV === 'production',
+      // Disable secure for development
+      secure: false,
       sameSite: 'lax'
     },
   });

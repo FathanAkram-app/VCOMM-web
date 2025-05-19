@@ -24,14 +24,8 @@ export function useAuth(): AuthState & {
     queryKey: ["/api/auth/user"],
     retry: false,
     staleTime: 0, // Tidak menyimpan cache, selalu fetch baru
-    gcTime: 0, 
-    refetchOnWindowFocus: true, // Refresh data ketika window aktif kembali
-    onError: () => {
-      console.log("Error fetching user data");
-    },
-    onSuccess: (data) => {
-      console.log("User data fetched successfully:", data);
-    }
+    gcTime: 0,
+    refetchOnWindowFocus: true // Refresh data ketika window aktif kembali
   });
 
   // Memperbarui status loading global
