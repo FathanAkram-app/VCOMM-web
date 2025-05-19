@@ -144,9 +144,36 @@ export default function ChatList({
   const uniqueUserNames = new Set();
   const uniqueDirectChats = [];
   
+  // Dapatkan data pengguna untuk mengubah nama chat
+  const { data: allUsers } = useQuery({
+    queryKey: ['/api/all-users'],
+    enabled: !!user,
+  });
+  
+  // Fungsi untuk mengubah format nama chat
+  const getPartnerName = (chatName: string) => {
+    if (!chatName.startsWith('Direct Chat') || !user || !allUsers) return chatName;
+    
+    // Extract ID dari format "Direct Chat X-Y"
+    const match = chatName.match(/Direct Chat (\d+)-(\d+)/);
+    if (!match) return chatName;
+    
+    const [_, id1, id2] = match;
+    const myId = user.id;
+    const partnerId = parseInt(id1) === myId ? parseInt(id2) : parseInt(id1);
+    
+    // Cari pengguna berdasarkan ID
+    const partner = allUsers.find((u: any) => u.id === partnerId);
+    return partner?.callsign || partner?.fullName || chatName;
+  };
+  
   // Filter direct chats
   chatItems.filter(chat => !chat.isGroup).forEach(chat => {
-    const lowerName = chat.name?.toLowerCase();
+    // Ubah nama sebelum deduplikasi
+    const chatName = getPartnerName(chat.name || '');
+    chat.name = chatName;
+    
+    const lowerName = chatName.toLowerCase();
     if (lowerName && !uniqueUserNames.has(lowerName)) {
       uniqueUserNames.add(lowerName);
       uniqueDirectChats.push(chat);
