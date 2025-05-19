@@ -238,9 +238,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Other user not found" });
       }
       
-      // Buat conversation baru dengan tipe direct chat (isGroup=false)
+      // PERBAIKAN: Cek apakah sudah ada direct chat antara kedua user ini
+      const conversations = await storage.getUserConversations(userId);
+      const directChats = conversations.filter(c => !c.isGroup);
+      
+      let existingChat = null;
+      
+      // Untuk setiap direct chat yang ada
+      for (const chat of directChats) {
+        // Ambil anggota percakapan
+        const members = await storage.getConversationMembers(chat.id);
+        const memberIds = members.map(m => m.userId);
+        
+        // Jika percakapan berisi tepat 2 anggota (user saat ini dan user tujuan)
+        if (memberIds.length === 2 && 
+            memberIds.includes(userId) && 
+            memberIds.includes(otherUserId)) {
+          existingChat = chat;
+          break;
+        }
+      }
+      
+      // Jika sudah ada, gunakan percakapan yang sudah ada
+      if (existingChat) {
+        console.log(`[API] Using existing direct chat ${existingChat.id} between users ${userId} and ${otherUserId}`);
+        return res.status(200).json(existingChat);
+      }
+      
+      console.log(`[API] Creating new direct chat between users ${userId} and ${otherUserId}`);
+      
+      // Jika belum ada, buat conversation baru dengan tipe direct chat (isGroup=false)
+      // Urutkan ID pengguna agar formatnya konsisten
+      const sortedIds = [userId, otherUserId].sort((a, b) => a - b);
+      const chatName = `Direct Chat ${sortedIds[0]}-${sortedIds[1]}`;
+      
       const conversation = await storage.createConversation({
-        name: `Direct Chat ${userId}-${otherUserId}`,
+        name: chatName,
         isGroup: false,
         description: null,
         classification: null
