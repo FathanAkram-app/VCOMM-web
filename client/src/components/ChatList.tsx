@@ -90,24 +90,18 @@ export default function ChatList({
     }
     
     if (conversations && Array.isArray(conversations) && conversations.length > 0) {
-      // Tampilkan semua percakapan, termasuk yang belum ada pesan
-      // Tapi jika pengguna adalah "aji", jangan tampilkan chat dengan "aji" lagi
+      // Filter percakapan berdasarkan aturan:
+      // 1. Grup chat selalu ditampilkan
+      // 2. Direct chat hanya ditampilkan jika ada pesan (lastMessage)
       const chatsFiltered = conversations.filter((conversation: any) => {
         // Jika ini percakapan grup, selalu tampilkan
         if (conversation.isGroup) return true;
         
-        // Jika ini direct chat, periksa apakah nama berisi ID user saat ini
-        const chatName = conversation.name || '';
-        if (chatName.startsWith('Direct Chat')) {
-          const match = chatName.match(/Direct Chat (\d+)-(\d+)/);
-          if (match) {
-            const [_, id1, id2] = match;
-            // Jika kedua ID sama (chat dengan diri sendiri), jangan tampilkan
-            if (id1 === id2) return false;
-          }
-        }
+        // Direct chat hanya tampil jika ada pesan
+        if (conversation.lastMessage?.content) return true;
         
-        return true;
+        // Jika ini direct chat tanpa pesan, tidak ditampilkan
+        return false;
       });
       
       const formattedChats = chatsFiltered.map((conversation: any) => ({
