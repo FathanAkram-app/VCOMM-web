@@ -1,0 +1,252 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Military theme colors */
+  --background: 0 0% 10%; /* Dark background */
+  --foreground: 0 0% 98%; /* Light text */
+  
+  --muted: 120 10% 20%; /* Muted green */
+  --muted-foreground: 85 20% 80%;
+  
+  --popover: 0 0% 8%;
+  --popover-foreground: 0 0% 98%;
+  
+  --card: 0 0% 13%;
+  --card-foreground: 0 0% 98%;
+  
+  --border: 120 8% 20%;
+  --input: 120 5% 15%;
+  
+  --primary: 82 52% 32%; /* Military green */
+  --primary-foreground: 85 60% 97%;
+  
+  --secondary: 84 18% 22%; /* Darker military green */
+  --secondary-foreground: 0 0% 98%;
+  
+  --accent: 62 30% 45%; /* Tan accent color */
+  --accent-foreground: 0 0% 12%;
+  
+  --destructive: 0 85% 42%;
+  --destructive-foreground: 0 0% 98%;
+  
+  --ring: 82 52% 32%;
+  --radius: 0.3rem;
+}
+
+.dark {
+  /* Just use the same colors for dark mode */
+  --background: 0 0% 10%;
+  --foreground: 0 0% 98%;
+  
+  --muted: 120 10% 20%;
+  --muted-foreground: 85 20% 80%;
+  
+  --popover: 0 0% 8%;
+  --popover-foreground: 0 0% 98%;
+  
+  --card: 0 0% 13%;
+  --card-foreground: 0 0% 98%;
+  
+  --border: 120 8% 20%;
+  --input: 120 5% 15%;
+  
+  --primary: 82 52% 32%;
+  --primary-foreground: 85 60% 97%;
+  
+  --secondary: 84 18% 22%;
+  --secondary-foreground: 0 0% 98%;
+  
+  --accent: 62 30% 45%;
+  --accent-foreground: 0 0% 12%;
+  
+  --destructive: 0 85% 42%;
+  --destructive-foreground: 0 0% 98%;
+  
+  --ring: 82 52% 32%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    color-scheme: dark;
+  }
+}
+
+/* Military themed components */
+.military-logo {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: hsl(82, 52%, 32%);
+  border: 2px solid hsl(82, 38%, 58%);
+  border-radius: 0.5rem;
+}
+
+.military-title {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: hsl(82, 38%, 58%);
+}
+
+.military-subtitle {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: hsl(0, 0%, 70%);
+}
+
+.military-notice {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: hsl(82, 38%, 58%);
+  opacity: 0.8;
+}
+
+.auth-container {
+  max-width: 400px;
+  width: 100%;
+  background-color: hsl(0, 0%, 8%);
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  padding: 2rem;
+}
+
+.auth-input {
+  width: 100%;
+  background-color: hsl(0, 0%, 15%);
+  border: 1px solid hsl(0, 0%, 20%);
+  color: hsl(0, 0%, 98%);
+  padding: 0.75rem 1rem;
+  border-radius: 0.3rem;
+}
+
+.auth-input::placeholder {
+  color: hsl(0, 0%, 60%);
+}
+
+.auth-label {
+  color: hsl(0, 0%, 80%);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.auth-btn {
+  width: 100%;
+  background-color: hsl(82, 52%, 32%);
+  color: hsl(0, 0%, 98%);
+  padding: 0.75rem 1rem;
+  border-radius: 0.3rem;
+  border: none;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-btn:hover {
+  background-color: hsl(82, 52%, 38%);
+}
+
+.auth-tabs {
+  display: flex;
+  margin-bottom: 1.5rem;
+  border-radius: 0.3rem;
+  overflow: hidden;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 0.75rem;
+  text-align: center;
+  background-color: hsl(0, 0%, 15%);
+  color: hsl(0, 0%, 80%);
+  cursor: pointer;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  font-size: 0.875rem;
+}
+
+.auth-tab.active {
+  background-color: hsl(82, 52%, 32%);
+  color: hsl(0, 0%, 98%);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 1rem;
+  background-color: hsl(0, 0%, 15%);
+}
+
+.status-badge::before {
+  content: "";
+  display: block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  margin-right: 0.25rem;
+}
+
+.status-online::before {
+  background-color: hsl(120, 70%, 45%);
+}
+
+.status-away::before {
+  background-color: hsl(40, 100%, 50%);
+}
+
+.status-busy::before {
+  background-color: hsl(0, 70%, 50%);
+}
+
+.status-offline::before {
+  background-color: hsl(0, 0%, 60%);
+}
+
+.classification-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.3rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.classification-unclassified {
+  background-color: hsl(100, 50%, 30%);
+  color: hsl(0, 0%, 98%);
+}
+
+.classification-confidential {
+  background-color: hsl(210, 100%, 40%);
+  color: hsl(0, 0%, 98%);
+}
+
+.classification-secret {
+  background-color: hsl(0, 70%, 45%);
+  color: hsl(0, 0%, 98%);
+}
+
+.classification-topsecret {
+  background-color: hsl(30, 100%, 50%);
+  color: hsl(0, 0%, 10%);
+}
