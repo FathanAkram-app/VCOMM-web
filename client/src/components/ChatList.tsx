@@ -90,7 +90,16 @@ export default function ChatList({
     }
     
     if (conversations && Array.isArray(conversations) && conversations.length > 0) {
-      const formattedChats = conversations.map((conversation: any) => ({
+      // Filter hanya percakapan yang memiliki pesan
+      const chatsWithMessages = conversations.filter((conversation: any) => {
+        // Percakapan grup selalu ditampilkan
+        if (conversation.isGroup) return true;
+        
+        // Direct chat hanya ditampilkan jika ada lastMessage
+        return conversation.lastMessage?.content;
+      });
+      
+      const formattedChats = chatsWithMessages.map((conversation: any) => ({
         id: conversation.id,
         name: conversation.name || 'Unnamed Chat',
         isGroup: conversation.isGroup,
@@ -102,10 +111,16 @@ export default function ChatList({
       }));
       
       // Ubah nama chat langsung di effect ini
-      if (allUsers && Array.isArray(allUsers)) {
+      if (allUsers && Array.isArray(allUsers) && user) {
         formattedChats.forEach(chat => {
           if (!chat.isGroup) {
+            // Dapatkan nama yang benar untuk chat
             chat.name = getPartnerName(chat.name);
+            
+            // Jika nama chat sama dengan nama user saat ini, jangan tampilkan
+            if (chat.name.toLowerCase() === user.callsign?.toLowerCase()) {
+              chat.name = "Chat dengan diri sendiri";
+            }
           }
         });
       }
