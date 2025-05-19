@@ -1419,7 +1419,7 @@ ${dummyMembers.filter(m => !m.isAdmin).map(m =>
               }}
               className="bg-[#3d5040] hover:bg-[#486048] text-white w-full justify-start"
             >
-              <UsersIcon className="mr-2 h-4 w-4" />
+              <Users className="mr-2 h-4 w-4" />
               Group Communication
             </Button>
           </div>
