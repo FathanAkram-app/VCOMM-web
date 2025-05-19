@@ -27,16 +27,16 @@ export const sessions = pgTable(
 // Users table
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
+  callsign: text("callsign").notNull().unique(),
   password: text("password").notNull(), 
   nrp: text("nrp"),                         // ID Personel/NRP
-  fullName: text("full_name"),              // Nama lengkap
-  rank: text("rank"),                       // Pangkat
-  branch: text("branch"),                   // Cabang/Unit
-  role: text("role").default("user"),       // Role (admin, user)
-  isOnline: boolean("is_online").default(false),
-  deviceInfo: text("device_info"),
-  lastSeen: timestamp("last_seen").defaultNow(),
+  fullName: varchar("full_name"),           // Nama lengkap
+  rank: varchar("rank"),                    // Pangkat
+  branch: varchar("branch"),                // Cabang/Unit
+  status: varchar("status").default("offline"),
+  profileImageUrl: varchar("profile_image_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Rooms (group chats) table
@@ -108,7 +108,7 @@ export type UpsertUser = typeof users.$inferInsert;
 
 // Create schema for user registration
 export const registerUserSchema = createInsertSchema(users).pick({
-  username: true,
+  callsign: true,
   password: true,
   nrp: true,
   fullName: true,
@@ -119,7 +119,7 @@ export type RegisterUser = z.infer<typeof registerUserSchema>;
 
 // Login schema
 export const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
+  callsign: z.string().min(1, "Call sign is required"),
   password: z.string().min(1, "Password is required"),
 });
 export type LoginCredentials = z.infer<typeof loginSchema>;

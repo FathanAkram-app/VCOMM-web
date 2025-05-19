@@ -56,10 +56,10 @@ export async function setupAuth(app: express.Express) {
         });
       }
       
-      // Check if username already exists
-      const existingUserByUsername = await storage.getUserByUsername(parseResult.data.username);
-      if (existingUserByUsername) {
-        return res.status(400).json({ message: "Username already taken" });
+      // Check if callsign already exists
+      const existingUserByCallsign = await storage.getUserByCallsign(parseResult.data.callsign);
+      if (existingUserByCallsign) {
+        return res.status(400).json({ message: "Call sign already taken" });
       }
       
       // Check if NRP already exists

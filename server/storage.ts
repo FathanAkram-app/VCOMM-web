@@ -24,7 +24,7 @@ import { eq, and, or, inArray } from "drizzle-orm";
 export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByCallsign(callsign: string): Promise<User | undefined>;
   getUserByNrp(nrp: string): Promise<User | undefined>;
   createUser(user: RegisterUser): Promise<User>;
   updateUserStatus(userId: number, status: string): Promise<User | undefined>;
@@ -66,8 +66,8 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+  async getUserByCallsign(callsign: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.callsign, callsign));
     return user;
   }
 
