@@ -386,8 +386,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
   
-  // WebSocket server
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  // WebSocket server - ini akan menggunakan path yang sama untuk semua koneksi
+  console.log("Setting up WebSocket server on path /ws");
+  const wss = new WebSocketServer({ 
+    server: httpServer, 
+    path: '/ws',
+    clientTracking: true 
+  });
   
   // Store active connections
   const clients = new Map<number, AuthenticatedWebSocket>();

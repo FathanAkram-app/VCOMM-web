@@ -4,6 +4,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { Shield, Lock, AlertTriangle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,32 +31,22 @@ export default function Login() {
     },
   });
 
+  const { login } = useAuth();
+  
   const onSubmit = async (values: LoginValues) => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          callsign: values.callsign,
-          password: values.password,
-        }),
-        credentials: "include"
-      });
+      // Gunakan fungsi login dari useAuth
+      await login(values.callsign, values.password);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Login gagal");
-      }
-
+      // Tampilkan notifikasi berhasil
       toast({
         title: "Login Berhasil",
         description: "Anda dialihkan ke halaman chat.",
       });
 
       // Redirect to chat on successful login
+      console.log("Login berhasil, mengarahkan ke halaman chat...");
       setLocation("/chat");
     } catch (error: any) {
       console.error("Login error:", error);

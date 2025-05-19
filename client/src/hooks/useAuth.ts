@@ -24,8 +24,7 @@ export function useAuth(): AuthState & {
     queryKey: ["/api/auth/user"],
     retry: false,
     staleTime: 1000 * 60 * 5, // 5 menit
-    gcTime: 0, // Tidak menyimpan cache, selalu fetch baru
-    initialData: null
+    gcTime: 0 // Tidak menyimpan cache, selalu fetch baru
   });
 
   // Memperbarui status loading global
