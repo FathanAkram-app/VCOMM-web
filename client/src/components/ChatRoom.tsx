@@ -8,6 +8,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
 import { formatDistanceToNow } from 'date-fns';
 import { id } from 'date-fns/locale';
+import { type Conversation, type Message } from '@shared/schema';
 
 // Interface untuk data chat
 interface ChatData {
@@ -81,10 +82,11 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   // Update chat data when chat changes
   useEffect(() => {
     if (chat && typeof chat === 'object') {
+      const chatObj = chat as Conversation;
       setChatData({
-        id: chat.id || chatId,
-        name: chat.name || 'Chat',
-        isGroup: typeof chat.isGroup === 'boolean' ? chat.isGroup : isGroup
+        id: chatObj.id || chatId,
+        name: chatObj.name || 'Chat',
+        isGroup: typeof chatObj.isGroup === 'boolean' ? chatObj.isGroup : isGroup
       });
     }
   }, [chat, isGroup, chatId]);
@@ -157,7 +159,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     }));
   };
   
-  const messageGroups = groupMessagesByDate(messages || []);
+  const messageGroups = groupMessagesByDate(Array.isArray(messages) ? messages : []);
   
   return (
     <div className="flex flex-col h-full bg-[#171717]">
