@@ -51,18 +51,27 @@ export default function Register() {
       // Remove confirmPassword as it's not in the API schema
       const { confirmPassword, ...registerData } = values;
       
-      await apiRequest("/api/auth/register", {
+      const response = await fetch("/api/auth/register", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(registerData),
+        credentials: "include"
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Registrasi gagal");
+      }
       
       toast({
         title: "Registrasi berhasil",
-        description: "Anda akan dialihkan ke halaman chat",
+        description: "Anda akan dialihkan ke halaman login",
       });
       
-      // Redirect to chat on successful registration
-      setLocation("/chat");
+      // Redirect to login after successful registration
+      setLocation("/login");
     } catch (error: any) {
       console.error("Registration error:", error);
       toast({

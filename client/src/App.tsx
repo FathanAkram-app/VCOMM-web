@@ -1,104 +1,49 @@
-import { Switch, Route, Redirect } from "wouter";
-import { queryClient } from "./lib/queryClient";
+import { Switch, Route } from "wouter";
+import { ReactNode } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/not-found";
-import Home from "@/pages/Home";
-import Chat from "@/pages/Chat";
+
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
-import { useAuth } from "@/hooks/useAuth";
-import { ChatProvider } from "@/contexts/ChatContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import NotFound from "@/pages/not-found";
 
-function PrivateRoute({ component: Component, ...rest }: any) {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center">
-          <div className="military-logo">
-            <span className="text-xl font-bold text-white">
-              VCOMM
-            </span>
-          </div>
-          <p className="mt-4 text-foreground">Loading secure connection...</p>
-        </div>
+// Konten ini akan diganti dengan halaman Chat yang sesungguhnya
+const PlaceholderChat = () => {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="text-center">
+        <h1 className="text-3xl font-bold text-primary mb-4">VCOMM Chat</h1>
+        <p className="text-lg text-muted-foreground">Halaman chat sedang dikembangkan</p>
       </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <Redirect to="/login" />;
-  }
-
-  return <Component {...rest} />;
-}
-
-// Redirect authenticated users away from auth pages
-function PublicOnlyRoute({ component: Component, ...rest }: any) {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center">
-          <div className="military-logo">
-            <span className="text-xl font-bold text-white">
-              VCOMM
-            </span>
-          </div>
-          <p className="mt-4 text-foreground">Verifying credentials...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (isAuthenticated) {
-    return <Redirect to="/chat" />;
-  }
-
-  return <Component {...rest} />;
-}
+    </div>
+  );
+};
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/login">
-        {() => <PublicOnlyRoute component={Login} />}
-      </Route>
-      <Route path="/register">
-        {() => <PublicOnlyRoute component={Register} />}
-      </Route>
+      <Route path="/" component={Login} />
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
+
       <Route path="/chat">
-        {() => <PrivateRoute component={Chat} />}
+        <ProtectedRoute>
+          <PlaceholderChat />
+        </ProtectedRoute>
       </Route>
+
       <Route component={NotFound} />
     </Switch>
   );
 }
 
-function AppWithAuth() {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  return (
-    <ChatProvider>
-      <Router />
-    </ChatProvider>
-  );
-}
-
-function App() {
+export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <AppWithAuth />
-      </TooltipProvider>
+      <Toaster />
+      <Router />
     </QueryClientProvider>
   );
 }
-
-export default App;

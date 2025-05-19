@@ -12,6 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 // Login validation schema
 const loginSchema = z.object({
   callsign: z.string().min(3, "Callsign minimal 3 karakter"),
+  nrp: z.string().min(3, "NRP minimal 3 karakter"),
   password: z.string().min(6, "Password minimal 6 karakter"),
 });
 
@@ -26,6 +27,7 @@ export default function Login() {
     resolver: zodResolver(loginSchema),
     defaultValues: {
       callsign: "",
+      nrp: "",
       password: "",
     },
   });
@@ -40,8 +42,10 @@ export default function Login() {
         },
         body: JSON.stringify({
           callsign: values.callsign,
+          nrp: values.nrp,
           password: values.password,
         }),
+        credentials: "include"
       });
 
       if (!response.ok) {
@@ -69,44 +73,67 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-      <div className="auth-container">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#171717]">
+      <div className="w-full max-w-md p-6">
         <div className="flex flex-col items-center mb-6">
-          <div className="military-logo mb-4">
-            <span className="text-xl font-bold text-white">
-              VCOMM
-            </span>
+          <div className="w-24 h-24 relative mb-4">
+            <div className="absolute inset-0 rounded-md bg-[#4d5d30] p-1">
+              <div className="w-full h-full flex items-center justify-center bg-[#5a6b38] rounded-sm">
+                <svg viewBox="0 0 100 100" className="w-16 h-16 text-[#e0e0b0]">
+                  <path fill="currentColor" d="M50,20 C60,20 70,25 75,35 C80,45 80,55 75,65 L90,80 L80,90 L65,75 C55,80 45,80 35,75 C25,70 20,60 20,50 C20,33 33,20 50,20 Z M45,45 C45,45 45,45 35,55 C35,55 35,55 45,65 C45,65 45,65 55,55 C55,55 55,55 45,45 Z" />
+                </svg>
+              </div>
+            </div>
           </div>
-          <h1 className="military-title">NXZZ COMMUNICATION SYSTEM</h1>
-          <p className="military-subtitle mt-1">SECURE MILITARY COMMUNICATIONS</p>
+          <h1 className="text-[#a6c455] text-xl font-bold tracking-wide">SECURE COMMS</h1>
+          <p className="text-gray-400 text-xs uppercase tracking-wide mt-1">MILITARY PERSONNEL AUTHENTICATION REQUIRED</p>
         </div>
         
-        <div className="auth-tabs">
-          <Link href="/login" className="auth-tab active">
+        <div className="grid grid-cols-2 mb-6">
+          <Link href="/login" className="bg-[#4d5d30] py-3 font-bold text-center text-white uppercase">
             LOGIN
           </Link>
-          <Link href="/register" className="auth-tab">
+          <Link href="/register" className="bg-[#33342f] py-3 font-bold text-center text-gray-400 uppercase">
             REGISTER
           </Link>
         </div>
         
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
             <FormField
               control={form.control}
               name="callsign"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="auth-label">CALLSIGN</FormLabel>
+                  <FormLabel className="text-gray-400 uppercase text-sm font-medium">CALLSIGN / USERNAME</FormLabel>
                   <FormControl>
                     <Input 
                       type="text" 
-                      placeholder="Masukkan callsign Anda" 
-                      className="auth-input" 
+                      placeholder="ENTER CALLSIGN" 
+                      className="w-full bg-[#222222] border border-[#444444] p-3 text-white placeholder:text-[#555555]" 
                       {...field} 
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-red-500 text-xs" />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="nrp"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-gray-400 uppercase text-sm font-medium">NRP / PERSONNEL ID</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="text" 
+                      placeholder="ENTER NRP" 
+                      className="w-full bg-[#222222] border border-[#444444] p-3 text-white placeholder:text-[#555555]" 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage className="text-red-500 text-xs" />
                 </FormItem>
               )}
             />
@@ -117,8 +144,8 @@ export default function Login() {
               render={({ field }) => (
                 <FormItem>
                   <div className="flex items-center justify-between">
-                    <FormLabel className="auth-label">SECURITY CODE</FormLabel>
-                    <div className="flex items-center space-x-1 text-[10px] bg-[#3a3a3a] px-2 py-1 rounded text-gray-400">
+                    <FormLabel className="text-gray-400 uppercase text-sm font-medium">SECURITY CODE / PASSWORD</FormLabel>
+                    <div className="flex items-center space-x-1 text-[10px] bg-[#333333] px-2 py-1 rounded text-gray-400">
                       <Lock className="w-3 h-3" />
                       <span>ENCRYPTED</span>
                     </div>
@@ -126,39 +153,41 @@ export default function Login() {
                   <FormControl>
                     <Input 
                       type="password" 
-                      placeholder="Masukkan security code" 
-                      className="auth-input" 
+                      placeholder="ENTER SECURITY CODE" 
+                      className="w-full bg-[#222222] border border-[#444444] p-3 text-white placeholder:text-[#555555]" 
                       {...field} 
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-red-500 text-xs" />
                 </FormItem>
               )}
             />
             
-            <Button type="submit" disabled={isLoading} className="auth-btn mt-6 w-full">
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  <span>AUTHENTICATING...</span>
-                </>
-              ) : (
-                <>
-                  <Shield className="mr-2 h-4 w-4" />
-                  <span>SECURE LOGIN</span>
-                </>
-              )}
-            </Button>
+            <div className="pt-2">
+              <p className="uppercase text-center text-xs text-gray-500 mb-4">UNAUTHORIZED ACCESS IS STRICTLY PROHIBITED.</p>
+              
+              <Button type="submit" disabled={isLoading} className="w-full bg-[#4d5d30] hover:bg-[#5a6b38] text-white py-3 font-bold uppercase tracking-wider">
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <span>AUTHENTICATING...</span>
+                  </>
+                ) : (
+                  <>
+                    <Lock className="mr-2 h-4 w-4" />
+                    <span>SECURE LOGIN</span>
+                  </>
+                )}
+              </Button>
+            </div>
           </form>
         </Form>
         
-        <div className="mt-6 text-center">
-          <p className="military-notice">
-            HANYA UNTUK PERSONEL RESMI
-          </p>
-          <p className="military-notice mt-1">
-            AKSES TIDAK SAH AKAN DITINDAK SESUAI HUKUM YANG BERLAKU
-          </p>
+        <div className="mt-8 text-center">
+          <div className="flex items-center justify-center mb-1">
+            <AlertTriangle className="h-3 w-3 text-[#a6c455] mr-1" />
+            <p className="text-[#a6c455] text-[10px] uppercase font-medium">INTRANET COMMUNICATIONS ONLY - CLASSIFIED</p>
+          </div>
         </div>
       </div>
     </div>
