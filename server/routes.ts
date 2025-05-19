@@ -180,16 +180,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Route untuk membuat direct chat
   app.post('/api/direct-chats', isAuthenticated, async (req: AuthRequest, res) => {
     try {
-      const userId = req.user?.id || 0;
+      // Pastikan kita memiliki user ID yang valid dari request
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Unauthorized, invalid user ID" });
+      }
+      
+      const userId = req.user.id;
       const { otherUserId } = req.body;
       
       if (!otherUserId) {
         return res.status(400).json({ message: "otherUserId is required" });
       }
       
+      // Pastikan user yang dituju ada
+      const otherUser = await storage.getUser(otherUserId);
+      if (!otherUser) {
+        return res.status(404).json({ message: "Other user not found" });
+      }
+      
       // Buat conversation baru dengan tipe direct chat (isGroup=false)
       const conversation = await storage.createConversation({
-        name: null,
+        name: `Direct Chat ${userId}-${otherUserId}`,
         isGroup: false,
         description: null,
         classification: null
