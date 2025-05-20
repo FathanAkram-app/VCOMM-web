@@ -1,105 +1,100 @@
 import { useEffect } from 'react';
-import { useLocation } from 'wouter';
 import { useNotification } from '@/hooks/useNotification';
+import { ToastNotification } from './ui/toast-notification';
 import { useWebSocket } from '@/context/WebSocketContext';
 import { useCall } from '@/hooks/useCall';
-import { useGroupCall } from '@/hooks/useGroupCall';
 
 /**
  * NotificationManager Component
  * 
- * Komponen ini bertanggung jawab untuk mendengarkan pesan dari WebSocket
- * dan memicu notifikasi yang sesuai. Tidak merender UI apapun, hanya
- * mengelola logika notifikasi.
+ * Komponen ini menangani tampilan notifikasi di aplikasi, termasuk:
+ * - Menampilkan toast notifications untuk pesan baru
+ * - Menampilkan notifikasi untuk panggilan masuk
+ * - Memainkan suara notifikasi
  */
 export default function NotificationManager() {
-  const { addNotification, playNotificationSound } = useNotification();
-  const { events } = useWebSocket();
+  const { notifications, addNotification, markAsRead } = useNotification();
+  const { events, isConnected } = useWebSocket();
   const { handleIncomingCall } = useCall();
-  const { groupCallState } = useGroupCall();
-  const [, setLocation] = useLocation();
-
-  // Mendengarkan event WebSocket untuk menghasilkan notifikasi
+  
+  // Listen untuk event dari WebSocket
   useEffect(() => {
     if (!events) return;
-
-    const handleWebSocketMessage = (event: CustomEvent) => {
-      const data = event.detail;
+    
+    // Handle pesan masuk
+    if (events.newMessage) {
+      const { senderId, senderName, message, roomId, roomName, isRoom } = events.newMessage;
       
-      // Tangani pesan yang masuk
-      if (data.type === 'new_message' && data.message) {
-        // Hanya tampilkan notifikasi jika pesan dari pengguna lain (bukan diri sendiri)
-        if (data.message.senderId !== data.currentUserId) {
-          const isGroup = data.message.isRoom || false;
-          const chatType = isGroup ? 'group' : 'pribadi';
-          
-          addNotification({
-            type: 'message',
-            title: `Pesan ${chatType} baru dari ${data.message.senderName || 'Pengguna'}`,
-            message: data.message.content || '[Lampiran Media]',
-            data: {
-              chatId: data.message.conversationId,
-              isRoom: isGroup,
-              senderId: data.message.senderId,
-              messageId: data.message.id
-            }
-          });
-          
-          // Putar suara notifikasi pesan
-          playNotificationSound('message');
-        }
-      }
-      
-      // Tangani permintaan panggilan masuk
-      else if (data.type === 'call_incoming' && !groupCallState.isInCall) {
-        handleIncomingCall({
-          callerId: data.callerId,
-          callerName: data.callerName,
-          callType: data.callType
-        });
-        
-        // Putar suara notifikasi panggilan
-        playNotificationSound('call');
-      }
-      
-      // Tangani informasi panggilan grup baru
-      else if (data.type === 'group_call_created' && !groupCallState.isInCall) {
-        addNotification({
-          type: 'groupCall',
-          title: 'Panggilan Grup Baru',
-          message: `${data.creatorName || 'Seseorang'} memulai panggilan di grup ${data.roomName || 'konferensi'}`,
-          data: {
-            roomId: data.roomId,
-            roomName: data.roomName,
-            creatorId: data.creatorId,
-            callType: data.callType
+      // Buat notifikasi untuk pesan baru
+      addNotification({
+        type: 'message',
+        title: isRoom ? roomName : senderName,
+        message: message,
+        action: {
+          label: 'Lihat',
+          onClick: () => {
+            // Navigasi ke chat yang relevan
+            window.dispatchEvent(new CustomEvent('navigate_to_chat', {
+              detail: { id: isRoom ? roomId : senderId, isRoom }
+            }));
+            
+            // Tandai notifikasi sebagai sudah dibaca
+            markAsRead(Date.now().toString());
           }
-        });
-        
-        // Putar suara notifikasi panggilan grup
-        playNotificationSound('groupCall');
-      }
+        }
+      });
+    }
+    
+    // Handle panggilan masuk
+    if (events.incomingCall) {
+      const { callerId, callerName, callType } = events.incomingCall;
       
-      // Tangani notifikasi sistem
-      else if (data.type === 'system_notification') {
-        addNotification({
-          type: 'system',
-          title: data.title || 'Notifikasi Sistem',
-          message: data.message || 'Pesan dari sistem'
-        });
-        
-        // Putar suara notifikasi sistem
-        playNotificationSound('system');
-      }
-    };
+      // Lempar event ke CallContext
+      handleIncomingCall({
+        callerId,
+        callerName,
+        callType
+      });
+      
+      // Buat notifikasi untuk panggilan masuk
+      addNotification({
+        type: 'call',
+        title: 'Panggilan Masuk',
+        message: `${callerName} sedang memanggil Anda`,
+        action: {
+          label: 'Jawab',
+          onClick: () => {
+            // Navigasi ke komponen panggilan
+            window.dispatchEvent(new CustomEvent('handle_incoming_call'));
+            
+            // Tandai notifikasi sebagai sudah dibaca
+            markAsRead(Date.now().toString());
+          }
+        }
+      });
+    }
     
-    window.addEventListener('ws-message', handleWebSocketMessage as EventListener);
+    // Reset events setelah diproses
+    events.newMessage = null;
+    events.incomingCall = null;
     
-    return () => {
-      window.removeEventListener('ws-message', handleWebSocketMessage as EventListener);
-    };
-  }, [addNotification, playNotificationSound, handleIncomingCall, events, groupCallState.isInCall]);
-
-  // Komponen ini tidak merender UI apapun
-  return null;
+  }, [events, addNotification, markAsRead, handleIncomingCall]);
+  
+  // Tampilkan toast notifications untuk setiap notifikasi
+  return (
+    <>
+      {notifications.map((notification) => (
+        <ToastNotification
+          key={notification.id}
+          id={notification.id}
+          title={notification.title}
+          message={notification.message}
+          type={notification.type}
+          onAction={notification.action?.onClick}
+          actionLabel={notification.action?.label}
+          onClose={() => markAsRead(notification.id)}
+        />
+      ))}
+    </>
+  );
 }

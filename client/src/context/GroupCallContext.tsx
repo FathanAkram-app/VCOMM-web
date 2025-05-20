@@ -1,32 +1,36 @@
-import { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { createContext, useState, useRef, useEffect, ReactNode } from 'react';
 import { useWebSocket } from './WebSocketContext';
 
+interface GroupCallParticipant {
+  userId: number;
+  userName: string;
+  stream?: MediaStream;
+  callType: 'video' | 'audio';
+}
+
 interface GroupCallState {
-  isInCall: boolean;
-  isAudioOnly: boolean;
-  roomId: number | null;
-  roomName: string | null;
-  participantCount: number;
-  localStream: MediaStream | null;
-  participants: Map<string, MediaStream>;
+  activeGroupCall: {
+    roomId: number | null;
+    roomName: string | null;
+    participants: GroupCallParticipant[];
+    localStream: MediaStream | null;
+  } | null;
+  incomingGroupCall: {
+    roomId: number | null;
+    roomName: string | null;
+    callerId: number | null;
+    callerName: string | null;
+  } | null;
 }
 
 interface GroupCallContextType {
   groupCallState: GroupCallState;
-  joinGroupCall: (roomId: number, roomName: string, isAudioOnly: boolean) => Promise<boolean>;
+  joinGroupCall: (roomId: number, roomName: string, callType: 'video' | 'audio') => Promise<boolean>;
   leaveGroupCall: () => void;
-  createGroupCall: (roomId: number, roomName: string, isAudioOnly: boolean) => Promise<boolean>;
+  acceptGroupCall: () => Promise<boolean>;
+  rejectGroupCall: () => void;
+  isInGroupCall: boolean;
 }
-
-const defaultGroupCallState: GroupCallState = {
-  isInCall: false,
-  isAudioOnly: false,
-  roomId: null,
-  roomName: null,
-  participantCount: 0,
-  localStream: null,
-  participants: new Map()
-};
 
 export const GroupCallContext = createContext<GroupCallContextType | undefined>(undefined);
 
@@ -35,104 +39,311 @@ interface GroupCallProviderProps {
 }
 
 export function GroupCallProvider({ children }: GroupCallProviderProps) {
-  const [groupCallState, setGroupCallState] = useState<GroupCallState>(defaultGroupCallState);
-  const { isConnected, sendMessage } = useWebSocket();
-
-  // Fungsi untuk melepaskan dan mengosongkan stream media
-  const cleanupMediaStream = useCallback((stream: MediaStream | null) => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-    }
-  }, []);
-
-  // Fungsi untuk membersihkan state setelah call selesai
-  const resetCallState = useCallback(() => {
-    cleanupMediaStream(groupCallState.localStream);
-    
-    // Bersihkan semua participant streams
-    groupCallState.participants.forEach(stream => {
-      cleanupMediaStream(stream);
-    });
-    
-    setGroupCallState(defaultGroupCallState);
-  }, [groupCallState, cleanupMediaStream]);
-
-  // Tangani event group call dari WebSocket
+  const [groupCallState, setGroupCallState] = useState<GroupCallState>({
+    activeGroupCall: null,
+    incomingGroupCall: null
+  });
+  
+  const { sendMessage, isConnected } = useWebSocket();
+  const peerConnectionsRef = useRef<Map<number, RTCPeerConnection>>(new Map());
+  
+  // Computed value untuk menentukan apakah user sedang dalam group call
+  const isInGroupCall = !!groupCallState.activeGroupCall;
+  
+  // Konfigurasi ICE server
+  const rtcConfig = {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+    ]
+  };
+  
+  // Efek untuk mendengarkan event group call
   useEffect(() => {
+    // Handler untuk event group call
     const handleGroupCallEvent = (event: CustomEvent) => {
-      const data = event.detail;
+      const { type, data } = event.detail;
       
-      if (data.type === 'group_call_participant_joined') {
-        // Seseorang bergabung ke panggilan group
-        if (groupCallState.isInCall && groupCallState.roomId === data.roomId) {
-          setGroupCallState(prev => ({
-            ...prev,
-            participantCount: prev.participantCount + 1
-          }));
-        }
-      } else if (data.type === 'group_call_participant_left') {
-        // Seseorang meninggalkan panggilan group
-        if (groupCallState.isInCall && groupCallState.roomId === data.roomId) {
-          // Update jumlah peserta
-          setGroupCallState(prev => {
-            // Remove participant stream if exists
-            const updatedParticipants = new Map(prev.participants);
-            if (data.userId && updatedParticipants.has(data.userId.toString())) {
-              updatedParticipants.delete(data.userId.toString());
-            }
-            
-            return {
-              ...prev,
-              participantCount: Math.max(prev.participantCount - 1, 0),
-              participants: updatedParticipants
-            };
-          });
-        }
-      } else if (data.type === 'group_call_ended') {
-        // Panggilan group diakhiri
-        if (groupCallState.isInCall && groupCallState.roomId === data.roomId) {
-          resetCallState();
-        }
+      switch (type) {
+        case 'group_call_invite':
+          handleGroupCallInvite(data);
+          break;
+        case 'group_call_accepted':
+          handleGroupCallAccepted(data);
+          break;
+        case 'group_call_rejected':
+          handleGroupCallRejected(data);
+          break;
+        case 'group_call_user_joined':
+          handleGroupCallUserJoined(data);
+          break;
+        case 'group_call_user_left':
+          handleGroupCallUserLeft(data);
+          break;
+        case 'group_call_offer':
+          handleGroupCallOffer(data);
+          break;
+        case 'group_call_answer':
+          handleGroupCallAnswer(data);
+          break;
+        case 'group_call_ice_candidate':
+          handleGroupCallIceCandidate(data);
+          break;
+        case 'group_call_ended':
+          handleGroupCallEnded();
+          break;
       }
     };
     
-    // Register event listener
-    window.addEventListener('ws-message', handleGroupCallEvent as EventListener);
+    // Daftarkan event listener
+    window.addEventListener('group_call_event', handleGroupCallEvent as EventListener);
     
+    // Cleanup saat unmount
     return () => {
-      window.removeEventListener('ws-message', handleGroupCallEvent as EventListener);
+      window.removeEventListener('group_call_event', handleGroupCallEvent as EventListener);
     };
-  }, [groupCallState, resetCallState]);
-
-  // Function to join an existing group call
-  const joinGroupCall = useCallback(async (roomId: number, roomName: string, isAudioOnly: boolean): Promise<boolean> => {
-    if (!isConnected || groupCallState.isInCall) return false;
+  }, [groupCallState]);
+  
+  // Handler untuk undangan group call
+  const handleGroupCallInvite = (data: any) => {
+    // Jika sedang dalam call, tolak undangan
+    if (isInGroupCall) {
+      sendMessage({
+        type: 'group_call_busy',
+        data: {
+          roomId: data.roomId,
+          userId: data.callerId
+        }
+      });
+      return;
+    }
+    
+    // Set state panggilan grup masuk
+    setGroupCallState(prev => ({
+      ...prev,
+      incomingGroupCall: {
+        roomId: data.roomId,
+        roomName: data.roomName,
+        callerId: data.callerId,
+        callerName: data.callerName
+      }
+    }));
+    
+    // Putar suara notifikasi
+    const ringtone = new Audio('/sounds/incoming-call.mp3');
+    ringtone.play().catch(err => {
+      console.warn('Failed to play ringtone:', err);
+    });
+  };
+  
+  // Handler untuk respon penerimaan group call
+  const handleGroupCallAccepted = async (data: any) => {
+    // Buat koneksi peer untuk semua peserta yang sudah terhubung
+    for (const participant of data.participants) {
+      if (participant.userId === data.currentUserId) continue;
+      
+      try {
+        await createPeerConnection(participant.userId);
+        
+        // Buat penawaran untuk koneksi
+        const peerConnection = peerConnectionsRef.current.get(participant.userId);
+        if (peerConnection) {
+          const offer = await peerConnection.createOffer();
+          await peerConnection.setLocalDescription(offer);
+          
+          // Kirim penawaran
+          sendMessage({
+            type: 'group_call_offer',
+            data: {
+              roomId: data.roomId,
+              targetId: participant.userId,
+              offer
+            }
+          });
+        }
+      } catch (error) {
+        console.error(`Error creating peer connection with ${participant.userId}:`, error);
+      }
+    }
+  };
+  
+  // Handler untuk respon penolakan group call
+  const handleGroupCallRejected = (data: any) => {
+    console.log(`User ${data.userId} rejected the group call`);
+  };
+  
+  // Handler untuk user baru bergabung ke group call
+  const handleGroupCallUserJoined = async (data: any) => {
+    if (!groupCallState.activeGroupCall) return;
+    
+    // Tambahkan user baru ke daftar peserta
+    setGroupCallState(prev => {
+      if (!prev.activeGroupCall) return prev;
+      
+      return {
+        ...prev,
+        activeGroupCall: {
+          ...prev.activeGroupCall,
+          participants: [
+            ...prev.activeGroupCall.participants,
+            {
+              userId: data.userId,
+              userName: data.userName,
+              callType: data.callType
+            }
+          ]
+        }
+      };
+    });
+    
+    // Buat peer connection dengan user baru
+    await createPeerConnection(data.userId);
+  };
+  
+  // Handler untuk user meninggalkan group call
+  const handleGroupCallUserLeft = (data: any) => {
+    if (!groupCallState.activeGroupCall) return;
+    
+    // Hapus user dari daftar peserta
+    setGroupCallState(prev => {
+      if (!prev.activeGroupCall) return prev;
+      
+      return {
+        ...prev,
+        activeGroupCall: {
+          ...prev.activeGroupCall,
+          participants: prev.activeGroupCall.participants.filter(
+            participant => participant.userId !== data.userId
+          )
+        }
+      };
+    });
+    
+    // Bersihkan peer connection
+    const peerConnection = peerConnectionsRef.current.get(data.userId);
+    if (peerConnection) {
+      peerConnection.close();
+      peerConnectionsRef.current.delete(data.userId);
+    }
+  };
+  
+  // Handler untuk penawaran koneksi
+  const handleGroupCallOffer = async (data: any) => {
+    if (!groupCallState.activeGroupCall) return;
     
     try {
-      // Get user media
-      const constraints = {
-        audio: true,
-        video: !isAudioOnly
-      };
+      // Buat peer connection jika belum ada
+      if (!peerConnectionsRef.current.has(data.userId)) {
+        await createPeerConnection(data.userId);
+      }
       
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      const peerConnection = peerConnectionsRef.current.get(data.userId);
+      if (!peerConnection) return;
       
-      // Send join group call message to server
+      // Set remote description dari penawaran
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+      
+      // Buat jawaban
+      const answer = await peerConnection.createAnswer();
+      await peerConnection.setLocalDescription(answer);
+      
+      // Kirim jawaban
       sendMessage({
-        type: 'group_call_join',
-        roomId,
-        callType: isAudioOnly ? 'audio' : 'video'
+        type: 'group_call_answer',
+        data: {
+          roomId: groupCallState.activeGroupCall.roomId,
+          targetId: data.userId,
+          answer
+        }
+      });
+    } catch (error) {
+      console.error('Error handling group call offer:', error);
+    }
+  };
+  
+  // Handler untuk jawaban koneksi
+  const handleGroupCallAnswer = async (data: any) => {
+    if (!groupCallState.activeGroupCall) return;
+    
+    try {
+      const peerConnection = peerConnectionsRef.current.get(data.userId);
+      if (!peerConnection) return;
+      
+      // Set remote description dari jawaban
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+    } catch (error) {
+      console.error('Error handling group call answer:', error);
+    }
+  };
+  
+  // Handler untuk ice candidate
+  const handleGroupCallIceCandidate = async (data: any) => {
+    if (!groupCallState.activeGroupCall) return;
+    
+    try {
+      const peerConnection = peerConnectionsRef.current.get(data.userId);
+      if (!peerConnection) return;
+      
+      // Tambahkan ice candidate
+      await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+    } catch (error) {
+      console.error('Error handling ice candidate:', error);
+    }
+  };
+  
+  // Handler untuk group call berakhir
+  const handleGroupCallEnded = () => {
+    // Bersihkan semua koneksi peer
+    peerConnectionsRef.current.forEach((peerConnection, userId) => {
+      peerConnection.close();
+    });
+    
+    peerConnectionsRef.current.clear();
+    
+    // Hentikan local stream
+    if (groupCallState.activeGroupCall?.localStream) {
+      groupCallState.activeGroupCall.localStream.getTracks().forEach(track => {
+        track.stop();
+      });
+    }
+    
+    // Reset state
+    setGroupCallState({
+      activeGroupCall: null,
+      incomingGroupCall: null
+    });
+  };
+  
+  // Fungsi untuk bergabung ke group call
+  const joinGroupCall = async (roomId: number, roomName: string, callType: 'video' | 'audio'): Promise<boolean> => {
+    // Jika sedang dalam call, tidak bisa bergabung call lain
+    if (isInGroupCall) return false;
+    
+    try {
+      // Dapatkan akses ke audio/video device
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: callType === 'video'
       });
       
-      // Update group call state
+      // Update state
       setGroupCallState({
-        isInCall: true,
-        isAudioOnly,
-        roomId,
-        roomName,
-        participantCount: 1, // Start with just yourself
-        localStream: stream,
-        participants: new Map()
+        incomingGroupCall: null,
+        activeGroupCall: {
+          roomId,
+          roomName,
+          participants: [],
+          localStream: stream
+        }
+      });
+      
+      // Kirim permintaan untuk bergabung ke group call
+      sendMessage({
+        type: 'join_group_call',
+        data: {
+          roomId,
+          callType
+        }
       });
       
       return true;
@@ -140,82 +351,167 @@ export function GroupCallProvider({ children }: GroupCallProviderProps) {
       console.error('Error joining group call:', error);
       return false;
     }
-  }, [isConnected, groupCallState.isInCall, sendMessage]);
-
-  // Function to leave a group call
-  const leaveGroupCall = useCallback(() => {
-    if (!groupCallState.isInCall || !groupCallState.roomId) return;
+  };
+  
+  // Fungsi untuk meninggalkan group call
+  const leaveGroupCall = () => {
+    if (!groupCallState.activeGroupCall) return;
     
-    // Send leave message to server
+    // Kirim notifikasi bahwa user meninggalkan group call
     sendMessage({
-      type: 'group_call_leave',
-      roomId: groupCallState.roomId
+      type: 'leave_group_call',
+      data: {
+        roomId: groupCallState.activeGroupCall.roomId
+      }
     });
     
-    // Reset call state
-    resetCallState();
-  }, [groupCallState.isInCall, groupCallState.roomId, sendMessage, resetCallState]);
-
-  // Function to create a new group call
-  const createGroupCall = useCallback(async (roomId: number, roomName: string, isAudioOnly: boolean): Promise<boolean> => {
-    if (!isConnected || groupCallState.isInCall) return false;
+    // Bersihkan koneksi dan state
+    handleGroupCallEnded();
+  };
+  
+  // Fungsi untuk menerima group call
+  const acceptGroupCall = async (): Promise<boolean> => {
+    if (!groupCallState.incomingGroupCall) return false;
     
     try {
-      // Get user media
-      const constraints = {
+      // Dapatkan akses ke audio/video device (default untuk audio)
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
-        video: !isAudioOnly
-      };
-      
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      
-      // Send create group call message to server
-      sendMessage({
-        type: 'group_call_create',
-        roomId,
-        callType: isAudioOnly ? 'audio' : 'video'
+        video: false
       });
       
-      // Update group call state
+      // Update state
+      const { roomId, roomName, callerId, callerName } = groupCallState.incomingGroupCall;
+      
       setGroupCallState({
-        isInCall: true,
-        isAudioOnly,
-        roomId,
-        roomName,
-        participantCount: 1, // Start with just yourself
-        localStream: stream,
-        participants: new Map()
+        incomingGroupCall: null,
+        activeGroupCall: {
+          roomId,
+          roomName,
+          participants: [
+            {
+              userId: callerId!,
+              userName: callerName!,
+              callType: 'audio'
+            }
+          ],
+          localStream: stream
+        }
+      });
+      
+      // Kirim penerimaan
+      sendMessage({
+        type: 'accept_group_call',
+        data: {
+          roomId,
+          callerId
+        }
       });
       
       return true;
     } catch (error) {
-      console.error('Error creating group call:', error);
+      console.error('Error accepting group call:', error);
       return false;
     }
-  }, [isConnected, groupCallState.isInCall, sendMessage]);
-
-  // Clean up media streams on unmount
-  useEffect(() => {
-    return () => {
-      if (groupCallState.localStream) {
-        cleanupMediaStream(groupCallState.localStream);
+  };
+  
+  // Fungsi untuk menolak group call
+  const rejectGroupCall = () => {
+    if (!groupCallState.incomingGroupCall) return;
+    
+    // Kirim penolakan
+    sendMessage({
+      type: 'reject_group_call',
+      data: {
+        roomId: groupCallState.incomingGroupCall.roomId,
+        callerId: groupCallState.incomingGroupCall.callerId
       }
-      
-      groupCallState.participants.forEach(stream => {
-        cleanupMediaStream(stream);
+    });
+    
+    // Reset state
+    setGroupCallState(prev => ({
+      ...prev,
+      incomingGroupCall: null
+    }));
+  };
+  
+  // Fungsi untuk membuat koneksi peer dengan user tertentu
+  const createPeerConnection = async (userId: number): Promise<RTCPeerConnection> => {
+    // Jika koneksi sudah ada, kembalikan koneksi tersebut
+    if (peerConnectionsRef.current.has(userId)) {
+      return peerConnectionsRef.current.get(userId)!;
+    }
+    
+    // Pastikan ada local stream
+    if (!groupCallState.activeGroupCall?.localStream) {
+      throw new Error('No local stream available');
+    }
+    
+    // Buat koneksi baru
+    const peerConnection = new RTCPeerConnection(rtcConfig);
+    
+    // Tambahkan local stream
+    groupCallState.activeGroupCall.localStream.getTracks().forEach(track => {
+      peerConnection.addTrack(track, groupCallState.activeGroupCall!.localStream!);
+    });
+    
+    // Listener untuk ice candidate
+    peerConnection.onicecandidate = (event) => {
+      if (event.candidate && groupCallState.activeGroupCall?.roomId) {
+        sendMessage({
+          type: 'group_call_ice_candidate',
+          data: {
+            roomId: groupCallState.activeGroupCall.roomId,
+            targetId: userId,
+            candidate: event.candidate
+          }
+        });
+      }
+    };
+    
+    // Listener untuk track yang diterima
+    peerConnection.ontrack = (event) => {
+      // Update participant stream
+      setGroupCallState(prev => {
+        if (!prev.activeGroupCall) return prev;
+        
+        const updatedParticipants = prev.activeGroupCall.participants.map(participant => {
+          if (participant.userId === userId) {
+            return {
+              ...participant,
+              stream: event.streams[0]
+            };
+          }
+          return participant;
+        });
+        
+        return {
+          ...prev,
+          activeGroupCall: {
+            ...prev.activeGroupCall,
+            participants: updatedParticipants
+          }
+        };
       });
     };
-  }, []);
-
-  const value = {
+    
+    // Simpan koneksi
+    peerConnectionsRef.current.set(userId, peerConnection);
+    
+    return peerConnection;
+  };
+  
+  const contextValue: GroupCallContextType = {
     groupCallState,
     joinGroupCall,
     leaveGroupCall,
-    createGroupCall
+    acceptGroupCall,
+    rejectGroupCall,
+    isInGroupCall
   };
-
+  
   return (
-    <GroupCallContext.Provider value={value}>
+    <GroupCallContext.Provider value={contextValue}>
       {children}
     </GroupCallContext.Provider>
   );

@@ -4,7 +4,7 @@ import { GroupCallContext } from '../context/GroupCallContext';
 export function useGroupCall() {
   const context = useContext(GroupCallContext);
   
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useGroupCall must be used within a GroupCallProvider');
   }
   

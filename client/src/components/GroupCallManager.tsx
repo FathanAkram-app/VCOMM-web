@@ -1,147 +1,78 @@
-import { useEffect } from "react";
-import useGroupCall from "../hooks/useGroupCall";
-import GroupVideoCall from "./GroupVideoCall";
-import GroupAudioCall from "./GroupAudioCall"; // Catatan: Kita harus membuat komponen ini nanti
-import { Button } from "./ui/button";
-import { UserPlus, Users } from "lucide-react";
-import { useAuth } from "../hooks/use-auth";
+import { useState } from 'react';
+import { useGroupCall } from '@/hooks/useGroupCall';
+import GroupVideoCall from './GroupVideoCall';
+import { Button } from '@/components/ui/button';
+import { Phone, Users, X } from 'lucide-react';
 
 /**
  * GroupCallManager Component
  * 
  * Komponen ini mengelola UI panggilan grup, termasuk:
- * - Membuat grup taktis baru
- * - Mengelola anggota dalam grup taktis
- * - Melihat status grup taktis aktif
- * - Bergabung dengan grup taktis yang ada
+ * - Membuat grup tactical baru
+ * - Mengelola anggota grup tactical
+ * - Melihat status grup tactical aktif
+ * - Bergabung dengan grup tactical yang ada
  */
 export default function GroupCallManager() {
-  const { activeGroupCall, availableGroups, isCreatingCall, createGroupCall, joinGroupCall } = useGroupCall();
-  const { user } = useAuth();
+  const { 
+    groupCallState, 
+    isInGroupCall, 
+    joinGroupCall, 
+    leaveGroupCall, 
+    acceptGroupCall, 
+    rejectGroupCall 
+  } = useGroupCall();
   
-  useEffect(() => {
-    console.log("[GroupCallManager] Active group call:", activeGroupCall);
-    console.log("[GroupCallManager] Available groups:", availableGroups);
-  }, [activeGroupCall, availableGroups]);
+  // Tampilkan UI berdasarkan state panggilan grup
   
-  // Tampilkan komponen yang sesuai berdasarkan jenis panggilan
-  if (activeGroupCall) {
-    if (activeGroupCall.callType === 'audio') {
-      // Implementasi fallback untuk panggilan grup audio
-      // Untuk saat ini, kita tampilkan pesan bahwa fitur ini akan segera hadir
-      return (
-        <div className="h-full w-full flex flex-col items-center justify-center bg-background p-4">
-          <div className="text-center max-w-md">
-            <h2 className="text-xl font-bold uppercase mb-4">AUDIO GROUP CHANNEL</h2>
-            <p className="mb-6">Fitur panggilan grup audio masih dalam pengembangan.</p>
-            <p className="mb-6">Untuk saat ini, silahkan gunakan panggilan grup video.</p>
-            <Button 
-              onClick={() => window.history.back()}
-              className="military-button"
-            >
-              KEMBALI KE COMMS
-            </Button>
-          </div>
-        </div>
-      );
-      
-      // Nantinya kita akan menggunakan komponen GroupAudioCall
-      // return <GroupAudioCall />;
-    } else {
-      return <GroupVideoCall />;
-    }
+  // Jika ada panggilan grup aktif, tampilkan antarmuka panggilan grup
+  if (isInGroupCall && groupCallState.activeGroupCall) {
+    return <GroupVideoCall />;
   }
   
-  // Tampilkan daftar grup yang tersedia atau UI untuk membuat grup baru
-  return (
-    <div className="h-full w-full flex flex-col bg-background">
-      {/* Header */}
-      <header className="bg-black px-4 py-3 text-white">
-        <h1 className="font-bold text-lg uppercase">TACTICAL GROUPS</h1>
-        <p className="text-xs">Buat atau bergabung dengan grup taktis untuk komunikasi tim</p>
-      </header>
-      
-      {/* Konten */}
-      <div className="flex-1 p-4">
-        {/* Grup yang tersedia */}
-        {availableGroups.length > 0 ? (
-          <div className="space-y-4">
-            <h2 className="font-bold uppercase text-sm border-b border-accent pb-2">GRUP AKTIF</h2>
+  // Jika ada panggilan grup masuk, tampilkan modal undangan panggilan grup
+  if (groupCallState.incomingGroupCall) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+        <div className="bg-zinc-900 p-6 rounded-lg shadow-lg max-w-md w-full border border-zinc-700">
+          <div className="flex flex-col items-center space-y-4">
+            {/* Icon dan animasi */}
+            <div className="w-24 h-24 rounded-full bg-emerald-800 flex items-center justify-center mb-2 animate-pulse">
+              <Users size={40} className="text-white" />
+            </div>
             
-            {availableGroups.map(group => (
-              <div 
-                key={group.id} 
-                className="border border-accent bg-secondary/10 p-3"
+            {/* Informasi panggilan grup */}
+            <h2 className="text-2xl font-bold text-white">{groupCallState.incomingGroupCall.roomName}</h2>
+            <p className="text-zinc-400">Panggilan grup dari {groupCallState.incomingGroupCall.callerName}</p>
+            
+            {/* Tombol aksi */}
+            <div className="flex space-x-4 mt-6">
+              {/* Tombol tolak panggilan */}
+              <Button 
+                variant="destructive" 
+                size="lg" 
+                className="rounded-full w-16 h-16 flex items-center justify-center" 
+                onClick={() => rejectGroupCall()}
               >
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="font-bold uppercase">{group.name}</h3>
-                    <p className="text-xs text-muted-foreground">
-                      {group.callType.toUpperCase()} CHANNEL | 
-                      {group.members.filter(m => m.hasJoined).length} ANGGOTA AKTIF
-                    </p>
-                  </div>
-                  <Button
-                    disabled={isCreatingCall || !!activeGroupCall}
-                    onClick={() => joinGroupCall(group.id)}
-                    className="military-button"
-                  >
-                    BERGABUNG
-                  </Button>
-                </div>
-                
-                {/* Daftar anggota grup */}
-                <div className="mt-3 pt-2 border-t border-accent/30">
-                  <p className="text-xs font-medium mb-2">ANGGOTA:</p>
-                  <div className="flex flex-wrap">
-                    {group.members.map(member => (
-                      <div 
-                        key={member.id} 
-                        className={`text-xs px-2 py-1 mr-2 mb-2 ${
-                          member.hasJoined
-                          ? 'bg-accent/20 border border-accent'
-                          : 'bg-muted/30 border border-muted'
-                        }`}
-                      >
-                        {member.callsign}
-                        {member.id === group.creatorId && " (CREATOR)"}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
+                <X size={28} />
+              </Button>
+              
+              {/* Tombol terima panggilan */}
+              <Button 
+                variant="default" 
+                size="lg" 
+                className="rounded-full w-16 h-16 flex items-center justify-center bg-emerald-600 hover:bg-emerald-700" 
+                onClick={() => acceptGroupCall()}
+              >
+                <Phone size={28} />
+              </Button>
+            </div>
           </div>
-        ) : (
-          <div className="h-full flex flex-col items-center justify-center">
-            <Users className="h-16 w-16 text-accent/30 mb-4" />
-            <h2 className="text-xl font-bold uppercase mb-2">TIDAK ADA GRUP AKTIF</h2>
-            <p className="text-center mb-6">Buat grup taktis baru untuk memulai</p>
-          </div>
-        )}
+        </div>
       </div>
-      
-      {/* Tombol Buat Grup Baru */}
-      <div className="p-4 border-t border-accent">
-        <Button
-          className="w-full py-6"
-          disabled={isCreatingCall || !!activeGroupCall}
-          onClick={() => {
-            // Untuk demo, buat grup dengan anggota sampel
-            // Di implementasi sebenarnya, ini akan menampilkan UI pemilihan anggota
-            if (user) {
-              createGroupCall(
-                "Tactical Team Alpha", 
-                [1, 2, 3, 4], // ID pengguna sampel
-                'video'
-              );
-            }
-          }}
-        >
-          <UserPlus className="mr-2 h-5 w-5" />
-          BUAT GRUP TAKTIS BARU
-        </Button>
-      </div>
-    </div>
-  );
+    );
+  }
+  
+  // Tampilan untuk melihat dan bergabung dengan grup tactical
+  return null; // Tampilan default (tidak menampilkan apa-apa)
 }

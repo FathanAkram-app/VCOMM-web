@@ -1,159 +1,139 @@
-import { createContext, useState, useEffect, ReactNode } from 'react';
-import { useToast } from '@/hooks/use-toast';
+import { createContext, useState, ReactNode, useEffect } from 'react';
+import { useWebSocket } from './WebSocketContext';
 
-// Definisi jenis notifikasi
-export type NotificationType = 'message' | 'call' | 'groupCall' | 'system';
+type NotificationType = 'message' | 'call' | 'info' | 'warning' | 'error';
 
-// Interface untuk data notifikasi
-export interface Notification {
+interface Notification {
   id: string;
   type: NotificationType;
   title: string;
   message: string;
-  data?: any; // Data tambahan spesifik untuk jenis notifikasi
-  read: boolean;
   timestamp: Date;
+  read: boolean;
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
+  data?: any;
 }
 
-// Interface untuk context
 interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
-  addNotification: (notification: Omit<Notification, 'id' | 'read' | 'timestamp'>) => void;
+  addNotification: (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => void;
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
-  clearNotifications: () => void;
-  playNotificationSound: (type: NotificationType) => void;
+  removeNotification: (id: string) => void;
+  clearAllNotifications: () => void;
 }
 
-// Context
-export const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
+const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
-// Provider Props
 interface NotificationProviderProps {
   children: ReactNode;
 }
 
-// Provider Component
 export function NotificationProvider({ children }: NotificationProviderProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const { toast } = useToast();
-  
-  // Preload audio files
-  const [audioFiles, setAudioFiles] = useState<Record<NotificationType, HTMLAudioElement | null>>({
-    message: null,
-    call: null,
-    groupCall: null,
-    system: null
-  });
+  const { isConnected } = useWebSocket();
   
   // Hitung jumlah notifikasi yang belum dibaca
-  const unreadCount = notifications.filter(notif => !notif.read).length;
+  const unreadCount = notifications.filter(notification => !notification.read).length;
   
-  // Load audio files once on component mount
-  useEffect(() => {
-    const loadAudio = () => {
-      try {
-        const messageAudio = new Audio('/sounds/message-notification.mp3');
-        const callAudio = new Audio('/sounds/call-notification.mp3');
-        const groupCallAudio = new Audio('/sounds/group-call-notification.mp3');
-        const systemAudio = new Audio('/sounds/system-notification.mp3');
-        
-        setAudioFiles({
-          message: messageAudio,
-          call: callAudio,
-          groupCall: groupCallAudio,
-          system: systemAudio
-        });
-      } catch (error) {
-        console.error('Failed to load notification sounds:', error);
-      }
-    };
-    
-    loadAudio();
-    
-    // Cleanup audio elements
-    return () => {
-      Object.values(audioFiles).forEach(audio => {
-        if (audio) {
-          audio.pause();
-          audio.src = '';
-        }
-      });
-    };
-  }, []);
-  
-  // Fungsi untuk menambahkan notifikasi baru
-  const addNotification = (notificationData: Omit<Notification, 'id' | 'read' | 'timestamp'>) => {
+  // Tambahkan notifikasi baru
+  const addNotification = (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
     const newNotification: Notification = {
-      ...notificationData,
+      ...notification,
       id: Date.now().toString(),
-      read: false,
-      timestamp: new Date()
+      timestamp: new Date(),
+      read: false
     };
     
     setNotifications(prev => [newNotification, ...prev]);
     
-    // Tampilkan toast notifikasi
-    toast({
-      title: newNotification.title,
-      description: newNotification.message,
-      variant: newNotification.type === 'system' ? 'destructive' : 'default',
-    });
-    
-    // Putar suara notifikasi
-    playNotificationSound(newNotification.type);
+    // Putar suara notifikasi berdasarkan jenis
+    playNotificationSound(notification.type);
   };
   
-  // Fungsi untuk menandai notifikasi sebagai sudah dibaca
+  // Putar suara notifikasi berdasarkan jenisnya
+  const playNotificationSound = (type: NotificationType) => {
+    let sound: HTMLAudioElement;
+    
+    switch (type) {
+      case 'message':
+        sound = new Audio('/sounds/message.mp3');
+        break;
+      case 'call':
+        // Untuk panggilan, suara dikelola oleh CallContext
+        return;
+      case 'warning':
+        sound = new Audio('/sounds/warning.mp3');
+        break;
+      case 'error':
+        sound = new Audio('/sounds/error.mp3');
+        break;
+      default:
+        sound = new Audio('/sounds/notification.mp3');
+        break;
+    }
+    
+    sound.play().catch(err => {
+      console.warn('Failed to play notification sound:', err);
+    });
+  };
+  
+  // Tandai notifikasi sebagai sudah dibaca
   const markAsRead = (id: string) => {
-    setNotifications(prev => 
-      prev.map(notif => 
-        notif.id === id ? { ...notif, read: true } : notif
+    setNotifications(prev =>
+      prev.map(notification =>
+        notification.id === id ? { ...notification, read: true } : notification
       )
     );
   };
   
-  // Fungsi untuk menandai semua notifikasi sebagai sudah dibaca
+  // Tandai semua notifikasi sebagai sudah dibaca
   const markAllAsRead = () => {
-    setNotifications(prev => 
-      prev.map(notif => ({ ...notif, read: true }))
+    setNotifications(prev =>
+      prev.map(notification => ({ ...notification, read: true }))
     );
   };
   
-  // Fungsi untuk menghapus semua notifikasi
-  const clearNotifications = () => {
+  // Hapus notifikasi tertentu
+  const removeNotification = (id: string) => {
+    setNotifications(prev => prev.filter(notification => notification.id !== id));
+  };
+  
+  // Hapus semua notifikasi
+  const clearAllNotifications = () => {
     setNotifications([]);
   };
   
-  // Fungsi untuk memutar suara notifikasi
-  const playNotificationSound = (type: NotificationType) => {
-    const audio = audioFiles[type];
-    if (audio) {
-      // Reset playback position
-      audio.currentTime = 0;
-      
-      // Attempt to play the sound
-      audio.play().catch(error => {
-        console.warn('Failed to play notification sound:', error);
+  // Tampilkan notifikasi konektivitas WebSocket
+  useEffect(() => {
+    if (!isConnected) {
+      addNotification({
+        type: 'warning',
+        title: 'Koneksi Terputus',
+        message: 'Koneksi ke server terputus. Mencoba menghubungkan kembali...'
       });
     }
-  };
+  }, [isConnected]);
   
-  // Value untuk context provider
-  const value = {
+  const contextValue: NotificationContextType = {
     notifications,
     unreadCount,
     addNotification,
     markAsRead,
     markAllAsRead,
-    clearNotifications,
-    playNotificationSound
+    removeNotification,
+    clearAllNotifications
   };
   
   return (
-    <NotificationContext.Provider value={value}>
+    <NotificationContext.Provider value={contextValue}>
       {children}
     </NotificationContext.Provider>
   );
 }
+
+export default NotificationContext;

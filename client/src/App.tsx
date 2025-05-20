@@ -1,56 +1,53 @@
 import { Route, Switch } from 'wouter';
-import { Toaster } from './components/ui/toaster';
-import { NotificationProvider } from './context/NotificationContext';
+import { Suspense, lazy } from 'react';
 import { WebSocketProvider } from './context/WebSocketContext';
+import { NotificationProvider } from './context/NotificationContext';
 import { CallProvider } from './context/CallContext';
 import { GroupCallProvider } from './context/GroupCallContext';
+import NotificationManager from './components/NotificationManager';
 import CallManager from './components/CallManager';
 import GroupCallManager from './components/GroupCallManager';
-import NotificationManager from './components/NotificationManager';
 
-// Impor halaman lain
-import Chat from './pages/Chat';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import NotFound from './pages/not-found';
-import Home from './pages/Home';
+// Lazy-loaded components
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const ChatsPage = lazy(() => import('./pages/ChatsPage'));
+const UserProfilePage = lazy(() => import('./pages/UserProfilePage'));
+const ChatPage = lazy(() => import('./pages/ChatPage'));
 
-// Komponen untuk routing
-function AppRoutes() {
+function App() {
   return (
-    <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/login" component={Login} />
-      <Route path="/register" component={Register} />
-      <Route path="/chat" component={Chat} />
-      <Route path="/chat/:id" component={Chat} />
-      <Route path="/audio-call" component={CallManager} />
-      <Route path="/video-call" component={CallManager} />
-      <Route path="/group-audio-call" component={GroupCallManager} />
-      <Route path="/group-video-call" component={GroupCallManager} />
-      <Route component={NotFound} />
-    </Switch>
-  );
-}
-
-export default function App() {
-  return (
-    <>
+    <WebSocketProvider>
       <NotificationProvider>
-        <WebSocketProvider>
-          <CallProvider>
-            <GroupCallProvider>
-              <AppRoutes />
-              <CallManager />
+        <CallProvider>
+          <GroupCallProvider>
+            <div className="min-h-screen bg-zinc-900 text-white">
+              <Suspense fallback={
+                <div className="flex items-center justify-center h-screen bg-zinc-900">
+                  <div className="animate-pulse text-green-500 text-2xl font-bold">
+                    NXZZ-VComm Loading...
+                  </div>
+                </div>
+              }>
+                <Switch>
+                  <Route path="/" component={LoginPage} />
+                  <Route path="/dashboard" component={DashboardPage} />
+                  <Route path="/chats" component={ChatsPage} />
+                  <Route path="/profile" component={UserProfilePage} />
+                  <Route path="/chat/:id/:isRoom?" component={ChatPage} />
+                </Switch>
+              </Suspense>
+              
+              {/* Notification and call managers yang selalu aktif */}
               <NotificationManager />
-              <Toaster />
-            </GroupCallProvider>
-          </CallProvider>
-        </WebSocketProvider>
+              <CallManager />
+              <GroupCallManager />
+            </div>
+          </GroupCallProvider>
+        </CallProvider>
       </NotificationProvider>
-      
-      {/* Modal container untuk modals */}
-      <div id="modal-root"></div>
-    </>
+    </WebSocketProvider>
   );
 }
+
+export default App;
