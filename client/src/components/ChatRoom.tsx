@@ -698,39 +698,37 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
                     )}
                     
-                    {/* Format yang lebih sederhana: pesan yang dibalas di atas dengan label (balas) */}
+                    {/* Format sederhana: teks pesan asli dimodifikasi untuk menampilkan balasan */}
                     {msg.replyToId && (
-                      <div className="rounded-md border border-[#3a4221] mb-2 overflow-hidden">
-                        {/* Pesan asli yang dibalas */}
+                      <div className="bg-[#2a2a2a] p-2 mb-2 rounded-md text-xs border-l-2 border-[#8ba742]">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Reply className="h-3 w-3 text-[#8ba742]" />
+                          <span className="text-[#8ba742] font-medium">Balasan</span>
+                        </div>
                         {(() => {
-                          const originalMsg = Array.isArray(messages) 
-                            ? messages.find(m => m.id === msg.replyToId) 
-                            : null;
-                          
-                          if (originalMsg) {
-                            return (
-                              <div className="bg-[#292c20] p-2 text-xs border-b border-[#3a4221]">
-                                <div className="flex justify-between mb-1">
-                                  <span className="text-[#a6c455] font-medium">{originalMsg.senderName}</span>
-                                  <span className="text-gray-400">(balas)</span>
-                                </div>
-                                {originalMsg.hasAttachment ? (
-                                  <div className="flex items-center">
-                                    <span className="text-[#8ba742] mr-1">📎</span>
-                                    <span className="text-gray-300">{originalMsg.attachmentName || 'File'}</span>
+                          try {
+                            // Mencari pesan yang dibalas dari array pesan
+                            if (!Array.isArray(messages)) return <span className="text-gray-500">Pesan sebelumnya</span>;
+                            
+                            for (let i = 0; i < messages.length; i++) {
+                              if (messages[i].id === msg.replyToId) {
+                                // Pesan ditemukan
+                                return (
+                                  <div className="text-gray-300">
+                                    <span className="font-medium text-[#a6c455] mr-1">{messages[i].senderName}:</span>
+                                    {messages[i].hasAttachment 
+                                      ? <span>[File: {messages[i].attachmentName || 'Lampiran'}]</span>
+                                      : <span>{messages[i].content || '<Pesan kosong>'}</span>
+                                    }
                                   </div>
-                                ) : (
-                                  <p className="text-gray-300 line-clamp-2">{originalMsg.content || 'Pesan kosong'}</p>
-                                )}
-                              </div>
-                            );
+                                );
+                              }
+                            }
+                            return <span className="text-gray-500">Pesan tidak ditemukan</span>;
+                          } catch (err) {
+                            console.error("Error rendering reply:", err);
+                            return <span className="text-gray-500">Error menampilkan balasan</span>;
                           }
-                          
-                          return (
-                            <div className="bg-[#292c20] p-2 text-xs">
-                              <p className="text-gray-400">Pesan sebelumnya</p>
-                            </div>
-                          );
                         })()}
                       </div>
                     )}
