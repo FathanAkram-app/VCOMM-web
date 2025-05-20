@@ -774,13 +774,17 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => {
                             // Set reply message
+                            console.log("Setting reply to message:", msg);
                             setReplyToMessage(msg);
                             
                             // Focus on message input after a small delay to ensure DOM is updated
                             setTimeout(() => {
                               const input = document.getElementById("message-input");
                               if (input) {
+                                console.log("Focusing input element");
                                 input.focus();
+                              } else {
+                                console.warn("Input element not found");
                               }
                             }, 100);
                           }}>
