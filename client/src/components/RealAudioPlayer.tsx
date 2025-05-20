@@ -34,6 +34,12 @@ export default function RealAudioPlayer({ messageId, timestamp, audioUrl }: Real
       console.log(`Setting audio source for message ${messageId} to: ${audioUrl}`);
       
       try {
+        // Periksa untuk nilai null atau undefined atau string kosong
+        if (!audioUrl || audioUrl === 'undefined' || audioUrl === 'null' || audioUrl === '') {
+          console.error(`Invalid audio URL for message ${messageId}: "${audioUrl}"`);
+          throw new Error('Invalid audio URL');
+        }
+        
         // Pastikan URL adalah absolut dan benar
         let absoluteUrl = audioUrl;
         
@@ -51,6 +57,9 @@ export default function RealAudioPlayer({ messageId, timestamp, audioUrl }: Real
           absoluteUrl = `${absoluteUrl}.webm`;
           console.log(`Added .webm extension to URL: ${absoluteUrl}`);
         }
+        
+        // Log URL yang akan digunakan untuk debugging
+        console.log(`Final audio URL for message ${messageId}: ${absoluteUrl}`);
         
         // Atur source audio dan muat langsung
         audio.src = absoluteUrl;
