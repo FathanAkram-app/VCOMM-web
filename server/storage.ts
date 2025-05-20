@@ -208,11 +208,27 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     
+    // Tentukan teks yang akan ditampilkan di preview pesan
+    let lastMessagePreview = message.content;
+    
+    // Jika pesan berisi attachment, tambahkan informasi itu ke preview
+    if (message.hasAttachment) {
+      const attachmentType = message.attachmentType || 'file';
+      // Jika pesan kosong, gunakan teks indikator file saja
+      if (!lastMessagePreview || lastMessagePreview.trim() === '') {
+        lastMessagePreview = `[${attachmentType.charAt(0).toUpperCase() + attachmentType.slice(1)}]`;
+      } 
+      // Jika ada teks, gabungkan dengan indikator file
+      else {
+        lastMessagePreview = `${lastMessagePreview} [${attachmentType}]`;
+      }
+    }
+    
     // Now update the conversation with the latest message
     await db.execute(
       sql`UPDATE conversations 
           SET updated_at = NOW(), 
-              last_message = ${message.content}, 
+              last_message = ${lastMessagePreview}, 
               last_message_time = NOW() 
           WHERE id = ${message.conversationId}`
     );
