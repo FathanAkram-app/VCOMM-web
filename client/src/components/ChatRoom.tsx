@@ -13,6 +13,7 @@ import AttachmentUploader from './AttachmentUploader';
 import MessageAttachment from './MessageAttachment';
 import VoiceRecorder from './VoiceRecorder';
 import AudioPlayerInline from './AudioPlayerInline';
+import AudioPlayer from './AudioPlayer';
 import {
   DropdownMenu,
   DropdownMenuContent,
