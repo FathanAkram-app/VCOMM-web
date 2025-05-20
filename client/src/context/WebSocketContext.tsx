@@ -1,160 +1,191 @@
-import { createContext, useState, useEffect, useCallback, ReactNode, useContext } from 'react';
-import { useAuth } from '@/hooks/use-auth';
+import { createContext, ReactNode, useCallback, useEffect, useState, useRef } from 'react';
+import { useNotification } from '../hooks/useNotification';
 
-interface WebSocketContextType {
-  isConnected: boolean;
-  sendMessage: (message: any) => void;
-  events: Record<string, any> | null;
+// Tipe pesan WebSocket
+export type WebSocketMessageType = 
+  | 'message' 
+  | 'call' 
+  | 'notification' 
+  | 'user_status' 
+  | 'typing'
+  | 'call_signal';
+
+// Interface pesan WebSocket
+export interface WebSocketMessage {
+  type: WebSocketMessageType;
+  [key: string]: any;
 }
 
+// Interface context
+interface WebSocketContextType {
+  isConnected: boolean;
+  sendMessage: (message: WebSocketMessage) => void;
+  lastMessage: WebSocketMessage | null;
+  reconnect: () => void;
+}
+
+// Default context
 export const WebSocketContext = createContext<WebSocketContextType>({
   isConnected: false,
   sendMessage: () => {},
-  events: null
+  lastMessage: null,
+  reconnect: () => {},
 });
 
+// Props provider
 interface WebSocketProviderProps {
   children: ReactNode;
 }
 
-export function WebSocketProvider({ children }: WebSocketProviderProps) {
+// Provider
+export const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [events, setEvents] = useState<Record<string, any> | null>(null);
-  const { user } = useAuth();
+  const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
+  const reconnectTimeoutRef = useRef<number | null>(null);
+  const reconnectAttemptsRef = useRef(0);
+  const { addNotification } = useNotification();
 
-  // Inisialisasi WebSocket
-  useEffect(() => {
-    if (!user) return;
+  // Setup WebSocket connection
+  const setupWebSocket = useCallback(() => {
+    // Cleanup previous connection if it exists
+    if (socket) {
+      socket.close();
+    }
 
-    // Tentukan protokol berdasarkan protokol halaman
+    // Determine WebSocket URL
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    
-    // Buat koneksi WebSocket
+    const host = window.location.host;
+    const wsUrl = `${protocol}//${host}/ws`;
+
+    // Create new WebSocket
     const newSocket = new WebSocket(wsUrl);
-    
-    // Tambahkan listener untuk event koneksi
-    newSocket.addEventListener('open', () => {
-      console.log('WebSocket connection established');
+
+    // Event handlers
+    newSocket.onopen = () => {
+      console.log('WebSocket connected');
       setIsConnected(true);
+      reconnectAttemptsRef.current = 0;
       
-      // Kirim pesan autentikasi
-      newSocket.send(JSON.stringify({
-        type: 'authenticate',
-        userId: user.id
-      }));
-      
-      // Mulai heartbeat untuk menjaga koneksi tetap aktif
-      const heartbeatInterval = setInterval(() => {
-        if (newSocket.readyState === WebSocket.OPEN) {
-          newSocket.send(JSON.stringify({ type: 'heartbeat' }));
+      // Send initial authentication if user is logged in
+      const user = localStorage.getItem('user');
+      if (user) {
+        try {
+          const userData = JSON.parse(user);
+          newSocket.send(JSON.stringify({
+            type: 'auth',
+            userId: userData.id
+          }));
+        } catch (error) {
+          console.error('Error parsing user data:', error);
         }
-      }, 30000);
+      }
+    };
+
+    newSocket.onclose = (event) => {
+      console.log('WebSocket disconnected', event.code, event.reason);
+      setIsConnected(false);
       
-      // Clean up heartbeat interval saat koneksi ditutup
-      newSocket.addEventListener('close', () => {
-        clearInterval(heartbeatInterval);
-      });
-    });
-    
-    // Handle pesan yang masuk
-    newSocket.addEventListener('message', (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        setEvents(data);
+      // Attempt to reconnect with exponential backoff
+      if (reconnectAttemptsRef.current < 5) {
+        const timeout = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30000);
+        console.log(`Reconnecting in ${timeout / 1000} seconds...`);
         
-        // Dispatch custom event untuk komponen lain yang mendengarkan
-        const customEvent = new CustomEvent('ws-message', { detail: data });
-        window.dispatchEvent(customEvent);
+        if (reconnectTimeoutRef.current) {
+          window.clearTimeout(reconnectTimeoutRef.current);
+        }
+        
+        // @ts-ignore
+        reconnectTimeoutRef.current = window.setTimeout(() => {
+          reconnectAttemptsRef.current++;
+          setupWebSocket();
+        }, timeout);
+      } else {
+        addNotification(
+          'Koneksi terputus', 
+          'Tidak dapat terhubung ke server komunikasi. Coba muat ulang halaman.', 
+          'system'
+        );
+      }
+    };
+
+    newSocket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data) as WebSocketMessage;
+        setLastMessage(data);
+        
+        // Handle different message types
+        switch (data.type) {
+          case 'notification':
+            addNotification(
+              data.title || 'Notifikasi baru', 
+              data.message, 
+              data.notificationType || 'system'
+            );
+            break;
+        }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
       }
-    });
-    
-    // Handle error
-    newSocket.addEventListener('error', (event) => {
-      console.error('WebSocket error:', event);
-      
-      // Dispatch custom event untuk error
-      const errorEvent = new CustomEvent('ws-error', { detail: event });
-      window.dispatchEvent(errorEvent);
-    });
-    
-    // Handle koneksi ditutup
-    newSocket.addEventListener('close', (event) => {
-      console.log('WebSocket connection closed:', event);
-      setIsConnected(false);
-      
-      // Dispatch custom event untuk penutupan koneksi
-      const closeEvent = new CustomEvent('ws-close', { detail: event });
-      window.dispatchEvent(closeEvent);
-      
-      // Coba sambungkan kembali setelah beberapa detik
-      setTimeout(() => {
-        if (newSocket.readyState === WebSocket.CLOSED) {
-          console.log('Attempting to reconnect WebSocket...');
-          
-          // Notifikasi reconnection
-          const reconnectEvent = new CustomEvent('ws-reconnect');
-          window.dispatchEvent(reconnectEvent);
-        }
-      }, 3000);
-    });
-    
-    // Simpan referensi socket
+    };
+
+    newSocket.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+
     setSocket(newSocket);
-    
-    // Cleanup saat komponen unmount
+
+    // Cleanup when component unmounts
     return () => {
-      if (newSocket.readyState === WebSocket.OPEN) {
-        newSocket.close();
+      if (reconnectTimeoutRef.current) {
+        window.clearTimeout(reconnectTimeoutRef.current);
+      }
+      newSocket.close();
+    };
+  }, [addNotification]);
+
+  // Initial connection
+  useEffect(() => {
+    setupWebSocket();
+    
+    // Setup heartbeat to keep connection alive
+    const heartbeatInterval = setInterval(() => {
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: 'heartbeat' }));
+      }
+    }, 30000); // Send heartbeat every 30 seconds
+    
+    return () => {
+      clearInterval(heartbeatInterval);
+      if (socket) {
+        socket.close();
+      }
+      if (reconnectTimeoutRef.current) {
+        window.clearTimeout(reconnectTimeoutRef.current);
       }
     };
-  }, [user]);
-  
-  // Fungsi untuk mengirim pesan melalui WebSocket
-  const sendMessage = useCallback((message: any) => {
+  }, [setupWebSocket, socket]);
+
+  // Send message function
+  const sendMessage = useCallback((message: WebSocketMessage) => {
     if (socket && socket.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify(message));
     } else {
-      console.warn('WebSocket is not connected. Cannot send message.');
-      
-      // Mencoba kembali jika socket ada tapi tidak terhubung
-      if (socket) {
-        const retryConnection = () => {
-          if (socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify(message));
-            socket.removeEventListener('open', retryConnection);
-          }
-        };
-        
-        socket.addEventListener('open', retryConnection);
-      }
+      console.warn('WebSocket not connected, cannot send message:', message);
     }
   }, [socket]);
-  
-  // Value untuk provider
-  const value = {
-    isConnected,
-    sendMessage,
-    events
-  };
-  
+
+  // Reconnect function
+  const reconnect = useCallback(() => {
+    reconnectAttemptsRef.current = 0;
+    setupWebSocket();
+  }, [setupWebSocket]);
+
   return (
-    <WebSocketContext.Provider value={value}>
+    <WebSocketContext.Provider
+      value={{ isConnected, sendMessage, lastMessage, reconnect }}
+    >
       {children}
     </WebSocketContext.Provider>
   );
-}
-
-// Hook untuk menggunakan WebSocketContext
-export const useWebSocket = () => {
-  const context = useContext(WebSocketContext);
-  
-  if (context === undefined) {
-    throw new Error('useWebSocket must be used within a WebSocketProvider');
-  }
-  
-  return context;
 };

@@ -1,139 +1,86 @@
-import { createContext, useState, ReactNode, useEffect } from 'react';
-import { useWebSocket } from './WebSocketContext';
+import { createContext, ReactNode, useEffect, useState } from 'react';
 
-type NotificationType = 'message' | 'call' | 'info' | 'warning' | 'error';
+// Tipe notifikasi
+export type NotificationType = 'message' | 'call' | 'system';
 
-interface Notification {
+// Interface notifikasi
+export interface Notification {
   id: string;
-  type: NotificationType;
   title: string;
   message: string;
+  type: NotificationType;
   timestamp: Date;
-  read: boolean;
-  action?: {
-    label: string;
-    onClick: () => void;
-  };
-  data?: any;
 }
 
+// Interface context
 interface NotificationContextType {
   notifications: Notification[];
-  unreadCount: number;
-  addNotification: (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => void;
-  markAsRead: (id: string) => void;
-  markAllAsRead: () => void;
+  addNotification: (title: string, message: string, type: NotificationType) => void;
   removeNotification: (id: string) => void;
   clearAllNotifications: () => void;
 }
 
-const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
+// Default context
+export const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
+// Props provider
 interface NotificationProviderProps {
   children: ReactNode;
 }
 
-export function NotificationProvider({ children }: NotificationProviderProps) {
+// Provider
+export const NotificationProvider = ({ children }: NotificationProviderProps) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const { isConnected } = useWebSocket();
-  
-  // Hitung jumlah notifikasi yang belum dibaca
-  const unreadCount = notifications.filter(notification => !notification.read).length;
-  
-  // Tambahkan notifikasi baru
-  const addNotification = (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
+
+  // Otomatis hapus notifikasi setelah 5 detik
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNotifications(prevNotifications => {
+        // Filter notifikasi yang lebih lama dari 5 detik
+        const now = new Date();
+        return prevNotifications.filter(notification => {
+          const diff = now.getTime() - notification.timestamp.getTime();
+          return diff < 5000; // 5 detik
+        });
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Tambah notifikasi baru
+  const addNotification = (title: string, message: string, type: NotificationType) => {
     const newNotification: Notification = {
-      ...notification,
-      id: Date.now().toString(),
+      id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      title,
+      message,
+      type,
       timestamp: new Date(),
-      read: false
     };
-    
+
     setNotifications(prev => [newNotification, ...prev]);
-    
-    // Putar suara notifikasi berdasarkan jenis
-    playNotificationSound(notification.type);
   };
-  
-  // Putar suara notifikasi berdasarkan jenisnya
-  const playNotificationSound = (type: NotificationType) => {
-    let sound: HTMLAudioElement;
-    
-    switch (type) {
-      case 'message':
-        sound = new Audio('/sounds/message.mp3');
-        break;
-      case 'call':
-        // Untuk panggilan, suara dikelola oleh CallContext
-        return;
-      case 'warning':
-        sound = new Audio('/sounds/warning.mp3');
-        break;
-      case 'error':
-        sound = new Audio('/sounds/error.mp3');
-        break;
-      default:
-        sound = new Audio('/sounds/notification.mp3');
-        break;
-    }
-    
-    sound.play().catch(err => {
-      console.warn('Failed to play notification sound:', err);
-    });
-  };
-  
-  // Tandai notifikasi sebagai sudah dibaca
-  const markAsRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(notification =>
-        notification.id === id ? { ...notification, read: true } : notification
-      )
-    );
-  };
-  
-  // Tandai semua notifikasi sebagai sudah dibaca
-  const markAllAsRead = () => {
-    setNotifications(prev =>
-      prev.map(notification => ({ ...notification, read: true }))
-    );
-  };
-  
-  // Hapus notifikasi tertentu
+
+  // Hapus notifikasi berdasarkan ID
   const removeNotification = (id: string) => {
-    setNotifications(prev => prev.filter(notification => notification.id !== id));
+    setNotifications(prev => prev.filter(notif => notif.id !== id));
   };
-  
+
   // Hapus semua notifikasi
   const clearAllNotifications = () => {
     setNotifications([]);
   };
-  
-  // Tampilkan notifikasi konektivitas WebSocket
-  useEffect(() => {
-    if (!isConnected) {
-      addNotification({
-        type: 'warning',
-        title: 'Koneksi Terputus',
-        message: 'Koneksi ke server terputus. Mencoba menghubungkan kembali...'
-      });
-    }
-  }, [isConnected]);
-  
-  const contextValue: NotificationContextType = {
-    notifications,
-    unreadCount,
-    addNotification,
-    markAsRead,
-    markAllAsRead,
-    removeNotification,
-    clearAllNotifications
-  };
-  
+
   return (
-    <NotificationContext.Provider value={contextValue}>
+    <NotificationContext.Provider
+      value={{
+        notifications,
+        addNotification,
+        removeNotification,
+        clearAllNotifications,
+      }}
+    >
       {children}
     </NotificationContext.Provider>
   );
-}
-
-export default NotificationContext;
+};

@@ -1,487 +1,481 @@
-import { createContext, useState, useEffect, useRef, ReactNode } from 'react';
-import { useWebSocket } from './WebSocketContext';
+import { createContext, ReactNode, useCallback, useEffect, useState } from 'react';
+import { useNotification } from '../hooks/useNotification';
+import { useWebSocket } from '../hooks/useWebSocket';
 
-interface CallState {
-  incomingCall: {
-    callerId: number | null;
-    callerName: string | null;
-    callType: 'video' | 'audio' | null;
-  } | null;
-  activeCall: {
-    peerId: number | null;
-    peerName: string | null;
-    callType: 'video' | 'audio';
-    localStream: MediaStream | null;
-    remoteStream: MediaStream | null;
-  } | null;
+// Interface untuk data panggilan
+export interface CallData {
+  callId: string;
+  callerId: number;
+  callerName: string;
+  receiverId: number;
+  callType: 'audio' | 'video';
+  status: 'incoming' | 'outgoing' | 'connected' | 'ended';
 }
 
+// Interface untuk context
 interface CallContextType {
-  callState: CallState;
-  handleIncomingCall: (callData: { callerId: number; callerName: string; callType: 'video' | 'audio' }) => void;
-  acceptCall: () => Promise<boolean>;
+  activeCall: CallData | null;
+  incomingCall: CallData | null;
+  startCall: (userId: number, callType: 'audio' | 'video') => void;
+  acceptCall: () => void;
   rejectCall: () => void;
-  makeCall: (userId: number, userName: string, callType: 'video' | 'audio') => Promise<boolean>;
   endCall: () => void;
+  toggleAudio: () => void;
+  toggleVideo: () => void;
+  isAudioEnabled: boolean;
+  isVideoEnabled: boolean;
+  localStream: MediaStream | null;
+  remoteStream: MediaStream | null;
 }
 
-export const CallContext = createContext<CallContextType | undefined>(undefined);
+// Default context
+export const CallContext = createContext<CallContextType>({
+  activeCall: null,
+  incomingCall: null,
+  startCall: () => {},
+  acceptCall: () => {},
+  rejectCall: () => {},
+  endCall: () => {},
+  toggleAudio: () => {},
+  toggleVideo: () => {},
+  isAudioEnabled: true,
+  isVideoEnabled: true,
+  localStream: null,
+  remoteStream: null,
+});
 
+// Props provider
 interface CallProviderProps {
   children: ReactNode;
 }
 
-export function CallProvider({ children }: CallProviderProps) {
-  // State untuk panggilan
-  const [callState, setCallState] = useState<CallState>({
-    incomingCall: null,
-    activeCall: null
-  });
+// Provider
+export const CallProvider = ({ children }: CallProviderProps) => {
+  const [activeCall, setActiveCall] = useState<CallData | null>(null);
+  const [incomingCall, setIncomingCall] = useState<CallData | null>(null);
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+  const [peerConnection, setPeerConnection] = useState<RTCPeerConnection | null>(null);
   
-  // Ref untuk koneksi WebRTC
-  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
-  const { sendMessage, isConnected } = useWebSocket();
-  
-  // Konfigurasi ICE server
-  const rtcConfig = {
-    iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' },
-    ]
-  };
-  
-  // Efek untuk menambahkan event listener untuk pesan masuk terkait panggilan
+  const { sendMessage, lastMessage, isConnected } = useWebSocket();
+  const { addNotification } = useNotification();
+
+  // Inisialisasi WebRTC
+  const initializePeerConnection = useCallback(() => {
+    // Konfigurasi ICE servers (STUN/TURN)
+    const configuration: RTCConfiguration = {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+      ]
+    };
+
+    // Buat peer connection baru
+    const pc = new RTCPeerConnection(configuration);
+
+    // Event handlers
+    pc.onicecandidate = (event) => {
+      if (event.candidate && activeCall) {
+        // Kirim ICE candidate ke peer lain
+        sendMessage({
+          type: 'ice_candidate',
+          targetId: activeCall.callerId === activeCall.receiverId ? activeCall.receiverId : activeCall.callerId,
+          candidate: event.candidate
+        });
+      }
+    };
+
+    pc.ontrack = (event) => {
+      // Tambahkan track ke remote stream
+      if (event.streams && event.streams[0]) {
+        setRemoteStream(event.streams[0]);
+      }
+    };
+
+    pc.onconnectionstatechange = () => {
+      console.log('RTC Connection State:', pc.connectionState);
+    };
+
+    pc.onicecandidateerror = (event) => {
+      console.error('ICE Candidate Error:', event);
+    };
+
+    setPeerConnection(pc);
+    return pc;
+  }, [activeCall, sendMessage]);
+
+  // Efek untuk mendengarkan pesan WebSocket
   useEffect(() => {
-    // Mendaftarkan event listener untuk pesan masuk terkait panggilan
-    const handleCallEvent = (event: CustomEvent) => {
-      const { type, data } = event.detail;
-      
-      switch (type) {
+    if (lastMessage) {
+      switch (lastMessage.type) {
         case 'incoming_call':
-          // Panggilan masuk
-          handleIncomingCall(data);
+          // Notifikasi panggilan masuk
+          const incomingCallData: CallData = {
+            callId: lastMessage.callId,
+            callerId: lastMessage.callerId,
+            callerName: lastMessage.callerName,
+            receiverId: Number(localStorage.getItem('userId') || '0'),
+            callType: lastMessage.callType,
+            status: 'incoming'
+          };
+          
+          setIncomingCall(incomingCallData);
+          
+          // Play ringtone
+          const audio = new Audio('/sounds/ringtone.mp3');
+          audio.loop = true;
+          audio.play().catch(error => {
+            console.warn('Failed to play ringtone:', error);
+          });
+          
+          // Tambahkan notification
+          addNotification(
+            'Panggilan Masuk', 
+            `${lastMessage.callerName} memanggil (${lastMessage.callType === 'video' ? 'Video' : 'Audio'})`, 
+            'call'
+          );
           break;
-        case 'call_rejected':
-          // Panggilan ditolak
-          handleCallRejected();
-          break;
+          
         case 'call_accepted':
-          // Panggilan diterima, mulai setup koneksi
-          handleCallAccepted(data);
+          if (activeCall && activeCall.status === 'outgoing') {
+            // Update status panggilan
+            setActiveCall({
+              ...activeCall,
+              status: 'connected'
+            });
+            
+            // Jika ini adalah penelepon, mulai proses WebRTC
+            createAndSendOffer();
+          }
           break;
-        case 'ice_candidate':
-          // Menerima ICE candidate dari peer
-          handleIceCandidate(data);
+          
+        case 'call_rejected':
+          // Panggilan ditolak, reset state
+          cleanupCall();
+          addNotification('Panggilan Berakhir', 'Panggilan ditolak', 'call');
           break;
-        case 'call_offer':
-          // Menerima penawaran koneksi (offer)
-          handleCallOffer(data);
-          break;
-        case 'call_answer':
-          // Menerima jawaban koneksi (answer)
-          handleCallAnswer(data);
-          break;
+          
         case 'call_ended':
           // Panggilan diakhiri oleh peer
-          handleCallEnded();
+          cleanupCall();
+          addNotification('Panggilan Berakhir', 'Panggilan telah berakhir', 'call');
+          break;
+          
+        case 'call_offer':
+          // Terima offer dan buat answer
+          handleIncomingOffer(lastMessage.offer);
+          break;
+          
+        case 'call_answer':
+          // Terapkan answer
+          handleIncomingAnswer(lastMessage.answer);
+          break;
+          
+        case 'ice_candidate':
+          // Tambahkan ICE candidate
+          handleIncomingIceCandidate(lastMessage.candidate);
           break;
       }
-    };
-    
-    // Mendaftarkan event listener
-    window.addEventListener('call_event', handleCallEvent as EventListener);
-    
-    // Cleanup event listener
-    return () => {
-      window.removeEventListener('call_event', handleCallEvent as EventListener);
-    };
-  }, [callState]); // Gunakan callState sebagai dependency
-  
-  // Handler untuk panggilan masuk
-  const handleIncomingCall = (callData: { callerId: number; callerName: string; callType: 'video' | 'audio' }) => {
-    // Jika sudah ada panggilan aktif, tolak panggilan masuk ini
-    if (callState.activeCall) {
-      sendMessage({
-        type: 'call_busy',
-        data: {
-          targetId: callData.callerId
-        }
-      });
-      return;
     }
-    
-    // Simpan informasi panggilan masuk
-    setCallState(prev => ({
-      ...prev,
-      incomingCall: {
-        callerId: callData.callerId,
-        callerName: callData.callerName,
-        callType: callData.callType
-      }
-    }));
-    
-    // Memainkan suara notifikasi
-    const ringtone = new Audio('/sounds/incoming-call.mp3');
-    ringtone.play().catch(err => {
-      console.warn('Failed to play ringtone:', err);
-    });
-  };
-  
-  // Handler saat panggilan ditolak
-  const handleCallRejected = () => {
-    // Bersihkan koneksi peer
-    cleanupPeerConnection();
-    
-    // Reset state panggilan aktif
-    setCallState(prev => ({
-      ...prev,
-      activeCall: null
-    }));
-  };
-  
-  // Handler saat panggilan diterima oleh peer yang dipanggil
-  const handleCallAccepted = async (data: any) => {
-    try {
-      // Mulai koneksi dan buat penawaran (offer)
-      await setupPeerConnection();
-      
-      // Panggilan sudah disetujui, sekarang buat penawaran (offer)
-      const offer = await peerConnectionRef.current?.createOffer();
-      
-      if (!offer) return;
-      
-      await peerConnectionRef.current?.setLocalDescription(offer);
-      
-      // Kirim penawaran ke peer yang dituju
-      sendMessage({
-        type: 'call_offer',
-        data: {
-          targetId: callState.activeCall?.peerId,
-          offer: offer
-        }
-      });
-    } catch (error) {
-      console.error('Error creating call offer:', error);
-      endCall();
-    }
-  };
-  
-  // Handler untuk ICE candidate yang diterima
-  const handleIceCandidate = async (data: any) => {
-    try {
-      if (!peerConnectionRef.current || !data.candidate) return;
-      
-      // Tambahkan ICE candidate yang diterima
-      await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(data.candidate));
-    } catch (error) {
-      console.error('Error adding ICE candidate:', error);
-    }
-  };
-  
-  // Handler untuk penawaran (offer) panggilan yang diterima
-  const handleCallOffer = async (data: any) => {
-    try {
-      if (!peerConnectionRef.current) return;
-      
-      // Set penawaran yang diterima sebagai remote description
-      await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(data.offer));
-      
-      // Buat jawaban (answer)
-      const answer = await peerConnectionRef.current.createAnswer();
-      await peerConnectionRef.current.setLocalDescription(answer);
-      
-      // Kirim jawaban ke peer
-      sendMessage({
-        type: 'call_answer',
-        data: {
-          targetId: callState.activeCall?.peerId || callState.incomingCall?.callerId,
-          answer: answer
-        }
-      });
-    } catch (error) {
-      console.error('Error handling call offer:', error);
-      endCall();
-    }
-  };
-  
-  // Handler untuk jawaban (answer) yang diterima
-  const handleCallAnswer = async (data: any) => {
-    try {
-      if (!peerConnectionRef.current) return;
-      
-      // Set jawaban yang diterima sebagai remote description
-      const remoteDesc = new RTCSessionDescription(data.answer);
-      await peerConnectionRef.current.setRemoteDescription(remoteDesc);
-    } catch (error) {
-      console.error('Error handling call answer:', error);
-      endCall();
-    }
-  };
-  
-  // Handler saat panggilan diakhiri oleh peer
-  const handleCallEnded = () => {
-    // Bersihkan koneksi peer
-    cleanupPeerConnection();
-    
-    // Reset state panggilan aktif
-    setCallState(prev => ({
-      incomingCall: null,
-      activeCall: null
-    }));
-  };
-  
-  // Fungsi untuk menerima panggilan
-  const acceptCall = async (): Promise<boolean> => {
-    if (!callState.incomingCall) return false;
-    
-    try {
-      // Mulai koneksi peer
-      const success = await setupPeerConnection();
-      
-      if (!success) {
-        throw new Error('Failed to set up media devices');
-      }
-      
-      // Beri tahu pemanggil bahwa panggilan diterima
-      sendMessage({
-        type: 'call_accepted',
-        data: {
-          targetId: callState.incomingCall.callerId
-        }
-      });
-      
-      // Perbarui state panggilan
-      setCallState(prev => ({
-        incomingCall: null,
-        activeCall: {
-          peerId: prev.incomingCall?.callerId || null,
-          peerName: prev.incomingCall?.callerName || null,
-          callType: prev.incomingCall?.callType || 'audio',
-          localStream: prev.activeCall?.localStream || null,
-          remoteStream: prev.activeCall?.remoteStream || null
-        }
-      }));
-      
-      return true;
-    } catch (error) {
-      console.error('Error accepting call:', error);
-      return false;
-    }
-  };
-  
-  // Fungsi untuk menolak panggilan
-  const rejectCall = () => {
-    if (!callState.incomingCall) return;
-    
-    // Beri tahu pemanggil bahwa panggilan ditolak
-    sendMessage({
-      type: 'call_rejected',
-      data: {
-        targetId: callState.incomingCall.callerId
-      }
-    });
-    
-    // Reset state panggilan masuk
-    setCallState(prev => ({
-      ...prev,
-      incomingCall: null
-    }));
-  };
-  
-  // Fungsi untuk memulai panggilan
-  const makeCall = async (userId: number, userName: string, callType: 'video' | 'audio'): Promise<boolean> => {
-    // Jika sudah ada panggilan aktif, batalkan
-    if (callState.activeCall) return false;
-    
-    try {
-      // Mulai koneksi peer
-      const success = await setupPeerConnection(callType);
-      
-      if (!success) {
-        throw new Error('Failed to set up media devices');
-      }
-      
-      // Kirim permintaan panggilan
-      sendMessage({
-        type: 'outgoing_call',
-        data: {
-          targetId: userId,
-          callType
-        }
-      });
-      
-      // Perbarui state panggilan
-      setCallState(prev => ({
-        ...prev,
-        activeCall: {
-          peerId: userId,
-          peerName: userName,
-          callType,
-          localStream: prev.activeCall?.localStream || null,
-          remoteStream: prev.activeCall?.remoteStream || null
-        }
-      }));
-      
-      return true;
-    } catch (error) {
-      console.error('Error making call:', error);
-      return false;
-    }
-  };
-  
-  // Fungsi untuk mengakhiri panggilan
-  const endCall = () => {
-    // Jika tidak ada panggilan aktif, tidak perlu melakukan apa-apa
-    if (!callState.activeCall && !callState.incomingCall) return;
-    
-    // Jika ada panggilan yang sedang aktif, beri tahu peer bahwa panggilan berakhir
-    if (callState.activeCall) {
-      sendMessage({
-        type: 'call_end',
-        data: {
-          targetId: callState.activeCall.peerId
-        }
+  }, [lastMessage, sendMessage, activeCall, addNotification]);
+
+  // Bersihkan panggilan
+  const cleanupCall = useCallback(() => {
+    // Stop local stream
+    if (localStream) {
+      localStream.getTracks().forEach(track => {
+        track.stop();
       });
     }
     
-    // Bersihkan koneksi peer
-    cleanupPeerConnection();
+    // Close peer connection
+    if (peerConnection) {
+      peerConnection.close();
+    }
     
-    // Reset state panggilan
-    setCallState({
-      incomingCall: null,
-      activeCall: null
-    });
-  };
-  
-  // Fungsi untuk mengatur koneksi peer
-  const setupPeerConnection = async (callType: 'video' | 'audio' = 'audio'): Promise<boolean> => {
+    // Reset state
+    setActiveCall(null);
+    setIncomingCall(null);
+    setLocalStream(null);
+    setRemoteStream(null);
+    setPeerConnection(null);
+  }, [localStream, peerConnection]);
+
+  // Mulai panggilan baru
+  const startCall = useCallback(async (userId: number, callType: 'audio' | 'video') => {
     try {
-      // Dapatkan stream media (audio/video)
-      const stream = await navigator.mediaDevices.getUserMedia({
+      // Dapatkan media stream
+      const constraints = {
         audio: true,
         video: callType === 'video'
-      });
-      
-      // Buat koneksi peer baru
-      const pc = new RTCPeerConnection(rtcConfig);
-      peerConnectionRef.current = pc;
-      
-      // Tambahkan tracks dari stream ke koneksi peer
-      stream.getTracks().forEach(track => {
-        pc.addTrack(track, stream);
-      });
-      
-      // Listener untuk ICE candidate yang dihasilkan
-      pc.onicecandidate = (event) => {
-        if (event.candidate) {
-          // Kirim ICE candidate ke peer
-          const targetId = callState.activeCall?.peerId || callState.incomingCall?.callerId;
-          
-          if (targetId) {
-            sendMessage({
-              type: 'ice_candidate',
-              data: {
-                targetId,
-                candidate: event.candidate
-              }
-            });
-          }
-        }
       };
       
-      // Listener untuk perubahan koneksi ICE
-      pc.oniceconnectionstatechange = () => {
-        console.log('ICE connection state:', pc.iceConnectionState);
-        
-        // Jika koneksi terputus atau gagal, akhiri panggilan
-        if (pc.iceConnectionState === 'disconnected' || 
-            pc.iceConnectionState === 'failed' || 
-            pc.iceConnectionState === 'closed') {
-          endCall();
-        }
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      setLocalStream(stream);
+      setIsAudioEnabled(true);
+      setIsVideoEnabled(callType === 'video');
+      
+      // Buat data panggilan
+      const myUserId = Number(localStorage.getItem('userId') || '0');
+      const myName = localStorage.getItem('userName') || 'User';
+      
+      const newCall: CallData = {
+        callId: `call_${Date.now()}`,
+        callerId: myUserId,
+        callerName: myName,
+        receiverId: userId,
+        callType,
+        status: 'outgoing'
       };
       
-      // Listener untuk track yang diterima dari peer
-      pc.ontrack = (event) => {
-        // Simpan remote stream
-        setCallState(prev => {
-          if (!prev.activeCall) return prev;
-          
-          return {
-            ...prev,
-            activeCall: {
-              ...prev.activeCall,
-              remoteStream: event.streams[0]
-            }
-          };
-        });
-      };
+      setActiveCall(newCall);
       
-      // Perbarui state dengan stream lokal
-      setCallState(prev => {
-        // Jika panggilan masuk yang diterima
-        if (prev.incomingCall) {
-          return {
-            incomingCall: null,
-            activeCall: {
-              peerId: prev.incomingCall.callerId,
-              peerName: prev.incomingCall.callerName,
-              callType: prev.incomingCall.callType || 'audio',
-              localStream: stream,
-              remoteStream: null
-            }
-          };
-        }
-        
-        // Jika ada panggilan aktif, perbarui stream lokalnya
-        if (prev.activeCall) {
-          return {
-            incomingCall: null,
-            activeCall: {
-              ...prev.activeCall,
-              localStream: stream
-            }
-          };
-        }
-        
-        return prev;
+      // Kirim pesan WebSocket untuk memulai panggilan
+      sendMessage({
+        type: 'outgoing_call',
+        targetId: userId,
+        callType
       });
-      
-      return true;
     } catch (error) {
-      console.error('Error setting up peer connection:', error);
-      return false;
+      console.error('Error starting call:', error);
+      addNotification(
+        'Gagal Memulai Panggilan', 
+        'Tidak dapat mengakses kamera atau mikrofon. Cek izin perangkat.', 
+        'system'
+      );
     }
-  };
-  
-  // Fungsi untuk membersihkan koneksi peer dan stream media
-  const cleanupPeerConnection = () => {
-    // Hentikan semua track media lokal
-    callState.activeCall?.localStream?.getTracks().forEach(track => {
-      track.stop();
+  }, [sendMessage, addNotification]);
+
+  // Terima panggilan masuk
+  const acceptCall = useCallback(async () => {
+    if (!incomingCall) return;
+    
+    try {
+      // Dapatkan media stream
+      const constraints = {
+        audio: true,
+        video: incomingCall.callType === 'video'
+      };
+      
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      setLocalStream(stream);
+      setIsAudioEnabled(true);
+      setIsVideoEnabled(incomingCall.callType === 'video');
+      
+      // Kirim pesan WebSocket untuk menerima panggilan
+      sendMessage({
+        type: 'call_accepted',
+        targetId: incomingCall.callerId
+      });
+      
+      // Update status panggilan
+      setActiveCall({
+        ...incomingCall,
+        status: 'connected'
+      });
+      
+      // Reset panggilan masuk
+      setIncomingCall(null);
+      
+      // Stop ringtone
+      const audioElements = document.querySelectorAll('audio');
+      audioElements.forEach(audio => {
+        audio.pause();
+        audio.currentTime = 0;
+      });
+      
+      // Inisialisasi peer connection
+      initializePeerConnection();
+    } catch (error) {
+      console.error('Error accepting call:', error);
+      addNotification(
+        'Gagal Menerima Panggilan', 
+        'Tidak dapat mengakses kamera atau mikrofon. Cek izin perangkat.', 
+        'system'
+      );
+    }
+  }, [incomingCall, sendMessage, initializePeerConnection, addNotification]);
+
+  // Tolak panggilan masuk
+  const rejectCall = useCallback(() => {
+    if (!incomingCall) return;
+    
+    // Kirim pesan WebSocket untuk menolak panggilan
+    sendMessage({
+      type: 'call_rejected',
+      targetId: incomingCall.callerId
     });
     
-    // Tutup koneksi peer
-    if (peerConnectionRef.current) {
-      peerConnectionRef.current.close();
-      peerConnectionRef.current = null;
+    // Reset panggilan masuk
+    setIncomingCall(null);
+    
+    // Stop ringtone
+    const audioElements = document.querySelectorAll('audio');
+    audioElements.forEach(audio => {
+      audio.pause();
+      audio.currentTime = 0;
+    });
+  }, [incomingCall, sendMessage]);
+
+  // Akhiri panggilan aktif
+  const endCall = useCallback(() => {
+    if (!activeCall) return;
+    
+    // Kirim pesan WebSocket untuk mengakhiri panggilan
+    sendMessage({
+      type: 'call_end',
+      targetId: activeCall.callerId === activeCall.receiverId ? activeCall.receiverId : activeCall.callerId
+    });
+    
+    // Bersihkan panggilan
+    cleanupCall();
+  }, [activeCall, sendMessage, cleanupCall]);
+
+  // Toggle audio
+  const toggleAudio = useCallback(() => {
+    if (localStream) {
+      const audioTracks = localStream.getAudioTracks();
+      audioTracks.forEach(track => {
+        track.enabled = !track.enabled;
+      });
+      setIsAudioEnabled(audioTracks[0]?.enabled || false);
     }
-  };
-  
-  // Nilai yang disediakan context
-  const contextValue: CallContextType = {
-    callState,
-    handleIncomingCall,
-    acceptCall,
-    rejectCall,
-    makeCall,
-    endCall
-  };
-  
+  }, [localStream]);
+
+  // Toggle video
+  const toggleVideo = useCallback(() => {
+    if (localStream) {
+      const videoTracks = localStream.getVideoTracks();
+      videoTracks.forEach(track => {
+        track.enabled = !track.enabled;
+      });
+      setIsVideoEnabled(videoTracks[0]?.enabled || false);
+    }
+  }, [localStream]);
+
+  // Buat dan kirim offer WebRTC
+  const createAndSendOffer = useCallback(async () => {
+    if (!peerConnection || !activeCall || !localStream) return;
+    
+    try {
+      // Tambahkan local stream ke peer connection
+      localStream.getTracks().forEach(track => {
+        peerConnection.addTrack(track, localStream);
+      });
+      
+      // Buat offer
+      const offer = await peerConnection.createOffer();
+      await peerConnection.setLocalDescription(offer);
+      
+      // Kirim offer ke peer lain
+      sendMessage({
+        type: 'call_offer',
+        targetId: activeCall.callerId === activeCall.receiverId ? activeCall.receiverId : activeCall.callerId,
+        offer
+      });
+    } catch (error) {
+      console.error('Error creating offer:', error);
+    }
+  }, [peerConnection, activeCall, localStream, sendMessage]);
+
+  // Handle offer yang masuk
+  const handleIncomingOffer = useCallback(async (offer: RTCSessionDescriptionInit) => {
+    if (!peerConnection || !activeCall || !localStream) {
+      // Inisialisasi peer connection jika belum ada
+      const pc = initializePeerConnection();
+      
+      // Tambahkan local stream ke peer connection
+      localStream?.getTracks().forEach(track => {
+        pc?.addTrack(track, localStream);
+      });
+      
+      if (pc) {
+        try {
+          // Set remote description
+          await pc.setRemoteDescription(new RTCSessionDescription(offer));
+          
+          // Buat answer
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          
+          // Kirim answer ke peer lain
+          sendMessage({
+            type: 'call_answer',
+            targetId: activeCall.callerId === activeCall.receiverId ? activeCall.receiverId : activeCall.callerId,
+            answer
+          });
+        } catch (error) {
+          console.error('Error handling offer:', error);
+        }
+      }
+    } else {
+      try {
+        // Tambahkan local stream ke peer connection
+        localStream.getTracks().forEach(track => {
+          peerConnection.addTrack(track, localStream);
+        });
+        
+        // Set remote description
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+        
+        // Buat answer
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        
+        // Kirim answer ke peer lain
+        sendMessage({
+          type: 'call_answer',
+          targetId: activeCall.callerId === activeCall.receiverId ? activeCall.receiverId : activeCall.callerId,
+          answer
+        });
+      } catch (error) {
+        console.error('Error handling offer:', error);
+      }
+    }
+  }, [peerConnection, activeCall, localStream, sendMessage, initializePeerConnection]);
+
+  // Handle answer yang masuk
+  const handleIncomingAnswer = useCallback(async (answer: RTCSessionDescriptionInit) => {
+    if (!peerConnection) return;
+    
+    try {
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+    } catch (error) {
+      console.error('Error handling answer:', error);
+    }
+  }, [peerConnection]);
+
+  // Handle ICE candidate yang masuk
+  const handleIncomingIceCandidate = useCallback(async (candidate: RTCIceCandidateInit) => {
+    if (!peerConnection) return;
+    
+    try {
+      await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+    } catch (error) {
+      console.error('Error handling ICE candidate:', error);
+    }
+  }, [peerConnection]);
+
   return (
-    <CallContext.Provider value={contextValue}>
+    <CallContext.Provider
+      value={{
+        activeCall,
+        incomingCall,
+        startCall,
+        acceptCall,
+        rejectCall,
+        endCall,
+        toggleAudio,
+        toggleVideo,
+        isAudioEnabled,
+        isVideoEnabled,
+        localStream,
+        remoteStream,
+      }}
+    >
       {children}
     </CallContext.Provider>
   );
-}
+};
