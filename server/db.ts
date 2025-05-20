@@ -1,14 +1,10 @@
-import { Pool, neonConfig } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-serverless";
 import * as schema from "@shared/schema";
-import ws from "ws";
 import * as dotenv from 'dotenv';
+import { NodePgDatabase, drizzle } from 'drizzle-orm/node-postgres';
+import { Pool } from 'pg';
 
 // Load environment variables from .env file
 dotenv.config();
-
-// Konfigurasi WebSocket untuk Neon Database
-neonConfig.webSocketConstructor = ws;
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
@@ -20,12 +16,13 @@ if (!process.env.DATABASE_URL) {
 const maskedUrl = process.env.DATABASE_URL.replace(/:([^:@]+)@/, ':****@');
 console.log("Connecting to database:", maskedUrl);
 
-// Set pooling configuration untuk mencegah too many clients error
+// Buat koneksi pool PostgreSQL standar
 export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
   max: 10, // Maximum 10 connections in pool
   idleTimeoutMillis: 30000, // Close idle connections after 30 seconds
   connectionTimeoutMillis: 5000, // Connection timeout after 5 seconds
+  ssl: process.env.DATABASE_URL.includes('localhost') ? false : { rejectUnauthorized: false }
 });
 
 // Handle errors pada level pool
@@ -33,5 +30,5 @@ pool.on('error', (err) => {
   console.error('Unexpected error on idle client', err);
 });
 
-// Export drizzle instance
-export const db = drizzle(pool, { schema });
+// Gunakan drizzle dengan node-postgres (bukan neon-serverless)
+export const db: NodePgDatabase<typeof schema> = drizzle(pool, { schema });
