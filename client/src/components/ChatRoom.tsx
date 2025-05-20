@@ -929,7 +929,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                           <RealAudioPlayer 
                             messageId={msg.id}
                             timestamp={msg.timestamp}
-                            audioUrl={msg.attachmentUrl}
+                            audioUrl={msg.attachmentUrl ? msg.attachmentUrl : `/uploads/voice_note_${msg.id}.webm`}
                           />
                         ) : (
                           <MessageAttachment 
