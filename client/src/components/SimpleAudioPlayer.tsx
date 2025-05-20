@@ -14,11 +14,25 @@ export default function SimpleAudioPlayer({ audioUrl, messageId, timestamp }: Si
   const [progress, setProgress] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  // Pastikan URL audio lengkap
+  // Pastikan URL audio lengkap dan benar
   const getFullUrl = (url: string) => {
     if (!url) return '';
     if (url.startsWith('http') || url.startsWith('blob:')) return url;
-    return window.location.origin + (url.startsWith('/') ? '' : '/') + url;
+    
+    // Normalisasi URL
+    let normalizedUrl = url;
+    
+    // Jika URL sudah berisi "uploads/" di tengahnya (seperti /api/uploads/...)
+    if (url.includes('/uploads/')) {
+      // Ambil hanya bagian filename-nya
+      normalizedUrl = '/uploads/' + url.split('/uploads/').pop();
+    } 
+    // Jika URL tidak dimulai dengan "/"
+    else if (!url.startsWith('/')) {
+      normalizedUrl = '/' + url;
+    }
+    
+    return window.location.origin + normalizedUrl;
   };
 
   // Format time dari seconds ke mm:ss
@@ -171,18 +185,38 @@ export default function SimpleAudioPlayer({ audioUrl, messageId, timestamp }: Si
           preload="metadata"
           style={{ display: 'none' }}
         >
-          {/* Coba berbagai variasi URL untuk menemukan file yang benar */}
-          {/* URL langsung ke file */}
-          <source src={audioUrl} type="audio/webm" />
-          <source src={audioUrl} type="audio/mpeg" />
+          {/* Log URL untuk debugging */}
+          {console.log(`Trying to play audio from URL: ${audioUrl}`)}
+          {console.log(`File name extracted: ${audioUrl.split('/').pop()}`)}
           
-          {/* URL dengan path uploads */}
+          {/* Coba dengan berbagai format file dan path */}
+          {/* Format WEBM */}
+          <source src={audioUrl} type="audio/webm" />
           <source src={`/uploads/${audioUrl.split('/').pop()}`} type="audio/webm" />
+          
+          {/* Format MP3 sebagai fallback */}
+          <source src={audioUrl.replace('.webm', '.mp3')} type="audio/mpeg" />
           <source src={`/uploads/${audioUrl.split('/').pop()?.replace('.webm', '.mp3')}`} type="audio/mpeg" />
+          
+          {/* Cari berdasarkan ID file jika menggunakan format voice_note_xxx.webm */}
+          {audioUrl.includes('voice_note_') && (
+            <>
+              <source 
+                src={`/uploads/${Array.from(audioUrl.matchAll(/voice_note_(\d+)/g))[0]?.[1]}.webm`}
+                type="audio/webm" 
+              />
+              <source 
+                src={`/uploads/${Array.from(audioUrl.matchAll(/voice_note_(\d+)/g))[0]?.[1]}.mp3`}
+                type="audio/mpeg" 
+              />
+            </>
+          )}
           
           {/* URL dengan lokasi absolut */}
           <source src={getFullUrl(audioUrl)} type="audio/webm" />
           <source src={getFullUrl(audioUrl.replace('.webm', '.mp3'))} type="audio/mpeg" />
+          
+          {/* Pesan fallback jika audio tidak didukung */}
           Browser Anda tidak mendukung pemutaran audio.
         </audio>
         
