@@ -81,8 +81,8 @@ export default function MessageAttachment({
             <div className="bg-[#222222] rounded-lg p-3">
               {/* Header */}
               <div className="flex items-center justify-center mb-2">
-                <Music className="h-5 w-5 text-green-500 mr-2" />
-                <span className="text-sm font-medium text-green-400">Pesan Suara</span>
+                <Volume2 className="h-5 w-5 text-red-500 mr-2" />
+                <span className="text-sm font-medium text-yellow-400">AUDIO TRANSMISI</span>
               </div>
               
               {/* Audio Player Standar */}
