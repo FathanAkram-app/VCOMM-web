@@ -909,44 +909,51 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
                     )}
                     
-                    {/* Reply indicator v2 - perbaikan untuk tampilan pesan balasan */}
+                    {/* Reply indicator - versi terbaru yang diperbaiki setelah melihat referensi */}
                     {msg.replyToId && (
-                      <div className="flex flex-col mb-2 py-1 border-l-2 border-[#8ba742] pl-2 -ml-2 text-xs">
-                        <div className="flex items-center text-[#a6c455] mb-1">
+                      <div className="ml-0 border-l-[3px] border-[#a6c455] pl-2 mb-2 text-xs text-gray-300">
+                        <p className="flex items-center text-[#a6c455] mb-0.5">
                           <CornerDownRight className="h-3 w-3 mr-1" />
-                          {messages && Array.isArray(messages) && messages.find((m: any) => m.id === msg.replyToId)?.senderName || 
-                            msg.replyInfo?.senderName || 'Membalas pesan'}
-                        </div>
+                          <span className="font-semibold uppercase">
+                            {msg.replyInfo?.senderName || 
+                             (messages && Array.isArray(messages) && 
+                              messages.find((m: any) => m.id === msg.replyToId)?.senderName) || 
+                             'Membalas pesan'}
+                          </span>
+                        </p>
                         
-                        <div className="text-gray-300 truncate pl-4">
+                        <p className="text-gray-400 text-[10px] leading-tight pl-1">
                           {(() => {
-                            // Cari di array pesan
-                            const repliedMsg = (messages && Array.isArray(messages)) ? 
-                              messages.find((m: any) => m.id === msg.replyToId) : null;
-                            
-                            // Atau gunakan replyInfo jika ada
-                            const replyContent = repliedMsg?.content || msg.replyInfo?.content || '';
-                            const hasAttachment = repliedMsg?.hasAttachment || msg.replyInfo?.hasAttachment || false;
-                            const isAudio = (repliedMsg?.attachmentType === 'audio') || 
-                                          (replyContent && replyContent.includes('🔊 Pesan Suara'));
+                            // Cari konten pesan yang dibalas
+                            const replyContent = msg.replyInfo?.content || 
+                              (messages && Array.isArray(messages) && 
+                               messages.find((m: any) => m.id === msg.replyToId)?.content) || '';
+                               
+                            const hasAttachment = msg.replyInfo?.hasAttachment || 
+                              (messages && Array.isArray(messages) && 
+                               messages.find((m: any) => m.id === msg.replyToId)?.hasAttachment) || false;
+                               
+                            const attachmentType = 
+                              (messages && Array.isArray(messages) && 
+                               messages.find((m: any) => m.id === msg.replyToId)?.attachmentType) || '';
+                               
+                            // Cek apakah pesan audio
+                            const isAudio = attachmentType === 'audio' || 
+                              (replyContent && replyContent.includes('🔊 Pesan Suara'));
                             
                             if (hasAttachment || isAudio) {
                               return (
-                                <span>
-                                  <span className="text-[#a6c455] mr-1">
-                                    {isAudio ? '🔊' : '📎'}
-                                  </span>
-                                  {isAudio ? 'Pesan Suara' : 
-                                    (repliedMsg?.attachmentName || msg.replyInfo?.attachmentName || 'File')}
+                                <span className="flex items-center">
+                                  {isAudio ? '🔊 Pesan Suara' : '📎 File'}
                                 </span>
                               );
                             } else if (replyContent) {
-                              return replyContent.substring(0, 40) + (replyContent.length > 40 ? '...' : '');
+                              return replyContent.substring(0, 30) + (replyContent.length > 30 ? '...' : '');
                             }
                             
                             return 'Pesan tidak tersedia';
                           })()}
-                        </div>
+                        </p>
                       </div>
                     )}
                     
