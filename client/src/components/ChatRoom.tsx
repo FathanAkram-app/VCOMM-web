@@ -685,40 +685,54 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
                     )}
                     
-                    {/* Jika ini adalah balasan, tampilkan pesan yang dibalas secara sederhana */}
+                    {/* Tampilan pesan balasan yang lebih intuitif */}
                     {msg.replyToId && (
-                      <div className="bg-[#2a2a2a] p-2 rounded mb-2 text-xs border-l-2 border-[#4d5d30]">
-                        <p className="text-[#a6c455] font-medium mb-1">
-                          <Reply className="h-3 w-3 mr-1 inline" />
-                          Balasan
-                        </p>
-                        <p className="text-gray-400 break-words">
+                      <div className="bg-[#212121] p-2 rounded-t mb-1 text-xs border-l-2 border-[#4d5d30] mx-2">
+                        <div className="flex items-center gap-1 mb-1 text-[#8ba742]">
+                          <Reply className="h-3 w-3" />
+                          <p className="font-medium">Membalas</p>
+                        </div>
+                        <div className="pl-1 text-gray-300 break-words">
                           {(() => {
-                            // Cari pesan secara manual
-                            for (let i = 0; i < messages.length; i++) {
-                              if (messages[i].id === msg.replyToId) {
-                                // Format pesan yang dibalas
-                                const originalMsg = messages[i];
-                                const sender = originalMsg.senderName || 'User';
-                                let content = originalMsg.content || '';
-                                
-                                // Jika pesan terlalu panjang
-                                if (content.length > 30) {
-                                  content = content.substring(0, 30) + '...';
-                                }
-                                
-                                // Jika pesan adalah attachment
-                                if (originalMsg.hasAttachment) {
-                                  content = `[File: ${originalMsg.attachmentName || 'Attachment'}]`;
-                                }
-                                
-                                return `"${content}" - ${sender}`;
+                            // Cari pesan yang dibalas dalam array pesan
+                            const originalMsg = Array.isArray(messages) 
+                              ? messages.find(m => m.id === msg.replyToId)
+                              : null;
+                            
+                            if (originalMsg) {
+                              const sender = originalMsg.senderName || 'User';
+                              let content = originalMsg.content || '';
+                              
+                              // Handle pesan dengan attachment
+                              if (originalMsg.hasAttachment) {
+                                return (
+                                  <>
+                                    <span className="text-gray-400">[File: {originalMsg.attachmentName || 'Attachment'}]</span>
+                                    <div className="mt-1 text-[11px] text-[#8ba742]">
+                                      - {sender}
+                                    </div>
+                                  </>
+                                );
                               }
+                              
+                              // Potong pesan yang terlalu panjang
+                              if (content.length > 60) {
+                                content = content.substring(0, 60) + '...';
+                              }
+                              
+                              return (
+                                <>
+                                  <span className="text-gray-400">"{content}"</span>
+                                  <div className="mt-1 text-[11px] text-[#8ba742]">
+                                    - {sender}
+                                  </div>
+                                </>
+                              );
                             }
                             
                             return "Pesan sebelumnya";
                           })()}
-                        </p>
+                        </div>
                       </div>
                     )}
                     
@@ -747,7 +761,18 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setReplyToMessage(msg)}>
+                          <DropdownMenuItem onClick={() => {
+                            // Set reply message
+                            setReplyToMessage(msg);
+                            
+                            // Focus on message input after a small delay to ensure DOM is updated
+                            setTimeout(() => {
+                              const input = document.getElementById("message-input");
+                              if (input) {
+                                input.focus();
+                              }
+                            }, 100);
+                          }}>
                             <Reply className="mr-2 h-4 w-4" />
                             Balas
                           </DropdownMenuItem>
@@ -856,6 +881,13 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
             <AttachmentUploader onFileUploaded={handleFileUploaded} />
             
             <Input
+              id="message-input"
+              ref={(el) => {
+                // Store the input element reference
+                if (el) {
+                  (window as any).messageInputRef = el;
+                }
+              }}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder={replyToMessage ? "Ketik balasan..." : "Ketik pesan..."}
