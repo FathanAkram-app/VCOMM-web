@@ -909,54 +909,52 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
                     )}
                     
-                    {/* Reply indicator - tampilan sesuai screenshot referensi */}
+                    {/* Reply indicator - tampilan sesuai dengan screenshot yang dikirim */}
                     {msg.replyToId && (
-                      <div className="flex items-start mb-2">
-                        <div className="h-full">
-                          <svg width="10" height="18" viewBox="0 0 10 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M1 1L8 1C8.55228 1 9 1.44772 9 2V11.5C9 12.0523 8.55228 12.5 8 12.5H5.5L1 17V1Z" stroke="#8ba742" strokeWidth="1.8" />
-                          </svg>
-                        </div>
-                        <div className="ml-1 flex flex-col">
-                          <span className="text-[#a6c455] text-[11px] font-semibold">
-                            {msg.replyInfo?.senderName || 
-                             (messages && Array.isArray(messages) && 
-                              messages.find((m: any) => m.id === msg.replyToId)?.senderName) || 
-                             'Membalas pesan'}
-                          </span>
-                          
-                          <span className="text-gray-400 text-[11px]">
-                            {(() => {
-                              // Cari konten pesan yang dibalas
-                              const replyContent = msg.replyInfo?.content || 
-                                (messages && Array.isArray(messages) && 
-                                 messages.find((m: any) => m.id === msg.replyToId)?.content) || '';
-                                 
-                              const hasAttachment = msg.replyInfo?.hasAttachment || 
-                                (messages && Array.isArray(messages) && 
-                                 messages.find((m: any) => m.id === msg.replyToId)?.hasAttachment) || false;
-                                 
-                              const attachmentType = 
-                                (messages && Array.isArray(messages) && 
-                                 messages.find((m: any) => m.id === msg.replyToId)?.attachmentType) || '';
-                                 
-                              // Cek apakah pesan audio
-                              const isAudio = attachmentType === 'audio' || 
-                                (replyContent && replyContent.includes('🔊 Pesan Suara'));
-                              
-                              if (hasAttachment || isAudio) {
-                                return (
-                                  <span>
-                                    {isAudio ? '🔊 Pesan Suara' : '📎 File'}
-                                  </span>
-                                );
-                              } else if (replyContent) {
-                                return replyContent.substring(0, 40) + (replyContent.length > 40 ? '...' : '');
-                              }
-                              
-                              return 'Pesan tidak tersedia';
-                            })()}
-                          </span>
+                      <div className="mb-1">
+                        <div className="flex items-start">
+                          <div className="flex-none text-[#a6c455] text-xs mr-1">↳</div>
+                          <div className="flex flex-col">
+                            <span className="text-[#a6c455] text-xs uppercase tracking-wide font-medium">
+                              {msg.replyInfo?.senderName || 
+                               (messages && Array.isArray(messages) && 
+                                messages.find((m: any) => m.id === msg.replyToId)?.senderName) || 
+                               'Membalas pesan'}
+                            </span>
+                            
+                            <span className="text-gray-400 text-[10px] leading-tight">
+                              {(() => {
+                                // Cari konten pesan yang dibalas
+                                const replyContent = msg.replyInfo?.content || 
+                                  (messages && Array.isArray(messages) && 
+                                   messages.find((m: any) => m.id === msg.replyToId)?.content) || '';
+                                   
+                                const hasAttachment = msg.replyInfo?.hasAttachment || 
+                                  (messages && Array.isArray(messages) && 
+                                   messages.find((m: any) => m.id === msg.replyToId)?.hasAttachment) || false;
+                                   
+                                const attachmentType = 
+                                  (messages && Array.isArray(messages) && 
+                                   messages.find((m: any) => m.id === msg.replyToId)?.attachmentType) || '';
+                                   
+                                // Cek apakah pesan audio
+                                const isAudio = attachmentType === 'audio' || 
+                                  (replyContent && replyContent.includes('🔊 Pesan Suara'));
+                                
+                                if (hasAttachment || isAudio) {
+                                  return (
+                                    <span>
+                                      {isAudio ? '🔊 Pesan Suara' : '📎 File'}
+                                    </span>
+                                  );
+                                } else if (replyContent) {
+                                  return replyContent.substring(0, 40) + (replyContent.length > 40 ? '...' : '');
+                                }
+                                
+                                return 'Pesan tidak tersedia';
+                              })()}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     )}
