@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Send, MoreVertical, Shield, Trash, Reply, Forward, X, User, Users } from 'lucide-react';
+import { Send, MoreVertical, Shield, Trash, Reply, Forward, X, User, Users, ArrowLeft } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -834,28 +834,28 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
       {/* Message input - positioned fixed for mobile */}
       <div className="border-t border-[#333333] p-3 bg-[#1a1a1a] fixed bottom-0 left-0 right-0 z-10">
         <form onSubmit={handleSendMessage} className="flex flex-col">
-          {/* Show reply preview if replying to a message */}
+          {/* Show reply preview if replying to a message - WhatsApp style */}
           {replyToMessage && (
-            <div className="flex items-start justify-between mb-2 bg-[#2a2a2a] p-2 rounded border-l-2 border-[#8ba742]">
+            <div className="flex items-center bg-[#212121] rounded-lg p-2 mb-2 border-l-4 border-[#8ba742]">
               <div className="flex-1">
-                <p className="text-xs text-[#a6c455] font-medium flex items-center mb-1">
-                  <Reply className="h-3 w-3 mr-1" />
-                  Membalas {replyToMessage.senderId === user?.id ? 'pesan Anda' : replyToMessage.senderName}
-                </p>
+                <div className="flex items-center text-[#a6c455] text-xs mb-1">
+                  <ArrowLeft className="h-3 w-3 mr-1" />
+                  <span>Membalas {replyToMessage.senderId === user?.id ? 'diri sendiri' : replyToMessage.senderName}</span>
+                </div>
                 {replyToMessage.hasAttachment ? (
                   <div className="flex items-center text-xs text-gray-300">
                     <span className="text-[#8ba742] mr-1">📎</span>
                     <span>{replyToMessage.attachmentName || 'File'}</span>
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-300">{replyToMessage.content || '<Pesan kosong>'}</p>
+                  <p className="text-xs text-gray-300 line-clamp-1">{replyToMessage.content || '<Pesan kosong>'}</p>
                 )}
               </div>
               <Button 
                 type="button"
                 variant="ghost" 
                 size="sm"
-                className="text-gray-400 hover:text-white h-6 w-6 p-0 ml-2"
+                className="text-gray-400 hover:text-white h-6 w-6 p-0"
                 onClick={() => setReplyToMessage(null)}
               >
                 <span className="sr-only">Batal</span>
