@@ -63,11 +63,14 @@ app.use((req, res, next) => {
   // ALWAYS serve the app on port 5000
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = 5000;
+  const port = process.env.PORT ? parseInt(process.env.PORT) : 5000;
+  const host = process.env.HOST || "0.0.0.0";
+  
   server.listen({
     port,
-    host: "0.0.0.0",
-    reusePort: true,
+    host,
+    // reusePort option causes issues on Windows
+    ...(process.platform !== 'win32' && { reusePort: true }),
   }, () => {
     log(`serving on port ${port}`);
   });

@@ -5,6 +5,8 @@ echo.
 set DATABASE_URL=postgresql://postgres:admin123!!@localhost:5432/nxzz_vcomm
 set SESSION_SECRET=rahasia_acak_anda
 set NODE_ENV=production
+set PORT=5000
+set HOST=localhost
 
 echo Menjalankan aplikasi dalam mode production...
 echo Aplikasi akan tersedia di http://localhost:5000
