@@ -258,10 +258,10 @@ export default function ChatList({
               
               <div className="flex justify-between items-center mt-1">
                 <p className="text-gray-400 text-sm truncate">
-                  {chat.lastMessage && chat.lastMessage.includes("AUDIO TRANSMISI") ? (
+                  {chat.lastMessage && chat.lastMessage.includes("Pesan Suara") ? (
                     <span className="flex items-center">
-                      <span className="text-red-500 mr-1">📻</span>
-                      <span className="text-yellow-400 font-semibold">AUDIO TRANSMISI</span>
+                      <span className="text-green-500 mr-1">🔊</span>
+                      <span className="text-gray-300">Pesan Suara</span>
                     </span>
                   ) : (
                     chat.lastMessage || "Belum ada pesan"

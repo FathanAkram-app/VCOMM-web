@@ -145,7 +145,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
         if (audioAttachment) {
           const payload = {
             conversationId: chatId,
-            content: "📻 AUDIO TRANSMISI",
+            content: "🔊 Pesan Suara",
             classification: 'UNCLASSIFIED',
             hasAttachment: true,
             attachmentType: audioAttachment.type,
@@ -235,7 +235,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
         // Voice message
         payload = {
           conversationId: chatId,
-          content: "📻 AUDIO TRANSMISI",
+          content: "🔊 Pesan Suara",
           classification: 'UNCLASSIFIED',
           hasAttachment: true,
           attachmentType: audioAttachment.type,
