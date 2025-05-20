@@ -76,17 +76,37 @@ export default function SimpleAudioPlayer({ audioUrl, messageId, timestamp }: Si
       audio.pause();
       setIsPlaying(false);
     } else {
-      // Try to play
-      audio.play().catch(error => {
-        console.error("Error playing audio:", error);
-        // If error contains permission denied, notify user
-        if (error.name === 'NotAllowedError') {
-          alert("Browser tidak mengizinkan pemutaran otomatis. Silakan klik tombol play lagi.");
-        } else {
-          console.log("URL audio:", getFullUrl(audioUrl));
-        }
-      });
-      setIsPlaying(true);
+      // Perbaiki masalah pemutaran audio pada browser
+      const playPromise = audio.play();
+      
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          console.log('Audio berhasil diputar');
+          setIsPlaying(true);
+        }).catch(error => {
+          console.error("Error playing audio:", error);
+          setIsPlaying(false);
+          
+          // Informasi debugging
+          console.log("Attempted playback of:", audioUrl);
+          console.log("Browser:", navigator.userAgent);
+          
+          if (error.name === 'NotAllowedError') {
+            console.log("Browser tidak mengizinkan pemutaran audio otomatis");
+          } else if (error.name === 'NotSupportedError') {
+            console.log("Format audio tidak didukung oleh browser");
+          } else if (error.name === 'AbortError') {
+            console.log("Pemutaran audio dibatalkan");
+          }
+          
+          // Jangan gunakan alert yang mengganggu UX
+          console.error("Tidak dapat memutar audio. Silakan coba lagi.");
+        });
+      } else {
+        // Browser tidak mendukung Promise untuk audio.play()
+        console.log("Browser tidak mendukung Promise untuk audio.play()");
+        setIsPlaying(true);
+      }
     }
   };
 
@@ -130,11 +150,20 @@ export default function SimpleAudioPlayer({ audioUrl, messageId, timestamp }: Si
           preload="metadata"
           style={{ display: 'none' }}
         >
-          {/* Mencoba berbagai format audio */}
-          <source src={getFullUrl(audioUrl)} type="audio/webm" />
-          <source src={getFullUrl(audioUrl.replace('.webm', '.mp3'))} type="audio/mpeg" />
-          <source src={getFullUrl(audioUrl.replace('.webm', '.ogg'))} type="audio/ogg" />
-          <source src={getFullUrl(audioUrl)} type="audio/wav" />
+          {/* Coba cari file di lokasi yang benar di intranet lokal */}
+          {audioUrl.includes('voice_note') ? (
+            // Format file dengan pattern voice_note_ID.webm
+            <>
+              <source src={`/uploads/${audioUrl.split('/').pop()}`} type="audio/webm" />
+              <source src={`/uploads/${audioUrl.split('/').pop()?.replace('.webm', '.mp3')}`} type="audio/mpeg" />
+            </>
+          ) : (
+            // URL langsung ke file yang sudah disimpan dengan UUID
+            <>
+              <source src={audioUrl} type="audio/webm" />
+              <source src={audioUrl.replace('.webm', '.mp3')} type="audio/mpeg" />
+            </>
+          )}
           Browser Anda tidak mendukung pemutaran audio.
         </audio>
         
