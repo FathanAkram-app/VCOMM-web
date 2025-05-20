@@ -360,10 +360,6 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
         .catch(error => console.error('Error fetching all users:', error));
     }
   }, [isForwardDialogOpen, user?.id]);
-        })
-        .catch(error => console.error('Error fetching direct chats:', error));
-    }
-  }, [isForwardDialogOpen]);
   
   // Handle sending messages
   const handleSendMessage = (e: React.FormEvent) => {
