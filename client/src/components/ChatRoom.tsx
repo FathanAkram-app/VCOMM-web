@@ -124,12 +124,85 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     }
   }, [messages, chatId]);
   
+  // Fungsi untuk handle voice recording
+  const handleStartVoiceRecording = () => {
+    setIsVoiceRecording(true);
+  };
+  
+  const handleVoiceRecordingComplete = (audioBlob: Blob, audioUrl: string) => {
+    setVoiceAttachment({
+      blob: audioBlob,
+      url: audioUrl
+    });
+    setIsVoiceRecording(false);
+  };
+  
+  const handleCancelVoiceRecording = () => {
+    setIsVoiceRecording(false);
+    setVoiceAttachment(null);
+  };
+  
+  // Upload voice attachment
+  const uploadVoiceAttachment = async (blob: Blob): Promise<{ name: string; url: string; type: string; size: number } | null> => {
+    const formData = new FormData();
+    const audioFile = new File(
+      [blob], 
+      `voice_note_${Date.now()}.mp3`, 
+      { type: 'audio/mp3' }
+    );
+    
+    formData.append('file', audioFile);
+    
+    try {
+      const response = await fetch('/api/attachments/upload', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to upload voice attachment');
+      }
+      
+      const data = await response.json();
+      return {
+        name: data.filename,
+        url: data.path,
+        type: 'audio',
+        size: audioFile.size
+      };
+      
+    } catch (error) {
+      console.error('Error uploading voice attachment:', error);
+      return null;
+    }
+  };
+
   // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string | Record<string, any>) => {
+      // Handle voice attachment first if present
+      let audioAttachment = null;
+      if (voiceAttachment?.blob) {
+        audioAttachment = await uploadVoiceAttachment(voiceAttachment.blob);
+      }
+      
       let payload;
       
-      if (typeof content === 'string') {
+      if (audioAttachment) {
+        // Voice message
+        payload = {
+          conversationId: chatId,
+          content: "🔊 Pesan Suara",
+          classification: 'UNCLASSIFIED',
+          hasAttachment: true,
+          attachmentType: audioAttachment.type,
+          attachmentUrl: audioAttachment.url,
+          attachmentName: audioAttachment.name,
+          attachmentSize: audioAttachment.size,
+          replyToId: replyToMessage ? replyToMessage.id : undefined
+        };
+      } else if (typeof content === 'string') {
         // Simple text message
         payload = {
           conversationId: chatId,
@@ -931,33 +1004,51 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
             </div>
           )}
           
-          <div className="flex items-center space-x-2">
-            <AttachmentUploader onFileUploaded={handleFileUploaded} />
-            
-            <Input
-              id="message-input"
-              ref={(el) => {
-                // Store the input element reference
-                if (el) {
-                  (window as any).messageInputRef = el;
-                }
-              }}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder={replyToMessage ? "Ketik balasan..." : "Ketik pesan..."}
-              className="flex-1 bg-[#252525] border-[#444444] text-white placeholder-gray-500 focus-visible:ring-[#4d5d30]"
+          {isVoiceRecording || voiceAttachment ? (
+            <VoiceRecorder
+              onSendAudio={handleVoiceRecordingComplete}
+              onCancel={handleCancelVoiceRecording}
             />
-            
-            <Button 
-              type="submit"
-              disabled={(!message.trim() && !attachment) || sendMessageMutation.isPending}
-              variant="ghost"
-              size="icon"
-              className="text-[#a6c455]"
-            >
-              <Send className="h-5 w-5" />
-            </Button>
-          </div>
+          ) : (
+            <div className="flex items-center space-x-2">
+              <AttachmentUploader onFileUploaded={handleFileUploaded} />
+              
+              <Input
+                id="message-input"
+                ref={(el) => {
+                  // Store the input element reference
+                  if (el) {
+                    (window as any).messageInputRef = el;
+                  }
+                }}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder={replyToMessage ? "Ketik balasan..." : "Ketik pesan..."}
+                className="flex-1 bg-[#252525] border-[#444444] text-white placeholder-gray-500 focus-visible:ring-[#4d5d30]"
+              />
+              
+              {/* Tombol rekam suara */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="text-[#a6c455]"
+                onClick={handleStartVoiceRecording}
+              >
+                <Mic className="h-5 w-5" />
+              </Button>
+              
+              <Button 
+                type="submit"
+                disabled={(!message.trim() && !attachment && !voiceAttachment) || sendMessageMutation.isPending}
+                variant="ghost"
+                size="icon"
+                className="text-[#a6c455]"
+              >
+                <Send className="h-5 w-5" />
+              </Button>
+            </div>
+          )}
         </form>
       </div>
     </div>
