@@ -833,22 +833,29 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
         <form onSubmit={handleSendMessage} className="flex flex-col">
           {/* Show reply preview if replying to a message */}
           {replyToMessage && (
-            <div className="flex items-center justify-between mb-2 bg-[#2a2a2a] p-2 rounded">
+            <div className="flex items-start justify-between mb-2 bg-[#2a2a2a] p-2 rounded border-l-2 border-[#8ba742]">
               <div className="flex-1">
-                <p className="text-xs text-[#a6c455] flex items-center">
+                <p className="text-xs text-[#a6c455] font-medium flex items-center mb-1">
                   <Reply className="h-3 w-3 mr-1" />
                   Membalas {replyToMessage.senderId === user?.id ? 'pesan Anda' : replyToMessage.senderName}
                 </p>
-                <p className="text-xs text-gray-400 truncate">{replyToMessage.content}</p>
+                {replyToMessage.hasAttachment ? (
+                  <div className="flex items-center text-xs text-gray-300">
+                    <span className="text-[#8ba742] mr-1">📎</span>
+                    <span>{replyToMessage.attachmentName || 'File'}</span>
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-300">{replyToMessage.content || '<Pesan kosong>'}</p>
+                )}
               </div>
               <Button 
                 type="button"
                 variant="ghost" 
                 size="sm"
-                className="text-gray-400 hover:text-white h-6 w-6 p-0"
+                className="text-gray-400 hover:text-white h-6 w-6 p-0 ml-2"
                 onClick={() => setReplyToMessage(null)}
               >
-                <span className="sr-only">Cancel</span>
+                <span className="sr-only">Batal</span>
                 <X className="h-4 w-4" />
               </Button>
             </div>
