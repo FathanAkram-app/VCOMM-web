@@ -681,47 +681,34 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                     {/* Jika ini adalah balasan, tampilkan pesan yang dibalas */}
                     {msg.replyToId && (
                       <div className="bg-[#2a2a2a] p-2 rounded mb-2 text-xs border-l-2 border-[#4d5d30]">
-                        {(() => {
-                          // Cari pesan yang dibalas dari semua grup pesan
-                          let repliedMessage = null;
-                          if (messageGroups) {
-                            // Cari di semua grup pesan
-                            for (const group of messageGroups) {
-                              if (group.messages) {
-                                const found = group.messages.find((m: any) => m.id === msg.replyToId);
-                                if (found) {
-                                  repliedMessage = found;
-                                  break;
+                        <p className="text-[#a6c455] font-medium mb-1">
+                          Membalas <span className="font-bold">Pesan</span>
+                        </p>
+                        <p className="text-gray-400 break-words">
+                          {(() => {
+                            // Cari pesan yang dibalas dari message data asli
+                            if (Array.isArray(messages)) {
+                              const repliedMsg = messages.find((m: any) => m.id === msg.replyToId);
+                              if (repliedMsg) {
+                                // Format isi pesan yang dibalas
+                                let content = repliedMsg.content || '';
+                                
+                                // Jika pesan yang dibalas adalah file
+                                if (repliedMsg.hasAttachment) {
+                                  return `[File: ${repliedMsg.attachmentName || 'Attachment'}]`;
                                 }
+                                
+                                // Jika pesan yang dibalas terlalu panjang
+                                if (content.length > 60) {
+                                  content = content.substring(0, 60) + '...';
+                                }
+                                
+                                return content;
                               }
                             }
-                          }
-                          
-                          if (repliedMessage) {
-                            // Format isi pesan yang dibalas
-                            let replyContent = repliedMessage.content;
-                            if (repliedMessage.hasAttachment) {
-                              replyContent = `[File: ${repliedMessage.attachmentName || 'Attachment'}]`;
-                            } else if (repliedMessage.isDeleted) {
-                              replyContent = '[Pesan ini telah dihapus]';
-                            } else if (replyContent.length > 50) {
-                              replyContent = replyContent.substring(0, 50) + '...';
-                            }
-                            
-                            return (
-                              <>
-                                <p className="text-[#a6c455] font-medium mb-1">
-                                  Membalas {repliedMessage.senderName || 'Pesan'}
-                                </p>
-                                <p className="text-gray-400 break-words">
-                                  {replyContent}
-                                </p>
-                              </>
-                            );
-                          } else {
-                            return <p className="text-gray-400">Membalas pesan sebelumnya</p>;
-                          }
-                        })()}
+                            return "Pesan sebelumnya";
+                          })()}
+                        </p>
                       </div>
                     )}
                     
