@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, MoreVertical, Shield, Trash, Reply, Forward, X, User, Users, ArrowLeft } from 'lucide-react';
+import { Send, MoreVertical, Shield, Trash, Reply, Forward, X, User, Users, ArrowLeft, Mic } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { id } from 'date-fns/locale';
 import { type Conversation, type Message } from '@shared/schema';
 import AttachmentUploader from './AttachmentUploader';
 import MessageAttachment from './MessageAttachment';
+import VoiceRecorder from './VoiceRecorder';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -75,6 +76,14 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   const [isForwardDialogOpen, setIsForwardDialogOpen] = useState(false);
   const [replyToMessage, setReplyToMessage] = useState<ChatMessage | null>(null);
   const [conversations, setConversations] = useState<{id: number, name: string, isGroup?: boolean}[]>([]);
+  
+  // State untuk voice recording
+  const [isVoiceRecording, setIsVoiceRecording] = useState(false);
+  const [voiceAttachment, setVoiceAttachment] = useState<{
+    blob: Blob;
+    url: string;
+    duration?: number;
+  } | null>(null);
   
   // Fetch chat data
   const { data: chat } = useQuery({
