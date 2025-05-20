@@ -146,49 +146,85 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
       console.log(`Estimated duration from blob size: ${safeDuration}s`);
     }
     
-    setVoiceAttachment({
-      blob: audioBlob,
-      url: audioUrl,
-      duration: safeDuration
-    });
-    setIsVoiceRecording(false);
+    // Format durasi untuk ditampilkan di pesan
+    const minutes = Math.floor(safeDuration / 60);
+    const seconds = Math.floor(safeDuration % 60);
+    const durationText = ` (${minutes}:${seconds.toString().padStart(2, '0')})`;
     
-    // Langsung kirim pesan suara ketika selesai merekam
-    const sendVoiceMessage = async () => {
-      console.log("Uploading and sending voice message...");
+    // Kirim pesan suara dengan mengirimkan langsung payload tanpa melalui voiceAttachment
+    const sendDirectVoiceMessage = async () => {
+      console.log("Uploading and sending voice message directly...");
       try {
-        const audioAttachment = await uploadVoiceAttachment(audioBlob);
-        if (audioAttachment) {
-          // Format durasi untuk ditampilkan di pesan
-          const minutes = Math.floor(safeDuration / 60);
-          const seconds = Math.floor(safeDuration % 60);
-          const durationText = ` (${minutes}:${seconds.toString().padStart(2, '0')})`;
-          
-          // Buat pesan dengan format yang memperlihatkan pesan suara sesuai dengan desain yang diinginkan
-          const payload = {
-            conversationId: chatId,
-            content: `🔊 Pesan Suara${durationText}`,
-            classification: 'UNCLASSIFIED',
-            hasAttachment: true,
-            attachmentType: 'audio',
-            attachmentUrl: audioAttachment.url,
-            attachmentName: audioAttachment.name,
-            attachmentSize: audioAttachment.size,
-            replyToId: replyToMessage ? replyToMessage.id : undefined
-          };
-          
-          console.log("Sending voice message with payload:", payload);
-          sendMessageMutation.mutate(payload);
-          setReplyToMessage(null);
-        } else {
-          console.error("Failed to upload voice attachment");
+        // Upload file audio
+        const formData = new FormData();
+        const audioType = audioBlob.type || 'audio/webm';
+        const fileExt = audioType.includes('webm') ? 'webm' : 
+                      audioType.includes('ogg') ? 'ogg' : 
+                      audioType.includes('mp4') ? 'm4a' : 'mp3';
+        
+        // Buat nama file yang unik dengan timestamp
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const fileName = `voice_note_${timestamp}.${fileExt}`;
+        
+        const audioFile = new File([audioBlob], fileName, { type: audioType });
+        formData.append('file', audioFile);
+        
+        // Upload file
+        const response = await fetch('/api/attachments/upload', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to upload voice attachment');
         }
+        
+        const data = await response.json();
+        
+        // Langsung kirim pesan dengan file yang sudah diupload
+        const payload = {
+          conversationId: chatId,
+          content: `🔊 Pesan Suara${durationText}`,
+          classification: 'UNCLASSIFIED',
+          hasAttachment: true,
+          attachmentType: 'audio',
+          attachmentUrl: data.file.url,
+          attachmentName: data.file.name,
+          attachmentSize: data.file.size,
+          replyToId: replyToMessage ? replyToMessage.id : undefined
+        };
+        
+        console.log("Sending voice message with payload:", payload);
+        
+        // Gunakan fetch langsung untuk mengirim pesan
+        const messageResponse = await fetch('/api/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload),
+          credentials: 'include'
+        });
+        
+        if (!messageResponse.ok) {
+          throw new Error('Failed to send voice message');
+        }
+        
+        // Refresh messages setelah berhasil kirim
+        refetchMessages();
+        setReplyToMessage(null);
       } catch (error) {
         console.error("Error sending voice message:", error);
       }
     };
     
-    sendVoiceMessage();
+    // Eksekusi pengiriman pesan langsung
+    sendDirectVoiceMessage();
+    
+    // Reset state
+    setIsVoiceRecording(false);
+    setVoiceAttachment(null); // Pastikan voiceAttachment null agar tidak terjadi double upload
   };
   
   const handleCancelVoiceRecording = () => {
