@@ -127,10 +127,16 @@ export default function SimpleAudioPlayer({ audioUrl, messageId, timestamp }: Si
         {/* Audio element - hidden but functional */}
         <audio 
           ref={audioRef}
-          src={getFullUrl(audioUrl)}
           preload="metadata"
           style={{ display: 'none' }}
-        />
+        >
+          {/* Mencoba berbagai format audio */}
+          <source src={getFullUrl(audioUrl)} type="audio/webm" />
+          <source src={getFullUrl(audioUrl.replace('.webm', '.mp3'))} type="audio/mpeg" />
+          <source src={getFullUrl(audioUrl.replace('.webm', '.ogg'))} type="audio/ogg" />
+          <source src={getFullUrl(audioUrl)} type="audio/wav" />
+          Browser Anda tidak mendukung pemutaran audio.
+        </audio>
         
         {/* Player control */}
         <div className="bg-[#394733] px-3 py-2">
