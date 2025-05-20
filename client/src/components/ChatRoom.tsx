@@ -909,42 +909,34 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
                     )}
                     
-                    {/* Reply indicator - persis sama dengan screenshot terakhir */}
+                    {/* Reply indicator - seperti aplikasi chat populer */}
                     {msg.replyToId && (
-                      <div className="mb-1">
-                        <div className="flex items-center text-[#a6c455] text-[10px] leading-none">
-                          <span className="mr-1">⦿</span>
-                          <span className="uppercase">
-                            {msg.replyInfo?.classification || 
+                      <div className="pl-1 pr-2 py-1 mb-1 border-l-2 border-[#a6c455] bg-[rgba(166,196,85,0.1)] rounded-sm text-white">
+                        <div className="flex items-center text-xs">
+                          <div className="text-[#a6c455] font-semibold">
+                            {msg.replyInfo?.senderName || 
                              (messages && Array.isArray(messages) && 
-                              messages.find((m: any) => m.id === msg.replyToId)?.classification) || 
-                             'unclassified'}
-                          </span>
-                          <span className="ml-1 text-[#c7c7c7] normal-case whitespace-nowrap overflow-hidden text-ellipsis">
-                            {(() => {
-                              // Cari konten pesan yang dibalas
-                              const replyContent = msg.replyInfo?.content || 
-                                (messages && Array.isArray(messages) && 
-                                 messages.find((m: any) => m.id === msg.replyToId)?.content) || '';
-                                
-                              // Hilangkan tag HTML dan format khusus
-                              const cleanContent = replyContent.replace(/<[^>]*>/g, '')
-                                .replace(/\[File: .+\]/g, '[File]')
-                                .replace(/🔊 Pesan Suara \(.+\)/g, 'Pesan Suara');
-                                 
-                              if (cleanContent) {
-                                return cleanContent.substring(0, 30) + (cleanContent.length > 30 ? '...' : '');
-                              }
-                              return 'pesan';
-                            })()}
-                            &nbsp;dari&nbsp;
-                            <span className="text-[#a6c455]">
-                              {msg.replyInfo?.senderName || 
-                               (messages && Array.isArray(messages) && 
-                                messages.find((m: any) => m.id === msg.replyToId)?.senderName) || 
-                               'unknown'}
-                            </span>
-                          </span>
+                              messages.find((m: any) => m.id === msg.replyToId)?.senderName) || 
+                             'unknown'}
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-300 truncate mt-0.5">
+                          {(() => {
+                            // Cari konten pesan yang dibalas
+                            const replyContent = msg.replyInfo?.content || 
+                              (messages && Array.isArray(messages) && 
+                               messages.find((m: any) => m.id === msg.replyToId)?.content) || '';
+                              
+                            // Hilangkan tag HTML dan format khusus
+                            const cleanContent = replyContent.replace(/<[^>]*>/g, '')
+                              .replace(/\[File: .+\]/g, 'File')
+                              .replace(/🔊 Pesan Suara \(.+\)/g, 'Pesan Suara');
+                               
+                            if (cleanContent) {
+                              return cleanContent;
+                            }
+                            return 'Pesan';
+                          })()}
                         </div>
                       </div>
                     )}
