@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Volume2, MoreVertical, Pencil } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Play, Pause, Volume2, Mic } from 'lucide-react';
 
 interface AudioPlayerInlineProps {
   src: string;
@@ -79,30 +78,9 @@ const AudioPlayerInline: React.FC<AudioPlayerInlineProps> = ({ src, filename, fi
       setIsPlaying(true);
     }
   };
-  
-  // Menangani perubahan slider
-  const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!audioRef.current) return;
-    
-    const newProgress = parseFloat(e.target.value);
-    const newTime = (newProgress / 100) * duration;
-    
-    audioRef.current.currentTime = newTime;
-    setProgress(newProgress);
-    setCurrentTime(newTime);
-  };
 
   return (
-    <div className="w-full mt-1 mb-1">
-      {/* Header pesan suara dengan ikon dan waktu */}
-      <div className="flex items-center mb-2">
-        <Pencil className="h-4 w-4 text-gray-400 mr-1" />
-        <span className="text-xs text-gray-300">Voice Note - 00:00</span>
-        {fileSize && (
-          <span className="text-xs text-gray-400 ml-2">{formatFileSize(fileSize)}</span>
-        )}
-      </div>
-      
+    <div className="w-full">
       {/* Audio element tersembunyi */}
       <audio
         ref={audioRef}
@@ -110,40 +88,54 @@ const AudioPlayerInline: React.FC<AudioPlayerInlineProps> = ({ src, filename, fi
         preload="metadata"
       />
 
-      {/* Player control seperti WhatsApp */}
-      <div className="w-full bg-white/10 rounded-full flex items-center px-2 py-1">
-        <button 
-          onClick={togglePlay}
-          className="flex-shrink-0 h-8 w-8 flex items-center justify-center"
-        >
-          {isPlaying ? (
-            <Pause className="h-5 w-5 text-white" />
-          ) : (
-            <Play className="h-5 w-5 text-white" />
-          )}
-        </button>
-
-        <div className="mx-2 text-xs text-white/90 flex-shrink-0">
-          {formatTime(currentTime)} / {formatTime(duration)}
+      {/* Player interface yang mirip dengan yang di NXZZ-VComm */}
+      <div className="flex flex-col w-full">
+        {/* Player control dengan background hijau */}
+        <div className="bg-[#223920] rounded-t-md p-2 flex items-center">
+          <div className="flex items-center text-sm text-white space-x-1">
+            <Mic className="h-4 w-4 mr-1" />
+            <span>Voice recording - {formatTime(duration)}</span>
+          </div>
         </div>
+        
+        {/* Bagian player utama dengan background putih transparan */}
+        <div className="bg-white/10 rounded-b-md p-1 flex items-center">
+          <button 
+            onClick={togglePlay}
+            className="flex-shrink-0 h-8 w-8 flex items-center justify-center bg-white/10 rounded-full"
+          >
+            {isPlaying ? (
+              <Pause className="h-4 w-4 text-white" />
+            ) : (
+              <Play className="h-4 w-4 text-white" />
+            )}
+          </button>
 
-        {/* Progress bar */}
-        <input
-          type="range"
-          min="0"
-          max="100"
-          value={progress}
-          onChange={handleProgressChange}
-          className="w-full h-1 bg-gray-400/30 rounded-full overflow-hidden appearance-none cursor-pointer accent-white"
-        />
-
-        <button className="ml-2 flex-shrink-0">
-          <Volume2 className="h-5 w-5 text-white" />
-        </button>
-
-        <button className="ml-1 flex-shrink-0">
-          <MoreVertical className="h-5 w-5 text-white/70" />
-        </button>
+          <div className="mx-2 text-xs text-white flex-grow flex items-center space-x-2">
+            <span>{formatTime(currentTime)}</span>
+            <span>/</span>
+            <span>{formatTime(duration)}</span>
+            
+            {/* Progress bar */}
+            <div className="w-full bg-white/20 h-1 rounded-full mx-2 relative">
+              <div 
+                className="absolute top-0 left-0 h-full bg-white/70 rounded-full"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            
+            <Volume2 className="h-4 w-4 text-white/70" />
+          </div>
+        </div>
+        
+        {/* Info file */}
+        <div className="mt-1 bg-[#223920]/80 text-white/80 text-xs p-1 flex items-center rounded-md">
+          <Mic className="h-3 w-3 mr-1 text-white/60" />
+          <span>Voice Note - {formatTime(duration)}</span>
+          {fileSize && (
+            <span className="ml-auto">{formatFileSize(fileSize)}</span>
+          )}
+        </div>
       </div>
     </div>
   );
