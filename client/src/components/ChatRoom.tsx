@@ -80,17 +80,36 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   
   // Send message mutation
   const sendMessageMutation = useMutation({
-    mutationFn: async (content: string) => {
+    mutationFn: async (content: string | Record<string, any>) => {
+      let payload;
+      
+      if (typeof content === 'string') {
+        // Simple text message
+        payload = {
+          conversationId: chatId,
+          content,
+          classification: 'UNCLASSIFIED'
+        };
+      } else {
+        // Message with attachment
+        payload = {
+          conversationId: chatId,
+          content: content.content,
+          classification: 'UNCLASSIFIED',
+          hasAttachment: content.hasAttachment,
+          attachmentType: content.attachmentType,
+          attachmentUrl: content.attachmentUrl,
+          attachmentName: content.attachmentName,
+          attachmentSize: content.attachmentSize
+        };
+      }
+      
       return fetch('/api/messages', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          conversationId: chatId,
-          content,
-          classification: 'UNCLASSIFIED'
-        }),
+        body: JSON.stringify(payload),
         credentials: 'include'
       }).then(res => {
         if (!res.ok) throw new Error('Failed to send message');
@@ -268,7 +287,13 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
           content: msg.content || '',
           timestamp: timestamp,
           isRead: msg.isRead || false,
-          classification: msg.classification || 'UNCLASSIFIED'
+          classification: msg.classification || 'UNCLASSIFIED',
+          // Attachment fields
+          hasAttachment: msg.hasAttachment || false,
+          attachmentType: msg.attachmentType || '',
+          attachmentUrl: msg.attachmentUrl || '',
+          attachmentName: msg.attachmentName || '',
+          attachmentSize: msg.attachmentSize || 0
         });
       } catch (e) {
         console.error('Error processing message:', e, msg);
@@ -359,6 +384,16 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                     )}
                     
                     <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
+                    
+                    {/* Render attachment if present */}
+                    {msg.hasAttachment && msg.attachmentUrl && (
+                      <MessageAttachment 
+                        attachmentType={msg.attachmentType || 'document'} 
+                        attachmentUrl={msg.attachmentUrl} 
+                        attachmentName={msg.attachmentName || 'file'} 
+                        attachmentSize={msg.attachmentSize}
+                      />
+                    )}
                     
                     <div className="flex justify-end items-center mt-1 space-x-1">
                       {msg.classification && (
