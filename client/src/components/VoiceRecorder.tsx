@@ -3,7 +3,7 @@ import { Mic, StopCircle, X, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface VoiceRecorderProps {
-  onSendAudio: (blob: Blob, url: string) => void;
+  onSendAudio: (blob: Blob, url: string, duration?: number) => void;
   onCancel: () => void;
 }
 
@@ -12,12 +12,20 @@ export default function VoiceRecorder({ onSendAudio, onCancel }: VoiceRecorderPr
   const [recordingTime, setRecordingTime] = useState<number>(0);
   const [recordingComplete, setRecordingComplete] = useState<boolean>(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<BlobPart[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const actualDurationRef = useRef<number>(0);
   
-  // Auto-start recording
+  // Logging for debugging
+  useEffect(() => {
+    console.log("VoiceRecorder mounted, isRecording:", isRecording);
+    return () => console.log("VoiceRecorder unmounted");
+  }, []);
+  
+  // Auto-start recording when component mounts
   useEffect(() => {
     startRecording();
     return () => {
@@ -29,57 +37,111 @@ export default function VoiceRecorder({ onSendAudio, onCancel }: VoiceRecorderPr
   
   const startRecording = async () => {
     try {
+      console.log("Starting voice recording...");
       audioChunksRef.current = [];
+      setRecordingTime(0);
+      actualDurationRef.current = 0;
       
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      // Request audio permission
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true
+        } 
+      });
       
-      mediaRecorderRef.current = mediaRecorder;
+      // Set up MediaRecorder with appropriate options
+      const options = { mimeType: 'audio/webm;codecs=opus' };
+      let recorder;
+      try {
+        recorder = new MediaRecorder(stream, options);
+        console.log("Using WebM audio format");
+      } catch (e) {
+        // Fallback to default format if WebM not supported
+        recorder = new MediaRecorder(stream);
+        console.log("Using default audio format");
+      }
       
-      mediaRecorder.addEventListener('dataavailable', (event) => {
-        if (event.data.size > 0) {
+      mediaRecorderRef.current = recorder;
+      
+      // Set up dataavailable event handler
+      recorder.addEventListener('dataavailable', (event) => {
+        if (event.data && event.data.size > 0) {
+          console.log(`Received audio chunk of size: ${event.data.size} bytes`);
           audioChunksRef.current.push(event.data);
         }
       });
       
-      mediaRecorder.addEventListener('stop', () => {
+      // Set up stop event handler
+      recorder.addEventListener('stop', () => {
+        console.log("MediaRecorder stopped, processing recorded audio...");
+        stream.getTracks().forEach(track => track.stop());
+        
         if (audioChunksRef.current.length > 0) {
-          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-          const url = URL.createObjectURL(audioBlob);
+          // Save the final recording duration
+          const finalDuration = recordingTime;
+          actualDurationRef.current = finalDuration;
+          
+          // Create blob and URL from collected chunks
+          const audioType = 'audio/webm'; // This format is widely supported
+          const blob = new Blob(audioChunksRef.current, { type: audioType });
+          const url = URL.createObjectURL(blob);
+          
+          console.log(`Created audio blob of size: ${blob.size} bytes, duration: ${finalDuration}s`);
+          
+          setAudioBlob(blob);
           setAudioUrl(url);
           setRecordingComplete(true);
+        } else {
+          console.error("No audio data recorded");
+          alert("Tidak ada audio yang terekam. Silakan coba lagi.");
+          setIsRecording(false);
         }
-        
-        stream.getTracks().forEach(track => track.stop());
       });
       
-      mediaRecorder.start();
+      // Set up recorder with small timeslice for more frequent dataavailable events
+      recorder.start(1000); // Collect data every second
       setIsRecording(true);
+      console.log("MediaRecorder started");
       
-      // Start timer
+      // Start timer for UI display
       timerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
+        setRecordingTime(prev => {
+          const newTime = prev + 1;
+          return newTime;
+        });
       }, 1000);
       
-      // Automatically stop after 5 minutes (300 seconds)
+      // Safety mechanism: automatically stop after 2 minutes
       setTimeout(() => {
-        if (isRecording) {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+          console.log("Auto-stopping recording after timeout");
           stopRecording();
         }
-      }, 300000);
+      }, 120000);
       
     } catch (error) {
       console.error('Error starting voice recording:', error);
       alert('Tidak dapat memulai perekaman. Pastikan mikrofon Anda terhubung dan izin diberikan.');
+      onCancel();
     }
   };
   
   const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      clearTimerInterval();
+    console.log("Stopping recording, current state:", 
+                mediaRecorderRef.current ? mediaRecorderRef.current.state : "no recorder");
+    
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+      try {
+        mediaRecorderRef.current.stop();
+        console.log("MediaRecorder stopped successfully");
+      } catch (e) {
+        console.error("Error stopping MediaRecorder:", e);
+      }
     }
+    
+    setIsRecording(false);
+    clearTimerInterval();
   };
   
   const clearTimerInterval = () => {
@@ -90,10 +152,11 @@ export default function VoiceRecorder({ onSendAudio, onCancel }: VoiceRecorderPr
   };
   
   const handleSendAudio = () => {
-    if (audioUrl) {
-      // Get the blob from audioChunksRef
-      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-      onSendAudio(audioBlob, audioUrl);
+    if (audioUrl && audioBlob) {
+      console.log(`Sending audio, duration: ${actualDurationRef.current}s, size: ${audioBlob.size} bytes`);
+      onSendAudio(audioBlob, audioUrl, actualDurationRef.current);
+    } else {
+      console.error("Cannot send audio: missing blob or URL");
     }
   };
   
@@ -128,10 +191,10 @@ export default function VoiceRecorder({ onSendAudio, onCancel }: VoiceRecorderPr
           </>
         ) : recordingComplete ? (
           <>
-            {/* Preview state */}
+            {/* Preview state - after recording */}
             <div className="flex items-center space-x-2">
               <div className="text-[#a6c455] text-sm">
-                <span>Pesan Suara {formatTime(recordingTime)}</span>
+                <span>Pesan Suara {formatTime(actualDurationRef.current)}</span>
               </div>
             </div>
             <div className="flex items-center space-x-1">

@@ -131,11 +131,12 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     setIsVoiceRecording(true);
   };
   
-  const handleVoiceRecordingComplete = (audioBlob: Blob, audioUrl: string) => {
-    console.log("Voice recording complete. Blob:", audioBlob, "URL:", audioUrl);
+  const handleVoiceRecordingComplete = (audioBlob: Blob, audioUrl: string, duration?: number) => {
+    console.log("Voice recording complete. Blob:", audioBlob, "URL:", audioUrl, "Duration:", duration);
     setVoiceAttachment({
       blob: audioBlob,
-      url: audioUrl
+      url: audioUrl,
+      duration: duration || 0
     });
     setIsVoiceRecording(false);
     
@@ -145,10 +146,13 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
       try {
         const audioAttachment = await uploadVoiceAttachment(audioBlob);
         if (audioAttachment) {
+          // Format durasi untuk ditampilkan di pesan
+          const durationText = duration ? ` (${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')})` : '';
+          
           // Buat pesan dengan format yang memperlihatkan pesan suara sesuai dengan desain yang diinginkan
           const payload = {
             conversationId: chatId,
-            content: "🔊 Pesan Suara",
+            content: `🔊 Pesan Suara${durationText}`,
             classification: 'UNCLASSIFIED',
             hasAttachment: true,
             attachmentType: 'audio',

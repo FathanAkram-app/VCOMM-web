@@ -13,6 +13,13 @@ export default function RealAudioPlayer({ messageId, timestamp, audioUrl }: Real
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const intervalRef = useRef<number | null>(null);
+  
+  // Debugging
+  useEffect(() => {
+    console.log(`RealAudioPlayer mounted for message ${messageId} with URL:`, audioUrl);
+    return () => console.log(`RealAudioPlayer unmounted for message ${messageId}`);
+  }, [messageId, audioUrl]);
   
   useEffect(() => {
     // Membuat elemen audio baru
@@ -21,82 +28,108 @@ export default function RealAudioPlayer({ messageId, timestamp, audioUrl }: Real
     
     // Set initial source if available
     if (audioUrl) {
+      console.log(`Setting audio source to: ${audioUrl}`);
       audio.src = audioUrl;
+      audio.load(); // Explicitly load the audio
     }
     
     // Event listener untuk update durasi dan progress
-    audio.addEventListener('loadedmetadata', () => {
+    const handleMetadataLoaded = () => {
       console.log('Audio metadata loaded, duration:', audio.duration);
       setDuration(audio.duration || 30); // Default 30 seconds if not available
-    });
+    };
     
-    audio.addEventListener('timeupdate', () => {
+    const handleTimeUpdate = () => {
       // Ensure we don't divide by zero
       if (audio.duration) {
         setCurrentTime(audio.currentTime);
         setProgress((audio.currentTime / audio.duration) * 100);
       }
-    });
+    };
     
-    audio.addEventListener('ended', () => {
+    const handleEnded = () => {
+      console.log('Audio playback ended');
       setIsPlaying(false);
       setProgress(0);
       setCurrentTime(0);
-    });
+    };
     
-    audio.addEventListener('error', (e) => {
+    const handleError = (e: Event) => {
       console.error('Error loading audio:', e);
       // Fallback to silent audio simulation on error
       setDuration(30); // Default 30 seconds
-    });
+    };
     
-    // Cleanup listener saat component unmount
+    // Add event listeners
+    audio.addEventListener('loadedmetadata', handleMetadataLoaded);
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('error', handleError);
+    
+    // Cleanup listeners when component unmounts
     return () => {
+      if (intervalRef.current) {
+        window.clearInterval(intervalRef.current);
+      }
+      
       audio.pause();
       audio.src = '';
-      audio.removeEventListener('loadedmetadata', () => {});
-      audio.removeEventListener('timeupdate', () => {});
-      audio.removeEventListener('ended', () => {});
-      audio.removeEventListener('error', () => {});
+      audio.removeEventListener('loadedmetadata', handleMetadataLoaded);
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('error', handleError);
     };
   }, [audioUrl]);
   
   const togglePlayPause = (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     
-    if (!audioRef.current) return;
+    if (!audioRef.current) {
+      console.error('Audio reference is null');
+      return;
+    }
     
     if (isPlaying) {
+      console.log('Pausing audio playback');
       audioRef.current.pause();
       setIsPlaying(false);
+      
+      // Clear any simulation interval
+      if (intervalRef.current) {
+        window.clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     } else {
       try {
-        // If we have a valid audio URL, use it
-        if (audioUrl && audioRef.current.src !== audioUrl) {
+        // Make sure we have the latest URL
+        if (audioUrl && (!audioRef.current.src || !audioRef.current.src.includes(audioUrl))) {
+          console.log(`Updating audio source to: ${audioUrl}`);
           audioRef.current.src = audioUrl;
+          audioRef.current.load(); // Explicitly load the audio
         }
         
-        // If no valid source, simulate playback
-        if (!audioUrl || audioRef.current.src === '') {
-          console.log('No valid audio source, starting simulation');
+        // If we have an audio file, try to play it
+        if (audioUrl && audioRef.current.src) {
+          console.log('Attempting to play actual audio');
+          
+          // Try to play the audio
+          audioRef.current.play()
+            .then(() => {
+              console.log('Audio playback started successfully');
+              setIsPlaying(true);
+            })
+            .catch(error => {
+              console.error('Failed to play audio, falling back to simulation:', error);
+              simulatePlayback();
+            });
+        } else {
+          // No audio file available, fall back to simulation
+          console.log('No valid audio source, using simulation');
           simulatePlayback();
-          return;
         }
-        
-        // Attempt to play the actual audio
-        audioRef.current.play()
-          .then(() => {
-            console.log('Audio playback started successfully');
-            setIsPlaying(true);
-          })
-          .catch(error => {
-            console.error('Failed to play audio:', error);
-            // Fallback to simulation on error
-            simulatePlayback();
-          });
       } catch (error) {
-        console.error('Error preparing audio playback:', error);
-        // Fallback to simulation on error
+        console.error('Error during audio playback, using simulation:', error);
         simulatePlayback();
       }
     }
@@ -104,25 +137,34 @@ export default function RealAudioPlayer({ messageId, timestamp, audioUrl }: Real
   
   // Fallback simulation for when actual audio playback fails
   const simulatePlayback = () => {
+    console.log('Starting audio simulation');
     setIsPlaying(true);
     
-    // Create simulation interval
-    const interval = window.setInterval(() => {
-      setCurrentTime(prev => {
-        const newTime = prev + 0.1;
-        if (newTime >= (duration || 30)) {
-          clearInterval(interval);
-          setIsPlaying(false);
-          setProgress(0);
-          return 0;
-        }
-        setProgress((newTime / (duration || 30)) * 100);
-        return newTime;
-      });
-    }, 100);
+    // Clean up any existing interval
+    if (intervalRef.current) {
+      window.clearInterval(intervalRef.current);
+    }
     
-    // Store interval ID for cleanup
-    return () => clearInterval(interval);
+    // Create simulation interval
+    const simulatedDuration = duration || 30;
+    let simulatedTime = 0;
+    
+    intervalRef.current = window.setInterval(() => {
+      simulatedTime += 0.1;
+      
+      if (simulatedTime >= simulatedDuration) {
+        // End of simulated playback
+        window.clearInterval(intervalRef.current as number);
+        intervalRef.current = null;
+        setIsPlaying(false);
+        setProgress(0);
+        setCurrentTime(0);
+      } else {
+        // Update simulated progress
+        setCurrentTime(simulatedTime);
+        setProgress((simulatedTime / simulatedDuration) * 100);
+      }
+    }, 100);
   };
   
   // Format waktu dari detik ke mm:ss
