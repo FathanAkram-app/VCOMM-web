@@ -910,6 +910,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                               src={msg.attachmentUrl} 
                               filename={msg.attachmentName || 'audio.mp3'}
                               fileSize={msg.attachmentSize}
+                              timestamp={msg.timestamp}
                             />
                           </div>
                         ) : (
