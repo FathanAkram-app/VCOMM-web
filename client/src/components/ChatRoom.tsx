@@ -909,35 +909,42 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
                     )}
                     
-                    {/* Reply indicator - tampilan persis dengan screenshot yang dikirim */}
+                    {/* Reply indicator - persis sama dengan screenshot terakhir */}
                     {msg.replyToId && (
-                      <div className="flex items-center text-[#a6c455] text-[10px] mb-0.5 leading-tight">
-                        <div className="flex-none mr-0.5">⦿</div>
-                        <div className="uppercase">
-                          {msg.replyInfo?.classification || 
-                           (messages && Array.isArray(messages) && 
-                            messages.find((m: any) => m.id === msg.replyToId)?.classification) || 
-                           'unclassified'}
-                        </div>
-                        <div className="ml-1 font-light text-slate-300 normal-case">
-                          {(() => {
-                            // Cari konten pesan yang dibalas
-                            const replyContent = msg.replyInfo?.content || 
-                              (messages && Array.isArray(messages) && 
-                               messages.find((m: any) => m.id === msg.replyToId)?.content) || '';
-                               
-                            if (replyContent) {
-                              return replyContent.substring(0, 20) + (replyContent.length > 20 ? '...' : '');
-                            }
-                            return 'pesan';
-                          })()}
-                        </div>
-                        <div className="ml-0.5 font-light text-slate-400">dari</div>
-                        <div className="ml-0.5 text-[#a6c455]">
-                          {msg.replyInfo?.senderName || 
-                           (messages && Array.isArray(messages) && 
-                            messages.find((m: any) => m.id === msg.replyToId)?.senderName) || 
-                           'unknown'}
+                      <div className="mb-1">
+                        <div className="flex items-center text-[#a6c455] text-[10px] leading-none">
+                          <span className="mr-1">⦿</span>
+                          <span className="uppercase">
+                            {msg.replyInfo?.classification || 
+                             (messages && Array.isArray(messages) && 
+                              messages.find((m: any) => m.id === msg.replyToId)?.classification) || 
+                             'unclassified'}
+                          </span>
+                          <span className="ml-1 text-[#c7c7c7] normal-case whitespace-nowrap overflow-hidden text-ellipsis">
+                            {(() => {
+                              // Cari konten pesan yang dibalas
+                              const replyContent = msg.replyInfo?.content || 
+                                (messages && Array.isArray(messages) && 
+                                 messages.find((m: any) => m.id === msg.replyToId)?.content) || '';
+                                
+                              // Hilangkan tag HTML dan format khusus
+                              const cleanContent = replyContent.replace(/<[^>]*>/g, '')
+                                .replace(/\[File: .+\]/g, '[File]')
+                                .replace(/🔊 Pesan Suara \(.+\)/g, 'Pesan Suara');
+                                 
+                              if (cleanContent) {
+                                return cleanContent.substring(0, 30) + (cleanContent.length > 30 ? '...' : '');
+                              }
+                              return 'pesan';
+                            })()}
+                            &nbsp;dari&nbsp;
+                            <span className="text-[#a6c455]">
+                              {msg.replyInfo?.senderName || 
+                               (messages && Array.isArray(messages) && 
+                                messages.find((m: any) => m.id === msg.replyToId)?.senderName) || 
+                               'unknown'}
+                            </span>
+                          </span>
                         </div>
                       </div>
                     )}
