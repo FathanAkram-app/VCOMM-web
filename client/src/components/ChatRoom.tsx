@@ -48,6 +48,8 @@ interface ChatMessage {
   attachmentUrl?: string;
   attachmentName?: string;
   attachmentSize?: number;
+  // Reply functionality
+  replyToId?: number;
 }
 
 interface ChatRoomProps {
@@ -265,15 +267,33 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   // Load conversations for forward dialog
   useEffect(() => {
     if (isForwardDialogOpen) {
-      fetch('/api/conversations')
+      // Fetch direct chats
+      fetch('/api/direct-chats')
         .then(res => res.json())
-        .then(data => {
-          setConversations(data.map((conv: any) => ({
-            id: conv.id,
-            name: conv.name
-          })));
+        .then(directChats => {
+          // Fetch group chats
+          fetch('/api/rooms')
+            .then(res => res.json())
+            .then(rooms => {
+              // Combine both types of conversations
+              const allConversations = [
+                ...directChats.map((chat: any) => ({
+                  id: chat.id,
+                  name: chat.otherUser ? `${chat.otherUser.callsign || 'Pengguna'} (${chat.otherUser.fullName || 'Tanpa Nama'})` : 'Chat Langsung',
+                  isGroup: false
+                })),
+                ...rooms.map((room: any) => ({
+                  id: room.id,
+                  name: room.name || 'Grup Chat',
+                  isGroup: true
+                }))
+              ];
+              
+              setConversations(allConversations);
+            })
+            .catch(error => console.error('Error fetching rooms:', error));
         })
-        .catch(error => console.error('Error fetching conversations:', error));
+        .catch(error => console.error('Error fetching direct chats:', error));
     }
   }, [isForwardDialogOpen]);
   
@@ -572,6 +592,24 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
                     )}
                     
+                    {/* Jika ini adalah balasan, tampilkan pesan yang dibalas */}
+                    {msg.replyToId && messages && (
+                      <div className="bg-[#2a2a2a] p-1 rounded mb-1 text-xs border-l-2 border-[#4d5d30]">
+                        {Array.isArray(messages) && messages.find((m: any) => m.id === msg.replyToId) ? (
+                          <>
+                            <p className="text-[#a6c455]">
+                              Membalas {messages.find((m: any) => m.id === msg.replyToId)?.senderName || 'Pesan'}
+                            </p>
+                            <p className="text-gray-400 truncate">
+                              {messages.find((m: any) => m.id === msg.replyToId)?.content || ''}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-gray-400">Membalas pesan sebelumnya</p>
+                        )}
+                      </div>
+                    )}
+                    
                     <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
                     
                     {/* Render attachment if present */}
@@ -608,18 +646,16 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                             <Forward className="mr-2 h-4 w-4" />
                             Teruskan
                           </DropdownMenuItem>
-                          {msg.senderId === user?.id && (
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setSelectedMessage(msg);
-                                setIsDeleteDialogOpen(true);
-                              }}
-                              className="text-red-500 focus:text-red-500"
-                            >
-                              <Trash className="mr-2 h-4 w-4" />
-                              Hapus
-                            </DropdownMenuItem>
-                          )}
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedMessage(msg);
+                              setIsDeleteDialogOpen(true);
+                            }}
+                            className="text-red-500 focus:text-red-500"
+                          >
+                            <Trash className="mr-2 h-4 w-4" />
+                            Hapus
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
