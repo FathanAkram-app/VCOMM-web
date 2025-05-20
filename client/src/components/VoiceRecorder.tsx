@@ -23,16 +23,13 @@ export default function VoiceRecorder({ onSendAudio, onCancel }: VoiceRecorderPr
     audio: true,
     video: false,
     onStop: (blobUrl, blob) => {
-      // Kita akan menggunakan tombol kirim manual
       console.log('Recording stopped, blob URL:', blobUrl);
-      // Simpan blob ke state lokal supaya bisa diakses nanti
       if (blob) {
         setRecordedBlob(blob);
       }
     },
   });
   
-  // Simpan blob audio yang direkam dalam state
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
 
   const handleStartRecording = () => {
@@ -76,6 +73,35 @@ export default function VoiceRecorder({ onSendAudio, onCancel }: VoiceRecorderPr
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const handleSendAudio = () => {
+    if (recordedBlob && mediaBlobUrl) {
+      console.log('Voice recording complete. Blob:', recordedBlob, 'URL:', mediaBlobUrl);
+      console.log('Uploading and sending voice message...');
+      
+      // Deteksi tipe MIME untuk memastikan format yang benar
+      const fileType = recordedBlob.type || 'audio/wav';
+      console.log('Detected audio blob type:', fileType);
+      
+      // Bentuk nama file berdasarkan waktu
+      const fileName = `voice_note_${Date.now()}.mp3`;
+      console.log('Creating audio file with name:', fileName, 'and type:', fileType);
+      
+      onSendAudio(recordedBlob, mediaBlobUrl);
+    } else if (mediaBlobUrl) {
+      // Jika recordedBlob tidak tersedia, buat dari URL
+      fetch(mediaBlobUrl)
+        .then(response => response.blob())
+        .then(blob => {
+          const fileType = blob.type || 'audio/wav';
+          const fileName = `voice_note_${Date.now()}.mp3`;
+          console.log('Creating audio file with name:', fileName, 'and type:', fileType);
+          
+          onSendAudio(blob, mediaBlobUrl);
+        })
+        .catch(err => console.error('Error creating blob from URL:', err));
+    }
   };
 
   return (
@@ -137,23 +163,7 @@ export default function VoiceRecorder({ onSendAudio, onCancel }: VoiceRecorderPr
             size="icon"
             variant="default"
             className="bg-[#596e2d] hover:bg-[#6a8336]"
-            onClick={() => {
-              if (recordedBlob && mediaBlobUrl) {
-                console.log('Sending audio with blob:', recordedBlob);
-                onSendAudio(recordedBlob, mediaBlobUrl);
-              } else if (mediaBlobUrl) {
-                // Buat audio blob dari URL jika recordedBlob tidak tersedia
-                fetch(mediaBlobUrl as string)
-                  .then(response => response.blob())
-                  .then(blob => {
-                    console.log('Created blob from URL:', blob);
-                    if (mediaBlobUrl) {
-                      onSendAudio(blob, mediaBlobUrl);
-                    }
-                  })
-                  .catch(err => console.error('Error fetching audio blob:', err));
-              }
-            }}
+            onClick={handleSendAudio}
             title="Kirim pesan suara"
           >
             <Send className="h-5 w-5" />
