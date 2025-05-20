@@ -275,19 +275,44 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
           fetch('/api/rooms')
             .then(res => res.json())
             .then(rooms => {
-              // Combine both types of conversations
-              const allConversations = [
-                ...directChats.map((chat: any) => ({
-                  id: chat.id,
-                  name: chat.otherUser ? `${chat.otherUser.callsign || 'Pengguna'} (${chat.otherUser.fullName || 'Tanpa Nama'})` : 'Chat Langsung',
-                  isGroup: false
-                })),
-                ...rooms.map((room: any) => ({
-                  id: room.id,
-                  name: room.name || 'Grup Chat',
-                  isGroup: true
-                }))
-              ];
+              // Cari nama personel yang benar untuk setiap chat
+              const allConversations = [];
+              
+              // Tambahkan direct chats dengan nama pengguna dari allUsers
+              if (Array.isArray(directChats)) {
+                directChats.forEach((chat: any) => {
+                  // Cari pengguna lain dalam direct chat (bukan pengguna saat ini)
+                  const chatMembers = Array.isArray(chat.members) ? chat.members : [];
+                  const otherUserId = chatMembers.find((id: number) => id !== user?.id);
+                  
+                  // Cari data pengguna lain dari allUsers
+                  let otherUserName = 'Chat Langsung';
+                  if (otherUserId && Array.isArray(allUsers)) {
+                    const otherUser = allUsers.find((u: any) => u.id === otherUserId);
+                    if (otherUser) {
+                      // Format: Callsign (Nama Lengkap)
+                      otherUserName = `${otherUser.callsign || 'Pengguna'} (${otherUser.fullName || 'Tanpa Nama'})`;
+                    }
+                  }
+                  
+                  allConversations.push({
+                    id: chat.id,
+                    name: otherUserName,
+                    isGroup: false
+                  });
+                });
+              }
+              
+              // Tambahkan grup chats
+              if (Array.isArray(rooms)) {
+                rooms.forEach((room: any) => {
+                  allConversations.push({
+                    id: room.id,
+                    name: room.name || 'Grup Chat',
+                    isGroup: true
+                  });
+                });
+              }
               
               setConversations(allConversations);
             })
@@ -398,7 +423,11 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
           attachmentType: msg.attachmentType || '',
           attachmentUrl: msg.attachmentUrl || '',
           attachmentName: msg.attachmentName || '',
-          attachmentSize: msg.attachmentSize || 0
+          attachmentSize: msg.attachmentSize || 0,
+          // Reply, Forward fields
+          replyToId: msg.replyToId || undefined,
+          forwardedFromId: msg.forwardedFromId || undefined,
+          isDeleted: msg.isDeleted || false
         });
       } catch (e) {
         console.error('Error processing message:', e, msg);
@@ -602,20 +631,39 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                     )}
                     
                     {/* Jika ini adalah balasan, tampilkan pesan yang dibalas */}
-                    {msg.replyToId && messages && (
-                      <div className="bg-[#2a2a2a] p-1 rounded mb-1 text-xs border-l-2 border-[#4d5d30]">
-                        {Array.isArray(messages) && messages.find((m: any) => m.id === msg.replyToId) ? (
-                          <>
-                            <p className="text-[#a6c455]">
-                              Membalas {messages.find((m: any) => m.id === msg.replyToId)?.senderName || 'Pesan'}
-                            </p>
-                            <p className="text-gray-400 truncate">
-                              {messages.find((m: any) => m.id === msg.replyToId)?.content || ''}
-                            </p>
-                          </>
-                        ) : (
-                          <p className="text-gray-400">Membalas pesan sebelumnya</p>
-                        )}
+                    {msg.replyToId && (
+                      <div className="bg-[#2a2a2a] p-2 rounded mb-2 text-xs border-l-2 border-[#4d5d30]">
+                        {(() => {
+                          // Cari pesan yang dibalas
+                          const repliedMessage = Array.isArray(messages) 
+                            ? messages.find((m: any) => m.id === msg.replyToId) 
+                            : null;
+                          
+                          if (repliedMessage) {
+                            // Format isi pesan yang dibalas
+                            let replyContent = repliedMessage.content;
+                            if (repliedMessage.hasAttachment) {
+                              replyContent = `[File: ${repliedMessage.attachmentName || 'Attachment'}]`;
+                            } else if (repliedMessage.isDeleted) {
+                              replyContent = '[Pesan ini telah dihapus]';
+                            } else if (replyContent.length > 50) {
+                              replyContent = replyContent.substring(0, 50) + '...';
+                            }
+                            
+                            return (
+                              <>
+                                <p className="text-[#a6c455] font-medium mb-1">
+                                  Membalas {repliedMessage.senderName || 'Pesan'}
+                                </p>
+                                <p className="text-gray-400 break-words">
+                                  {replyContent}
+                                </p>
+                              </>
+                            );
+                          } else {
+                            return <p className="text-gray-400">Membalas pesan sebelumnya</p>;
+                          }
+                        })()}
                       </div>
                     )}
                     
