@@ -69,179 +69,69 @@ export default function MessageAttachment({
           </div>
         );
       case 'audio':
-        // Perbaiki URL audio jika perlu
+        // Perbaiki URL audio
         const audioUrl = attachmentUrl.startsWith('http') 
           ? attachmentUrl 
           : window.location.origin + attachmentUrl;
           
-        // Gunakan AudioPlayer langsung di komponen ini
-        // Ini adalah implementasi inline untuk memastikan perubahan terlihat
-        const CustomAudioPlayer = () => {
-          const audioRef = useRef<HTMLAudioElement>(null);
-          const [isPlaying, setIsPlaying] = useState(false);
-          const [progress, setProgress] = useState(0);
-          const [duration, setDuration] = useState(0);
-          const [currentTime, setCurrentTime] = useState(0);
-          const [isMuted, setIsMuted] = useState(false);
-          
-          // Format waktu mm:ss
-          const formatTime = (time: number) => {
-            const minutes = Math.floor(time / 60);
-            const seconds = Math.floor(time % 60);
-            return `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
-          };
-          
-          // Effect untuk event handlers
-          useEffect(() => {
-            const audio = audioRef.current;
-            if (!audio) return;
-            
-            const handleLoadedMetadata = () => {
-              setDuration(audio.duration);
-              console.log('Audio metadata loaded, duration:', audio.duration);
-            };
-            
-            const handleTimeUpdate = () => {
-              setCurrentTime(audio.currentTime);
-              setProgress((audio.currentTime / audio.duration) * 100);
-            };
-            
-            const handleEnded = () => {
-              setIsPlaying(false);
-              setProgress(0);
-              setCurrentTime(0);
-            };
-            
-            audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-            audio.addEventListener('timeupdate', handleTimeUpdate);
-            audio.addEventListener('ended', handleEnded);
-            
-            return () => {
-              audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-              audio.removeEventListener('timeupdate', handleTimeUpdate);
-              audio.removeEventListener('ended', handleEnded);
-            };
-          }, []);
-          
-          // Toggle play/pause
-          const togglePlay = () => {
-            if (!audioRef.current) return;
-            
-            if (isPlaying) {
-              audioRef.current.pause();
-              setIsPlaying(false);
-            } else {
-              const playPromise = audioRef.current.play();
-              if (playPromise !== undefined) {
-                playPromise.catch(err => {
-                  console.error('Play error:', err);
-                });
-              }
-              setIsPlaying(true);
-            }
-          };
-          
-          // Toggle mute
-          const toggleMute = () => {
-            if (!audioRef.current) return;
-            
-            audioRef.current.muted = !isMuted;
-            setIsMuted(!isMuted);
-          };
-          
-          // Update progress bar
-          const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-            if (!audioRef.current) return;
-            
-            const newProgress = parseFloat(e.target.value);
-            const newTime = (newProgress / 100) * duration;
-            
-            audioRef.current.currentTime = newTime;
-            setProgress(newProgress);
-            setCurrentTime(newTime);
-          };
-          
-          return (
-            <div className="w-full bg-[#2C2C2C] rounded-lg p-3 my-2">
-              {/* Hidden audio element */}
-              <audio
-                ref={audioRef}
-                src={audioUrl}
-                preload="metadata"
-              />
-              
-              {/* Player header */}
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center">
-                  <Music className="h-4 w-4 text-green-500 mr-2" />
-                  <span className="text-sm font-medium text-green-500">
-                    {isPlaying ? 'Sedang Diputar' : 'Pesan Suara'}
-                  </span>
-                </div>
-                <span className="text-xs text-gray-400">
-                  {formatTime(currentTime)} / {formatTime(duration || 0)}
-                </span>
-              </div>
-              
-              {/* Controls */}
-              <div className="flex items-center space-x-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-8 w-8 rounded-full bg-[#3A3A3A] hover:bg-green-800 p-0"
-                  onClick={togglePlay}
-                >
-                  {isPlaying ? (
-                    <Pause className="h-4 w-4 text-white" />
-                  ) : (
-                    <Play className="h-4 w-4 text-white" />
-                  )}
-                </Button>
-                
-                {/* Progress bar */}
-                <div className="flex-1 px-1">
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={progress}
-                    onChange={handleProgressChange}
-                    className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-[#444] accent-green-600"
-                  />
-                </div>
-                
-                {/* Volume control */}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-8 w-8 rounded-full bg-[#3A3A3A] hover:bg-green-800 p-0"
-                  onClick={toggleMute}
-                >
-                  {isMuted ? (
-                    <VolumeX className="h-4 w-4 text-white" />
-                  ) : (
-                    <Volume2 className="h-4 w-4 text-white" />
-                  )}
-                </Button>
-              </div>
-              
-              {/* Download option */}
-              <div className="mt-2 text-center">
-                <a
-                  href={audioUrl}
-                  download={attachmentName}
-                  className="text-xs text-green-500 hover:text-green-400 hover:underline"
-                >
-                  Unduh Audio
-                </a>
-              </div>
-            </div>
-          );
-        };
-          
+        console.log('Audio URL untuk player:', audioUrl);
+        
         return (
           <div className="mb-1">
-            <CustomAudioPlayer />
+            <div className="bg-[#222222] rounded-lg p-3">
+              {/* Header */}
+              <div className="flex items-center justify-center mb-2">
+                <Music className="h-5 w-5 text-green-500 mr-2" />
+                <span className="text-sm font-medium text-green-400">Pesan Suara</span>
+              </div>
+              
+              {/* Audio Player Standar */}
+              <audio 
+                controls 
+                className="w-full" 
+                controlsList="nodownload"
+                style={{ 
+                  backgroundColor: '#333', 
+                  borderRadius: '8px',
+                  color: 'white',
+                  padding: '4px'
+                }}
+              >
+                <source src={audioUrl} type="audio/webm" />
+                <source src={audioUrl} type="audio/mpeg" />
+                <source src={audioUrl} type="audio/mp4" />
+                <source src={audioUrl} type="audio/ogg" />
+                Browser Anda tidak mendukung pemutar audio.
+              </audio>
+              
+              {/* Tombol alternatif */}
+              <div className="flex justify-between mt-3">
+                <Button
+                  size="sm" 
+                  variant="outline"
+                  className="bg-green-900 text-white hover:bg-green-800 border-green-700 w-[48%]"
+                  onClick={() => {
+                    // Buka di tab baru
+                    window.open(audioUrl, '_blank');
+                  }}
+                >
+                  <Music className="h-4 w-4 mr-1" />
+                  <span className="text-xs">Putar di Tab Baru</span>
+                </Button>
+                
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="bg-[#2A2A2A] text-gray-300 hover:text-white hover:bg-[#3A3A3A] border-[#444] w-[48%]"
+                  asChild
+                >
+                  <a href={audioUrl} download={attachmentName} rel="noopener noreferrer">
+                    <Download className="h-4 w-4 mr-1" />
+                    <span className="text-xs">Unduh Audio</span>
+                  </a>
+                </Button>
+              </div>
+            </div>
           </div>
         );
       default:
