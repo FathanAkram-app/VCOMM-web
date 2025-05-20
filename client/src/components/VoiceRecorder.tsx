@@ -101,14 +101,26 @@ export default function VoiceRecorder({ onSendAudio, onCancel }: VoiceRecorderPr
           // Log durasi yang digunakan
           console.log(`Created audio blob of size: ${blob.size} bytes, actual duration: ${safeDuration}s`);
           
-          // Set data yang diperlukan untuk UI dan pengiriman
+          // Set data yang diperlukan untuk UI dan kemudian langsung kirim
           setAudioBlob(blob);
           setAudioUrl(url);
-          setRecordingComplete(true);
+          
+          // Langsung kirim pesan audio tanpa menunggu tombol send ditekan
+          console.log(`Auto-sending audio, duration: ${safeDuration}s, size: ${blob.size} bytes`);
+          onSendAudio(blob, url, safeDuration);
+          
+          // Tidak perlu menampilkan UI preview lagi karena sudah langsung terkirim
+          setRecordingComplete(false);
+          
+          // Cabut secara alami dari VoiceRecorder setelah kirim audio
+          setTimeout(() => {
+            onCancel();
+          }, 200);
         } else {
           console.error("No audio data recorded");
           alert("Tidak ada audio yang terekam. Silakan coba lagi.");
           setIsRecording(false);
+          onCancel(); // Kembali ke text input jika tidak ada audio
         }
       });
       
