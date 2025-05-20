@@ -66,46 +66,67 @@ export default function SimpleAudioPlayer({ audioUrl, messageId, timestamp }: Si
   }, []);
 
   const togglePlayPause = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
+    // Hindari penghentian event propagation untuk memungkinkan klik
+    // e.stopPropagation();
+    // e.preventDefault();
+    
+    console.log("Tombol play/pause diklik");
     
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio) {
+      console.error("Elemen audio tidak ditemukan");
+      return;
+    }
 
     if (isPlaying) {
+      console.log("Menghentikan pemutaran audio");
       audio.pause();
       setIsPlaying(false);
     } else {
-      // Perbaiki masalah pemutaran audio pada browser
-      const playPromise = audio.play();
+      console.log("Mencoba memutar audio:", audioUrl);
       
-      if (playPromise !== undefined) {
-        playPromise.then(() => {
-          console.log('Audio berhasil diputar');
+      // Log status audio sebelum memainkan
+      console.log("Audio status - paused:", audio.paused, "readyState:", audio.readyState);
+      
+      // Pastikan audio sudah dimuat
+      if (audio.readyState === 0) {
+        console.log("Audio belum dimuat, mencoba memuat ulang");
+        audio.load();
+      }
+      
+      // Coba putar audio
+      try {
+        const playPromise = audio.play();
+        
+        if (playPromise !== undefined) {
+          playPromise.then(() => {
+            console.log('Audio berhasil diputar');
+            setIsPlaying(true);
+          }).catch(error => {
+            console.error("Error playing audio:", error);
+            setIsPlaying(false);
+            
+            // Informasi debugging lebih detail
+            console.log("Detail audio yang diputar:");
+            console.log("- URL:", audioUrl);
+            console.log("- Duration:", audio.duration);
+            console.log("- Error name:", error.name);
+            console.log("- Error message:", error.message);
+            
+            if (error.name === 'NotAllowedError') {
+              console.log("Browser tidak mengizinkan pemutaran audio otomatis");
+            } else if (error.name === 'NotSupportedError') {
+              console.log("Format audio tidak didukung oleh browser");
+            } else if (error.name === 'AbortError') {
+              console.log("Pemutaran audio dibatalkan");
+            }
+          });
+        } else {
+          console.log("Browser tidak mendukung Promise untuk audio.play()");
           setIsPlaying(true);
-        }).catch(error => {
-          console.error("Error playing audio:", error);
-          setIsPlaying(false);
-          
-          // Informasi debugging
-          console.log("Attempted playback of:", audioUrl);
-          console.log("Browser:", navigator.userAgent);
-          
-          if (error.name === 'NotAllowedError') {
-            console.log("Browser tidak mengizinkan pemutaran audio otomatis");
-          } else if (error.name === 'NotSupportedError') {
-            console.log("Format audio tidak didukung oleh browser");
-          } else if (error.name === 'AbortError') {
-            console.log("Pemutaran audio dibatalkan");
-          }
-          
-          // Jangan gunakan alert yang mengganggu UX
-          console.error("Tidak dapat memutar audio. Silakan coba lagi.");
-        });
-      } else {
-        // Browser tidak mendukung Promise untuk audio.play()
-        console.log("Browser tidak mendukung Promise untuk audio.play()");
-        setIsPlaying(true);
+        }
+      } catch (e) {
+        console.error("Exception saat memutar audio:", e);
       }
     }
   };
@@ -150,37 +171,35 @@ export default function SimpleAudioPlayer({ audioUrl, messageId, timestamp }: Si
           preload="metadata"
           style={{ display: 'none' }}
         >
-          {/* Coba cari file di lokasi yang benar di intranet lokal */}
-          {audioUrl.includes('voice_note') ? (
-            // Format file dengan pattern voice_note_ID.webm
-            <>
-              <source src={`/uploads/${audioUrl.split('/').pop()}`} type="audio/webm" />
-              <source src={`/uploads/${audioUrl.split('/').pop()?.replace('.webm', '.mp3')}`} type="audio/mpeg" />
-            </>
-          ) : (
-            // URL langsung ke file yang sudah disimpan dengan UUID
-            <>
-              <source src={audioUrl} type="audio/webm" />
-              <source src={audioUrl.replace('.webm', '.mp3')} type="audio/mpeg" />
-            </>
-          )}
+          {/* Coba berbagai variasi URL untuk menemukan file yang benar */}
+          {/* URL langsung ke file */}
+          <source src={audioUrl} type="audio/webm" />
+          <source src={audioUrl} type="audio/mpeg" />
+          
+          {/* URL dengan path uploads */}
+          <source src={`/uploads/${audioUrl.split('/').pop()}`} type="audio/webm" />
+          <source src={`/uploads/${audioUrl.split('/').pop()?.replace('.webm', '.mp3')}`} type="audio/mpeg" />
+          
+          {/* URL dengan lokasi absolut */}
+          <source src={getFullUrl(audioUrl)} type="audio/webm" />
+          <source src={getFullUrl(audioUrl.replace('.webm', '.mp3'))} type="audio/mpeg" />
           Browser Anda tidak mendukung pemutaran audio.
         </audio>
         
         {/* Player control */}
         <div className="bg-[#394733] px-3 py-2">
           <div className="flex items-center justify-between">
-            <button 
-              className="w-8 h-8 flex items-center justify-center bg-[#2c3627] hover:bg-[#22291e] rounded-full mr-3"
+            <div 
+              className="w-10 h-10 flex items-center justify-center bg-[#2c3627] hover:bg-[#22291e] rounded-full mr-3 cursor-pointer"
               onClick={togglePlayPause}
-              disabled={!hasAudio}
+              style={{pointerEvents: hasAudio ? 'auto' : 'none'}}
             >
               {isPlaying ? (
-                <Pause className="h-4 w-4 text-white" />
+                <Pause className="h-5 w-5 text-white" />
               ) : (
-                <Play className="h-4 w-4 text-white ml-0.5" />
+                <Play className="h-5 w-5 text-white ml-0.5" />
               )}
-            </button>
+            </div>
             
             {/* Progress bar */}
             <div className="flex-1">
