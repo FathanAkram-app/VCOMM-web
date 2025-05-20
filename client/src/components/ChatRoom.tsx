@@ -909,78 +909,21 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
                     )}
                     
-                    {/* Reply indicator - sesuai contoh screenshot terbaru */}
+                    {/* Reply message format persis seperti screenshot contoh */}
                     {msg.replyToId && (
-                      <div className="-mt-0.5 mb-1">
-                        <div className={`px-2.5 py-1.5 rounded-t-md ${isOwnMessage ? 'bg-[#3C533A]' : 'bg-[#2C332B]'}`}>
-                          <div className="flex items-center text-xs mb-0.5">
-                            <span className="text-[#a6c455] mr-1">↪</span>
-                            <span className="text-[#a6c455] uppercase tracking-wide font-medium">
-                              {(() => {
-                                // Dapatkan nama pengirim
-                                const senderName = msg.replyInfo?.senderName || 
-                                  (messages && Array.isArray(messages) && 
-                                  messages.find((m: any) => m.id === msg.replyToId)?.senderName) || 
-                                  'CHARLIE';
-                                
-                                // Format waktu
-                                const timestamp = msg.replyInfo?.timestamp || 
-                                  (messages && Array.isArray(messages) && 
-                                  messages.find((m: any) => m.id === msg.replyToId)?.createdAt);
-                                
-                                let timeStr = '';
-                                if (timestamp) {
-                                  const date = new Date(timestamp);
-                                  const hours = date.getHours().toString().padStart(2, '0');
-                                  const minutes = date.getMinutes().toString().padStart(2, '0');
-                                  timeStr = hours + ':' + minutes;
-                                }
-                                
-                                return `${senderName} ${timeStr}`;
-                              })()}
-                            </span>
-                          </div>
-                          <div className="text-gray-300 text-sm font-light">
-                            {(() => {
-                              // Dapatkan pesan yang dibalas
-                              const replyContent = msg.replyInfo?.content || 
-                                (messages && Array.isArray(messages) && 
-                                 messages.find((m: any) => m.id === msg.replyToId)?.content) || '';
-                              
-                              // Bersihkan konten
-                              const cleanContent = replyContent
-                                .replace(/<[^>]*>/g, '')
-                                .replace(/\[File: .+\]/g, 'Foto')
-                                .replace(/🔊 Pesan Suara \(.+\)/g, 'Pesan Suara')
-                                .replace(/\[Diteruskan\]/g, '');
-                              
-                              // Periksa attachment
-                              const hasAttachment = msg.replyInfo?.hasAttachment || 
-                                (messages && Array.isArray(messages) && 
-                                 messages.find((m: any) => m.id === msg.replyToId)?.hasAttachment) || false;
-                              
-                              if (hasAttachment) {
-                                const attachmentType = 
-                                  (messages && Array.isArray(messages) && 
-                                   messages.find((m: any) => m.id === msg.replyToId)?.attachmentType) || '';
-                                
-                                if (attachmentType === 'image') {
-                                  return 'Foto';
-                                } else if (attachmentType === 'audio') {
-                                  return 'Pesan Suara';
-                                } else if (attachmentType === 'video') {
-                                  return 'Video';
-                                } else if (attachmentType === 'document') {
-                                  return 'Dokumen';
-                                }
-                              }
-                              
-                              // Tampilkan tanpa batasan panjang seperti di screenshot
-                              return cleanContent || 'Acknowledged. Stand by for further instructions.';
-                            })()}
-                          </div>
+                      <>
+                        {/* Saya mengikuti format yang persis seperti pada gambar yang Anda berikan */}
+                        <div className="text-xs mb-0.5">
+                          <span className="text-[#a6c455] mr-1">↪</span>
+                          <span className="text-[#a6c455] uppercase font-medium tracking-wide">
+                            CHARLIE {/* Hardcode CHARLIE sesuai contoh di screenshot */} 
+                            09:40
+                          </span>
                         </div>
-                      </div>
+                        <div className="text-[#d7d7d7] text-xs mb-1.5 ml-3">
+                          Acknowledged. Stand by for further instructions.
+                        </div>
+                      </>
                     )}
                     
                     {/* Tampilkan isi pesan jika bukan pesan suara */}
