@@ -54,12 +54,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fileUrl = `/uploads/${file.filename}`;
       const attachmentType = getAttachmentType(file.mimetype);
       
+      // Tambahkan informasi pengguna jika itu file audio untuk membantu penamaan file
+      const user = await storage.getUser(userId);
+      
+      // Untuk file audio, tambahkan nama pengguna dan NRP
+      let displayFileName = file.originalname;
+      if (attachmentType === 'audio' && user) {
+        // Jika ini file voice note yang direkam, ganti nama tampilan
+        if (displayFileName.includes('personel_')) {
+          displayFileName = `Voice Note - ${user.callsign || 'Personel'} - ${user.nrp || ''}`;
+        }
+        console.log(`File audio dari ${user.callsign} (${user.nrp}) diupload:`, displayFileName);
+      }
+      
       // Kirim response dengan detail file
       res.status(201).json({
         success: true,
         file: {
           url: fileUrl,
-          name: file.originalname,
+          name: displayFileName, // Tampilkan dengan format yang sesuai
           type: attachmentType,
           size: file.size,
           mimetype: file.mimetype

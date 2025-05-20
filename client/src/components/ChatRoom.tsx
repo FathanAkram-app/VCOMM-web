@@ -207,10 +207,17 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     const fileExt = audioType.includes('webm') ? 'webm' : 
                    audioType.includes('ogg') ? 'ogg' : 
                    audioType.includes('mp4') ? 'm4a' : 'mp3';
+    
+    // Mendapatkan timestamp untuk nama file
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    
+    // Ambil data user dari session yang aktif
+    // Format: NRP_Callsign_Timestamp.ext
+    const fileName = `personel_${timestamp}.${fileExt}`;
                    
     const audioFile = new File(
       [blob], 
-      `voice_note_${Date.now()}.${fileExt}`, 
+      fileName, 
       { type: audioType }
     );
     
