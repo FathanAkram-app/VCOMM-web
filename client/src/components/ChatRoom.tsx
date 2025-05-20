@@ -691,39 +691,25 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
                     )}
                     
-                    {/* Tampilan pesan balasan seperti WhatsApp, lebih sederhana dan langsung */}
+                    {/* Simple method to display quote: just show quoted text without complex logic */}
                     {msg.replyToId && (
-                      <div className="border-l-4 border-[#8ba742] pl-2 mb-2 py-1 bg-[#222222] rounded">
-                        {(() => {
-                          // Cari pesan yang dibalas dalam array pesan
-                          const originalMsg = Array.isArray(messages) 
-                            ? messages.find(m => m.id === msg.replyToId)
-                            : null;
-                          
-                          if (originalMsg) {
-                            return (
-                              <>
-                                <div className="text-[11px] text-[#8ba742] font-medium">
-                                  {originalMsg.senderName}
-                                </div>
-                                <div className="text-[11px] text-gray-400">
-                                  {originalMsg.hasAttachment
-                                    ? `[File: ${originalMsg.attachmentName || 'Attachment'}]`
-                                    : (originalMsg.content && originalMsg.content.length > 40
-                                      ? originalMsg.content.substring(0, 40) + '...'
-                                      : originalMsg.content || 'Pesan kosong')
-                                  }
-                                </div>
-                              </>
-                            );
-                          }
-                          
-                          return (
-                            <div className="text-[11px] text-gray-400">
-                              Pesan sebelumnya
-                            </div>
-                          );
-                        })()}
+                      <div className="border-l-4 border-[#8ba742] pl-2 mb-2 py-1 bg-[rgba(139,167,66,0.1)] rounded text-[11px]">
+                        <div className="flex items-center text-[#8ba742] font-medium mb-0.5">
+                          <Reply className="h-3 w-3 mr-1" />
+                          <span>Membalas</span>
+                        </div>
+                        <div className="text-gray-400 truncate">
+                          {Array.isArray(messages) && messages.some(m => m.id === msg.replyToId) 
+                            ? (() => {
+                                const original = messages.find(m => m.id === msg.replyToId)!;
+                                if (original.hasAttachment) {
+                                  return `[File: ${original.attachmentName || 'Attachment'}]`;
+                                } else {
+                                  return original.content || 'Pesan kosong';
+                                }
+                              })()
+                            : 'Pesan sebelumnya'}
+                        </div>
                       </div>
                     )}
                     
