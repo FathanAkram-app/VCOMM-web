@@ -76,6 +76,10 @@ export const messages = pgTable("messages", {
   attachmentUrl: varchar("attachment_url"),
   attachmentName: varchar("attachment_name"),
   attachmentSize: integer("attachment_size"), // in bytes
+  // Reply, Forward, Delete features
+  replyToId: integer("reply_to_id").references(() => messages.id),
+  forwardedFromId: integer("forwarded_from_id").references(() => messages.id),
+  isDeleted: boolean("is_deleted").default(false),
 });
 
 // Schema types
@@ -112,6 +116,9 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
   attachmentUrl: true,
   attachmentName: true,
   attachmentSize: true,
+  replyToId: true,
+  forwardedFromId: true,
+  isDeleted: true,
 });
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 

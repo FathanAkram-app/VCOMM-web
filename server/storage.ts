@@ -41,6 +41,11 @@ export interface IStorage {
   createMessage(data: InsertMessage): Promise<Message>;
   getMessagesByConversation(conversationId: number): Promise<Message[]>;
   clearConversationMessages(conversationId: number): Promise<void>;
+  
+  // Message operations for delete, reply, and forward
+  deleteMessage(messageId: number): Promise<Message>;
+  getMessage(messageId: number): Promise<Message | undefined>;
+  forwardMessage(originalMessageId: number, newConversationId: number, senderId: number): Promise<Message>;
 }
 
 // Database storage implementation
@@ -248,6 +253,58 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(messages)
       .where(eq(messages.conversationId, conversationId));
+  }
+  
+  // Message operations for delete, reply, and forward
+  async getMessage(messageId: number): Promise<Message | undefined> {
+    const [message] = await db
+      .select()
+      .from(messages)
+      .where(eq(messages.id, messageId));
+    
+    return message;
+  }
+  
+  async deleteMessage(messageId: number): Promise<Message> {
+    // Soft delete message by setting isDeleted flag to true
+    const [updatedMessage] = await db
+      .update(messages)
+      .set({
+        isDeleted: true,
+        content: "[Pesan ini telah dihapus]",
+        updatedAt: new Date(),
+      })
+      .where(eq(messages.id, messageId))
+      .returning();
+    
+    return updatedMessage;
+  }
+  
+  async forwardMessage(originalMessageId: number, newConversationId: number, senderId: number): Promise<Message> {
+    // Get the original message
+    const originalMessage = await this.getMessage(originalMessageId);
+    
+    if (!originalMessage) {
+      throw new Error("Pesan asli tidak ditemukan");
+    }
+    
+    // Create a new message with the same content and attachments but in the new conversation
+    const forwardData: InsertMessage = {
+      content: originalMessage.content,
+      senderId: senderId,
+      conversationId: newConversationId,
+      classification: originalMessage.classification,
+      hasAttachment: originalMessage.hasAttachment,
+      attachmentType: originalMessage.attachmentType,
+      attachmentUrl: originalMessage.attachmentUrl,
+      attachmentName: originalMessage.attachmentName,
+      attachmentSize: originalMessage.attachmentSize,
+      forwardedFromId: originalMessageId,
+    };
+    
+    // Insert the new message
+    const newMessage = await this.createMessage(forwardData);
+    return newMessage;
   }
 }
 
