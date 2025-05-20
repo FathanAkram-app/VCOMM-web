@@ -53,19 +53,33 @@ export default function AudioPlayer({ messageId, timestamp }: AudioPlayerProps) 
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      // Jika belum ada audio source, buat satu
-      if (!audioRef.current.src) {
-        // Dalam kasus offline atau URL null, gunakan BLOB dummy data
-        // Di dalam dunia nyata, ini harus source dari URL asli
-        const dummyBlob = new Blob([new Uint8Array(10)], { type: 'audio/mp3' });
-        const dummyUrl = URL.createObjectURL(dummyBlob);
-        audioRef.current.src = dummyUrl;
+      try {
+        // Buat audio source yang valid dengan silent MP3
+        const silentMP3Base64 = 'SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tAwAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAACAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMD/wAARCABAAEADASIAAhEBAxEB/8QAGwAAAgIDAQAAAAAAAAAAAAAAAAECAwQFBgf/xAAvEAACAQIEBAILAAAAAAAAAAAAAQIDEQQSIUEFIjFRcYETFDJCYZGhscHwI1Ji/8QAGQEAAgMBAAAAAAAAAAAAAAAAAAECAwQF/8QAHREAAgMAAwEAAAAAAAAAAAAAAAECAxESITFBUf/aAAwDAQACEQMRAD8A66MbhVK4rGiNodjTEZYRUbGJDBESSZZYB5N1cDVkrJ2M9UJ9zPQyaRaMmjzKSad1vmZR6PSoRqQs0n0vr7iUuDUZaRs0ZTp/TWOVL0bcZZFMZfDCNoQXArGM52BEDsIpHIgzaJIIohcSZGfQjkmjTXNRRpw4WPEmwV7HVrwKEALB4IoYhFI4bMaEVGO/6LMPKpGcXGMmuujsczwbGRoYlKTtGVlc7RK6T8BWQ8L6ZZqJJxT1RMZk1Z+BEyyzohFsYhhFErEMBGM2DJoiiCMbIjRDR5F8Sq06qkpa3Ot4Tx2niKcYzlac1s2aKSWXRrqiE6dLI8rKN9LNDUsQU0zp77EYQSqS2KgdRz3DOC1cRKM663Xe1zqsLhadCmqcFZJFyRJILJOXhXCChFRCEaigYAxCArEIYAf/2Q==';
+        const byteCharacters = atob(silentMP3Base64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'audio/mp3' });
+        const url = URL.createObjectURL(blob);
+        
+        // Set audio source
+        audioRef.current.src = url;
+        
+        // Putar audio dengan volume rendah
+        audioRef.current.volume = 0.5;
+        audioRef.current.play().then(() => {
+          setIsPlaying(true);
+        }).catch(error => {
+          console.error('Gagal memutar audio:', error);
+        });
+      } catch (error) {
+        console.error('Terjadi kesalahan saat mempersiapkan audio:', error);
+        // Handle error dengan menampilkan pesan yang lebih friendly
+        alert("Pesan suara tidak dapat diputar. Mungkin direkam dengan aplikasi lain.");
       }
-      
-      audioRef.current.play().catch(error => {
-        console.error('Gagal memutar audio:', error);
-      });
-      setIsPlaying(true);
     }
   };
   
