@@ -69,6 +69,15 @@ export default function MessageAttachment({
           </div>
         );
       case 'audio':
+        // Perbaiki URL audio jika perlu
+        const audioUrl = attachmentUrl.startsWith('http') 
+          ? attachmentUrl 
+          : window.location.origin + attachmentUrl;
+          
+        // Debug informasi untuk audio
+        console.log('Audio URL:', audioUrl);
+        console.log('Attachment name:', attachmentName);
+          
         return (
           <div className="mb-1">
             <div className="bg-[#222222] rounded-lg p-2">
@@ -77,36 +86,51 @@ export default function MessageAttachment({
                 <span className="text-sm text-green-400 font-medium">Pesan Suara</span>
               </div>
               
+              {/* Player audio dengan src langsung */}
               <audio 
+                src={audioUrl}
                 controls 
                 className="w-full mt-2" 
-                preload="metadata"
+                preload="auto"
                 controlsList="nodownload"
                 style={{ 
                   backgroundColor: '#333',
                   borderRadius: '8px',
                   padding: '4px',
                 }}
-              >
-                <source src={attachmentUrl} type="audio/mpeg" />
-                <source src={attachmentUrl} type="audio/webm" />
-                <source src={attachmentUrl} type="audio/mp4" />
-                <source src={attachmentUrl} type="audio/ogg" />
-                <source src={attachmentUrl} type="audio/wav" />
-                Browser Anda tidak mendukung tag audio.
-              </audio>
+                onError={(e) => {
+                  console.error('Error saat memuat audio:', e);
+                }}
+                onLoadStart={() => console.log('Audio loading started')}
+                onCanPlay={() => console.log('Audio can be played')}
+              />
               
-              <div className="flex justify-center mt-2">
+              {/* Tombol alternatif untuk unduh dan putar */}
+              <div className="flex justify-center space-x-2 mt-2">
                 <Button
                   size="sm"
                   variant="outline"
                   className="bg-[#2C2C2C] text-gray-300 hover:text-white hover:bg-[#3A3A3A] border-[#444]"
                   asChild
                 >
-                  <a href={attachmentUrl} download={attachmentName} target="_blank" rel="noopener noreferrer">
+                  <a href={audioUrl} download={attachmentName} target="_blank" rel="noopener noreferrer">
                     <Download className="h-3 w-3 mr-1" />
                     <span className="text-xs">Unduh Audio</span>
                   </a>
+                </Button>
+                
+                {/* Tombol putar alternatif */}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="bg-green-900 text-gray-200 hover:bg-green-800 border-green-700"
+                  onClick={() => {
+                    // Buka audio di tab baru sebagai fallback
+                    window.open(audioUrl, '_blank');
+                  }}
+                >
+                  <Music className="h-3 w-3 mr-1" />
+                  <span className="text-xs">Putar di Tab Baru</span>
                 </Button>
               </div>
             </div>
