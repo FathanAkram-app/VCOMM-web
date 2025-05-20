@@ -682,31 +682,49 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                     {msg.replyToId && (
                       <div className="bg-[#2a2a2a] p-2 rounded mb-2 text-xs border-l-2 border-[#4d5d30]">
                         <p className="text-[#a6c455] font-medium mb-1">
-                          Membalas <span className="font-bold">Pesan</span>
+                          Membalas <span className="font-bold">{msg.replyInfo?.senderName || 'Pesan'}</span>
                         </p>
                         <p className="text-gray-400 break-words">
                           {(() => {
-                            // Cari pesan yang dibalas dari message data asli
-                            if (Array.isArray(messages)) {
-                              const repliedMsg = messages.find((m: any) => m.id === msg.replyToId);
-                              if (repliedMsg) {
-                                // Format isi pesan yang dibalas
-                                let content = repliedMsg.content || '';
-                                
-                                // Jika pesan yang dibalas adalah file
-                                if (repliedMsg.hasAttachment) {
-                                  return `[File: ${repliedMsg.attachmentName || 'Attachment'}]`;
-                                }
-                                
-                                // Jika pesan yang dibalas terlalu panjang
-                                if (content.length > 60) {
-                                  content = content.substring(0, 60) + '...';
-                                }
-                                
-                                return content;
+                            // Gunakan replyInfo yang telah ditambahkan dari server
+                            if (msg.replyInfo) {
+                              // Format isi pesan yang dibalas
+                              let content = msg.replyInfo.content || '';
+                              
+                              // Jika pesan yang dibalas adalah file
+                              if (msg.replyInfo.hasAttachment) {
+                                return `[File: ${msg.replyInfo.attachmentName || 'Attachment'}]`;
                               }
+                              
+                              // Jika pesan yang dibalas terlalu panjang
+                              if (content.length > 60) {
+                                content = content.substring(0, 60) + '...';
+                              }
+                              
+                              return content;
+                            } else {
+                              // Fallback ke cara lama jika replyInfo tidak ada
+                              if (Array.isArray(messages)) {
+                                const repliedMsg = messages.find((m: any) => m.id === msg.replyToId);
+                                if (repliedMsg) {
+                                  // Format isi pesan yang dibalas
+                                  let content = repliedMsg.content || '';
+                                  
+                                  // Jika pesan yang dibalas adalah file
+                                  if (repliedMsg.hasAttachment) {
+                                    return `[File: ${repliedMsg.attachmentName || 'Attachment'}]`;
+                                  }
+                                  
+                                  // Jika pesan yang dibalas terlalu panjang
+                                  if (content.length > 60) {
+                                    content = content.substring(0, 60) + '...';
+                                  }
+                                  
+                                  return content;
+                                }
+                              }
+                              return "Pesan sebelumnya";
                             }
-                            return "Pesan sebelumnya";
                           })()}
                         </p>
                       </div>

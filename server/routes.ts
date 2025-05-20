@@ -425,9 +425,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log jumlah pesan yang ditemukan untuk debugging
       console.log(`Found ${messages.length} messages for conversation ${conversationId}`);
       
+      // Buat objek untuk mencari pesan yang di-reply dengan cepat
+      const messagesMap = messages.reduce((acc: Record<number, any>, msg: any) => {
+        acc[msg.id] = msg;
+        return acc;
+      }, {});
+      
+      // Tambahkan detail pesan balasan ke setiap pesan
+      const enhancedMessages = messages.map((msg: any) => {
+        if (msg.replyToId && messagesMap[msg.replyToId]) {
+          const repliedMsg = messagesMap[msg.replyToId];
+          return {
+            ...msg,
+            replyInfo: {
+              content: repliedMsg.content,
+              senderName: repliedMsg.senderName,
+              hasAttachment: repliedMsg.hasAttachment,
+              attachmentName: repliedMsg.attachmentName
+            }
+          };
+        }
+        return msg;
+      });
+      
       // Pastikan response-nya adalah array JSON yang valid
       res.setHeader('Content-Type', 'application/json');
-      res.json(messages);
+      res.json(enhancedMessages);
     } catch (error) {
       console.error("Error fetching messages:", error);
       res.status(500).json({ message: "Failed to fetch messages" });
