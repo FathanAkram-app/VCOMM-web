@@ -911,58 +911,33 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                     
                     {/* Reply indicator - tampilan persis dengan screenshot yang dikirim */}
                     {msg.replyToId && (
-                      <div className="mb-[0.25rem]">
-                        <div className="flex items-start">
-                          <div className="flex-none text-[#a6c455] text-xs mr-1">↳</div>
-                          <div className="flex flex-col">
-                            <div className="flex items-center gap-1">
-                              <span className="text-[#a6c455] text-[10px] uppercase tracking-wide font-medium">
-                                {msg.replyInfo?.senderName || 
-                                 (messages && Array.isArray(messages) && 
-                                  messages.find((m: any) => m.id === msg.replyToId)?.senderName) || 
-                                 'Membalas pesan'}
-                              </span>
-                              <span className="text-[#a6c455] text-[10px] uppercase tracking-wide font-normal">
-                                {msg.replyInfo?.classification || 
-                                 (messages && Array.isArray(messages) && 
-                                  messages.find((m: any) => m.id === msg.replyToId)?.classification) || 
-                                 ''}
-                              </span>
-                            </div>
-                            
-                            <span className="text-gray-400 text-[10px] leading-tight">
-                              {(() => {
-                                // Cari konten pesan yang dibalas
-                                const replyContent = msg.replyInfo?.content || 
-                                  (messages && Array.isArray(messages) && 
-                                   messages.find((m: any) => m.id === msg.replyToId)?.content) || '';
-                                   
-                                const hasAttachment = msg.replyInfo?.hasAttachment || 
-                                  (messages && Array.isArray(messages) && 
-                                   messages.find((m: any) => m.id === msg.replyToId)?.hasAttachment) || false;
-                                   
-                                const attachmentType = 
-                                  (messages && Array.isArray(messages) && 
-                                   messages.find((m: any) => m.id === msg.replyToId)?.attachmentType) || '';
-                                   
-                                // Cek apakah pesan audio
-                                const isAudio = attachmentType === 'audio' || 
-                                  (replyContent && replyContent.includes('🔊 Pesan Suara'));
-                                
-                                if (hasAttachment || isAudio) {
-                                  return (
-                                    <span>
-                                      {isAudio ? '🔊 Pesan Suara' : '📎 File'}
-                                    </span>
-                                  );
-                                } else if (replyContent) {
-                                  return replyContent.substring(0, 40) + (replyContent.length > 40 ? '...' : '');
-                                }
-                                
-                                return 'Pesan tidak tersedia';
-                              })()}
-                            </span>
-                          </div>
+                      <div className="flex items-center text-[#a6c455] text-[10px] mb-0.5 leading-tight">
+                        <div className="flex-none mr-0.5">⦿</div>
+                        <div className="uppercase">
+                          {msg.replyInfo?.classification || 
+                           (messages && Array.isArray(messages) && 
+                            messages.find((m: any) => m.id === msg.replyToId)?.classification) || 
+                           'unclassified'}
+                        </div>
+                        <div className="ml-1 font-light text-slate-300 normal-case">
+                          {(() => {
+                            // Cari konten pesan yang dibalas
+                            const replyContent = msg.replyInfo?.content || 
+                              (messages && Array.isArray(messages) && 
+                               messages.find((m: any) => m.id === msg.replyToId)?.content) || '';
+                               
+                            if (replyContent) {
+                              return replyContent.substring(0, 20) + (replyContent.length > 20 ? '...' : '');
+                            }
+                            return 'pesan';
+                          })()}
+                        </div>
+                        <div className="ml-0.5 font-light text-slate-400">dari</div>
+                        <div className="ml-0.5 text-[#a6c455]">
+                          {msg.replyInfo?.senderName || 
+                           (messages && Array.isArray(messages) && 
+                            messages.find((m: any) => m.id === msg.replyToId)?.senderName) || 
+                           'unknown'}
                         </div>
                       </div>
                     )}
