@@ -318,8 +318,12 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
       sendMessageMutation.mutate(messageData);
       setAttachment(null);
     } else {
-      // Send normal text message
-      sendMessageMutation.mutate(message);
+      // Send normal text message with reply info if applicable
+      const messageData = {
+        content: message.trim(),
+        replyToId: replyToMessage ? replyToMessage.id : undefined
+      };
+      sendMessageMutation.mutate(messageData);
     }
     
     setMessage('');

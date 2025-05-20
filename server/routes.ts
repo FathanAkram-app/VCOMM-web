@@ -699,10 +699,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Message not found" });
       }
       
-      // Pengecekan apakah pengirim pesan adalah pengguna yang sedang login
-      if (message.senderId !== req.session?.user?.id) {
-        return res.status(403).json({ message: "You can only delete your own messages" });
-      }
+      // Dalam versi militer, semua pengguna dapat menghapus pesan apapun
+      // Tidak perlu pengecekan pengirim pesan
       
       const deletedMessage = await storage.deleteMessage(messageId);
       
