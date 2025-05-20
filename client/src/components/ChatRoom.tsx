@@ -430,6 +430,12 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     console.log("Processing message data for grouping:", messageData);
     console.log("Total messages to process:", messageData.length);
     
+    // Debug: inspect all messages with replyToId to see if they exist
+    const repliesMessages = messageData.filter(m => m.replyToId);
+    if (repliesMessages.length > 0) {
+      console.log("Messages with replies:", repliesMessages);
+    }
+    
     // Sortir pesan berdasarkan waktu (dari yang terlama ke yang terbaru)
     const sortedMessages = [...messageData].sort((a, b) => {
       const timeA = new Date(a.timestamp || a.createdAt).getTime();
@@ -685,9 +691,9 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
                     )}
                     
-                    {/* Tampilan pesan balasan seperti WhatsApp */}
+                    {/* Tampilan pesan balasan seperti WhatsApp, lebih sederhana dan langsung */}
                     {msg.replyToId && (
-                      <div className="mb-1">
+                      <div className="border-l-4 border-[#8ba742] pl-2 mb-2 py-1 bg-[#222222] rounded">
                         {(() => {
                           // Cari pesan yang dibalas dalam array pesan
                           const originalMsg = Array.isArray(messages) 
@@ -695,41 +701,26 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                             : null;
                           
                           if (originalMsg) {
-                            const sender = originalMsg.senderName || 'User';
-                            let content = originalMsg.content || '';
-                            
-                            // Potong pesan yang terlalu panjang
-                            if (content.length > 40) {
-                              content = content.substring(0, 40) + '...';
-                            }
-                            
-                            // Handle pesan dengan attachment
-                            if (originalMsg.hasAttachment) {
-                              content = `[File: ${originalMsg.attachmentName || 'Attachment'}]`;
-                            }
-                            
                             return (
-                              <div className="flex">
-                                <div className="ml-2 pl-2 border-l-2 border-[#8ba742]">
-                                  <div className="text-[11px] text-[#8ba742] font-medium flex items-center">
-                                    <Reply className="h-3 w-3 mr-1 inline" />
-                                    {sender} dibalas
-                                  </div>
-                                  <div className="text-[11px] text-gray-400 mt-0.5">
-                                    {content}
-                                  </div>
+                              <>
+                                <div className="text-[11px] text-[#8ba742] font-medium">
+                                  {originalMsg.senderName}
                                 </div>
-                              </div>
+                                <div className="text-[11px] text-gray-400">
+                                  {originalMsg.hasAttachment
+                                    ? `[File: ${originalMsg.attachmentName || 'Attachment'}]`
+                                    : (originalMsg.content && originalMsg.content.length > 40
+                                      ? originalMsg.content.substring(0, 40) + '...'
+                                      : originalMsg.content || 'Pesan kosong')
+                                  }
+                                </div>
+                              </>
                             );
                           }
                           
                           return (
-                            <div className="flex">
-                              <div className="ml-2 pl-2 border-l-2 border-[#8ba742]">
-                                <div className="text-[11px] text-[#8ba742] font-medium">
-                                  <Reply className="h-3 w-3 mr-1 inline" /> Pesan dibalas
-                                </div>
-                              </div>
+                            <div className="text-[11px] text-gray-400">
+                              Pesan sebelumnya
                             </div>
                           );
                         })()}
