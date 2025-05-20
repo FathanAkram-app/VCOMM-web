@@ -700,7 +700,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                     
                     {/* Format balasan pesan seperti WhatsApp style */}
                     {msg.replyToId && (
-                      <div className="mb-0">
+                      <div className="mb-2">
                         <div className="flex items-center text-xs mb-1">
                           <ArrowLeft className="h-3 w-3 mr-1 text-[#8ba742]" /> 
                           {(() => {
@@ -725,6 +725,34 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                             }
                           })()}
                         </div>
+                        
+                        {/* Preview pesan yang dibalas dengan kotak dan garis hijau di sisi kiri */}
+                        {(() => {
+                          try {
+                            if (!Array.isArray(messages)) return null;
+                            
+                            for (let i = 0; i < messages.length; i++) {
+                              if (messages[i].id === msg.replyToId) {
+                                return (
+                                  <div className="bg-[#2a2a2a] rounded-md p-1.5 border-l-4 border-[#8ba742] mb-1.5">
+                                    {messages[i].hasAttachment ? (
+                                      <div className="text-xs text-gray-400 line-clamp-1">
+                                        <span className="text-[#8ba742] mr-1">📎</span>
+                                        <span>{messages[i].attachmentName || 'File'}</span>
+                                      </div>
+                                    ) : (
+                                      <p className="text-xs text-gray-400 line-clamp-1">{messages[i].content || '<Pesan kosong>'}</p>
+                                    )}
+                                  </div>
+                                );
+                              }
+                            }
+                            return null;
+                          } catch (err) {
+                            console.error("Error rendering reply preview:", err);
+                            return null;
+                          }
+                        })()}
                       </div>
                     )}
                     
