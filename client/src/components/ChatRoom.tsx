@@ -130,11 +130,43 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   };
   
   const handleVoiceRecordingComplete = (audioBlob: Blob, audioUrl: string) => {
+    console.log("Voice recording complete. Blob:", audioBlob, "URL:", audioUrl);
     setVoiceAttachment({
       blob: audioBlob,
       url: audioUrl
     });
     setIsVoiceRecording(false);
+    
+    // Langsung kirim pesan suara ketika selesai merekam
+    const sendVoiceMessage = async () => {
+      console.log("Uploading and sending voice message...");
+      try {
+        const audioAttachment = await uploadVoiceAttachment(audioBlob);
+        if (audioAttachment) {
+          const payload = {
+            conversationId: chatId,
+            content: "🔊 Pesan Suara",
+            classification: 'UNCLASSIFIED',
+            hasAttachment: true,
+            attachmentType: audioAttachment.type,
+            attachmentUrl: audioAttachment.url,
+            attachmentName: audioAttachment.name,
+            attachmentSize: audioAttachment.size,
+            replyToId: replyToMessage ? replyToMessage.id : undefined
+          };
+          
+          console.log("Sending voice message with payload:", payload);
+          sendMessageMutation.mutate(payload);
+          setReplyToMessage(null);
+        } else {
+          console.error("Failed to upload voice attachment");
+        }
+      } catch (error) {
+        console.error("Error sending voice message:", error);
+      }
+    };
+    
+    sendVoiceMessage();
   };
   
   const handleCancelVoiceRecording = () => {
