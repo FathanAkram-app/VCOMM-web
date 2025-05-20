@@ -1,0 +1,47 @@
+import React from 'react';
+
+interface Message {
+  id: number;
+  senderId: number;
+  content: string;
+  timestamp: string;
+}
+
+interface MessageListProps {
+  messages: Message[];
+  currentUserId: number;
+}
+
+export function MessageList({ messages, currentUserId }: MessageListProps) {
+  if (messages.length === 0) {
+    return (
+      <div className="text-center text-sm text-[#8d9c6b] my-4">
+        Belum ada pesan. Silakan kirim pesan baru untuk memulai percakapan.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {messages.map((message) => {
+        // Format waktu
+        const messageDate = new Date(message.timestamp);
+        const hour = messageDate.getHours().toString().padStart(2, '0');
+        const minute = messageDate.getMinutes().toString().padStart(2, '0');
+        const timeString = `${hour}:${minute}`;
+        
+        // Tentukan apakah pesan dari pengguna saat ini
+        const isFromMe = message.senderId === currentUserId;
+        
+        return (
+          <div key={message.id} className={`flex ${isFromMe ? 'justify-end' : 'justify-start'} mb-3`}>
+            <div className={`max-w-[75%] rounded-lg px-4 py-2 ${isFromMe ? 'bg-[#1e4620]' : 'bg-[#1e1e1e]'}`}>
+              <div className="text-sm text-[#e4e6e3]">{message.content}</div>
+              <div className="text-right text-xs text-[#7d8172] mt-1">{timeString}</div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}

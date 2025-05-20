@@ -1,0 +1,464 @@
+import { useState, useEffect } from "react";
+import { useAuth } from "../hooks/use-auth";
+import { useChat } from "../hooks/use-chat";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { Radio, AlertCircle, Lock, Shield } from "lucide-react";
+import { useLocation } from "wouter";
+
+export default function LoginPage() {
+  // Active tab state
+  const [activeTab, setActiveTab] = useState("login");
+  
+  // Login form states
+  const [username, setUsername] = useState("");
+  const [nrp, setNrp] = useState("");
+  const [password, setPassword] = useState("");
+  
+  // Registration form states
+  const [regUsername, setRegUsername] = useState("");
+  const [regNrp, setRegNrp] = useState("");
+  const [regFullName, setRegFullName] = useState("");
+  const [regRank, setRegRank] = useState("");
+  const [regUnit, setRegUnit] = useState("");
+  const [regBranch, setRegBranch] = useState("");
+  const [regStation, setRegStation] = useState("");
+  const [regBloodType, setRegBloodType] = useState("");
+  const [regSecurityClearance, setRegSecurityClearance] = useState("");
+  const [regEmergencyName, setRegEmergencyName] = useState("");
+  const [regEmergencyPhone, setRegEmergencyPhone] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+  const [regConfirmPassword, setRegConfirmPassword] = useState("");
+  
+  const { loginMutation, registerMutation, user } = useAuth();
+  const { loginUser, authenticating } = useChat();
+  const [_, setLocation] = useLocation();
+
+  // Redirect to dashboard if already logged in
+  useEffect(() => {
+    if (user) {
+      // Use window.location for a full page reload to ensure proper initialization
+      window.location.href = "/dashboard";
+    }
+  }, [user]);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (username.trim() && password.trim()) {
+      // We'll include the NRP as part of the device info for this military-themed app
+      const deviceInfo = `NRP: ${nrp || 'Not provided'}`;
+      
+      // Use both authentication systems: 
+      // 1. HTTP-based auth using React Query
+      loginMutation.mutate({ username, password, deviceInfo });
+      
+      // 2. WebSocket-based auth
+      loginUser(username, password, deviceInfo);
+    }
+  };
+  
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!regUsername.trim() || !regPassword.trim()) {
+      return; // Basic validation
+    }
+    
+    if (regPassword !== regConfirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
+    
+    // Create the device info string with all the military information
+    const deviceInfo = [
+      `NRP: ${regNrp || 'Not provided'}`,
+      `Full Name: ${regFullName || 'Not provided'}`,
+      `Rank: ${regRank || 'Not provided'}`,
+      `Unit: ${regUnit || 'Not provided'}`,
+      `Branch: ${regBranch || 'Not provided'}`,
+      `Station: ${regStation || 'Not provided'}`,
+      `Blood Type: ${regBloodType || 'Not provided'}`,
+      `Security Clearance: ${regSecurityClearance || 'Not provided'}`,
+      `Emergency Contact: ${regEmergencyName || 'Not provided'} (${regEmergencyPhone || 'Not provided'})`
+    ].join("; ");
+    
+    // Register the user
+    registerMutation.mutate({
+      username: regUsername,
+      password: regPassword,
+      nrp: regNrp,
+      fullName: regFullName,
+      rank: regRank,
+      unit: regUnit,
+      branch: regBranch,
+      station: regStation,
+      bloodType: regBloodType,
+      securityClearance: regSecurityClearance,
+      emergencyContactName: regEmergencyName,
+      emergencyContactPhone: regEmergencyPhone,
+      deviceInfo
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col justify-center items-center p-4">
+      <Card className="w-full max-w-md border-2 border-accent bg-background shadow-md">
+        <CardHeader className="space-y-1 text-center military-header">
+          <div className="flex justify-center mb-3">
+            <div className="w-32 h-32 flex items-center justify-center">
+              <img 
+                src={militaryChatIcon} 
+                alt="Military Communication Icon" 
+                className="w-full h-full object-contain"
+              />
+            </div>
+          </div>
+          <CardTitle className="text-2xl font-bold tracking-wider uppercase text-primary-foreground">SECURE COMMS</CardTitle>
+          <CardDescription className="text-primary-foreground/80 font-medium">
+            MILITARY PERSONNEL AUTHENTICATION REQUIRED
+          </CardDescription>
+        </CardHeader>
+        
+        <Tabs defaultValue="login" className="w-full">
+          <div className="border-b border-accent">
+            <TabsList className="grid grid-cols-2 w-full bg-background">
+              <TabsTrigger 
+                value="login"
+                className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground font-bold rounded-none border-r border-accent"
+              >
+                LOGIN
+              </TabsTrigger>
+              <TabsTrigger 
+                value="register" 
+                className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground font-bold rounded-none"
+              >
+                REGISTER
+              </TabsTrigger>
+            </TabsList>
+          </div>
+          
+          {/* Login Tab */}
+          <TabsContent value="login" className="m-0">
+            <CardContent className="p-6">
+              <form onSubmit={handleLogin}>
+                <div className="grid gap-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="username" className="text-sm font-bold uppercase">CALLSIGN / USERNAME</Label>
+                    <Input
+                      id="username"
+                      placeholder="ENTER CALLSIGN"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      required
+                      autoComplete="username"
+                      className="bg-muted border-accent font-medium placeholder:text-muted-foreground/50"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="nrp" className="text-sm font-bold uppercase">NRP / PERSONNEL ID</Label>
+                    <Input
+                      id="nrp"
+                      placeholder="ENTER NRP"
+                      value={nrp}
+                      onChange={(e) => setNrp(e.target.value)}
+                      className="bg-muted border-accent font-medium placeholder:text-muted-foreground/50"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="password" className="text-sm font-bold uppercase flex items-center">
+                      <span>SECURITY CODE / PASSWORD</span>
+                      <span className="ml-2 inline-flex items-center px-1 py-0.5 text-xs military-badge">
+                        <Lock className="h-3 w-3 mr-1" /> ENCRYPTED
+                      </span>
+                    </Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="ENTER SECURITY CODE"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      autoComplete="current-password"
+                      className="bg-muted border-accent font-medium placeholder:text-muted-foreground/50"
+                    />
+                    <div className="py-2 px-3 bg-primary/10 border border-accent/50 mt-2">
+                      <p className="text-xs text-accent font-medium">
+                        UNAUTHORIZED ACCESS IS STRICTLY PROHIBITED.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </CardContent>
+            
+            <CardFooter className="border-t border-accent p-6">
+              <Button 
+                className="w-full military-button text-lg uppercase font-bold tracking-wider h-12" 
+                onClick={handleLogin}
+                disabled={loginMutation.isPending || authenticating || !username.trim() || !password.trim()}
+              >
+                {loginMutation.isPending || authenticating ? "AUTHENTICATING..." : "SECURE LOGIN"}
+              </Button>
+            </CardFooter>
+          </TabsContent>
+          
+          {/* Registration Tab */}
+          <TabsContent value="register" className="m-0">
+            <CardContent className="p-6">
+              <form onSubmit={handleRegister} className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                <div className="grid gap-5">
+                  <div className="py-2 px-3 bg-primary/10 border border-accent/50">
+                    <p className="text-xs text-accent font-medium flex items-center">
+                      <AlertCircle className="h-3 w-3 mr-1" />
+                      MILITARY PERSONNEL REGISTRATION FORM - COMPLETE ALL FIELDS
+                    </p>
+                  </div>
+                  
+                  {/* Call Sign / Username */}
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-username" className="text-sm font-bold uppercase">
+                      CALL SIGN / USERNAME
+                    </Label>
+                    <Input
+                      id="reg-username"
+                      placeholder="ENTER CALLSIGN"
+                      value={regUsername}
+                      onChange={(e) => setRegUsername(e.target.value)}
+                      required
+                      className="bg-muted border-accent font-medium placeholder:text-muted-foreground/50"
+                    />
+                  </div>
+                  
+                  {/* NRP */}
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-nrp" className="text-sm font-bold uppercase">
+                      NRP (SERVICE NUMBER)
+                    </Label>
+                    <Input
+                      id="reg-nrp"
+                      placeholder="ENTER SERVICE NUMBER"
+                      value={regNrp}
+                      onChange={(e) => setRegNrp(e.target.value)}
+                      required
+                      className="bg-muted border-accent font-medium placeholder:text-muted-foreground/50"
+                    />
+                  </div>
+                  
+                  {/* Full Name */}
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-fullname" className="text-sm font-bold uppercase">
+                      FULL NAME
+                    </Label>
+                    <Input
+                      id="reg-fullname"
+                      placeholder="ENTER FULL NAME"
+                      value={regFullName}
+                      onChange={(e) => setRegFullName(e.target.value)}
+                      required
+                      className="bg-muted border-accent font-medium placeholder:text-muted-foreground/50"
+                    />
+                  </div>
+                  
+                  {/* Rank */}
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-rank" className="text-sm font-bold uppercase">
+                      RANK
+                    </Label>
+                    <Select
+                      value={regRank}
+                      onValueChange={setRegRank}
+                    >
+                      <SelectTrigger id="reg-rank" className="bg-muted border-accent">
+                        <SelectValue placeholder="SELECT RANK" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Private">PRIVATE</SelectItem>
+                        <SelectItem value="Sergeant">SERGEANT</SelectItem>
+                        <SelectItem value="Lieutenant">LIEUTENANT</SelectItem>
+                        <SelectItem value="Captain">CAPTAIN</SelectItem>
+                        <SelectItem value="Major">MAJOR</SelectItem>
+                        <SelectItem value="Colonel">COLONEL</SelectItem>
+                        <SelectItem value="General">GENERAL</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Unit */}
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-unit" className="text-sm font-bold uppercase">
+                      UNIT / BATTALION / DIVISION
+                    </Label>
+                    <Input
+                      id="reg-unit"
+                      placeholder="ENTER UNIT"
+                      value={regUnit}
+                      onChange={(e) => setRegUnit(e.target.value)}
+                      className="bg-muted border-accent font-medium placeholder:text-muted-foreground/50"
+                    />
+                  </div>
+                  
+                  {/* Branch */}
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-branch" className="text-sm font-bold uppercase">
+                      BRANCH OF SERVICE
+                    </Label>
+                    <Select
+                      value={regBranch}
+                      onValueChange={setRegBranch}
+                    >
+                      <SelectTrigger id="reg-branch" className="bg-muted border-accent">
+                        <SelectValue placeholder="SELECT BRANCH" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Army">ARMY</SelectItem>
+                        <SelectItem value="Navy">NAVY</SelectItem>
+                        <SelectItem value="Air Force">AIR FORCE</SelectItem>
+                        <SelectItem value="Marine Corps">MARINE CORPS</SelectItem>
+                        <SelectItem value="Special Forces">SPECIAL FORCES</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Station */}
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-station" className="text-sm font-bold uppercase">
+                      CURRENT STATION / DEPLOYMENT AREA
+                    </Label>
+                    <Input
+                      id="reg-station"
+                      placeholder="ENTER STATION"
+                      value={regStation}
+                      onChange={(e) => setRegStation(e.target.value)}
+                      className="bg-muted border-accent font-medium placeholder:text-muted-foreground/50"
+                    />
+                  </div>
+                  
+                  {/* Blood Type */}
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-blood-type" className="text-sm font-bold uppercase">
+                      BLOOD TYPE
+                    </Label>
+                    <Select
+                      value={regBloodType}
+                      onValueChange={setRegBloodType}
+                    >
+                      <SelectTrigger id="reg-blood-type" className="bg-muted border-accent">
+                        <SelectValue placeholder="SELECT BLOOD TYPE" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="A">A</SelectItem>
+                        <SelectItem value="B">B</SelectItem>
+                        <SelectItem value="AB">AB</SelectItem>
+                        <SelectItem value="O">O</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Security Clearance */}
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-security" className="text-sm font-bold uppercase">
+                      SECURITY CLEARANCE LEVEL
+                    </Label>
+                    <Select
+                      value={regSecurityClearance}
+                      onValueChange={setRegSecurityClearance}
+                    >
+                      <SelectTrigger id="reg-security" className="bg-muted border-accent">
+                        <SelectValue placeholder="SELECT CLEARANCE LEVEL" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Confidential">CONFIDENTIAL</SelectItem>
+                        <SelectItem value="Secret">SECRET</SelectItem>
+                        <SelectItem value="Top Secret">TOP SECRET</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Emergency Contact */}
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-emergency-name" className="text-sm font-bold uppercase">
+                      EMERGENCY CONTACT NAME
+                    </Label>
+                    <Input
+                      id="reg-emergency-name"
+                      placeholder="ENTER EMERGENCY CONTACT NAME"
+                      value={regEmergencyName}
+                      onChange={(e) => setRegEmergencyName(e.target.value)}
+                      className="bg-muted border-accent font-medium placeholder:text-muted-foreground/50"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-emergency-phone" className="text-sm font-bold uppercase">
+                      EMERGENCY CONTACT PHONE
+                    </Label>
+                    <Input
+                      id="reg-emergency-phone"
+                      placeholder="ENTER EMERGENCY CONTACT PHONE"
+                      value={regEmergencyPhone}
+                      onChange={(e) => setRegEmergencyPhone(e.target.value)}
+                      className="bg-muted border-accent font-medium placeholder:text-muted-foreground/50"
+                    />
+                  </div>
+                  
+                  {/* Password */}
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-password" className="text-sm font-bold uppercase flex items-center">
+                      <span>PASSWORD</span>
+                      <span className="ml-2 inline-flex items-center px-1 py-0.5 text-xs military-badge">
+                        <Lock className="h-3 w-3 mr-1" /> ENCRYPTED
+                      </span>
+                    </Label>
+                    <Input
+                      id="reg-password"
+                      type="password"
+                      placeholder="ENTER PASSWORD"
+                      value={regPassword}
+                      onChange={(e) => setRegPassword(e.target.value)}
+                      required
+                      className="bg-muted border-accent font-medium placeholder:text-muted-foreground/50"
+                    />
+                  </div>
+                  
+                  {/* Confirm Password */}
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-confirm-password" className="text-sm font-bold uppercase">
+                      CONFIRM PASSWORD
+                    </Label>
+                    <Input
+                      id="reg-confirm-password"
+                      type="password"
+                      placeholder="CONFIRM PASSWORD"
+                      value={regConfirmPassword}
+                      onChange={(e) => setRegConfirmPassword(e.target.value)}
+                      required
+                      className="bg-muted border-accent font-medium placeholder:text-muted-foreground/50"
+                    />
+                  </div>
+                </div>
+              </form>
+            </CardContent>
+            
+            <CardFooter className="border-t border-accent p-6">
+              <Button 
+                className="w-full military-button text-lg uppercase font-bold tracking-wider h-12" 
+                onClick={handleRegister}
+                disabled={registerMutation.isPending || !regUsername.trim() || !regPassword.trim() || regPassword !== regConfirmPassword}
+              >
+                {registerMutation.isPending ? "REGISTERING..." : "REGISTER PERSONNEL"}
+              </Button>
+            </CardFooter>
+          </TabsContent>
+        </Tabs>
+      </Card>
+      
+      <div className="mt-6 border border-accent/70 bg-background/50 p-3 max-w-md">
+        <p className="text-center text-sm text-accent font-medium uppercase flex items-center justify-center">
+          <Radio className="h-4 w-4 mr-2 animate-pulse text-success" />
+          INTRANET COMMUNICATIONS ONLY - CLASSIFIED
+        </p>
+      </div>
+    </div>
+  );
+}

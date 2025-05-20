@@ -1,0 +1,138 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+ 
+@layer base {
+  :root {
+    --background: 70 15% 10%;
+    --foreground: 60 10% 98%;
+    
+    --card: 70 15% 12%;
+    --card-foreground: 60 10% 98%;
+    
+    --popover: 70 15% 12%;
+    --popover-foreground: 60 10% 98%;
+    
+    --primary: 70 18% 33%;
+    --primary-foreground: 60 10% 98%;
+    
+    --secondary: 70 12% 22%;
+    --secondary-foreground: 60 10% 98%;
+    
+    --muted: 70 10% 15%;
+    --muted-foreground: 60 5% 65%;
+    
+    --accent: 70 25% 35%;
+    --accent-foreground: 60 10% 98%;
+    
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 60 10% 98%;
+    
+    --border: 70 15% 25%;
+    --input: 70 15% 25%;
+    --ring: 70 15% 25%;
+    
+    --radius: 0.5rem;
+  }
+ 
+  .dark {
+    --background: 70 15% 10%;
+    --foreground: 60 10% 98%;
+    
+    --card: 70 15% 12%;
+    --card-foreground: 60 10% 98%;
+    
+    --popover: 70 15% 12%;
+    --popover-foreground: 60 10% 98%;
+    
+    --primary: 70 18% 33%;
+    --primary-foreground: 60 10% 98%;
+    
+    --secondary: 70 12% 22%;
+    --secondary-foreground: 60 10% 98%;
+    
+    --muted: 70 10% 15%;
+    --muted-foreground: 60 5% 65%;
+    
+    --accent: 70 25% 35%;
+    --accent-foreground: 60 10% 98%;
+    
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 60 10% 98%;
+    
+    --border: 70 15% 25%;
+    --input: 70 15% 25%;
+    --ring: 70 15% 25%;
+  }
+}
+ 
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+.military-button {
+  @apply bg-[#5c6249] text-white py-3 font-bold uppercase tracking-wider hover:bg-[#6b7257] transition-colors rounded focus:outline-none focus:ring-2 focus:ring-[#8d9c6b] focus:ring-opacity-50;
+}
+
+.military-badge {
+  @apply bg-[#3f4433] text-[#8d9c6b] px-1 py-0.5 text-xs rounded;
+}
+
+.military-container {
+  @apply min-h-screen flex items-center justify-center bg-[#1b1c16] p-4;
+}
+
+.military-card {
+  @apply bg-[#1f1f1e] border border-[#414438] w-full max-w-md;
+}
+
+.military-header {
+  @apply bg-[#5c6249] p-6 text-center text-white;
+}
+
+.military-tabs {
+  @apply grid grid-cols-2 border-b border-[#414438];
+}
+
+.military-tab {
+  @apply py-3 font-bold text-center uppercase text-[#a3a3a3] bg-[#2a2b23];
+}
+
+.military-tab.active {
+  @apply bg-[#414438] text-white;
+}
+
+.military-input {
+  @apply w-full bg-[#28292a] border border-[#414438] p-3 text-[#e4e6e3] placeholder:text-[#666666] rounded;
+}
+
+.military-notice {
+  @apply mt-2 p-2 bg-[#28292a] border border-[#414438] text-[#8d9c6b] text-xs rounded;
+}
+
+.military-footer {
+  @apply p-3 bg-[#1f1f1e] text-[#8d9c6b] text-xs text-center border-t border-[#414438];
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #5c6249 #1f1f1e;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #1f1f1e;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #5c6249;
+  border-radius: 4px;
+}

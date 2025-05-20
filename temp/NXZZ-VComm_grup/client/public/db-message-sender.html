@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Message Sender</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #1f201c;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #2a2b25;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        h2 {
+            color: #90ee90;
+            margin-top: 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #3d3f35;
+            background-color: #1f201c;
+            color: #e0e0e0;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #566c57;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #448855;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #1f201c;
+            border-radius: 4px;
+            border-left: 4px solid #566c57;
+        }
+        .success {
+            border-left-color: #90ee90;
+        }
+        .error {
+            border-left-color: #ff6b6b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Database Message Sender</h2>
+        <div>
+            <label for="userId">User ID:</label>
+            <input type="number" id="userId" value="7" placeholder="Contoh: 7 untuk Eko, 8 untuk David">
+            
+            <label for="chatType">Tipe Chat:</label>
+            <select id="chatType">
+                <option value="direct">Direct Chat</option>
+                <option value="room">Room</option>
+            </select>
+            
+            <label for="chatId">Direct Chat ID di Database:</label>
+            <select id="chatId">
+                <option value="16">16 - Chat Eko-David</option>
+                <option value="17">17 - Chat Eko-Aji</option>
+                <option value="other">Lainnya</option>
+            </select>
+            
+            <div id="otherChatIdContainer" style="display:none">
+                <label for="otherChatId">ID Chat Lainnya:</label>
+                <input type="number" id="otherChatId" placeholder="Masukkan ID chat">
+            </div>
+            
+            <label for="message">Pesan:</label>
+            <textarea id="message" rows="4" placeholder="Ketik pesan disini..."></textarea>
+            
+            <button id="sendButton">Kirim Pesan ke Database</button>
+        </div>
+        
+        <div id="result" class="result" style="display:none"></div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Setup event handlers
+            document.getElementById('chatId').addEventListener('change', function() {
+                const otherContainer = document.getElementById('otherChatIdContainer');
+                otherContainer.style.display = this.value === 'other' ? 'block' : 'none';
+            });
+            
+            document.getElementById('sendButton').addEventListener('click', sendMessage);
+            
+            function sendMessage() {
+                // Get values
+                const userId = document.getElementById('userId').value;
+                const chatType = document.getElementById('chatType').value;
+                const chatIdSelect = document.getElementById('chatId');
+                let chatId;
+                
+                if (chatIdSelect.value === 'other') {
+                    chatId = document.getElementById('otherChatId').value;
+                } else {
+                    chatId = chatIdSelect.value;
+                }
+                
+                const messageText = document.getElementById('message').value;
+                
+                // Validate
+                if (!userId || !chatId || !messageText.trim()) {
+                    showResult('Mohon isi semua field yang diperlukan', false);
+                    return;
+                }
+                
+                // Prepare data
+                const requestData = {
+                    directChatId: parseInt(chatId),
+                    isRoom: chatType === 'room',
+                    content: messageText,
+                    classificationType: "routine"
+                };
+                
+                // Send to API
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/api/messages', true);
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.setRequestHeader('Authorization', `Bearer ${userId}`);
+                
+                xhr.onload = function() {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            showResult(`✅ Sukses! Pesan telah tersimpan dengan ID: ${response.id}`, true);
+                        } catch (e) {
+                            showResult('✅ Sukses! Pesan telah tersimpan.', true);
+                        }
+                    } else {
+                        showResult(`❌ Error: ${xhr.status} - ${xhr.statusText}`, false);
+                    }
+                };
+                
+                xhr.onerror = function() {
+                    showResult('❌ Network error saat mengirim pesan', false);
+                };
+                
+                // Send the request
+                xhr.send(JSON.stringify(requestData));
+                console.log('Sending:', JSON.stringify(requestData));
+            }
+            
+            function showResult(message, isSuccess) {
+                const resultDiv = document.getElementById('result');
+                resultDiv.textContent = message;
+                resultDiv.className = isSuccess ? 'result success' : 'result error';
+                resultDiv.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

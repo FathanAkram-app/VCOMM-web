@@ -1,0 +1,906 @@
+import { useState, useEffect, useMemo } from "react";
+import { PlusIcon, PhoneIcon, VideoIcon, MessageCircleIcon, Users, UserPlus, Radio, Settings, Search, Video } from "lucide-react";
+import { Button } from "../components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { Badge } from "../components/ui/badge";
+
+import NavBar from "../components/NavBar";
+import ChatList from "../components/ChatList";
+import ChatRoom from "../components/ChatRoom";
+import ContactsList from "../components/ContactsList";
+import { useAuth } from "../hooks/use-auth";
+import { useCall } from "../hooks/useCall";
+import { useLocation } from "wouter";
+import { useToast } from "../hooks/use-toast";
+
+export default function MainLayout() {
+  const { user, logoutMutation } = useAuth();
+  const { toast } = useToast();
+  // Default ke tab chats (communications) untuk tampilan fullscreen
+  const [activeTab, setActiveTab] = useState("chats");
+  const [activeChat, setActiveChat] = useState<{id: number, isRoom: boolean} | null>(null);
+  const [_, navigate] = useLocation();
+  
+  // Dialog state
+  const [showNewChatDialog, setShowNewChatDialog] = useState(false);
+  const [showNewCallDialog, setShowNewCallDialog] = useState(false);
+  const [newRoomName, setNewRoomName] = useState("");
+  const [selectedContactId, setSelectedContactId] = useState<number | null>(null);
+  const [selectedContactIds, setSelectedContactIds] = useState<number[]>([]);
+  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
+  const [chatType, setChatType] = useState<"direct" | "room">("direct");
+  const [callType, setCallType] = useState<"audio" | "video">("audio");
+  
+  // Personnel filter state
+  const [personnelSearchQuery, setPersonnelSearchQuery] = useState('');
+  const [personnelBranchFilter, setPersonnelBranchFilter] = useState('all');
+  const [personnelBattalionFilter, setPersonnelBattalionFilter] = useState('all');
+  const [personnelAreaFilter, setPersonnelAreaFilter] = useState('all');
+  
+  // Data users untuk debug
+  const [users, setUsers] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<any>(null);
+  
+  // Fetch data users
+  useEffect(() => {
+    if (activeTab === 'personnel') {
+      setIsLoading(true);
+      setError(null);
+      fetch('/api/users')
+        .then(res => res.json())
+        .then(data => {
+          console.log('Users loaded:', data.length);
+          setUsers(data);
+          setIsLoading(false);
+        })
+        .catch(err => {
+          console.error('Error loading users:', err);
+          setError(err);
+          setIsLoading(false);
+        });
+    }
+  }, [activeTab]);
+  
+  // Forwarding state
+  const [forwardedMessage, setForwardedMessage] = useState<any>(null);
+  const [sourceChat, setSourceChat] = useState<{id: number, isRoom: boolean} | null>(null);
+  
+  // Profile editing state
+  const [showEditProfileDialog, setShowEditProfileDialog] = useState(false);
+  const [showChangePasswordDialog, setShowChangePasswordDialog] = useState(false);
+  
+  // State for edit profile form
+  const [profileForm, setProfileForm] = useState({
+    username: user?.username || "",
+    rank: "CAPTAIN",
+    unit: "1ST TACTICAL",
+    branch: "ARMY",
+    battalion: "1ST INFANTRY",
+    deploymentArea: "NORTHERN SECTOR"
+  });
+  
+  // State for change password form
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: ""
+  });
+  
+  // Mock chats for demonstration purposes
+  const [mockChats, setMockChats] = useState([
+    { id: 1, name: "OPERATION ALPHA", isRoom: true },
+    { id: 2, name: "TACTICAL UNIT B", isRoom: true },
+    { id: 101, name: "BRAVO2", isRoom: false },
+    { id: 102, name: "CHARLIE3", isRoom: false }
+  ]);
+  
+  // Function to get chat name based on chat ID and type
+  const getChatName = (chatId: number, isRoom: boolean): string => {
+    const chat = mockChats.find(c => c.id === chatId && c.isRoom === isRoom);
+    return chat?.name || `CHAT ${chatId}`;
+  };
+  
+  // Initialize room data in localStorage if it doesn't exist
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem('roomMockMessages')) {
+        const mockData = {
+          1: [
+            { id: 1, text: "Mission briefing at 0800", sender: "ALPHA1", timestamp: "08:00", isRead: true },
+            { id: 2, text: "All units confirm receipt", sender: "CHARLIE3", timestamp: "08:01", isRead: true },
+            { id: 3, text: "Confirmed, standing by", sender: "BRAVO2", timestamp: "08:02", isRead: true },
+            { id: 4, text: "Intel update: target location confirmed", sender: "ALPHA1", timestamp: "08:05", isRead: true },
+            { id: 5, text: "Weather conditions nominal for operation", sender: "DELTA4", timestamp: "08:07", isRead: true },
+            { id: 6, text: "Equipment check complete, all systems operational", sender: "ECHO5", timestamp: "08:10", isRead: true },
+            { id: 7, text: "Advance team in position", sender: "FOXTROT6", timestamp: "08:15", isRead: true },
+            { id: 8, text: "Communications secure, encryption level alpha", sender: "CHARLIE3", timestamp: "08:20", isRead: true },
+            { id: 9, text: "Awaiting final authorization", sender: "BRAVO2", timestamp: "08:25", isRead: true },
+            { id: 10, text: "Authorization granted, commence operation", sender: "ALPHA1", timestamp: "08:30", isRead: true }
+          ],
+          2: [
+            { id: 11, text: "Supply convoy ETA 1200 hours", sender: "BRAVO2", timestamp: "10:00", isRead: true },
+            { id: 12, text: "Acknowledged, preparing landing zone", sender: "ECHO5", timestamp: "10:05", isRead: true },
+            { id: 13, text: "Security perimeter established", sender: "DELTA4", timestamp: "10:10", isRead: true },
+            { id: 14, text: "Logistics report: all essential supplies accounted for", sender: "CHARLIE3", timestamp: "10:15", isRead: true },
+            { id: 15, text: "Medical team on standby", sender: "FOXTROT6", timestamp: "10:20", isRead: true }
+          ]
+        };
+        localStorage.setItem('roomMockMessages', JSON.stringify(mockData));
+      }
+      
+      if (!localStorage.getItem('directMockMessages')) {
+        const mockData = {
+          101: [
+            { id: 16, text: "Status report needed ASAP", sender: "ALPHA1", timestamp: "09:00", isRead: true },
+            { id: 17, text: "Sector clear, nothing to report", sender: "BRAVO2", timestamp: "09:05", isRead: true },
+            { id: 18, text: "Maintain position, reinforcements en route", sender: "ALPHA1", timestamp: "09:10", isRead: true }
+          ],
+          102: [
+            { id: 19, text: "Communications check", sender: "ALPHA1", timestamp: "07:30", isRead: true },
+            { id: 20, text: "Receiving clearly, over", sender: "CHARLIE3", timestamp: "07:31", isRead: true },
+            { id: 21, text: "New encryption keys being distributed at 1800", sender: "ALPHA1", timestamp: "07:35", isRead: true },
+            { id: 22, text: "Acknowledged, will update systems accordingly", sender: "CHARLIE3", timestamp: "07:40", isRead: true }
+          ]
+        };
+        localStorage.setItem('directMockMessages', JSON.stringify(mockData));
+      }
+    } catch (error) {
+      console.error("Error initializing mock data:", error);
+    }
+  }, []);
+  
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
+  
+  const handleStartCall = () => {
+    if (!selectedContactId) {
+      toast({
+        title: "No Contact Selected",
+        description: "Please select a contact to call",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Log the contact ID for starting the call
+    console.log(`Starting ${callType} call with contact ID: ${selectedContactId}`);
+    
+    // Set call state and redirect to call page
+    if (callType === "audio") {
+      window.localStorage.setItem("activeAudioCall", JSON.stringify({
+        recipientId: selectedContactId,
+        recipientName: `User-${selectedContactId}`, // We should replace this with actual name from API
+        startTime: new Date().toISOString()
+      }));
+      navigate("/audio-call");
+    } else {
+      window.localStorage.setItem("activeVideoCall", JSON.stringify({
+        recipientId: selectedContactId,
+        recipientName: `User-${selectedContactId}`, // We should replace this with actual name from API
+        startTime: new Date().toISOString()
+      }));
+      navigate("/video-call");
+    }
+    
+    setShowNewCallDialog(false);
+  };
+
+  const handleCreateNewChat = () => {
+    if (chatType === "direct" && !selectedContactId) {
+      toast({
+        title: "No Contact Selected",
+        description: "Please select a contact to start a chat",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (chatType === "room" && !newRoomName.trim()) {
+      toast({
+        title: "Missing Room Name",
+        description: "Please enter a name for the chat room",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (chatType === "direct") {
+      // In a real implementation, we would create the direct chat in the database
+      // For now we'll just simulate it with mock data
+      console.log(`Creating direct chat with contact: ${selectedContactId}`);
+      
+      // Check if this chat already exists in our mock data
+      const existingChat = mockChats.find(c => !c.isRoom && c.id === selectedContactId);
+      
+      if (!existingChat) {
+        // Add new chat to mock chats
+        const newChat = { 
+          id: selectedContactId, 
+          name: `User-${selectedContactId}`, // Replace with actual name
+          isRoom: false 
+        };
+        setMockChats(prev => [...prev, newChat]);
+      }
+      
+      // Set this as the active chat
+      setActiveChat({id: selectedContactId, isRoom: false});
+      setActiveTab("chats");
+    } else {
+      // Create a new room chat
+      console.log(`Creating room chat: ${newRoomName} with members:`, selectedContactIds);
+      
+      // Generate a new room ID
+      const newRoomId = Math.max(...mockChats.filter(c => c.isRoom).map(c => c.id), 0) + 1;
+      
+      // Add new room to mock chats
+      const newRoom = { id: newRoomId, name: newRoomName, isRoom: true };
+      setMockChats(prev => [...prev, newRoom]);
+      
+      // Set this as the active chat
+      setActiveChat({id: newRoomId, isRoom: true});
+      setActiveTab("chats");
+      
+      // Initialize empty message list for this room
+      try {
+        const roomMessages = JSON.parse(localStorage.getItem('roomMockMessages') || '{}');
+        roomMessages[newRoomId] = [];
+        localStorage.setItem('roomMockMessages', JSON.stringify(roomMessages));
+      } catch (error) {
+        console.error("Error initializing new room messages:", error);
+      }
+    }
+    
+    // Reset and close dialog
+    setNewRoomName("");
+    setSelectedContactId(null);
+    setSelectedContactIds([]);
+    setShowNewChatDialog(false);
+  };
+  
+  const handleSaveProfile = () => {
+    // In a real app, this would update the user profile in the database
+    console.log("Saving profile:", profileForm);
+    
+    toast({
+      title: "Profile Updated",
+      description: "Your profile has been successfully updated",
+    });
+    
+    setShowEditProfileDialog(false);
+  };
+  
+  const handleChangePassword = () => {
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast({
+        title: "Password Mismatch",
+        description: "New password and confirmation do not match",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // In a real app, this would update the password in the database
+    console.log("Changing password");
+    
+    toast({
+      title: "Password Changed",
+      description: "Your password has been successfully updated",
+    });
+    
+    setPasswordForm({
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: ""
+    });
+    
+    setShowChangePasswordDialog(false);
+  };
+  
+  return (
+    <div className="flex flex-col h-full overflow-hidden bg-background">
+      <NavBar activeTab={activeTab} onTabChange={setActiveTab} />
+      
+      <main className="flex-1 flex overflow-hidden">
+        {/* Side Navigation */}
+        <div className="w-16 flex-shrink-0 border-r border-accent flex flex-col items-center py-4 bg-muted/30">
+          <Button 
+            variant={activeTab === "chats" ? "default" : "ghost"} 
+            size="icon" 
+            onClick={() => setActiveTab("chats")} 
+            className="mb-4"
+          >
+            <MessageCircleIcon className="h-5 w-5" />
+            <span className="sr-only">Chats</span>
+          </Button>
+          
+          <Button 
+            variant={activeTab === "contacts" ? "default" : "ghost"} 
+            size="icon" 
+            onClick={() => setActiveTab("contacts")} 
+            className="mb-4"
+          >
+            <Users className="h-5 w-5" />
+            <span className="sr-only">Contacts</span>
+          </Button>
+          
+          <Button 
+            variant={activeTab === "personnel" ? "default" : "ghost"} 
+            size="icon" 
+            onClick={() => setActiveTab("personnel")} 
+            className="mb-4"
+          >
+            <Radio className="h-5 w-5" />
+            <span className="sr-only">Personnel</span>
+          </Button>
+          
+          <Button 
+            variant={activeTab === "settings" ? "default" : "ghost"} 
+            size="icon" 
+            onClick={() => setActiveTab("settings")} 
+            className="mb-4"
+          >
+            <Settings className="h-5 w-5" />
+            <span className="sr-only">Settings</span>
+          </Button>
+          
+          <div className="flex-1"></div>
+          
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={() => {
+              if (activeTab === "chats") {
+                setShowNewChatDialog(true);
+                setChatType("direct");
+              } else if (activeTab === "contacts" || activeTab === "personnel") {
+                setShowNewCallDialog(true);
+              }
+            }} 
+            className="border-accent"
+          >
+            <PlusIcon className="h-5 w-5" />
+            <span className="sr-only">New</span>
+          </Button>
+        </div>
+        
+        <div className="flex-1 flex overflow-hidden">
+          {/* Chats Tab - Full Width Military Style */}
+          {activeTab === "chats" && (
+            <div className="flex-1 flex overflow-hidden">
+              {/* Chat List - Military Tactical Display */}
+              <div className="w-full overflow-hidden flex flex-col bg-[#2a2b25]">                
+                <div className="flex-1 overflow-y-auto">
+                  <ChatList 
+                    chats={mockChats} 
+                    activeChat={activeChat} 
+                    onChatSelected={setActiveChat} 
+                  />
+                </div>
+              </div>
+              
+              {/* Chat Area - Maximized Military Style */}
+              <div className="flex-1 overflow-hidden">
+                {activeChat ? (
+                  <ChatRoom 
+                    chatId={activeChat.id}
+                    isRoom={activeChat.isRoom}
+                    chatName={getChatName(activeChat.id, activeChat.isRoom)}
+                    onBack={() => setActiveChat(null)}
+                    onNavigateToChat={(targetId, isTargetRoom, forwardedMsg) => {
+                      // Handle navigation to another chat, possibly with forwarded message
+                      if (forwardedMsg) {
+                        setForwardedMessage(forwardedMsg);
+                      }
+                      setActiveChat({id: targetId, isRoom: isTargetRoom});
+                    }}
+                    forwardedMessage={forwardedMessage}
+                  />
+                ) : (
+                  <div className="flex flex-col h-full bg-[#2a2b25]">
+                    <div className="flex-1 flex items-center justify-center">
+                      <div className="text-center">
+                        <Button 
+                          onClick={() => setShowNewChatDialog(true)}
+                          className="bg-[#566c57] hover:bg-[#668568] border-none px-6 text-white"
+                        >
+                          <PlusIcon className="mr-2 h-4 w-4" />
+                          START NEW COMMUNICATION
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {/* Contacts Tab */}
+          {activeTab === "contacts" && (
+            <div className="flex-1 overflow-hidden flex flex-col">
+              <header className="p-3 border-b border-accent flex justify-between items-center">
+                <h2 className="font-bold text-sm">CONTACTS DIRECTORY</h2>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setShowNewCallDialog(true)}
+                    className="border-accent"
+                  >
+                    <PhoneIcon className="mr-2 h-4 w-4" />
+                    INITIATE CALL
+                  </Button>
+                </div>
+              </header>
+              
+              <div className="flex-1 p-3 overflow-y-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <ContactsList 
+                    onContactSelected={(id) => {
+                      setSelectedContactId(id);
+                      setShowNewCallDialog(true);
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Personnel Tab */}
+          {/* Full Screen Personnel Tab - Military Style */}
+          {activeTab === "personnel" && (
+            <div className="flex-1 overflow-hidden flex flex-col bg-[#2a2b25]">
+              {console.log("Rendering Personnel Tab")}
+              <header className="p-3 py-4 border-b border-accent/50 bg-[#566c57] flex justify-between items-center">
+                <h2 className="font-bold uppercase text-white">PERSONNEL DIRECTORY</h2>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="font-medium text-xs border-[#3d3f35]/70 text-white bg-[#3d3f35] hover:bg-[#3d3f35]/80"
+                    onClick={() => {
+                      setIsMultiSelectMode(!isMultiSelectMode);
+                      setSelectedContactIds([]);
+                    }}
+                  >
+                    {isMultiSelectMode ? "CANCEL SELECTION" : "SELECT MULTIPLE"}
+                  </Button>
+                  
+                  {isMultiSelectMode && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="font-medium text-xs border-[#3d3f35]/70 text-white bg-[#3d3f35] hover:bg-[#3d3f35]/80"
+                      onClick={() => {
+                        setChatType("room");
+                        setShowNewChatDialog(true);
+                      }}
+                      disabled={selectedContactIds.length === 0}
+                    >
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      CREATE GROUP
+                    </Button>
+                  )}
+                </div>
+              </header>
+              
+              {/* Personnel List with full screen layout */}
+              <div className="flex-1 overflow-y-auto">
+                <ContactsList 
+                  onContactSelected={(id) => {
+                      // When contact is selected, open chat with that contact
+                      setActiveChat({id: id, isRoom: false});
+                      setActiveTab("chats");
+                    }}
+                  />
+              </div>
+            </div>
+          )}
+          
+          {/* Settings Tab */}
+          {activeTab === "settings" && (
+            <div className="flex-1 overflow-hidden flex flex-col bg-[#2a2b25]">
+              
+              {/* Floating Action Button */}
+              <div className="absolute bottom-20 right-5">
+                <div className="flex flex-col space-y-2">
+                  <Button
+                    variant="default"
+                    size="icon"
+                    className="h-12 w-12 rounded-full shadow-lg"
+                    onClick={() => {
+                      setCallType("audio");
+                      setShowNewCallDialog(true);
+                    }}
+                  >
+                    <PhoneIcon className="h-6 w-6" />
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="icon"
+                    className="h-12 w-12 rounded-full shadow-lg"
+                    onClick={() => {
+                      setCallType("video");
+                      setShowNewCallDialog(true);
+                    }}
+                  >
+                    <VideoIcon className="h-6 w-6" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Settings Tab */}
+          {activeTab === "settings" && (
+            <div className="flex-1 overflow-hidden flex flex-col">
+              <header className="p-3 border-b border-accent">
+                <h2 className="font-bold text-sm">SYSTEM SETTINGS</h2>
+              </header>
+              
+              <div className="flex-1 p-4 overflow-y-auto">
+                <div className="max-w-md mx-auto">
+                  <div className="mb-6 p-4 border border-accent rounded-md">
+                    <h3 className="text-lg font-bold mb-4">USER PROFILE</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="display-username" className="text-xs font-bold mb-1 block">USERNAME</Label>
+                        <div id="display-username" className="p-2 bg-muted rounded-md text-sm">{user?.username || "Unknown"}</div>
+                      </div>
+                      
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setShowEditProfileDialog(true)}
+                        className="w-full border-accent"
+                      >
+                        EDIT PROFILE
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setShowChangePasswordDialog(true)}
+                        className="w-full border-accent"
+                      >
+                        CHANGE PASSWORD
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-6 p-4 border border-accent rounded-md">
+                    <h3 className="text-lg font-bold mb-4">SYSTEM STATUS</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Connection Status:</span>
+                        <Badge className="bg-green-500">CONNECTED</Badge>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Signal Strength:</span>
+                        <span className="text-sm font-mono">97%</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Last Sync:</span>
+                        <span className="text-sm font-mono">2 MINUTES AGO</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Server:</span>
+                        <span className="text-sm font-mono">CENTRAL-COMMAND-01</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Encrypted Channel:</span>
+                        <Badge variant="outline" className="border-green-500 text-green-500">ACTIVE</Badge>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleLogout}
+                    className="w-full"
+                  >
+                    SECURE LOGOUT
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
+      
+      {/* New Chat Dialog */}
+      <Dialog open={showNewChatDialog} onOpenChange={setShowNewChatDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {forwardedMessage ? "FORWARD MESSAGE" : "NEW COMMUNICATION"}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {!forwardedMessage && (
+            <div className="mb-4">
+              <Label htmlFor="chat-type" className="text-xs font-bold mb-1 block">COMMUNICATION TYPE</Label>
+              <Select value={chatType} onValueChange={(value) => setChatType(value as "direct" | "room")}>
+                <SelectTrigger id="chat-type" className="w-full border-accent">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border-accent">
+                  <SelectItem value="direct">DIRECT MESSAGE</SelectItem>
+                  <SelectItem value="room">CHAT ROOM</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          
+          {(chatType === "room" || (forwardedMessage && sourceChat?.isRoom)) && (
+            <div className="mb-4">
+              <Label htmlFor="room-name" className="text-xs font-bold mb-1 block">ROOM NAME</Label>
+              <Input
+                id="room-name"
+                className="border-accent"
+                value={newRoomName}
+                onChange={(e) => setNewRoomName(e.target.value)}
+                placeholder="Enter room name"
+              />
+            </div>
+          )}
+          
+          <div className="mb-4">
+            <Label className="text-xs font-bold mb-1 block">
+              {chatType === "direct" || (forwardedMessage && !sourceChat?.isRoom) ? "SELECT CONTACT" : "SELECT PARTICIPANTS"}
+            </Label>
+            
+            <div className="border border-accent rounded-md overflow-hidden max-h-64">
+              <ContactsList 
+                onContactSelected={(id) => {
+                  if (chatType === "direct" || (forwardedMessage && !sourceChat?.isRoom)) {
+                    setSelectedContactId(id);
+                  } else {
+                    setSelectedContactIds(prev => {
+                      if (prev.includes(id)) {
+                        return prev.filter(i => i !== id);
+                      } else {
+                        return [...prev, id];
+                      }
+                    });
+                  }
+                }}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowNewChatDialog(false);
+              setNewRoomName("");
+              setSelectedContactId(null);
+              setSelectedContactIds([]);
+              setForwardedMessage(null);
+              setSourceChat(null);
+            }} className="border-accent">
+              CANCEL
+            </Button>
+            <Button onClick={handleCreateNewChat}>
+              {forwardedMessage ? "FORWARD" : "CREATE"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* New Call Dialog */}
+      <Dialog open={showNewCallDialog} onOpenChange={setShowNewCallDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>INITIATE COMMUNICATION</DialogTitle>
+          </DialogHeader>
+          
+          <div className="mb-4">
+            <Label htmlFor="call-type" className="text-xs font-bold mb-1 block">COMMUNICATION TYPE</Label>
+            <div className="flex space-x-2">
+              <Button
+                variant={callType === "audio" ? "default" : "outline"}
+                className={`flex-1 ${callType !== "audio" ? "border-accent" : ""}`}
+                onClick={() => setCallType("audio")}
+              >
+                <PhoneIcon className="mr-2 h-4 w-4" />
+                AUDIO CALL
+              </Button>
+              <Button
+                variant={callType === "video" ? "default" : "outline"}
+                className={`flex-1 ${callType !== "video" ? "border-accent" : ""}`}
+                onClick={() => setCallType("video")}
+              >
+                <VideoIcon className="mr-2 h-4 w-4" />
+                VIDEO CALL
+              </Button>
+            </div>
+          </div>
+          
+          <div className="mb-4">
+            <Label className="text-xs font-bold mb-1 block">SELECT CONTACT</Label>
+            
+            <div className="border border-accent rounded-md overflow-hidden max-h-64">
+              <ContactsList 
+                onContactSelected={(id) => {
+                  setSelectedContactId(id);
+                }}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowNewCallDialog(false);
+              setSelectedContactId(null);
+            }} className="border-accent">
+              CANCEL
+            </Button>
+            <Button onClick={handleStartCall}>
+              INITIATE {callType.toUpperCase()} CALL
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Edit Profile Dialog */}
+      <Dialog open={showEditProfileDialog} onOpenChange={setShowEditProfileDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>EDIT PROFILE</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="profile-username" className="text-xs font-bold mb-1 block">USERNAME</Label>
+              <Input
+                id="profile-username"
+                className="border-accent"
+                value={profileForm.username}
+                onChange={(e) => setProfileForm({...profileForm, username: e.target.value})}
+                disabled
+              />
+              <p className="text-xs text-muted-foreground mt-1">Username cannot be changed</p>
+            </div>
+            
+            <div>
+              <Label htmlFor="profile-rank" className="text-xs font-bold mb-1 block">RANK</Label>
+              <Select 
+                value={profileForm.rank} 
+                onValueChange={(value) => setProfileForm({...profileForm, rank: value})}
+              >
+                <SelectTrigger id="profile-rank" className="w-full border-accent">
+                  <SelectValue placeholder="Select rank" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border-accent">
+                  <SelectItem value="PRIVATE">PRIVATE</SelectItem>
+                  <SelectItem value="CORPORAL">CORPORAL</SelectItem>
+                  <SelectItem value="SERGEANT">SERGEANT</SelectItem>
+                  <SelectItem value="LIEUTENANT">LIEUTENANT</SelectItem>
+                  <SelectItem value="CAPTAIN">CAPTAIN</SelectItem>
+                  <SelectItem value="MAJOR">MAJOR</SelectItem>
+                  <SelectItem value="COLONEL">COLONEL</SelectItem>
+                  <SelectItem value="GENERAL">GENERAL</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="profile-unit" className="text-xs font-bold mb-1 block">UNIT</Label>
+              <Input
+                id="profile-unit"
+                className="border-accent"
+                value={profileForm.unit}
+                onChange={(e) => setProfileForm({...profileForm, unit: e.target.value})}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="profile-branch" className="text-xs font-bold mb-1 block">BRANCH</Label>
+              <Select 
+                value={profileForm.branch} 
+                onValueChange={(value) => setProfileForm({...profileForm, branch: value})}
+              >
+                <SelectTrigger id="profile-branch" className="w-full border-accent">
+                  <SelectValue placeholder="Select branch" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border-accent">
+                  <SelectItem value="ARMY">ARMY</SelectItem>
+                  <SelectItem value="NAVY">NAVY</SelectItem>
+                  <SelectItem value="AIR FORCE">AIR FORCE</SelectItem>
+                  <SelectItem value="MARINES">MARINES</SelectItem>
+                  <SelectItem value="SPECIAL OPS">SPECIAL OPS</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="profile-battalion" className="text-xs font-bold mb-1 block">BATTALION</Label>
+              <Input
+                id="profile-battalion"
+                className="border-accent"
+                value={profileForm.battalion}
+                onChange={(e) => setProfileForm({...profileForm, battalion: e.target.value})}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="profile-area" className="text-xs font-bold mb-1 block">DEPLOYMENT AREA</Label>
+              <Input
+                id="profile-area"
+                className="border-accent"
+                value={profileForm.deploymentArea}
+                onChange={(e) => setProfileForm({...profileForm, deploymentArea: e.target.value})}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditProfileDialog(false)} className="border-accent">
+              CANCEL
+            </Button>
+            <Button onClick={handleSaveProfile}>
+              SAVE CHANGES
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Change Password Dialog */}
+      <Dialog open={showChangePasswordDialog} onOpenChange={setShowChangePasswordDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>CHANGE PASSWORD</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="current-password" className="text-xs font-bold mb-1 block">CURRENT PASSWORD</Label>
+              <Input
+                id="current-password"
+                type="password"
+                className="border-accent"
+                value={passwordForm.currentPassword}
+                onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="new-password" className="text-xs font-bold mb-1 block">NEW PASSWORD</Label>
+              <Input
+                id="new-password"
+                type="password"
+                className="border-accent"
+                value={passwordForm.newPassword}
+                onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="confirm-password" className="text-xs font-bold mb-1 block">CONFIRM NEW PASSWORD</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                className="border-accent"
+                value={passwordForm.confirmPassword}
+                onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowChangePasswordDialog(false)} className="border-accent">
+              CANCEL
+            </Button>
+            <Button onClick={handleChangePassword}>
+              UPDATE PASSWORD
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

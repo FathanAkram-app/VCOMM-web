@@ -1,0 +1,315 @@
+import { useState, useEffect } from "react";
+import { useAuth } from "../hooks/use-auth";
+import { useChat } from "../hooks/use-chat";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { Radio, AlertCircle, Lock, ShieldAlert } from "lucide-react";
+import { useLocation } from "wouter";
+
+// Import the military icon
+import militaryIcon from "../assets/Icon Chat NXXZ.png";
+
+export default function LoginPage() {
+  // Active tab state
+  const [activeTab, setActiveTab] = useState<"login" | "register">("login");
+  
+  // Login form states
+  const [username, setUsername] = useState("");
+  const [nrp, setNrp] = useState("");
+  const [password, setPassword] = useState("");
+  
+  // Registration form states
+  const [regUsername, setRegUsername] = useState("");
+  const [regNrp, setRegNrp] = useState("");
+  const [regFullName, setRegFullName] = useState("");
+  const [regRank, setRegRank] = useState("");
+  const [regUnit, setRegUnit] = useState("");
+  const [regBranch, setRegBranch] = useState("");
+  const [regStation, setRegStation] = useState("");
+  const [regBloodType, setRegBloodType] = useState("");
+  const [regSecurityClearance, setRegSecurityClearance] = useState("");
+  const [regEmergencyName, setRegEmergencyName] = useState("");
+  const [regEmergencyPhone, setRegEmergencyPhone] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+  const [regConfirmPassword, setRegConfirmPassword] = useState("");
+  
+  const { loginMutation, registerMutation, user } = useAuth();
+  const { loginUser, authenticating } = useChat();
+  const [_, setLocation] = useLocation();
+
+  // Redirect to dashboard if already logged in
+  useEffect(() => {
+    if (user) {
+      // Use window.location for a full page reload to ensure proper initialization
+      window.location.href = "/dashboard";
+    }
+  }, [user]);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (username.trim() && password.trim()) {
+      // We'll include the NRP as part of the device info for this military-themed app
+      const deviceInfo = `NRP: ${nrp || 'Not provided'}`;
+      
+      // Use both authentication systems: 
+      // 1. HTTP-based auth using React Query
+      loginMutation.mutate({ username, password, deviceInfo });
+      
+      // 2. WebSocket-based auth
+      loginUser(username, password, deviceInfo);
+    }
+  };
+  
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!regUsername.trim() || !regPassword.trim()) {
+      return; // Basic validation
+    }
+    
+    if (regPassword !== regConfirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
+    
+    // Create the device info string with all the military information
+    const deviceInfo = [
+      `NRP: ${regNrp || 'Not provided'}`,
+      `Full Name: ${regFullName || 'Not provided'}`,
+      `Rank: ${regRank || 'Not provided'}`,
+      `Unit: ${regUnit || 'Not provided'}`,
+      `Branch: ${regBranch || 'Not provided'}`,
+      `Station: ${regStation || 'Not provided'}`,
+      `Blood Type: ${regBloodType || 'Not provided'}`,
+      `Security Clearance: ${regSecurityClearance || 'Not provided'}`,
+      `Emergency Contact: ${regEmergencyName || 'Not provided'} (${regEmergencyPhone || 'Not provided'})`
+    ].join("; ");
+    
+    // Register the user
+    registerMutation.mutate({
+      username: regUsername,
+      password: regPassword,
+      nrp: regNrp,
+      fullName: regFullName,
+      rank: regRank,
+      unit: regUnit,
+      branch: regBranch,
+      station: regStation,
+      bloodType: regBloodType,
+      securityClearance: regSecurityClearance,
+      emergencyContactName: regEmergencyName,
+      emergencyContactPhone: regEmergencyPhone,
+      deviceInfo
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-[#1b1c16] flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-[#23231d] border border-[#414438] shadow-lg">
+        {/* Header with shield icon */}
+        <div className="bg-[#4c513a] p-6 text-center text-white flex flex-col items-center">
+          <div className="bg-[#2a2b23] p-3 rounded inline-block mb-3">
+            <img src={militaryIcon} alt="Military Communication" className="w-10 h-10" />
+          </div>
+          <h1 className="text-xl font-bold uppercase">SECURE COMMS</h1>
+          <p className="text-sm mt-1 text-white/80">MILITARY PERSONNEL AUTHENTICATION REQUIRED</p>
+        </div>
+        
+        {/* Tab navigation */}
+        <div className="grid grid-cols-2 border-b border-[#414438]">
+          <button 
+            className={`py-3 font-bold text-center uppercase ${activeTab === "login" 
+              ? "bg-[#414438] text-white" 
+              : "bg-[#2a2b23] text-[#a3a3a3]"}`}
+            onClick={() => setActiveTab("login")}
+          >
+            LOGIN
+          </button>
+          <button 
+            className={`py-3 font-bold text-center uppercase ${activeTab === "register" 
+              ? "bg-[#414438] text-white" 
+              : "bg-[#2a2b23] text-[#a3a3a3]"}`}
+            onClick={() => setActiveTab("register")}
+          >
+            REGISTER
+          </button>
+        </div>
+        
+        {/* Login form */}
+        {activeTab === "login" && (
+          <div className="p-6">
+            <form onSubmit={handleLogin}>
+              <div className="space-y-5">
+                <div>
+                  <label className="text-xs font-bold text-[#e4e6e3] block mb-2 uppercase">CALLSIGN / USERNAME</label>
+                  <input
+                    type="text"
+                    className="w-full bg-[#28292a] border border-[#414438] p-3 text-[#e4e6e3] placeholder:text-[#666666] rounded"
+                    placeholder="ENTER CALLSIGN"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-xs font-bold text-[#e4e6e3] block mb-2 uppercase">NRP / PERSONNEL ID</label>
+                  <input
+                    type="text"
+                    className="w-full bg-[#28292a] border border-[#414438] p-3 text-[#e4e6e3] placeholder:text-[#666666] rounded"
+                    placeholder="ENTER NRP"
+                    value={nrp}
+                    onChange={(e) => setNrp(e.target.value)}
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-xs font-bold text-[#e4e6e3] flex items-center mb-2 uppercase">
+                    SECURITY CODE / PASSWORD
+                    <span className="ml-2 text-xs bg-[#3f4433] text-[#8d9c6b] px-1 py-0.5 inline-flex items-center text-[10px] rounded">
+                      <Lock className="h-3 w-3 mr-1" /> ENCRYPTED
+                    </span>
+                  </label>
+                  <input
+                    type="password"
+                    className="w-full bg-[#28292a] border border-[#414438] p-3 text-[#e4e6e3] placeholder:text-[#666666] rounded"
+                    placeholder="ENTER SECURITY CODE"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <div className="mt-2 p-2 bg-[#28292a] border border-[#414438] text-[#8d9c6b] text-xs rounded">
+                    UNAUTHORIZED ACCESS IS STRICTLY PROHIBITED.
+                  </div>
+                </div>
+                
+                <button 
+                  type="submit"
+                  className="w-full bg-[#5c6249] text-white py-3 font-bold uppercase tracking-wider mt-4 hover:bg-[#6b7257] transition-colors rounded"
+                  disabled={loginMutation.isPending || authenticating || !username.trim() || !password.trim()}
+                >
+                  {loginMutation.isPending || authenticating ? "AUTHENTICATING..." : "SECURE LOGIN"}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+        
+        {/* Registration form */}
+        {activeTab === "register" && (
+          <div className="p-6">
+            <form onSubmit={handleRegister} className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="space-y-5">
+                <div className="p-2 bg-[#28292a] border border-[#414438] text-[#8d9c6b] text-xs rounded text-center">
+                  <AlertCircle className="h-3 w-3 inline-block mr-1" />
+                  MILITARY PERSONNEL REGISTRATION FORM - COMPLETE ALL FIELDS
+                </div>
+                
+                <div>
+                  <label className="text-xs font-bold text-[#e4e6e3] block mb-2 uppercase">CALL SIGN / USERNAME</label>
+                  <input
+                    type="text"
+                    className="w-full bg-[#28292a] border border-[#414438] p-3 text-[#e4e6e3] placeholder:text-[#666666] rounded"
+                    placeholder="ENTER CALLSIGN"
+                    value={regUsername}
+                    onChange={(e) => setRegUsername(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-xs font-bold text-[#e4e6e3] block mb-2 uppercase">NRP (SERVICE NUMBER)</label>
+                  <input
+                    type="text"
+                    className="w-full bg-[#28292a] border border-[#414438] p-3 text-[#e4e6e3] placeholder:text-[#666666] rounded"
+                    placeholder="ENTER SERVICE NUMBER"
+                    value={regNrp}
+                    onChange={(e) => setRegNrp(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-xs font-bold text-[#e4e6e3] block mb-2 uppercase">FULL NAME</label>
+                  <input
+                    type="text"
+                    className="w-full bg-[#28292a] border border-[#414438] p-3 text-[#e4e6e3] placeholder:text-[#666666] rounded"
+                    placeholder="ENTER FULL NAME"
+                    value={regFullName}
+                    onChange={(e) => setRegFullName(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-xs font-bold text-[#e4e6e3] block mb-2 uppercase">RANK</label>
+                  <Select
+                    value={regRank}
+                    onValueChange={setRegRank}
+                  >
+                    <SelectTrigger 
+                      className="w-full bg-[#28292a] border border-[#414438] p-3 text-[#e4e6e3] placeholder:text-[#666666] rounded"
+                      id="reg-rank"
+                    >
+                      <SelectValue placeholder="SELECT RANK" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Private">PRIVATE</SelectItem>
+                      <SelectItem value="Sergeant">SERGEANT</SelectItem>
+                      <SelectItem value="Lieutenant">LIEUTENANT</SelectItem>
+                      <SelectItem value="Captain">CAPTAIN</SelectItem>
+                      <SelectItem value="Major">MAJOR</SelectItem>
+                      <SelectItem value="Colonel">COLONEL</SelectItem>
+                      <SelectItem value="General">GENERAL</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <label className="text-xs font-bold text-[#e4e6e3] flex items-center mb-2 uppercase">
+                    PASSWORD
+                    <span className="ml-2 text-xs bg-[#3f4433] text-[#8d9c6b] px-1 py-0.5 inline-flex items-center text-[10px] rounded">
+                      <Lock className="h-3 w-3 mr-1" /> ENCRYPTED
+                    </span>
+                  </label>
+                  <input
+                    type="password"
+                    className="w-full bg-[#28292a] border border-[#414438] p-3 text-[#e4e6e3] placeholder:text-[#666666] rounded"
+                    placeholder="ENTER PASSWORD"
+                    value={regPassword}
+                    onChange={(e) => setRegPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-xs font-bold text-[#e4e6e3] block mb-2 uppercase">CONFIRM PASSWORD</label>
+                  <input
+                    type="password"
+                    className="w-full bg-[#28292a] border border-[#414438] p-3 text-[#e4e6e3] placeholder:text-[#666666] rounded"
+                    placeholder="CONFIRM PASSWORD"
+                    value={regConfirmPassword}
+                    onChange={(e) => setRegConfirmPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <button 
+                  type="submit"
+                  className="w-full bg-[#5c6249] text-white py-3 font-bold uppercase tracking-wider mt-4 hover:bg-[#6b7257] transition-colors rounded"
+                  disabled={registerMutation.isPending || !regUsername.trim() || !regPassword.trim() || !regConfirmPassword.trim()}
+                >
+                  {registerMutation.isPending ? "PROCESSING REGISTRATION..." : "REGISTER PERSONNEL"}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+        
+        {/* Footer */}
+        <div className="p-3 bg-[#1f1f1e] text-[#8d9c6b] text-xs text-center border-t border-[#414438]">
+          <Radio className="h-3 w-3 inline-block mr-1" /> INTRANET COMMUNICATIONS ONLY - CLASSIFIED
+        </div>
+      </div>
+    </div>
+  );
+}
