@@ -80,9 +80,9 @@ export default function MessageAttachment({
           <div className="mb-1">
             <div className="bg-[#222222] rounded-lg p-3">
               {/* Header */}
-              <div className="flex items-center justify-center mb-2">
-                <Volume2 className="h-5 w-5 text-red-500 mr-2" />
-                <span className="text-sm font-medium text-yellow-400">AUDIO TRANSMISI</span>
+              <div className="flex items-center justify-center mb-2 border border-dashed border-yellow-500 bg-[#2a2a2a] py-1 px-2 rounded">
+                <Volume2 className="h-5 w-5 text-red-500 mr-2 animate-pulse" />
+                <span className="text-sm font-semibold text-yellow-400">📻 AUDIO TRANSMISI</span>
               </div>
               
               {/* Audio Player Standar */}
@@ -109,25 +109,25 @@ export default function MessageAttachment({
                 <Button
                   size="sm" 
                   variant="outline"
-                  className="bg-green-900 text-white hover:bg-green-800 border-green-700 w-[48%]"
+                  className="bg-[#4d5d30] text-white hover:bg-[#5a6b38] border-[#3a4620] w-[48%]"
                   onClick={() => {
                     // Buka di tab baru
                     window.open(audioUrl, '_blank');
                   }}
                 >
-                  <Music className="h-4 w-4 mr-1" />
-                  <span className="text-xs">Putar di Tab Baru</span>
+                  <Volume2 className="h-4 w-4 mr-1 text-red-400" />
+                  <span className="text-xs uppercase font-semibold">Transmisi</span>
                 </Button>
                 
                 <Button
                   size="sm"
                   variant="outline"
-                  className="bg-[#2A2A2A] text-gray-300 hover:text-white hover:bg-[#3A3A3A] border-[#444] w-[48%]"
+                  className="bg-[#2f2f2f] text-yellow-400 hover:text-yellow-300 hover:bg-[#3A3A3A] border-[#444] w-[48%]"
                   asChild
                 >
                   <a href={audioUrl} download={attachmentName} rel="noopener noreferrer">
                     <Download className="h-4 w-4 mr-1" />
-                    <span className="text-xs">Unduh Audio</span>
+                    <span className="text-xs uppercase font-semibold">Arsip</span>
                   </a>
                 </Button>
               </div>
