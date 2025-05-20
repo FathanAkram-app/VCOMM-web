@@ -219,6 +219,64 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     setAttachment(fileData);
   };
 
+  // Delete message mutation
+  const deleteMessageMutation = useMutation({
+    mutationFn: async (messageId: number) => {
+      const response = await fetch(`/api/messages/${messageId}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete message');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      setIsDeleteDialogOpen(false);
+      setSelectedMessage(null);
+      queryClient.invalidateQueries({ queryKey: [`/api/conversations/${chatId}/messages`] });
+    },
+  });
+  
+  // Forward message mutation
+  const forwardMessageMutation = useMutation({
+    mutationFn: async ({ messageId, targetConversationId }: { messageId: number, targetConversationId: number }) => {
+      const response = await fetch(`/api/messages/${messageId}/forward`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ conversationId: targetConversationId }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to forward message');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      setIsForwardDialogOpen(false);
+      setSelectedMessage(null);
+    },
+  });
+  
+  // Load conversations for forward dialog
+  useEffect(() => {
+    if (isForwardDialogOpen) {
+      fetch('/api/conversations')
+        .then(res => res.json())
+        .then(data => {
+          setConversations(data.map((conv: any) => ({
+            id: conv.id,
+            name: conv.name
+          })));
+        })
+        .catch(error => console.error('Error fetching conversations:', error));
+    }
+  }, [isForwardDialogOpen]);
+  
   // Handle sending messages
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -233,7 +291,8 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
         attachmentType: attachment.type,
         attachmentUrl: attachment.url,
         attachmentName: attachment.name,
-        attachmentSize: attachment.size
+        attachmentSize: attachment.size,
+        replyToId: replyToMessage ? replyToMessage.id : undefined
       };
       
       sendMessageMutation.mutate(messageData);
@@ -244,6 +303,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     }
     
     setMessage('');
+    setReplyToMessage(null); // Reset reply state after sending
   };
   
   // Format timestamp
@@ -336,9 +396,117 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   
   const messageGroups = groupMessagesByDate(Array.isArray(messages) ? messages : []);
   
+  // UI untuk reply message
+  const ReplyPreview = () => {
+    if (!replyToMessage) return null;
+
+    return (
+      <div className="px-4 py-2 bg-[#2a2a2a] border-t border-[#333333] flex items-start">
+        <div className="flex-1">
+          <p className="text-xs text-[#a6c455] flex items-center">
+            <Reply className="h-3 w-3 mr-1" />
+            Membalas {replyToMessage.senderId === user?.id ? 'pesan Anda' : replyToMessage.senderName}
+          </p>
+          <p className="text-xs text-gray-400 truncate">{replyToMessage.content}</p>
+        </div>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-5 w-5"
+          onClick={() => setReplyToMessage(null)}
+        >
+          <X className="h-3 w-3" />
+        </Button>
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col h-screen bg-[#171717] relative">
       {/* Chat header */}
+      
+      {/* Delete Message Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="bg-[#1a1a1a] border-[#333333] text-white">
+          <DialogHeader>
+            <DialogTitle>Hapus Pesan</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Apakah Anda yakin ingin menghapus pesan ini? Tindakan ini tidak dapat dibatalkan.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="bg-[#2a2a2a] p-3 rounded-md max-h-[100px] overflow-auto my-2">
+            <p className="text-sm">{selectedMessage?.content}</p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
+              Batal
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => selectedMessage && deleteMessageMutation.mutate(selectedMessage.id)}
+              disabled={deleteMessageMutation.isPending}
+            >
+              {deleteMessageMutation.isPending ? "Menghapus..." : "Hapus"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Forward Message Dialog */}
+      <Dialog open={isForwardDialogOpen} onOpenChange={setIsForwardDialogOpen}>
+        <DialogContent className="bg-[#1a1a1a] border-[#333333] text-white">
+          <DialogHeader>
+            <DialogTitle>Teruskan Pesan</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Pilih percakapan tujuan untuk meneruskan pesan ini.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="bg-[#2a2a2a] p-3 rounded-md max-h-[100px] overflow-auto my-2">
+            <p className="text-sm">{selectedMessage?.content}</p>
+            {selectedMessage?.hasAttachment && (
+              <p className="text-xs text-[#a6c455] mt-1">
+                📎 {selectedMessage.attachmentName}
+              </p>
+            )}
+          </div>
+          <div className="max-h-[200px] overflow-auto">
+            {conversations.length === 0 ? (
+              <p className="text-gray-400 text-center py-2">Memuat percakapan...</p>
+            ) : (
+              <div className="space-y-1">
+                {conversations
+                  .filter(conv => conv.id !== chatId) // Filter out current chat
+                  .map(conv => (
+                    <Button
+                      key={conv.id}
+                      variant="ghost"
+                      className="w-full justify-start text-left"
+                      onClick={() => selectedMessage && forwardMessageMutation.mutate({
+                        messageId: selectedMessage.id,
+                        targetConversationId: conv.id
+                      })}
+                      disabled={forwardMessageMutation.isPending}
+                    >
+                      {conv.name}
+                    </Button>
+                  ))
+                }
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setIsForwardDialogOpen(false)}
+            >
+              Batal
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <div className="flex items-center px-4 py-3 border-b border-[#333333] bg-[#1a1a1a]">
         <Button onClick={onBack} variant="ghost" size="icon" className="mr-2 text-[#a6c455]">
           <ArrowLeft className="h-5 w-5" />
@@ -416,6 +584,45 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       />
                     )}
                     
+                    {/* Message action dropdown menu */}
+                    <div className="relative">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="absolute right-0 -top-6 h-6 w-6 opacity-50 hover:opacity-100"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setReplyToMessage(msg)}>
+                            <Reply className="mr-2 h-4 w-4" />
+                            Balas
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            setSelectedMessage(msg);
+                            setIsForwardDialogOpen(true);
+                          }}>
+                            <Forward className="mr-2 h-4 w-4" />
+                            Teruskan
+                          </DropdownMenuItem>
+                          {msg.senderId === user?.id && (
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedMessage(msg);
+                                setIsDeleteDialogOpen(true);
+                              }}
+                              className="text-red-500 focus:text-red-500"
+                            >
+                              <Trash className="mr-2 h-4 w-4" />
+                              Hapus
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                     <div className="flex justify-end items-center mt-1 space-x-1">
                       {msg.classification && (
                         <div className="flex items-center">
