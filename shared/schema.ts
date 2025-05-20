@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, text, timestamp, boolean, integer, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, text, timestamp, boolean, integer, uniqueIndex, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -113,6 +113,98 @@ export type ChatInfo = {
     senderId: number;
   };
   unreadCount: number;
+};
+
+// Skema untuk panggilan
+export const calls = pgTable("calls", {
+  id: serial("id").primaryKey(),
+  callerId: integer("caller_id").notNull().references(() => users.id),
+  receiverId: integer("receiver_id").notNull().references(() => users.id),
+  callType: varchar("call_type", { length: 10 }).notNull(), // 'audio' atau 'video'
+  status: varchar("status", { length: 20 }).notNull(), // 'missed', 'answered', 'declined'
+  startTime: timestamp("start_time").defaultNow(),
+  endTime: timestamp("end_time"),
+  duration: integer("duration"), // durasi dalam detik
+  metadata: jsonb("metadata")    // untuk menyimpan detail tambahan jika diperlukan
+});
+
+// Skema untuk panggilan grup
+export const groupCalls = pgTable("group_calls", {
+  id: serial("id").primaryKey(),
+  roomId: integer("room_id").notNull().references(() => conversations.id),
+  initiatorId: integer("initiator_id").notNull().references(() => users.id),
+  callType: varchar("call_type", { length: 10 }).notNull(), // 'audio' atau 'video'
+  status: varchar("status", { length: 20 }).notNull(), // 'active', 'ended'
+  startTime: timestamp("start_time").defaultNow(),
+  endTime: timestamp("end_time"),
+  duration: integer("duration"), // durasi dalam detik
+  maxParticipants: integer("max_participants").default(9),
+  metadata: jsonb("metadata")    // untuk menyimpan detail tambahan
+});
+
+// Skema untuk anggota panggilan grup
+export const groupCallParticipants = pgTable("group_call_participants", {
+  id: serial("id").primaryKey(),
+  groupCallId: integer("group_call_id").notNull().references(() => groupCalls.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  joinTime: timestamp("join_time").defaultNow(),
+  leaveTime: timestamp("leave_time"),
+  status: varchar("status", { length: 20 }).notNull(), // 'joined', 'left', 'kicked'
+  audioEnabled: boolean("audio_enabled").default(true),
+  videoEnabled: boolean("video_enabled").default(true)
+}, (table) => {
+  return {
+    groupCallUserIdx: uniqueIndex("group_call_user_idx").on(table.groupCallId, table.userId)
+  };
+});
+
+// Insert schema dan types untuk calls
+export const insertCallSchema = createInsertSchema(calls).omit({ id: true, startTime: true, endTime: true, duration: true });
+export type InsertCall = z.infer<typeof insertCallSchema>;
+export type Call = typeof calls.$inferSelect;
+
+// Insert schema dan types untuk group calls
+export const insertGroupCallSchema = createInsertSchema(groupCalls).omit({ id: true, startTime: true, endTime: true, duration: true });
+export type InsertGroupCall = z.infer<typeof insertGroupCallSchema>;
+export type GroupCall = typeof groupCalls.$inferSelect;
+
+// Insert schema dan types untuk group call participants
+export const insertGroupCallParticipantSchema = createInsertSchema(groupCallParticipants).omit({ id: true, joinTime: true, leaveTime: true });
+export type InsertGroupCallParticipant = z.infer<typeof insertGroupCallParticipantSchema>;
+export type GroupCallParticipant = typeof groupCallParticipants.$inferSelect;
+
+// Tipe untuk panggilan dengan info tambahan
+export type CallWithUser = Call & {
+  caller: {
+    id: number;
+    callsign: string;
+    fullName?: string;
+    rank?: string;
+    profileImageUrl?: string;
+  };
+  receiver: {
+    id: number;
+    callsign: string;
+    fullName?: string;
+    rank?: string;
+    profileImageUrl?: string;
+  };
+};
+
+// Tipe untuk panggilan grup dengan detail
+export type GroupCallWithDetails = GroupCall & {
+  initiator: {
+    id: number;
+    callsign: string;
+    fullName?: string;
+    rank?: string;
+    profileImageUrl?: string;
+  };
+  participants: GroupCallParticipant[];
+  room: {
+    id: number;
+    name: string;
+  };
 };
 
 // Tipe untuk message dengan user info
