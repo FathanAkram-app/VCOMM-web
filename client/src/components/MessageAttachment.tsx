@@ -72,23 +72,42 @@ export default function MessageAttachment({
         return (
           <div className="mb-1">
             <div className="bg-[#222222] rounded-lg p-2">
+              <div className="flex items-center justify-center">
+                <Music className="h-5 w-5 text-purple-500 mr-2" />
+                <span className="text-sm text-green-400 font-medium">Pesan Suara</span>
+              </div>
+              
               <audio 
                 controls 
-                className="w-full" 
+                className="w-full mt-2" 
                 preload="metadata"
-                src={attachmentUrl}
-                onError={(e) => {
-                  console.error("Error loading audio:", e);
+                controlsList="nodownload"
+                style={{ 
+                  backgroundColor: '#333',
+                  borderRadius: '8px',
+                  padding: '4px',
                 }}
               >
                 <source src={attachmentUrl} type="audio/mpeg" />
                 <source src={attachmentUrl} type="audio/webm" />
                 <source src={attachmentUrl} type="audio/mp4" />
                 <source src={attachmentUrl} type="audio/ogg" />
+                <source src={attachmentUrl} type="audio/wav" />
                 Browser Anda tidak mendukung tag audio.
               </audio>
-              <div className="text-xs text-center mt-1 text-gray-400">
-                Jika audio tidak dapat diputar, silakan gunakan tombol unduh
+              
+              <div className="flex justify-center mt-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="bg-[#2C2C2C] text-gray-300 hover:text-white hover:bg-[#3A3A3A] border-[#444]"
+                  asChild
+                >
+                  <a href={attachmentUrl} download={attachmentName} target="_blank" rel="noopener noreferrer">
+                    <Download className="h-3 w-3 mr-1" />
+                    <span className="text-xs">Unduh Audio</span>
+                  </a>
+                </Button>
               </div>
             </div>
           </div>
