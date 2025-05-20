@@ -698,36 +698,39 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
                     )}
                     
-                    {/* Format balasan pesan dengan tampilan yang lebih jelas dan border hijau */}
+                    {/* Format balasan pesan seperti WhatsApp style */}
                     {msg.replyToId && (
-                      <div className="bg-[#2a2a2a] p-2 mb-2 rounded border-l-4 border-[#8ba742]">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Reply className="h-3 w-3 text-[#8ba742]" />
-                          <span className="text-[#8ba742] font-medium text-xs">Balasan</span>
-                        </div>
+                      <div className="mb-1">
                         {(() => {
                           try {
                             // Mencari pesan yang dibalas dari array pesan
-                            if (!Array.isArray(messages)) return <span className="text-gray-500 text-xs">Pesan sebelumnya</span>;
+                            if (!Array.isArray(messages)) return null;
                             
                             for (let i = 0; i < messages.length; i++) {
                               if (messages[i].id === msg.replyToId) {
                                 // Pesan ditemukan
                                 return (
-                                  <div className="text-gray-300 text-xs">
-                                    <span className="font-medium text-[#a6c455] mr-1">{messages[i].senderName}:</span>
-                                    {messages[i].hasAttachment 
-                                      ? <span>[File: {messages[i].attachmentName || 'Lampiran'}]</span>
-                                      : <span>{messages[i].content || '<Pesan kosong>'}</span>
-                                    }
+                                  <div className="mb-1">
+                                    <div className="flex items-center text-gray-400 text-xs mb-0.5">
+                                      <Reply className="h-3 w-3 mr-1" /> 
+                                      <span>{messages[i].senderName === msg.senderName ? 'Membalas diri sendiri' : `${msg.senderName} membalas ${messages[i].senderName}`}</span>
+                                    </div>
+                                    <div className="bg-[#2a2a2a] rounded p-2 text-gray-300 text-xs mb-1">
+                                      <div className="pl-2 border-l-2 border-[#8ba742]">
+                                        {messages[i].hasAttachment 
+                                          ? <span>[File: {messages[i].attachmentName || 'Lampiran'}]</span>
+                                          : <span className="line-clamp-2">{messages[i].content || '<Pesan kosong>'}</span>
+                                        }
+                                      </div>
+                                    </div>
                                   </div>
                                 );
                               }
                             }
-                            return <span className="text-gray-500 text-xs">Pesan tidak ditemukan</span>;
+                            return null;
                           } catch (err) {
                             console.error("Error rendering reply:", err);
-                            return <span className="text-gray-500 text-xs">Error menampilkan balasan</span>;
+                            return null;
                           }
                         })()}
                       </div>
