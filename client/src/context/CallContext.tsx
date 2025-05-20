@@ -388,26 +388,72 @@ export const CallProvider = ({ children }: CallProviderProps) => {
     }
   };
   
-  // Simulasi panggilan masuk (untuk tujuan pengujian)
+  // Menangani panggilan masuk dari WebSocket
   useEffect(() => {
-    // Listener untuk acara panggilan masuk dari WebSocket (implementasi sebenarnya)
+    if (!user) return;
     
-    // Simulasi panggilan masuk setelah beberapa detik (untuk pengujian)
-    // const simulateIncomingCall = setTimeout(() => {
-    //   if (!activeCall && !incomingCall) {
-    //     const fakeIncomingCall: IncomingCall = {
-    //       callId: `incoming-${Date.now()}`,
-    //       callerId: 2,
-    //       callerName: "Tactical Command",
-    //       callType: Math.random() > 0.5 ? 'video' : 'audio',
-    //       isRoom: false
-    //     };
-    //     setIncomingCall(fakeIncomingCall);
-    //   }
-    // }, 10000);
+    const handleIncomingCall = (data: any) => {
+      if (activeCall) {
+        // Jika sudah ada panggilan aktif, kirim sinyal "sibuk"
+        // Implementasi sebenarnya akan mengirim pesan ke server
+        console.log("Rejecting incoming call, already in a call");
+        return;
+      }
+      
+      const incomingCallData: IncomingCall = {
+        callId: data.callId,
+        callerId: data.callerId,
+        callerName: data.callerName,
+        callType: data.callType,
+        isRoom: data.isRoom || false,
+        roomId: data.roomId,
+        roomName: data.roomName
+      };
+      
+      setIncomingCall(incomingCallData);
+      
+      // Putar nada dering
+      const ringtone = new Audio('/sounds/ringtone.mp3');
+      ringtone.loop = true;
+      ringtone.play().catch(err => console.error("Error playing ringtone:", err));
+      
+      // Hentikan nada dering setelah 30 detik (jika tidak dijawab)
+      const timeout = setTimeout(() => {
+        ringtone.pause();
+        ringtone.currentTime = 0;
+        setIncomingCall(null);
+      }, 30000);
+      
+      // Hentikan nada dering ketika panggilan diterima atau ditolak
+      const clearRingtone = () => {
+        ringtone.pause();
+        ringtone.currentTime = 0;
+        clearTimeout(timeout);
+      };
+      
+      // Tambahkan event listener satu kali
+      const handleAnswerBtnClick = () => clearRingtone();
+      const handleRejectBtnClick = () => clearRingtone();
+      
+      document.addEventListener('call-answered', handleAnswerBtnClick, { once: true });
+      document.addEventListener('call-rejected', handleRejectBtnClick, { once: true });
+      
+      return () => {
+        clearRingtone();
+        document.removeEventListener('call-answered', handleAnswerBtnClick);
+        document.removeEventListener('call-rejected', handleRejectBtnClick);
+      };
+    };
     
-    // return () => clearTimeout(simulateIncomingCall);
-  }, [activeCall, incomingCall]);
+    // Daftarkan listener untuk event panggilan
+    if (window.wsClient) {
+      window.wsClient.addMessageListener('call', handleIncomingCall);
+      
+      return () => {
+        window.wsClient.removeMessageListener('call', handleIncomingCall);
+      };
+    }
+  }, [activeCall, user]);
   
   return (
     <CallContext.Provider value={{
