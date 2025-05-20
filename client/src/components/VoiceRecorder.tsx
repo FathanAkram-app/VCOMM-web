@@ -18,17 +18,22 @@ export default function VoiceRecorder({ onSendAudio, onCancel }: VoiceRecorderPr
     startRecording,
     stopRecording,
     mediaBlobUrl,
-    clearBlobUrl,
+    clearBlobUrl
   } = useReactMediaRecorder({
     audio: true,
     video: false,
     onStop: (blobUrl, blob) => {
+      // Kita akan menggunakan tombol kirim manual
+      console.log('Recording stopped, blob URL:', blobUrl);
+      // Simpan blob ke state lokal supaya bisa diakses nanti
       if (blob) {
-        // Callback dengan blob dan URL
-        onSendAudio(blob, blobUrl);
+        setRecordedBlob(blob);
       }
     },
   });
+  
+  // Simpan blob audio yang direkam dalam state
+  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
 
   const handleStartRecording = () => {
     setIsRecording(true);
@@ -126,13 +131,29 @@ export default function VoiceRecorder({ onSendAudio, onCancel }: VoiceRecorderPr
         ) : null}
 
         {/* Tombol kirim (hanya setelah rekaman selesai) */}
-        {status === 'stopped' && (
+        {status === 'stopped' && mediaBlobUrl && (
           <Button 
             type="button"
             size="icon"
             variant="default"
             className="bg-[#596e2d] hover:bg-[#6a8336]"
-            onClick={() => mediaBlobUrl && onSendAudio(new Blob(), mediaBlobUrl)}
+            onClick={() => {
+              if (recordedBlob && mediaBlobUrl) {
+                console.log('Sending audio with blob:', recordedBlob);
+                onSendAudio(recordedBlob, mediaBlobUrl);
+              } else if (mediaBlobUrl) {
+                // Buat audio blob dari URL jika recordedBlob tidak tersedia
+                fetch(mediaBlobUrl as string)
+                  .then(response => response.blob())
+                  .then(blob => {
+                    console.log('Created blob from URL:', blob);
+                    if (mediaBlobUrl) {
+                      onSendAudio(blob, mediaBlobUrl);
+                    }
+                  })
+                  .catch(err => console.error('Error fetching audio blob:', err));
+              }
+            }}
             title="Kirim pesan suara"
           >
             <Send className="h-5 w-5" />
