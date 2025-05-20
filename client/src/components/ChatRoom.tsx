@@ -685,54 +685,54 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
                     )}
                     
-                    {/* Tampilan pesan balasan yang lebih intuitif */}
+                    {/* Tampilan pesan balasan seperti WhatsApp */}
                     {msg.replyToId && (
-                      <div className="bg-[#212121] p-2 rounded-t mb-1 text-xs border-l-2 border-[#4d5d30] mx-2">
-                        <div className="flex items-center gap-1 mb-1 text-[#8ba742]">
-                          <Reply className="h-3 w-3" />
-                          <p className="font-medium">Membalas</p>
-                        </div>
-                        <div className="pl-1 text-gray-300 break-words">
-                          {(() => {
-                            // Cari pesan yang dibalas dalam array pesan
-                            const originalMsg = Array.isArray(messages) 
-                              ? messages.find(m => m.id === msg.replyToId)
-                              : null;
+                      <div className="mb-1">
+                        {(() => {
+                          // Cari pesan yang dibalas dalam array pesan
+                          const originalMsg = Array.isArray(messages) 
+                            ? messages.find(m => m.id === msg.replyToId)
+                            : null;
+                          
+                          if (originalMsg) {
+                            const sender = originalMsg.senderName || 'User';
+                            let content = originalMsg.content || '';
                             
-                            if (originalMsg) {
-                              const sender = originalMsg.senderName || 'User';
-                              let content = originalMsg.content || '';
-                              
-                              // Handle pesan dengan attachment
-                              if (originalMsg.hasAttachment) {
-                                return (
-                                  <>
-                                    <span className="text-gray-400">[File: {originalMsg.attachmentName || 'Attachment'}]</span>
-                                    <div className="mt-1 text-[11px] text-[#8ba742]">
-                                      - {sender}
-                                    </div>
-                                  </>
-                                );
-                              }
-                              
-                              // Potong pesan yang terlalu panjang
-                              if (content.length > 60) {
-                                content = content.substring(0, 60) + '...';
-                              }
-                              
-                              return (
-                                <>
-                                  <span className="text-gray-400">"{content}"</span>
-                                  <div className="mt-1 text-[11px] text-[#8ba742]">
-                                    - {sender}
-                                  </div>
-                                </>
-                              );
+                            // Potong pesan yang terlalu panjang
+                            if (content.length > 40) {
+                              content = content.substring(0, 40) + '...';
                             }
                             
-                            return "Pesan sebelumnya";
-                          })()}
-                        </div>
+                            // Handle pesan dengan attachment
+                            if (originalMsg.hasAttachment) {
+                              content = `[File: ${originalMsg.attachmentName || 'Attachment'}]`;
+                            }
+                            
+                            return (
+                              <div className="flex">
+                                <div className="ml-2 pl-2 border-l-2 border-[#8ba742]">
+                                  <div className="text-[11px] text-[#8ba742] font-medium flex items-center">
+                                    <Reply className="h-3 w-3 mr-1 inline" />
+                                    {sender} dibalas
+                                  </div>
+                                  <div className="text-[11px] text-gray-400 mt-0.5">
+                                    {content}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+                          
+                          return (
+                            <div className="flex">
+                              <div className="ml-2 pl-2 border-l-2 border-[#8ba742]">
+                                <div className="text-[11px] text-[#8ba742] font-medium">
+                                  <Reply className="h-3 w-3 mr-1 inline" /> Pesan dibalas
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                     )}
                     
