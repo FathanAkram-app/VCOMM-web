@@ -13,7 +13,7 @@ import AttachmentUploader from './AttachmentUploader';
 import MessageAttachment from './MessageAttachment';
 import VoiceRecorder from './VoiceRecorder';
 import AudioPlayerInline from './AudioPlayerInline';
-import RealAudioPlayer from './RealAudioPlayer';
+import SimpleAudioPlayer from './SimpleAudioPlayer';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -926,7 +926,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       <>
                         {/* Pesan audio ditampilkan dengan tampilan militer hijau sesuai gambar */}
                         {msg.attachmentType === 'audio' ? (
-                          <RealAudioPlayer 
+                          <SimpleAudioPlayer 
                             messageId={msg.id}
                             timestamp={msg.timestamp}
                             audioUrl={msg.attachmentUrl ? msg.attachmentUrl : `/uploads/voice_note_${msg.id}.webm`}
