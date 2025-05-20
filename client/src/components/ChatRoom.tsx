@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, MoreVertical, Shield, Trash, Reply, Forward, X, User, Users, ArrowLeft, Mic, Volume2 } from 'lucide-react';
+import { Send, MoreVertical, Shield, Trash, Reply, Forward, X, User, Users, ArrowLeft, Mic, Volume2, Play, Pause } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -904,29 +904,12 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                     {/* Render attachment jika ada */}
                     {msg.hasAttachment && (
                       <>
-                        {/* Pesan audio ditampilkan dengan tampilan militer hijau */}
+                        {/* Pesan audio ditampilkan dengan tampilan militer hijau sesuai gambar */}
                         {msg.attachmentType === 'audio' ? (
-                          <div className="pt-1 w-full max-w-[90%]">
-                            {/* Header Pesan Suara - dengan warna hijau militer */}
-                            <div className="flex items-center justify-between bg-[#47573a] rounded-t-md px-3 py-2">
-                              <div className="flex items-center space-x-2">
-                                <Volume2 className="h-4 w-4 text-white" />
-                                <span className="text-white text-sm">Pesan Suara</span>
-                              </div>
-                              <MoreVertical className="h-4 w-4 text-white/70" />
-                            </div>
-                            
-                            {/* UNCLASSIFIED status dan durasi */}
-                            <div className="flex items-center justify-between bg-[#394733] rounded-b-md px-3 py-1">
-                              <div className="flex items-center space-x-1">
-                                <div className="h-2 w-2 bg-green-400 rounded-full"></div>
-                                <span className="text-xs text-green-300 uppercase">UNCLASSIFIED</span>
-                              </div>
-                              <span className="text-xs text-gray-300">
-                                {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
-                              </span>
-                            </div>
-                          </div>
+                          <AudioPlayer 
+                            messageId={msg.id} 
+                            timestamp={msg.timestamp} 
+                          />
                         ) : (
                           <MessageAttachment 
                             attachmentType={msg.attachmentType || 'document'} 
