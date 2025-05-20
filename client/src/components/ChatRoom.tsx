@@ -685,53 +685,35 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
                     )}
                     
-                    {/* Jika ini adalah balasan, tampilkan pesan yang dibalas */}
+                    {/* Jika ini adalah balasan, tampilkan pesan yang dibalas dengan UI sederhana */}
                     {msg.replyToId && (
                       <div className="bg-[#2a2a2a] p-2 rounded mb-2 text-xs border-l-2 border-[#4d5d30]">
                         <p className="text-[#a6c455] font-medium mb-1">
-                          Membalas <span className="font-bold">{msg.replyInfo?.senderName || 'Pesan'}</span>
+                          Membalas Pesan
                         </p>
                         <p className="text-gray-400 break-words">
                           {(() => {
-                            // Gunakan replyInfo yang telah ditambahkan dari server
-                            if (msg.replyInfo) {
-                              // Format isi pesan yang dibalas
-                              let content = msg.replyInfo.content || '';
+                            // Cari pesan yang dibalas dari array messages
+                            const replyToMessage = Array.isArray(messages) 
+                              ? messages.find(m => m.id === msg.replyToId) 
+                              : null;
                               
-                              // Jika pesan yang dibalas adalah file
-                              if (msg.replyInfo.hasAttachment) {
-                                return `[File: ${msg.replyInfo.attachmentName || 'Attachment'}]`;
+                            if (replyToMessage) {
+                              // Jika ada attachment
+                              if (replyToMessage.hasAttachment) {
+                                return `[File: ${replyToMessage.attachmentName || 'Attachment'}]`;
                               }
                               
-                              // Jika pesan yang dibalas terlalu panjang
-                              if (content.length > 60) {
-                                content = content.substring(0, 60) + '...';
+                              // Jika isi pesan terlalu panjang
+                              if (replyToMessage.content && replyToMessage.content.length > 50) {
+                                return replyToMessage.content.substring(0, 50) + '...';
                               }
                               
-                              return content;
-                            } else {
-                              // Fallback ke cara lama jika replyInfo tidak ada
-                              if (Array.isArray(messages)) {
-                                const repliedMsg = messages.find((m: any) => m.id === msg.replyToId);
-                                if (repliedMsg) {
-                                  // Format isi pesan yang dibalas
-                                  let content = repliedMsg.content || '';
-                                  
-                                  // Jika pesan yang dibalas adalah file
-                                  if (repliedMsg.hasAttachment) {
-                                    return `[File: ${repliedMsg.attachmentName || 'Attachment'}]`;
-                                  }
-                                  
-                                  // Jika pesan yang dibalas terlalu panjang
-                                  if (content.length > 60) {
-                                    content = content.substring(0, 60) + '...';
-                                  }
-                                  
-                                  return content;
-                                }
-                              }
-                              return "Pesan sebelumnya";
+                              // Tampilkan isi pesan yang dibalas
+                              return replyToMessage.content || 'Pesan kosong';
                             }
+                            
+                            return 'Pesan sebelumnya';
                           })()}
                         </p>
                       </div>
