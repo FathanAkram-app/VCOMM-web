@@ -29,8 +29,21 @@ const AudioMessage = ({ src, filename, timestamp }: AudioMessageProps) => {
     }
   };
 
+  // Toggle play/pause
+  const togglePlayPause = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (isPlaying) {
+      audio.pause();
+    } else {
+      audio.play().catch(err => console.error("Error playing audio:", err));
+    }
+    setIsPlaying(!isPlaying);
+  };
+
   return (
-    <div className="w-full relative">
+    <div className="w-full">
       {/* Audio element tersembunyi */}
       <audio
         ref={audioRef}
@@ -38,24 +51,33 @@ const AudioMessage = ({ src, filename, timestamp }: AudioMessageProps) => {
         preload="metadata"
       />
 
-      {/* Header dengan ikon speaker dan teks "Pesan Suara" */}
-      <div className="flex items-center justify-between p-2 pb-1">
-        <div className="flex items-center">
-          <Volume2 className="h-5 w-5 text-white mr-2" />
-          <span className="text-white font-medium">Pesan Suara</span>
+      {/* Bubble yang persis sama seperti screenshot - dengan warna hijau gelap */}
+      <div className="rounded-md overflow-hidden bg-[#486c42]">
+        {/* Header pesan audio */}
+        <div className="flex items-center justify-between px-3 py-2">
+          <div className="flex items-center">
+            <Volume2 className="h-5 w-5 text-white mr-2" />
+            <span className="text-white font-medium">Pesan Suara</span>
+          </div>
+          <div>
+            <button>
+              <MoreVertical className="h-5 w-5 text-white/70" />
+            </button>
+          </div>
         </div>
-        <div className="flex items-center">
-          <button>
-            <MoreVertical className="h-5 w-5 text-white/70" />
-          </button>
+        
+        {/* Klasifikasi dan timestamp */}
+        <div className="bg-[#405e3a] px-3 py-1 flex items-center">
+          <div className="flex items-center">
+            <span className="h-2 w-2 rounded-full bg-green-400 mr-1"></span>
+            <span className="text-xs text-green-300 uppercase">
+              UNCLASSIFIED
+            </span>
+            <span className="text-xs text-white/70 ml-1">
+              {timestamp ? getRelativeTime(timestamp) : "kurang dari 1 menit yang lalu"}
+            </span>
+          </div>
         </div>
-      </div>
-      
-      {/* Bagian klasifikasi - UNCLASSIFIED */}
-      <div className="flex items-center px-2 py-0.5">
-        <span className="text-xs text-green-400">
-          UNCLASSIFIED {timestamp ? getRelativeTime(timestamp) : "kurang dari 1 menit yang lalu"}
-        </span>
       </div>
     </div>
   );
