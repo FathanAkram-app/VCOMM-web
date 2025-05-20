@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Send, MoreVertical, Shield, Trash, Reply, Forward, X } from 'lucide-react';
+import { ArrowLeft, Send, MoreVertical, Shield, Trash, Reply, Forward, X, User, Users } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -67,7 +67,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isForwardDialogOpen, setIsForwardDialogOpen] = useState(false);
   const [replyToMessage, setReplyToMessage] = useState<ChatMessage | null>(null);
-  const [conversations, setConversations] = useState<{id: number, name: string}[]>([]);
+  const [conversations, setConversations] = useState<{id: number, name: string, isGroup?: boolean}[]>([]);
   
   // Fetch chat data
   const { data: chat } = useQuery({
@@ -510,6 +510,11 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       })}
                       disabled={forwardMessageMutation.isPending}
                     >
+                      {conv.isGroup ? (
+                        <Users className="h-4 w-4 mr-2 inline-block" />
+                      ) : (
+                        <User className="h-4 w-4 mr-2 inline-block" />
+                      )}
                       {conv.name}
                     </Button>
                   ))

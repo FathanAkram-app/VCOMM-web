@@ -266,12 +266,28 @@ export class DatabaseStorage implements IStorage {
   }
   
   async deleteMessage(messageId: number): Promise<Message> {
+    // Get the message first to check if it has attachments
+    const [message] = await db
+      .select()
+      .from(messages)
+      .where(eq(messages.id, messageId));
+    
+    if (!message) {
+      throw new Error(`Message with ID ${messageId} not found`);
+    }
+    
     // Soft delete message by setting isDeleted flag to true
+    // Also clear attachment information if present
     const [updatedMessage] = await db
       .update(messages)
       .set({
         isDeleted: true,
         content: "[Pesan ini telah dihapus]",
+        hasAttachment: false,
+        attachmentUrl: null,
+        attachmentType: null,
+        attachmentName: null,
+        attachmentSize: null,
         updatedAt: new Date(),
       })
       .where(eq(messages.id, messageId))
