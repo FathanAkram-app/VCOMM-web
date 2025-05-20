@@ -144,12 +144,13 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
       try {
         const audioAttachment = await uploadVoiceAttachment(audioBlob);
         if (audioAttachment) {
+          // Buat pesan dengan format yang memperlihatkan pesan suara sesuai dengan desain yang diinginkan
           const payload = {
             conversationId: chatId,
             content: "🔊 Pesan Suara",
             classification: 'UNCLASSIFIED',
             hasAttachment: true,
-            attachmentType: audioAttachment.type,
+            attachmentType: 'audio',
             attachmentUrl: audioAttachment.url,
             attachmentName: audioAttachment.name,
             attachmentSize: audioAttachment.size,
