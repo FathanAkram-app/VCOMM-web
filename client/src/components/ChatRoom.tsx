@@ -700,39 +700,31 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                     
                     {/* Format balasan pesan seperti WhatsApp style */}
                     {msg.replyToId && (
-                      <div className="mb-1">
-                        {(() => {
-                          try {
-                            // Mencari pesan yang dibalas dari array pesan
-                            if (!Array.isArray(messages)) return null;
-                            
-                            for (let i = 0; i < messages.length; i++) {
-                              if (messages[i].id === msg.replyToId) {
-                                // Pesan ditemukan
-                                return (
-                                  <div className="mb-1">
-                                    <div className="flex items-center text-gray-400 text-xs mb-0.5">
-                                      <Reply className="h-3 w-3 mr-1" /> 
-                                      <span>{messages[i].senderName === msg.senderName ? 'Membalas diri sendiri' : `${msg.senderName} membalas ${messages[i].senderName}`}</span>
-                                    </div>
-                                    <div className="bg-[#2a2a2a] rounded p-2 text-gray-300 text-xs mb-1">
-                                      <div className="pl-2 border-l-2 border-[#8ba742]">
-                                        {messages[i].hasAttachment 
-                                          ? <span>[File: {messages[i].attachmentName || 'Lampiran'}]</span>
-                                          : <span className="line-clamp-2">{messages[i].content || '<Pesan kosong>'}</span>
-                                        }
-                                      </div>
-                                    </div>
-                                  </div>
-                                );
+                      <div className="mb-0">
+                        <div className="flex items-center text-xs mb-1">
+                          <ArrowLeft className="h-3 w-3 mr-1 text-[#8ba742]" /> 
+                          {(() => {
+                            try {
+                              // Mencari pesan yang dibalas dari array pesan
+                              if (!Array.isArray(messages)) return <span className="text-gray-400">Membalas pesan</span>;
+                              
+                              for (let i = 0; i < messages.length; i++) {
+                                if (messages[i].id === msg.replyToId) {
+                                  // Pesan ditemukan
+                                  return (
+                                    <span className="text-gray-400">
+                                      {messages[i].senderName === msg.senderName ? 'Membalas diri sendiri' : `Membalas ${messages[i].senderName}`}
+                                    </span>
+                                  );
+                                }
                               }
+                              return <span className="text-gray-400">Membalas pesan</span>;
+                            } catch (err) {
+                              console.error("Error rendering reply header:", err);
+                              return <span className="text-gray-400">Membalas pesan</span>;
                             }
-                            return null;
-                          } catch (err) {
-                            console.error("Error rendering reply:", err);
-                            return null;
-                          }
-                        })()}
+                          })()}
+                        </div>
                       </div>
                     )}
                     
