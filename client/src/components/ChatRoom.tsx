@@ -82,6 +82,15 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     refetchInterval: 3000, // Polling every 3 seconds
     retry: 3, // Coba lagi jika gagal
     staleTime: 10 * 1000, // Data dianggap stale setelah 10 detik
+    // Tambahkan console log untuk membantu debugging
+    onSuccess: (data) => {
+      console.log("Messages loaded:", data);
+      // Cek apakah ada pesan dengan replyToId
+      const repliedMessages = data.filter((m: any) => m.replyToId);
+      if (repliedMessages.length > 0) {
+        console.log("Messages with replies:", repliedMessages);
+      }
+    }
   });
   
   // Memastikan pesan dimuat ulang saat chat diubah

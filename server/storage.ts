@@ -306,7 +306,8 @@ export class DatabaseStorage implements IStorage {
     
     // Create a new message with the same content and attachments but in the new conversation
     const forwardData: InsertMessage = {
-      content: originalMessage.content,
+      // Tambahkan indikator "Diteruskan" di awal pesan
+      content: `[Diteruskan] ${originalMessage.content}`,
       senderId: senderId,
       conversationId: newConversationId,
       classification: originalMessage.classification,
