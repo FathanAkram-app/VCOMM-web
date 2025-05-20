@@ -267,56 +267,99 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   // Load conversations for forward dialog
   useEffect(() => {
     if (isForwardDialogOpen) {
-      // Fetch direct chats
-      fetch('/api/direct-chats')
+      // Fetch all users first
+      fetch('/api/all-users')
         .then(res => res.json())
-        .then(directChats => {
-          // Fetch group chats
-          fetch('/api/rooms')
+        .then(users => {
+          console.log("All users:", users);
+          
+          // Fetch direct chats
+          fetch('/api/direct-chats')
             .then(res => res.json())
-            .then(rooms => {
-              // Cari nama personel yang benar untuk setiap chat
-              const allConversations = [];
+            .then(directChats => {
+              console.log("Direct chats:", directChats);
               
-              // Tambahkan direct chats dengan nama pengguna dari allUsers
-              if (Array.isArray(directChats)) {
-                directChats.forEach((chat: any) => {
-                  // Cari pengguna lain dalam direct chat (bukan pengguna saat ini)
-                  const chatMembers = Array.isArray(chat.members) ? chat.members : [];
-                  const otherUserId = chatMembers.find((id: number) => id !== user?.id);
+              // Fetch group chats
+              fetch('/api/rooms')
+                .then(res => res.json())
+                .then(rooms => {
+                  console.log("Rooms:", rooms);
                   
-                  // Cari data pengguna lain dari allUsers
-                  let otherUserName = 'Chat Langsung';
-                  if (otherUserId && Array.isArray(allUsers)) {
-                    const otherUser = allUsers.find((u: any) => u.id === otherUserId);
-                    if (otherUser) {
-                      // Format: Callsign (Nama Lengkap)
-                      otherUserName = `${otherUser.callsign || 'Pengguna'} (${otherUser.fullName || 'Tanpa Nama'})`;
-                    }
-                  }
+                  // For each direct chat, load its members
+                  const memberPromises = directChats.map((chat: any) => 
+                    fetch(`/api/conversations/${chat.id}/members`)
+                      .then(res => res.json())
+                  );
                   
-                  allConversations.push({
-                    id: chat.id,
-                    name: otherUserName,
-                    isGroup: false
-                  });
-                });
-              }
-              
-              // Tambahkan grup chats
-              if (Array.isArray(rooms)) {
-                rooms.forEach((room: any) => {
-                  allConversations.push({
-                    id: room.id,
-                    name: room.name || 'Grup Chat',
-                    isGroup: true
-                  });
-                });
-              }
-              
-              setConversations(allConversations);
+                  Promise.all(memberPromises)
+                    .then(memberResults => {
+                      console.log("All member results:", memberResults);
+                      
+                      // Cari nama personel yang benar untuk setiap chat
+                      const allConversations: { id: number; name: string; isGroup: boolean }[] = [];
+                      
+                      // Tambahkan direct chats dengan nama pengguna dari users yang diambil
+                      if (Array.isArray(directChats)) {
+                        directChats.forEach((chat: any, idx: number) => {
+                          // Get the members for this chat
+                          const members = memberResults[idx] || [];
+                          console.log(`Chat ${chat.id} members:`, members);
+                          
+                          // Find the other user in the conversation
+                          const otherMember = members.find((m: any) => m.userId !== user?.id);
+                          const otherUserId = otherMember?.userId;
+                          
+                          console.log(`For chat ${chat.id} - User ID: ${user?.id}, Other user ID: ${otherUserId}`);
+                          
+                          // Cari data pengguna lain dari daftar users
+                          let otherUserName = 'Chat Langsung';
+                          if (otherUserId && Array.isArray(users)) {
+                            const otherUser = users.find((u: any) => u.id === otherUserId);
+                            if (otherUser) {
+                              // Format: Callsign (Nama Lengkap)
+                              otherUserName = `${otherUser.callsign || 'Pengguna'} ${otherUser.fullName ? `(${otherUser.fullName})` : ''}`;
+                              console.log(`Found user for ID ${otherUserId}:`, otherUserName);
+                            }
+                          }
+                          
+                          console.log(`Adding direct chat: ${chat.id} with user: ${otherUserId}, name: ${otherUserName}`);
+                          
+                          // Jika kita tidak bisa mendapatkan nama yang valid, coba gunakan nama dari chat sendiri
+                          if (otherUserName === 'Chat Langsung' && chat.name && !chat.name.startsWith('Direct chat')) {
+                            otherUserName = chat.name;
+                          }
+                          
+                          allConversations.push({
+                            id: chat.id,
+                            name: otherUserName,
+                            isGroup: false
+                          });
+                        });
+                      }
+                      
+                      // Tambahkan grup chats
+                      if (Array.isArray(rooms)) {
+                        rooms.forEach((room: any) => {
+                          allConversations.push({
+                            id: room.id,
+                            name: room.name || 'Grup Chat',
+                            isGroup: true
+                          });
+                        });
+                      }
+                      
+                      console.log("Final conversations list for forward:", allConversations);
+                      setConversations(allConversations);
+                    })
+                    .catch(error => console.error('Error fetching conversation members:', error));
+                })
+                .catch(error => console.error('Error fetching rooms:', error));
             })
-            .catch(error => console.error('Error fetching rooms:', error));
+            .catch(error => console.error('Error fetching direct chats:', error));
+        })
+        .catch(error => console.error('Error fetching all users:', error));
+    }
+  }, [isForwardDialogOpen, user?.id]);
         })
         .catch(error => console.error('Error fetching direct chats:', error));
     }
@@ -634,10 +677,20 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                     {msg.replyToId && (
                       <div className="bg-[#2a2a2a] p-2 rounded mb-2 text-xs border-l-2 border-[#4d5d30]">
                         {(() => {
-                          // Cari pesan yang dibalas
-                          const repliedMessage = Array.isArray(messages) 
-                            ? messages.find((m: any) => m.id === msg.replyToId) 
-                            : null;
+                          // Cari pesan yang dibalas dari semua grup pesan
+                          let repliedMessage = null;
+                          if (messageGroups) {
+                            // Cari di semua grup pesan
+                            for (const group of messageGroups) {
+                              if (group.messages) {
+                                const found = group.messages.find((m: any) => m.id === msg.replyToId);
+                                if (found) {
+                                  repliedMessage = found;
+                                  break;
+                                }
+                              }
+                            }
+                          }
                           
                           if (repliedMessage) {
                             // Format isi pesan yang dibalas
