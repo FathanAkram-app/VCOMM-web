@@ -691,36 +691,33 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
                     )}
                     
-                    {/* Use replyInfo if available, otherwise do direct lookup */}
-                    {msg.replyToId && (
-                      <div className="border-l-4 border-[#8ba742] pl-2 mb-2 py-1 bg-[rgba(30,40,14,0.3)] rounded text-[11px]">
-                        <div className="flex items-center text-[#a6c455] font-medium mb-0.5">
-                          <Reply className="h-3 w-3 mr-1" />
-                          {msg.replyInfo?.senderName ? (
-                            <span>{msg.replyInfo.senderName} dibalas</span>
-                          ) : (
-                            <span>Membalas</span>
-                          )}
+                    {/* Implementasi yang sangat sederhana untuk fitur balas */}
+                    {(msg.replyToId || msg.replyInfo) && (
+                      <div className="border-l-4 border-[#8ba742] pl-2 mb-2 py-1 rounded bg-gray-800 text-gray-200 text-xs">
+                        <div className="flex items-center gap-1 text-[#8ba742] mb-1">
+                          <Reply className="w-3 h-3" />
+                          <span>Balasan</span>
                         </div>
-                        <div className="text-gray-300 truncate">
-                          {/* Try to use replyInfo first, then fall back to direct lookup */}
-                          {msg.replyInfo?.content ? (
-                            msg.replyInfo.hasAttachment ? 
-                              `[File: ${msg.replyInfo.attachmentName || 'Lampiran'}]` :
-                              msg.replyInfo.content
-                          ) : (
-                            // Fallback to direct lookup
-                            Array.isArray(messages) && messages.some(m => m.id === msg.replyToId) 
-                              ? (() => {
-                                  const original = messages.find(m => m.id === msg.replyToId)!;
-                                  if (original.hasAttachment) {
-                                    return `[File: ${original.attachmentName || 'Lampiran'}]`;
-                                  } else {
-                                    return original.content || 'Pesan kosong';
-                                  }
-                                })()
-                              : 'Pesan sebelumnya'
-                          )}
+                        <div>
+                          {(() => {
+                            // Cara 1: Coba gunakan replyInfo dari server
+                            if (msg.replyInfo) {
+                              return msg.replyInfo.content || "[Lampiran]";
+                            }
+                            
+                            // Cara 2: Cari di array messages dengan replyToId
+                            if (Array.isArray(messages)) {
+                              const replyMsg = messages.find(m => m.id === msg.replyToId);
+                              if (replyMsg) {
+                                return replyMsg.hasAttachment 
+                                  ? `[File: ${replyMsg.attachmentName || 'Lampiran'}]` 
+                                  : (replyMsg.content || "Pesan kosong");
+                              }
+                            }
+                            
+                            // Fallback jika tidak ketemu
+                            return "Pesan sebelumnya";
+                          })()}
                         </div>
                       </div>
                     )}
