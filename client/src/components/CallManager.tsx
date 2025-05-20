@@ -1,38 +1,34 @@
-import { useEffect } from "react";
-import { useCall } from "../hooks/useCall";
-import AudioCall from "./AudioCall";
-import VideoCall from "./VideoCall";
-import IncomingCallModal from "./IncomingCallModal";
+import { useCall } from '@/hooks/useCall';
+import VideoCall from './VideoCall';
+import AudioCall from './AudioCall';
+import IncomingCallModal from './IncomingCallModal';
 
 /**
  * CallManager Component
  * 
- * Komponen ini secara cerdas merutekan antara antarmuka panggilan video dan audio
- * berdasarkan jenis panggilan yang aktif. Komponen ini juga menangani tampilan modal panggilan masuk
- * ketika ada panggilan masuk tetapi belum ada panggilan aktif.
+ * Komponen ini bertanggung jawab untuk mengarahkan ke antarmuka panggilan video atau audio
+ * berdasarkan jenis panggilan yang sedang aktif. Komponen ini juga menangani tampilan modal
+ * panggilan masuk ketika ada panggilan masuk tetapi belum ada panggilan aktif.
  */
 export default function CallManager() {
-  const { activeCall, incomingCall } = useCall();
+  const { callState } = useCall();
   
-  useEffect(() => {
-    console.log("[CallManager] Active call:", activeCall);
-    console.log("[CallManager] Incoming call:", incomingCall);
-  }, [activeCall, incomingCall]);
+  // Jika ada panggilan aktif, tampilkan komponen panggilan yang sesuai
+  if (callState.activeCall) {
+    // Panggilan video aktif
+    if (callState.activeCall.callType === 'video') {
+      return <VideoCall />;
+    }
+    
+    // Panggilan audio aktif
+    return <AudioCall />;
+  }
   
-  // Tampilkan modal panggilan masuk jika ada panggilan masuk dan tidak ada panggilan aktif
-  if (incomingCall && !activeCall) {
+  // Jika ada panggilan masuk, tampilkan modal panggilan masuk
+  if (callState.incomingCall) {
     return <IncomingCallModal />;
   }
   
-  // Arahkan ke komponen yang sesuai berdasarkan jenis panggilan aktif
-  if (activeCall) {
-    if (activeCall.callType === 'audio') {
-      return <AudioCall />;
-    } else {
-      return <VideoCall />;
-    }
-  }
-  
-  // Tidak ada UI yang ditampilkan jika tidak ada panggilan aktif atau masuk
+  // Jika tidak ada panggilan aktif atau panggilan masuk, tidak tampilkan apa-apa
   return null;
 }

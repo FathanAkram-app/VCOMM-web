@@ -1,448 +1,222 @@
-import { createContext, useState, useEffect, ReactNode } from "react";
-import { useAuth } from "../hooks/use-auth";
-import { useToast } from "../hooks/use-toast";
-import { useLocation } from "wouter";
+import { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { useWebSocket } from './WebSocketContext';
 
-// Definisi tipe anggota grup panggilan
-interface GroupCallMember {
-  id: number;
-  callsign: string;
-  isActive: boolean;
-  isOnline: boolean;
-  isMuted: boolean;
-  hasJoined: boolean;
+interface GroupCallState {
+  isInCall: boolean;
+  isAudioOnly: boolean;
+  roomId: number | null;
+  roomName: string | null;
+  participantCount: number;
+  localStream: MediaStream | null;
+  participants: Map<string, MediaStream>;
 }
 
-// Definisi tipe grup panggilan
-interface GroupCall {
-  id: number;
-  name: string;
-  creatorId: number;
-  callType: 'audio' | 'video';
-  isActive: boolean;
-  startTime: Date;
-  members: GroupCallMember[];
+interface GroupCallContextType {
+  groupCallState: GroupCallState;
+  joinGroupCall: (roomId: number, roomName: string, isAudioOnly: boolean) => Promise<boolean>;
+  leaveGroupCall: () => void;
+  createGroupCall: (roomId: number, roomName: string, isAudioOnly: boolean) => Promise<boolean>;
 }
 
-// Definisi tipe context grup panggilan
-interface GroupCallContextProps {
-  activeGroupCall: GroupCall | null;
-  availableGroups: GroupCall[];
-  isCreatingCall: boolean;
-  createGroupCall: (name: string, initialMembers: number[], callType: 'audio' | 'video') => Promise<void>;
-  joinGroupCall: (groupId: number) => Promise<void>;
-  leaveGroupCall: () => Promise<void>;
-  endGroupCallForAll: () => Promise<void>;
-  addMemberToCall: (userId: number) => Promise<void>;
-  removeMemberFromCall: (userId: number) => Promise<void>;
-  toggleMemberMute: (userId: number) => Promise<void>;
-}
+const defaultGroupCallState: GroupCallState = {
+  isInCall: false,
+  isAudioOnly: false,
+  roomId: null,
+  roomName: null,
+  participantCount: 0,
+  localStream: null,
+  participants: new Map()
+};
 
-export const GroupCallContext = createContext<GroupCallContextProps | undefined>(undefined);
+export const GroupCallContext = createContext<GroupCallContextType | undefined>(undefined);
 
 interface GroupCallProviderProps {
   children: ReactNode;
 }
 
-export const GroupCallProvider = ({ children }: GroupCallProviderProps) => {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [, navigate] = useLocation();
-  
-  // State untuk grup panggilan
-  const [activeGroupCall, setActiveGroupCall] = useState<GroupCall | null>(null);
-  const [availableGroups, setAvailableGroups] = useState<GroupCall[]>([]);
-  const [isCreatingCall, setIsCreatingCall] = useState(false);
-  
-  // Membuat panggilan grup baru
-  const createGroupCall = async (name: string, initialMembers: number[], callType: 'audio' | 'video') => {
-    if (!user) {
-      toast({
-        title: "Authentication Error",
-        description: "You must be logged in to create group calls.",
-        variant: "destructive",
-      });
-      return;
+export function GroupCallProvider({ children }: GroupCallProviderProps) {
+  const [groupCallState, setGroupCallState] = useState<GroupCallState>(defaultGroupCallState);
+  const { isConnected, sendMessage } = useWebSocket();
+
+  // Fungsi untuk melepaskan dan mengosongkan stream media
+  const cleanupMediaStream = useCallback((stream: MediaStream | null) => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
     }
+  }, []);
+
+  // Fungsi untuk membersihkan state setelah call selesai
+  const resetCallState = useCallback(() => {
+    cleanupMediaStream(groupCallState.localStream);
     
-    if (activeGroupCall) {
-      toast({
-        title: "Call in Progress",
-        description: "Please end your current call before starting a new one.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // Bersihkan semua participant streams
+    groupCallState.participants.forEach(stream => {
+      cleanupMediaStream(stream);
+    });
     
-    setIsCreatingCall(true);
-    
-    try {
-      // Simulasi membuat grup panggilan
-      // Untuk implementasi sebenarnya, kirim permintaan ke server untuk membuat grup
+    setGroupCallState(defaultGroupCallState);
+  }, [groupCallState, cleanupMediaStream]);
+
+  // Tangani event group call dari WebSocket
+  useEffect(() => {
+    const handleGroupCallEvent = (event: CustomEvent) => {
+      const data = event.detail;
       
-      // Dapatkan informasi anggota
-      const response = await fetch('/api/all-users');
-      if (!response.ok) throw new Error("Failed to get user information");
-      const allUsers = await response.json();
-      
-      // Buat data anggota grup
-      const members: GroupCallMember[] = initialMembers
-        .map(userId => {
-          const memberUser = allUsers.find((u: any) => u.id === userId);
-          return memberUser ? {
-            id: userId,
-            callsign: memberUser.callsign || "UNKNOWN",
-            isActive: false,
-            isOnline: memberUser.status === 'online',
-            isMuted: false,
-            hasJoined: false
-          } : null;
-        })
-        .filter((m): m is GroupCallMember => m !== null);
-      
-      // Tambahkan pembuat panggilan sebagai anggota
-      if (!members.some(m => m.id === user.id)) {
-        const userInfo = allUsers.find((u: any) => u.id === user.id);
-        if (userInfo) {
-          members.push({
-            id: user.id,
-            callsign: userInfo.callsign || "YOU",
-            isActive: true,
-            isOnline: true,
-            isMuted: false,
-            hasJoined: true
+      if (data.type === 'group_call_participant_joined') {
+        // Seseorang bergabung ke panggilan group
+        if (groupCallState.isInCall && groupCallState.roomId === data.roomId) {
+          setGroupCallState(prev => ({
+            ...prev,
+            participantCount: prev.participantCount + 1
+          }));
+        }
+      } else if (data.type === 'group_call_participant_left') {
+        // Seseorang meninggalkan panggilan group
+        if (groupCallState.isInCall && groupCallState.roomId === data.roomId) {
+          // Update jumlah peserta
+          setGroupCallState(prev => {
+            // Remove participant stream if exists
+            const updatedParticipants = new Map(prev.participants);
+            if (data.userId && updatedParticipants.has(data.userId.toString())) {
+              updatedParticipants.delete(data.userId.toString());
+            }
+            
+            return {
+              ...prev,
+              participantCount: Math.max(prev.participantCount - 1, 0),
+              participants: updatedParticipants
+            };
           });
         }
-      } else {
-        // Update user sendiri sebagai sudah bergabung
-        const userIndex = members.findIndex(m => m.id === user.id);
-        if (userIndex >= 0) {
-          members[userIndex].isActive = true;
-          members[userIndex].hasJoined = true;
+      } else if (data.type === 'group_call_ended') {
+        // Panggilan group diakhiri
+        if (groupCallState.isInCall && groupCallState.roomId === data.roomId) {
+          resetCallState();
         }
       }
-      
-      // Buat objek grup panggilan
-      const newGroupCall: GroupCall = {
-        id: Date.now(),
-        name,
-        creatorId: user.id,
-        callType,
-        isActive: true,
-        startTime: new Date(),
-        members
-      };
-      
-      // Update state
-      setActiveGroupCall(newGroupCall);
-      setAvailableGroups(prev => [...prev, newGroupCall]);
-      
-      // Navigasi ke halaman grup panggilan yang sesuai
-      navigate(`/group-${callType}-call`);
-      
-      // Untuk implementasi sebenarnya, kirim informasi ke server melalui WebSocket
-      
-    } catch (error) {
-      console.error("Error creating group call:", error);
-      toast({
-        title: "Call Creation Failed",
-        description: "Failed to create group call. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCreatingCall(false);
-    }
-  };
-  
-  // Bergabung ke grup panggilan yang ada
-  const joinGroupCall = async (groupId: number) => {
-    if (!user) {
-      toast({
-        title: "Authentication Error",
-        description: "You must be logged in to join group calls.",
-        variant: "destructive",
-      });
-      return;
-    }
+    };
     
-    if (activeGroupCall) {
-      toast({
-        title: "Call in Progress",
-        description: "Please end your current call before joining another.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // Register event listener
+    window.addEventListener('ws-message', handleGroupCallEvent as EventListener);
+    
+    return () => {
+      window.removeEventListener('ws-message', handleGroupCallEvent as EventListener);
+    };
+  }, [groupCallState, resetCallState]);
+
+  // Function to join an existing group call
+  const joinGroupCall = useCallback(async (roomId: number, roomName: string, isAudioOnly: boolean): Promise<boolean> => {
+    if (!isConnected || groupCallState.isInCall) return false;
     
     try {
-      // Cari grup yang ingin diikuti
-      const group = availableGroups.find(g => g.id === groupId);
-      if (!group) {
-        throw new Error("Group call not found");
+      // Get user media
+      const constraints = {
+        audio: true,
+        video: !isAudioOnly
+      };
+      
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      
+      // Send join group call message to server
+      sendMessage({
+        type: 'group_call_join',
+        roomId,
+        callType: isAudioOnly ? 'audio' : 'video'
+      });
+      
+      // Update group call state
+      setGroupCallState({
+        isInCall: true,
+        isAudioOnly,
+        roomId,
+        roomName,
+        participantCount: 1, // Start with just yourself
+        localStream: stream,
+        participants: new Map()
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error joining group call:', error);
+      return false;
+    }
+  }, [isConnected, groupCallState.isInCall, sendMessage]);
+
+  // Function to leave a group call
+  const leaveGroupCall = useCallback(() => {
+    if (!groupCallState.isInCall || !groupCallState.roomId) return;
+    
+    // Send leave message to server
+    sendMessage({
+      type: 'group_call_leave',
+      roomId: groupCallState.roomId
+    });
+    
+    // Reset call state
+    resetCallState();
+  }, [groupCallState.isInCall, groupCallState.roomId, sendMessage, resetCallState]);
+
+  // Function to create a new group call
+  const createGroupCall = useCallback(async (roomId: number, roomName: string, isAudioOnly: boolean): Promise<boolean> => {
+    if (!isConnected || groupCallState.isInCall) return false;
+    
+    try {
+      // Get user media
+      const constraints = {
+        audio: true,
+        video: !isAudioOnly
+      };
+      
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      
+      // Send create group call message to server
+      sendMessage({
+        type: 'group_call_create',
+        roomId,
+        callType: isAudioOnly ? 'audio' : 'video'
+      });
+      
+      // Update group call state
+      setGroupCallState({
+        isInCall: true,
+        isAudioOnly,
+        roomId,
+        roomName,
+        participantCount: 1, // Start with just yourself
+        localStream: stream,
+        participants: new Map()
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error creating group call:', error);
+      return false;
+    }
+  }, [isConnected, groupCallState.isInCall, sendMessage]);
+
+  // Clean up media streams on unmount
+  useEffect(() => {
+    return () => {
+      if (groupCallState.localStream) {
+        cleanupMediaStream(groupCallState.localStream);
       }
       
-      // Update status anggota
-      const updatedMembers = group.members.map(member => 
-        member.id === user.id
-          ? { ...member, isActive: true, hasJoined: true }
-          : member
-      );
-      
-      // Update grup panggilan
-      const updatedGroup: GroupCall = {
-        ...group,
-        members: updatedMembers
-      };
-      
-      // Update state
-      setActiveGroupCall(updatedGroup);
-      setAvailableGroups(prev => 
-        prev.map(g => g.id === groupId ? updatedGroup : g)
-      );
-      
-      // Navigasi ke halaman grup panggilan yang sesuai
-      navigate(`/group-${group.callType}-call`);
-      
-      // Untuk implementasi sebenarnya, kirim informasi ke server melalui WebSocket
-      
-    } catch (error) {
-      console.error("Error joining group call:", error);
-      toast({
-        title: "Join Failed",
-        description: "Failed to join group call. Please try again.",
-        variant: "destructive",
+      groupCallState.participants.forEach(stream => {
+        cleanupMediaStream(stream);
       });
-    }
+    };
+  }, []);
+
+  const value = {
+    groupCallState,
+    joinGroupCall,
+    leaveGroupCall,
+    createGroupCall
   };
-  
-  // Meninggalkan grup panggilan
-  const leaveGroupCall = async () => {
-    if (!activeGroupCall || !user) return;
-    
-    try {
-      // Update status anggota
-      const updatedMembers = activeGroupCall.members.map(member => 
-        member.id === user.id
-          ? { ...member, isActive: false, hasJoined: false }
-          : member
-      );
-      
-      // Update grup panggilan
-      const updatedGroup: GroupCall = {
-        ...activeGroupCall,
-        members: updatedMembers
-      };
-      
-      // Update state
-      setActiveGroupCall(null);
-      setAvailableGroups(prev => 
-        prev.map(g => g.id === activeGroupCall.id ? updatedGroup : g)
-      );
-      
-      // Navigasi kembali
-      navigate("/chat");
-      
-      // Untuk implementasi sebenarnya, kirim informasi ke server melalui WebSocket
-      
-    } catch (error) {
-      console.error("Error leaving group call:", error);
-      toast({
-        title: "Error",
-        description: "Failed to leave group call. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  // Mengakhiri grup panggilan untuk semua anggota
-  const endGroupCallForAll = async () => {
-    if (!activeGroupCall || !user) return;
-    
-    // Pastikan hanya pembuat grup yang bisa mengakhiri panggilan
-    if (activeGroupCall.creatorId !== user.id) {
-      toast({
-        title: "Permission Denied",
-        description: "Only the group creator can end the call for all members.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    try {
-      // Update grup panggilan menjadi tidak aktif
-      const updatedGroup: GroupCall = {
-        ...activeGroupCall,
-        isActive: false
-      };
-      
-      // Update state
-      setActiveGroupCall(null);
-      setAvailableGroups(prev => 
-        prev.filter(g => g.id !== activeGroupCall.id)
-      );
-      
-      // Navigasi kembali
-      navigate("/chat");
-      
-      // Untuk implementasi sebenarnya, kirim informasi ke server melalui WebSocket
-      
-    } catch (error) {
-      console.error("Error ending group call:", error);
-      toast({
-        title: "Error",
-        description: "Failed to end group call. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  // Menambahkan anggota ke grup panggilan
-  const addMemberToCall = async (userId: number) => {
-    if (!activeGroupCall || !user) return;
-    
-    try {
-      // Dapatkan informasi pengguna yang akan ditambahkan
-      const response = await fetch(`/api/users/${userId}`);
-      if (!response.ok) throw new Error("Failed to get user information");
-      const userInfo = await response.json();
-      
-      // Buat data anggota baru
-      const newMember: GroupCallMember = {
-        id: userId,
-        callsign: userInfo.callsign || "UNKNOWN",
-        isActive: false,
-        isOnline: userInfo.status === 'online',
-        isMuted: false,
-        hasJoined: false
-      };
-      
-      // Update anggota grup
-      const updatedMembers = [...activeGroupCall.members, newMember];
-      
-      // Update grup panggilan
-      const updatedGroup: GroupCall = {
-        ...activeGroupCall,
-        members: updatedMembers
-      };
-      
-      // Update state
-      setActiveGroupCall(updatedGroup);
-      setAvailableGroups(prev => 
-        prev.map(g => g.id === activeGroupCall.id ? updatedGroup : g)
-      );
-      
-      // Untuk implementasi sebenarnya, kirim informasi ke server melalui WebSocket
-      
-    } catch (error) {
-      console.error("Error adding member to group call:", error);
-      toast({
-        title: "Error",
-        description: "Failed to add member. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  // Mengeluarkan anggota dari grup panggilan
-  const removeMemberFromCall = async (userId: number) => {
-    if (!activeGroupCall || !user) return;
-    
-    // Pastikan hanya pembuat grup yang bisa mengeluarkan anggota
-    if (activeGroupCall.creatorId !== user.id && userId !== user.id) {
-      toast({
-        title: "Permission Denied",
-        description: "Only the group creator can remove other members.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    try {
-      // Update anggota grup
-      const updatedMembers = activeGroupCall.members.filter(member => member.id !== userId);
-      
-      // Update grup panggilan
-      const updatedGroup: GroupCall = {
-        ...activeGroupCall,
-        members: updatedMembers
-      };
-      
-      // Update state
-      setActiveGroupCall(updatedGroup);
-      setAvailableGroups(prev => 
-        prev.map(g => g.id === activeGroupCall.id ? updatedGroup : g)
-      );
-      
-      // Jika pengguna yang dihapus adalah diri sendiri, keluar dari panggilan
-      if (userId === user.id) {
-        setActiveGroupCall(null);
-        navigate("/chat");
-      }
-      
-      // Untuk implementasi sebenarnya, kirim informasi ke server melalui WebSocket
-      
-    } catch (error) {
-      console.error("Error removing member from group call:", error);
-      toast({
-        title: "Error",
-        description: "Failed to remove member. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  // Toggle mute untuk anggota grup
-  const toggleMemberMute = async (userId: number) => {
-    if (!activeGroupCall) return;
-    
-    try {
-      // Update status mute
-      const updatedMembers = activeGroupCall.members.map(member => 
-        member.id === userId
-          ? { ...member, isMuted: !member.isMuted }
-          : member
-      );
-      
-      // Update grup panggilan
-      const updatedGroup: GroupCall = {
-        ...activeGroupCall,
-        members: updatedMembers
-      };
-      
-      // Update state
-      setActiveGroupCall(updatedGroup);
-      setAvailableGroups(prev => 
-        prev.map(g => g.id === activeGroupCall.id ? updatedGroup : g)
-      );
-      
-      // Untuk implementasi sebenarnya, kirim informasi ke server melalui WebSocket
-      
-    } catch (error) {
-      console.error("Error toggling member mute:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update mute status. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-  
+
   return (
-    <GroupCallContext.Provider
-      value={{
-        activeGroupCall,
-        availableGroups,
-        isCreatingCall,
-        createGroupCall,
-        joinGroupCall,
-        leaveGroupCall,
-        endGroupCallForAll,
-        addMemberToCall,
-        removeMemberFromCall,
-        toggleMemberMute,
-      }}
-    >
+    <GroupCallContext.Provider value={value}>
       {children}
     </GroupCallContext.Provider>
   );
-};
+}

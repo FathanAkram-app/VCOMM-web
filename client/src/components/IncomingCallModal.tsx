@@ -1,66 +1,96 @@
-import { useCall } from "../hooks/useCall";
-import { Button } from "./ui/button";
-import { Phone, Video } from "lucide-react";
+import { useEffect } from 'react';
+import { useCall } from '@/hooks/useCall';
+import { Button } from '@/components/ui/button';
+import { Phone, PhoneOff, Video } from 'lucide-react';
 
+/**
+ * IncomingCallModal Component
+ * 
+ * Menampilkan modal panggilan masuk dengan opsi untuk menerima atau menolak
+ * panggilan. Modal ini akan muncul ketika ada panggilan masuk dan
+ * tidak ada panggilan aktif lainnya.
+ */
 export default function IncomingCallModal() {
-  const { incomingCall, answerCall, rejectCall, isCallLoading } = useCall();
-
-  if (!incomingCall) return null;
-
+  const { callState, acceptCall, rejectCall } = useCall();
+  
+  // Jika tidak ada panggilan masuk, tidak tampilkan apa-apa
+  if (!callState.incomingCall) return null;
+  
+  // Putar suara panggilan masuk
+  useEffect(() => {
+    // Audio element untuk memutar nada dering
+    const ringtone = new Audio('/sounds/incoming-call.mp3');
+    ringtone.loop = true;
+    
+    try {
+      // Putar nada dering
+      ringtone.play().catch(err => {
+        console.warn('Failed to play ringtone:', err);
+      });
+    } catch (error) {
+      console.error('Error playing ringtone:', error);
+    }
+    
+    // Cleanup saat komponen unmount atau panggilan dijawab/ditolak
+    return () => {
+      ringtone.pause();
+      ringtone.currentTime = 0;
+    };
+  }, []);
+  
+  // Handler saat panggilan diterima
+  const handleAcceptCall = async () => {
+    await acceptCall();
+  };
+  
+  // Handler saat panggilan ditolak
+  const handleRejectCall = () => {
+    rejectCall();
+  };
+  
+  // Tentukan teks jenis panggilan
+  const callTypeText = callState.incomingCall.callType === 'video' 
+    ? 'Panggilan Video' 
+    : 'Panggilan Audio';
+  
+  // Icon berdasarkan jenis panggilan
+  const CallTypeIcon = callState.incomingCall.callType === 'video' ? Video : Phone;
+  
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/80 z-50">
-      <div className="bg-background border-2 border-accent rounded-sm overflow-hidden w-5/6 max-w-sm shadow-2xl">
-        <header className="bg-black px-4 py-3 text-center">
-          <h3 className="text-lg font-bold uppercase tracking-wider text-white">INCOMING TRANSMISSION</h3>
-        </header>
-        
-        <div className="p-6 flex flex-col items-center">
-          <h4 className="text-lg font-bold uppercase mb-1">{incomingCall.callerName}</h4>
-          <p className="text-accent font-medium uppercase mb-5">
-            {incomingCall.callType === "video" ? "VIDEO" : "VOICE"} CHANNEL {incomingCall.isRoom ? ` - ${incomingCall.roomName}` : ""}
-          </p>
-
-          <div className="w-28 h-28 rounded-sm mb-5 bg-secondary border-2 border-accent overflow-hidden flex items-center justify-center">
-            <span className="text-3xl font-bold text-secondary-foreground">
-              {incomingCall.callerName.substring(0, 2).toUpperCase()}
-            </span>
-          </div>
-
-          <div className="flex justify-around w-full mt-2 gap-4">
-            <Button
-              variant="destructive"
-              size="lg"
-              className="flex-1 h-16 rounded-sm border border-destructive uppercase font-bold"
-              onClick={rejectCall}
-              disabled={isCallLoading}
-            >
-              <Phone className="h-6 w-6 rotate-135 mr-2" />
-              REJECT
-            </Button>
-            
-            <Button
-              variant="default"
-              size="lg"
-              className="flex-1 h-16 rounded-sm border uppercase font-bold"
-              onClick={answerCall}
-              disabled={isCallLoading}
-            >
-              {incomingCall.callType === "video" ? (
-                <Video className="h-6 w-6 mr-2" />
-              ) : (
-                <Phone className="h-6 w-6 mr-2" />
-              )}
-              ACCEPT
-            </Button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+      <div className="bg-zinc-900 p-6 rounded-lg shadow-lg max-w-md w-full border border-zinc-700">
+        <div className="flex flex-col items-center space-y-4">
+          {/* Indikator panggilan masuk dan animasi */}
+          <div className="w-24 h-24 rounded-full bg-emerald-800 flex items-center justify-center mb-2 animate-pulse">
+            <CallTypeIcon size={40} className="text-white" />
           </div>
           
-          {isCallLoading && (
-            <div className="bg-muted px-4 py-2 rounded-sm mt-5 border border-accent">
-              <p className="text-sm font-bold text-center uppercase">
-                ESTABLISHING CONNECTION...
-              </p>
-            </div>
-          )}
+          {/* Informasi pemanggil */}
+          <h2 className="text-2xl font-bold text-white">{callState.incomingCall.callerName}</h2>
+          <p className="text-zinc-400">{callTypeText} masuk...</p>
+          
+          {/* Tombol aksi */}
+          <div className="flex space-x-4 mt-6">
+            {/* Tombol tolak panggilan */}
+            <Button 
+              variant="destructive" 
+              size="lg" 
+              className="rounded-full w-16 h-16 flex items-center justify-center" 
+              onClick={handleRejectCall}
+            >
+              <PhoneOff size={28} />
+            </Button>
+            
+            {/* Tombol terima panggilan */}
+            <Button 
+              variant="success" 
+              size="lg" 
+              className="rounded-full w-16 h-16 flex items-center justify-center bg-emerald-600 hover:bg-emerald-700" 
+              onClick={handleAcceptCall}
+            >
+              <Phone size={28} />
+            </Button>
+          </div>
         </div>
       </div>
     </div>

@@ -1,18 +1,12 @@
 import { useContext } from 'react';
 import { GroupCallContext } from '../context/GroupCallContext';
 
-/**
- * Custom hook untuk mengakses GroupCallContext
- * Hook ini mengabstraksi akses context untuk komponen-komponen
- */
-const useGroupCall = () => {
+export function useGroupCall() {
   const context = useContext(GroupCallContext);
   
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useGroupCall must be used within a GroupCallProvider');
   }
   
   return context;
-};
-
-export default useGroupCall;
+}

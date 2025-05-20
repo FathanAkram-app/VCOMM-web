@@ -1,148 +1,159 @@
 import { createContext, useState, useEffect, ReactNode } from 'react';
-import { useLocation } from 'wouter';
-import MessageNotification from '../components/MessageNotification';
-import { useToast } from '../hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
-// Tipe untuk satu notifikasi pesan
-interface MessageNotificationData {
+// Definisi jenis notifikasi
+export type NotificationType = 'message' | 'call' | 'groupCall' | 'system';
+
+// Interface untuk data notifikasi
+export interface Notification {
   id: string;
-  sender: string;
+  type: NotificationType;
+  title: string;
   message: string;
-  conversationId: number;
-  isRoom: boolean;
+  data?: any; // Data tambahan spesifik untuk jenis notifikasi
+  read: boolean;
   timestamp: Date;
 }
 
-// Tipe untuk context notifikasi
+// Interface untuk context
 interface NotificationContextType {
-  // Fungsi untuk menambahkan notifikasi pesan baru
-  addMessageNotification: (
-    sender: string,
-    message: string,
-    conversationId: number,
-    isRoom: boolean
-  ) => void;
-  
-  // Fungsi untuk menghapus semua notifikasi
-  clearAllNotifications: () => void;
-  
-  // Enable/disable notifikasi
-  isNotificationsEnabled: boolean;
-  setNotificationsEnabled: (enabled: boolean) => void;
-  
-  // Fungsi untuk membunyikan notifikasi
-  playNotificationSound: () => void;
+  notifications: Notification[];
+  unreadCount: number;
+  addNotification: (notification: Omit<Notification, 'id' | 'read' | 'timestamp'>) => void;
+  markAsRead: (id: string) => void;
+  markAllAsRead: () => void;
+  clearNotifications: () => void;
+  playNotificationSound: (type: NotificationType) => void;
 }
 
+// Context
 export const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
+// Provider Props
 interface NotificationProviderProps {
   children: ReactNode;
 }
 
-export const NotificationProvider = ({ children }: NotificationProviderProps) => {
-  // State untuk menyimpan semua notifikasi aktif
-  const [notifications, setNotifications] = useState<MessageNotificationData[]>([]);
-  // State untuk menyimpan apakah notifikasi diaktifkan
-  const [isNotificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
-  // Untuk mendapatkan lokasi saat ini
-  const [location] = useLocation();
+// Provider Component
+export function NotificationProvider({ children }: NotificationProviderProps) {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const { toast } = useToast();
   
-  // Element audio untuk suara notifikasi
-  const [notificationSound, setNotificationSound] = useState<HTMLAudioElement | null>(null);
+  // Preload audio files
+  const [audioFiles, setAudioFiles] = useState<Record<NotificationType, HTMLAudioElement | null>>({
+    message: null,
+    call: null,
+    groupCall: null,
+    system: null
+  });
   
-  // Inisialisasi audio saat mount
+  // Hitung jumlah notifikasi yang belum dibaca
+  const unreadCount = notifications.filter(notif => !notif.read).length;
+  
+  // Load audio files once on component mount
   useEffect(() => {
-    const audio = new Audio('/sounds/notification.mp3');
-    setNotificationSound(audio);
+    const loadAudio = () => {
+      try {
+        const messageAudio = new Audio('/sounds/message-notification.mp3');
+        const callAudio = new Audio('/sounds/call-notification.mp3');
+        const groupCallAudio = new Audio('/sounds/group-call-notification.mp3');
+        const systemAudio = new Audio('/sounds/system-notification.mp3');
+        
+        setAudioFiles({
+          message: messageAudio,
+          call: callAudio,
+          groupCall: groupCallAudio,
+          system: systemAudio
+        });
+      } catch (error) {
+        console.error('Failed to load notification sounds:', error);
+      }
+    };
     
-    // Cleanup pada unmount
+    loadAudio();
+    
+    // Cleanup audio elements
     return () => {
-      audio.pause();
-      audio.src = '';
+      Object.values(audioFiles).forEach(audio => {
+        if (audio) {
+          audio.pause();
+          audio.src = '';
+        }
+      });
     };
   }, []);
   
-  // Fungsi untuk membunyikan notifikasi
-  const playNotificationSound = () => {
-    if (notificationSound && isNotificationsEnabled) {
-      notificationSound.currentTime = 0;
-      notificationSound.play().catch(err => {
-        console.error('Error playing notification sound:', err);
+  // Fungsi untuk menambahkan notifikasi baru
+  const addNotification = (notificationData: Omit<Notification, 'id' | 'read' | 'timestamp'>) => {
+    const newNotification: Notification = {
+      ...notificationData,
+      id: Date.now().toString(),
+      read: false,
+      timestamp: new Date()
+    };
+    
+    setNotifications(prev => [newNotification, ...prev]);
+    
+    // Tampilkan toast notifikasi
+    toast({
+      title: newNotification.title,
+      description: newNotification.message,
+      variant: newNotification.type === 'system' ? 'destructive' : 'default',
+    });
+    
+    // Putar suara notifikasi
+    playNotificationSound(newNotification.type);
+  };
+  
+  // Fungsi untuk menandai notifikasi sebagai sudah dibaca
+  const markAsRead = (id: string) => {
+    setNotifications(prev => 
+      prev.map(notif => 
+        notif.id === id ? { ...notif, read: true } : notif
+      )
+    );
+  };
+  
+  // Fungsi untuk menandai semua notifikasi sebagai sudah dibaca
+  const markAllAsRead = () => {
+    setNotifications(prev => 
+      prev.map(notif => ({ ...notif, read: true }))
+    );
+  };
+  
+  // Fungsi untuk menghapus semua notifikasi
+  const clearNotifications = () => {
+    setNotifications([]);
+  };
+  
+  // Fungsi untuk memutar suara notifikasi
+  const playNotificationSound = (type: NotificationType) => {
+    const audio = audioFiles[type];
+    if (audio) {
+      // Reset playback position
+      audio.currentTime = 0;
+      
+      // Attempt to play the sound
+      audio.play().catch(error => {
+        console.warn('Failed to play notification sound:', error);
       });
     }
   };
   
-  // Fungsi untuk menambahkan notifikasi pesan baru
-  const addMessageNotification = (
-    sender: string,
-    message: string,
-    conversationId: number,
-    isRoom: boolean
-  ) => {
-    // Jika pengguna sedang berada di halaman chat yang sama, jangan tampilkan notifikasi
-    const currentPath = location.split('?')[0]; // hilangkan query parameters
-    const isOnChatPage = currentPath === `/chat/${conversationId}`;
-    
-    if (isOnChatPage) {
-      return;
-    }
-    
-    // Buat ID unik untuk notifikasi
-    const id = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
-    // Buat data notifikasi baru
-    const newNotification: MessageNotificationData = {
-      id,
-      sender,
-      message,
-      conversationId,
-      isRoom,
-      timestamp: new Date()
-    };
-    
-    // Tambahkan ke daftar notifikasi
-    setNotifications(prev => [...prev, newNotification]);
-    
-    // Putar suara notifikasi
-    playNotificationSound();
-  };
-  
-  // Fungsi untuk menghapus notifikasi
-  const removeNotification = (id: string) => {
-    setNotifications(prev => prev.filter(notification => notification.id !== id));
-  };
-  
-  // Fungsi untuk menghapus semua notifikasi
-  const clearAllNotifications = () => {
-    setNotifications([]);
+  // Value untuk context provider
+  const value = {
+    notifications,
+    unreadCount,
+    addNotification,
+    markAsRead,
+    markAllAsRead,
+    clearNotifications,
+    playNotificationSound
   };
   
   return (
-    <NotificationContext.Provider
-      value={{
-        addMessageNotification,
-        clearAllNotifications,
-        isNotificationsEnabled,
-        setNotificationsEnabled,
-        playNotificationSound
-      }}
-    >
+    <NotificationContext.Provider value={value}>
       {children}
-      
-      {/* Render semua notifikasi aktif */}
-      {notifications.map((notification, index) => (
-        <MessageNotification
-          key={notification.id}
-          sender={notification.sender}
-          message={notification.message}
-          conversationId={notification.conversationId}
-          isRoom={notification.isRoom}
-          timestamp={notification.timestamp}
-          onClose={() => removeNotification(notification.id)}
-        />
-      ))}
     </NotificationContext.Provider>
   );
-};
+}

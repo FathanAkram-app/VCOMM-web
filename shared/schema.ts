@@ -1,163 +1,129 @@
-import {
-  pgTable,
-  text,
-  varchar,
-  serial,
-  integer,
-  boolean,
-  timestamp,
-  jsonb,
-  index,
-  unique,
-} from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, text, timestamp, boolean, integer, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Session storage table
-export const sessions = pgTable(
-  "sessions",
-  {
-    sid: varchar("sid").primaryKey(),
-    sess: jsonb("sess").notNull(),
-    expire: timestamp("expire").notNull(),
-  },
-  (table) => [index("IDX_session_expire").on(table.expire)],
-);
-
-// Users table
+// Skema untuk users
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  callsign: text("callsign").notNull().unique(),
-  password: text("password").notNull(), 
-  nrp: text("nrp"),                         // ID Personel/NRP
-  fullName: varchar("full_name"),           // Nama lengkap
-  rank: varchar("rank"),                    // Pangkat
-  branch: varchar("branch"),                // Cabang/Unit
-  status: varchar("status").default("offline"),
-  profileImageUrl: varchar("profile_image_url"),
+  callsign: varchar("callsign", { length: 50 }).notNull().unique(),
+  nrp: varchar("nrp", { length: 50 }),
+  password: text("password").notNull(),
+  fullName: varchar("full_name", { length: 100 }),
+  rank: varchar("rank", { length: 50 }),
+  profileImageUrl: text("profile_image_url"),
+  status: varchar("status", { length: 20 }).default("offline"),
   createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
 });
 
-// Conversations table (both group chats and direct chats)
+// Skema untuk conversation (bisa grup atau one-on-one)
 export const conversations = pgTable("conversations", {
   id: serial("id").primaryKey(),
-  createdById: integer("created_by_id").references(() => users.id).notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-  isGroup: boolean("is_group").default(false),
-  name: varchar("name"),
-  description: text("description"),
-  classification: varchar("classification"),
+  name: varchar("name", { length: 100 }),
+  isGroup: boolean("is_group").notNull(),
+  createdById: integer("created_by_id").notNull().references(() => users.id),
   lastMessage: text("last_message"),
   lastMessageTime: timestamp("last_message_time"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
 });
 
-// Conversation members table
+// Skema untuk anggota percakapan
 export const conversationMembers = pgTable("conversation_members", {
   id: serial("id").primaryKey(),
-  conversationId: integer("conversation_id").references(() => conversations.id).notNull(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  joinedAt: timestamp("joined_at").defaultNow(),
+  conversationId: integer("conversation_id").notNull().references(() => conversations.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  isAdmin: boolean("is_admin").default(false),
+  joinedAt: timestamp("joined_at").defaultNow()
+}, (table) => {
+  return {
+    conversationUserIdx: uniqueIndex("conversation_user_idx").on(table.conversationId, table.userId)
+  };
 });
 
-// Messages table
+// Skema untuk pesan
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
-  content: text("content").notNull(),
   senderId: integer("sender_id").notNull().references(() => users.id),
-  conversationId: integer("conversation_id").references(() => conversations.id),
+  conversationId: integer("conversation_id").notNull().references(() => conversations.id),
+  content: text("content"),
+  classification: varchar("classification", { length: 20 }).default("normal"),
+  hasAttachment: boolean("has_attachment").default(false),
+  attachmentUrl: text("attachment_url"),
+  attachmentType: varchar("attachment_type", { length: 50 }),
+  attachmentName: varchar("attachment_name", { length: 255 }),
+  attachmentSize: integer("attachment_size"),
+  forwardedFromId: integer("forwarded_from_id").references(() => messages.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-  classification: varchar("classification"),
-  // Attachment fields
-  hasAttachment: boolean("has_attachment").default(false),
-  attachmentType: varchar("attachment_type"), // 'image', 'document', 'audio', 'video'
-  attachmentUrl: varchar("attachment_url"),
-  attachmentName: varchar("attachment_name"),
-  attachmentSize: integer("attachment_size"), // in bytes
-  // Reply, Forward, Delete features
-  replyToId: integer("reply_to_id").references(() => messages.id),
-  forwardedFromId: integer("forwarded_from_id").references(() => messages.id),
-  isDeleted: boolean("is_deleted").default(false),
+  isDeleted: boolean("is_deleted").default(false)
 });
 
-// Schema types
-export type User = typeof users.$inferSelect;
-export type UpsertUser = typeof users.$inferInsert;
+// Insert schema dan types
 
-// Create schema for user registration
-export const registerUserSchema = createInsertSchema(users).pick({
-  callsign: true,
-  password: true,
-  nrp: true,
-  fullName: true,
-  rank: true,
-  branch: true,
+// User
+export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type User = typeof users.$inferSelect;
+
+// Registration schema with password confirmation
+export const registerUserSchema = insertUserSchema.extend({
+  passwordConfirm: z.string().min(6)
+}).refine(data => data.password === data.passwordConfirm, {
+  message: "Passwords do not match",
+  path: ["passwordConfirm"]
 });
 export type RegisterUser = z.infer<typeof registerUserSchema>;
 
-// Login schema
-export const loginSchema = z.object({
-  callsign: z.string().min(1, "Call sign is required"),
-  password: z.string().min(1, "Password is required"),
-});
-export type LoginCredentials = z.infer<typeof loginSchema>;
-
-// Message types
-export type Message = typeof messages.$inferSelect;
-export const insertMessageSchema = createInsertSchema(messages).pick({
-  content: true,
-  senderId: true,
-  conversationId: true,
-  classification: true,
-  hasAttachment: true,
-  attachmentType: true,
-  attachmentUrl: true,
-  attachmentName: true,
-  attachmentSize: true,
-  replyToId: true,
-  forwardedFromId: true,
-  isDeleted: true,
-});
-export type InsertMessage = z.infer<typeof insertMessageSchema>;
-
-// Create schema for conversations
-export type Conversation = typeof conversations.$inferSelect;
-export const insertConversationSchema = createInsertSchema(conversations).pick({
-  name: true,
-  isGroup: true,
-  description: true,
-  classification: true,
-});
+// Conversation
+export const insertConversationSchema = createInsertSchema(conversations).omit({ id: true, createdAt: true, updatedAt: true, lastMessage: true, lastMessageTime: true });
 export type InsertConversation = z.infer<typeof insertConversationSchema>;
+export type Conversation = typeof conversations.$inferSelect;
 
-// Conversation members types
-export type ConversationMember = typeof conversationMembers.$inferSelect;
-export const insertConversationMemberSchema = createInsertSchema(conversationMembers).pick({
-  conversationId: true,
-  userId: true,
-});
+// Conversation Member
+export const insertConversationMemberSchema = createInsertSchema(conversationMembers).omit({ id: true, joinedAt: true });
 export type InsertConversationMember = z.infer<typeof insertConversationMemberSchema>;
+export type ConversationMember = typeof conversationMembers.$inferSelect;
 
-// WebSocket message types
-export type WebSocketMessage = {
-  type: 'new_message' | 'user_status' | 'typing' | 'read_receipt';
-  payload: any;
+// Message
+export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, createdAt: true, updatedAt: true, isDeleted: true });
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type Message = typeof messages.$inferSelect;
+
+// Tipe untuk direct chat (tidak ada tabel khusus, hanya untuk abstraksi frontend)
+export type DirectChat = {
+  id: number; // ID user lain
+  isRoom: false;
+  lastMessage?: {
+    content: string;
+    timestamp: Date;
+    senderId: number;
+  };
+  unreadCount: number;
 };
 
-// Military ranks for dropdown select
-export const RANKS = [
-  "PVT", "PFC", "SPC", "CPL", "SGT", "SSG", "SFC", "MSG", "1SG", "SGM", "CSM",
-  "2LT", "1LT", "CPT", "MAJ", "LTC", "COL", "BG", "MG", "LTG", "GEN"
-] as const;
+// Tipe untuk result dari getChatsForUser
+export type ChatInfo = {
+  id: number;
+  name: string;
+  isRoom: boolean;
+  lastMessage?: {
+    content: string;
+    timestamp: Date;
+    senderId: number;
+  };
+  unreadCount: number;
+};
 
-// Military branches for dropdown select
-export const BRANCHES = [
-  "ARMY", "NAVY", "AIR FORCE", "MARINES", "SPECIAL FORCES", "INTELLIGENCE", "CYBER"
-] as const;
-
-// Classification levels for messages and conversations
-export const CLASSIFICATION_LEVELS = [
-  "UNCLASSIFIED", "CONFIDENTIAL", "SECRET", "TOP SECRET"
-] as const;
+// Tipe untuk message dengan user info
+export type MessageWithSender = Message & {
+  sender: {
+    id: number;
+    callsign: string;
+    nrp?: string;
+    fullName?: string;
+    rank?: string;
+    profileImageUrl?: string;
+  };
+  isRead: boolean;
+};
