@@ -13,7 +13,6 @@ import AttachmentUploader from './AttachmentUploader';
 import MessageAttachment from './MessageAttachment';
 import VoiceRecorder from './VoiceRecorder';
 import AudioPlayerInline from './AudioPlayerInline';
-import AudioMessage from './AudioMessage';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -904,12 +903,12 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                     {/* Render attachment jika ada */}
                     {msg.hasAttachment && msg.attachmentUrl && (
                       <>
-                        {/* Pesan audio ditampilkan dengan AudioMessage */}
+                        {/* Pesan audio ditampilkan dengan AudioPlayerInline */}
                         {msg.attachmentType === 'audio' ? (
                           <div className="pt-1">
-                            <AudioMessage 
+                            <AudioPlayerInline 
                               src={msg.attachmentUrl} 
-                              filename={msg.attachmentName} 
+                              filename={msg.attachmentName || ""} 
                               timestamp={msg.timestamp}
                             />
                           </div>
