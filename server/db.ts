@@ -2,6 +2,10 @@ import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import * as schema from "@shared/schema";
 import ws from "ws";
+import * as dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 
 // Konfigurasi WebSocket untuk Neon Database
 neonConfig.webSocketConstructor = ws;
@@ -12,7 +16,9 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-console.log("Connecting to database:", process.env.DATABASE_URL.substring(0, 20) + "...");
+// Mask the password in logs for security
+const maskedUrl = process.env.DATABASE_URL.replace(/:([^:@]+)@/, ':****@');
+console.log("Connecting to database:", maskedUrl);
 
 // Set pooling configuration untuk mencegah too many clients error
 export const pool = new Pool({ 
