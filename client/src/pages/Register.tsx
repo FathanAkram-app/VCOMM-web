@@ -51,34 +51,53 @@ export default function Register() {
       // Remove confirmPassword as it's not in the API schema
       const { confirmPassword, ...registerData } = values;
       
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(registerData),
-        credentials: "include"
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Registrasi gagal");
+      // Tambahkan penanganan error untuk mencegah error WebSocket
+      try {
+        const response = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(registerData),
+          credentials: "include"
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Registrasi gagal");
+        }
+        
+        toast({
+          title: "Registrasi berhasil",
+          description: "Anda akan dialihkan ke halaman login",
+        });
+        
+        // Redirect to login after successful registration
+        setLocation("/login");
+      } catch (fetchError: any) {
+        if (fetchError.name === "TypeError" && fetchError.message.includes("NetworkError")) {
+          console.error("Network error during registration:", fetchError);
+          throw new Error("Koneksi jaringan gagal. Pastikan server berjalan.");
+        } else {
+          throw fetchError;
+        }
       }
-      
-      toast({
-        title: "Registrasi berhasil",
-        description: "Anda akan dialihkan ke halaman login",
-      });
-      
-      // Redirect to login after successful registration
-      setLocation("/login");
     } catch (error: any) {
       console.error("Registration error:", error);
-      toast({
-        variant: "destructive",
-        title: "Registrasi gagal",
-        description: error.message || "Terjadi kesalahan saat registrasi",
-      });
+      // Tangani error WebSocket secara khusus
+      if (error.name === "AggregateError" || error.code === "ECONNREFUSED") {
+        toast({
+          variant: "destructive",
+          title: "Registrasi gagal",
+          description: "Koneksi WebSocket gagal. Aplikasi masih berfungsi, silakan coba lagi."
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Registrasi gagal",
+          description: error.message || "Terjadi kesalahan saat registrasi",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
