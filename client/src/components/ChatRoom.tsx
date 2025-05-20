@@ -657,6 +657,29 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
       {/* Message input - positioned fixed for mobile */}
       <div className="border-t border-[#333333] p-3 bg-[#1a1a1a] fixed bottom-0 left-0 right-0 z-10">
         <form onSubmit={handleSendMessage} className="flex flex-col">
+          {/* Show reply preview if replying to a message */}
+          {replyToMessage && (
+            <div className="flex items-center justify-between mb-2 bg-[#2a2a2a] p-2 rounded">
+              <div className="flex-1">
+                <p className="text-xs text-[#a6c455] flex items-center">
+                  <Reply className="h-3 w-3 mr-1" />
+                  Membalas {replyToMessage.senderId === user?.id ? 'pesan Anda' : replyToMessage.senderName}
+                </p>
+                <p className="text-xs text-gray-400 truncate">{replyToMessage.content}</p>
+              </div>
+              <Button 
+                type="button"
+                variant="ghost" 
+                size="sm"
+                className="text-gray-400 hover:text-white h-6 w-6 p-0"
+                onClick={() => setReplyToMessage(null)}
+              >
+                <span className="sr-only">Cancel</span>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+          
           {/* Show attachment preview if any */}
           {attachment && (
             <div className="flex items-center justify-between mb-2 bg-[#2a2a2a] p-2 rounded">
@@ -687,7 +710,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
             <Input
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Ketik pesan..."
+              placeholder={replyToMessage ? "Ketik balasan..." : "Ketik pesan..."}
               className="flex-1 bg-[#252525] border-[#444444] text-white placeholder-gray-500 focus-visible:ring-[#4d5d30]"
             />
             
