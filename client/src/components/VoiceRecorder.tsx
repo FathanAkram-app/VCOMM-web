@@ -80,40 +80,20 @@ export default function VoiceRecorder({ onSendAudio, onCancel }: VoiceRecorderPr
         if (audioChunksRef.current.length > 0) {
           // Save the final recording duration
           const finalDuration = recordingTime;
-          actualDurationRef.current = finalDuration;
           
-          // Create blob and URL from collected chunks
-          const audioType = 'audio/webm'; // This format is widely supported
+          // Gunakan durasi dari timer sebagai fallback yang pasti
+          const safeDuration = finalDuration > 0 ? finalDuration : 1;
+          actualDurationRef.current = safeDuration;
+          
+          // Create blob and URL for audio
+          const audioType = 'audio/webm'; // Format yang didukung secara luas
           const blob = new Blob(audioChunksRef.current, { type: audioType });
-          
-          // Create a temporary audio element to get actual duration
-          const tempAudio = new Audio();
-          const tempUrl = URL.createObjectURL(blob);
-          tempAudio.src = tempUrl;
-          
-          // Ensure we have a valid duration
-          actualDurationRef.current = finalDuration > 0 ? finalDuration : 1;
-          
-          // Listen for metadata to retrieve actual duration
-          tempAudio.addEventListener('loadedmetadata', () => {
-            const actualDuration = Math.ceil(tempAudio.duration);
-            if (actualDuration > 0) {
-              console.log(`Audio duration from metadata: ${actualDuration}s`);
-              actualDurationRef.current = actualDuration;
-              
-              // Update the UI to show the correct duration
-              setRecordingTime(actualDuration);
-            } else {
-              console.log(`Using timer-based duration: ${finalDuration}s`);
-            }
-            
-            // Clean up the temporary URL
-            URL.revokeObjectURL(tempUrl);
-          });
-          
           const url = URL.createObjectURL(blob);
-          console.log(`Created audio blob of size: ${blob.size} bytes, timer duration: ${finalDuration}s`);
           
+          // Log durasi yang digunakan
+          console.log(`Created audio blob of size: ${blob.size} bytes, timer duration: ${safeDuration}s`);
+          
+          // Set data yang diperlukan untuk UI dan pengiriman
           setAudioBlob(blob);
           setAudioUrl(url);
           setRecordingComplete(true);
@@ -183,8 +163,11 @@ export default function VoiceRecorder({ onSendAudio, onCancel }: VoiceRecorderPr
         actualDurationRef.current = recordingTime;
       }
       
-      console.log(`Sending audio, duration: ${actualDurationRef.current}s, size: ${audioBlob.size} bytes`);
-      onSendAudio(audioBlob, audioUrl, actualDurationRef.current);
+      // Durasi tidak boleh Infinity
+      const safeCurrentDuration = isFinite(actualDurationRef.current) ? actualDurationRef.current : recordingTime;
+      
+      console.log(`Sending audio, duration: ${safeCurrentDuration}s, size: ${audioBlob.size} bytes`);
+      onSendAudio(audioBlob, audioUrl, safeCurrentDuration);
     } else {
       console.error("Cannot send audio: missing blob or URL");
     }

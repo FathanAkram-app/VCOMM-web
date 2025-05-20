@@ -133,10 +133,23 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   
   const handleVoiceRecordingComplete = (audioBlob: Blob, audioUrl: string, duration?: number) => {
     console.log("Voice recording complete. Blob:", audioBlob, "URL:", audioUrl, "Duration:", duration);
+    
+    // Pastikan durasi adalah angka valid
+    let safeDuration = 0;
+    
+    if (duration !== undefined && isFinite(duration)) {
+      safeDuration = duration;
+    } else if (audioBlob && audioBlob.size) {
+      // Estimasi durasi berdasarkan ukuran file jika tidak ada durasi yang valid
+      // Asumsi rata-rata bitrate WebM Opus ~12KB per detik
+      safeDuration = Math.ceil(audioBlob.size / 12000);
+      console.log(`Estimated duration from blob size: ${safeDuration}s`);
+    }
+    
     setVoiceAttachment({
       blob: audioBlob,
       url: audioUrl,
-      duration: duration || 0
+      duration: safeDuration
     });
     setIsVoiceRecording(false);
     
@@ -147,7 +160,9 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
         const audioAttachment = await uploadVoiceAttachment(audioBlob);
         if (audioAttachment) {
           // Format durasi untuk ditampilkan di pesan
-          const durationText = duration ? ` (${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')})` : '';
+          const minutes = Math.floor(safeDuration / 60);
+          const seconds = Math.floor(safeDuration % 60);
+          const durationText = ` (${minutes}:${seconds.toString().padStart(2, '0')})`;
           
           // Buat pesan dengan format yang memperlihatkan pesan suara sesuai dengan desain yang diinginkan
           const payload = {
