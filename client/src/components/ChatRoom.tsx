@@ -909,54 +909,70 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
                     )}
                     
-                    {/* Reply indicator - seperti aplikasi WhatsApp */}
+                    {/* Reply indicator - persis seperti screenshot yang diberikan */}
                     {msg.replyToId && (
-                      <div className="flex items-start mb-1">
-                        <div className="border-l-2 border-[#a6c455] bg-opacity-20 bg-[#263020] px-2 py-1 rounded flex-grow">
-                          <div className="font-medium text-[#a6c455] text-xs mb-0.5">
-                            {msg.replyInfo?.senderName || 
-                             (messages && Array.isArray(messages) && 
-                              messages.find((m: any) => m.id === msg.replyToId)?.senderName) || 
-                             'unknown'}
-                          </div>
-                          <div className="text-gray-300 text-xs truncate">
+                      <div className="mb-1">
+                        <div className="flex items-start">
+                          <div className="text-[#a6c455] mr-1 text-xs">↪</div>
+                          <div className="text-[#a6c455] uppercase text-xs font-medium tracking-wider">
                             {(() => {
-                              // Cari konten pesan yang dibalas
-                              const replyContent = msg.replyInfo?.content || 
+                              // Dapatkan nama pengirim
+                              const senderName = msg.replyInfo?.senderName || 
                                 (messages && Array.isArray(messages) && 
-                                 messages.find((m: any) => m.id === msg.replyToId)?.content) || '';
-                                
-                              // Periksa apakah ada attachment
-                              const hasAttachment = msg.replyInfo?.hasAttachment || 
-                                (messages && Array.isArray(messages) && 
-                                 messages.find((m: any) => m.id === msg.replyToId)?.hasAttachment) || false;
+                                messages.find((m: any) => m.id === msg.replyToId)?.senderName) || 
+                                'unknown';
                               
+                              // Format waktu
+                              const timestamp = msg.replyInfo?.timestamp || 
+                                (messages && Array.isArray(messages) && 
+                                messages.find((m: any) => m.id === msg.replyToId)?.createdAt);
+                              
+                              let timeStr = '';
+                              if (timestamp) {
+                                const date = new Date(timestamp);
+                                timeStr = date.getHours().toString().padStart(2, '0') + 
+                                  ':' + date.getMinutes().toString().padStart(2, '0');
+                              }
+                              
+                              return `${senderName} ${timeStr}`;
+                            })()}
+                          </div>
+                        </div>
+                        <div className="text-gray-300 text-xs pl-4 mb-1">
+                          {(() => {
+                            // Dapatkan konten pesan
+                            const replyContent = msg.replyInfo?.content || 
+                              (messages && Array.isArray(messages) && 
+                               messages.find((m: any) => m.id === msg.replyToId)?.content) || '';
+                            
+                            // Bersihkan konten dari tag dan format khusus
+                            let cleanContent = replyContent.replace(/<[^>]*>/g, '')
+                              .replace(/\[File: .+\]/g, 'Foto')
+                              .replace(/🔊 Pesan Suara \(.+\)/g, 'Pesan Suara');
+                            
+                            // Periksa jika pesan adalah attachment
+                            const hasAttachment = msg.replyInfo?.hasAttachment || 
+                              (messages && Array.isArray(messages) && 
+                               messages.find((m: any) => m.id === msg.replyToId)?.hasAttachment) || false;
+                            
+                            if (hasAttachment) {
                               const attachmentType = 
                                 (messages && Array.isArray(messages) && 
                                  messages.find((m: any) => m.id === msg.replyToId)?.attachmentType) || '';
                               
-                              // Hilangkan tag HTML dan format khusus
-                              let cleanContent = replyContent.replace(/<[^>]*>/g, '');
-                              
-                              // Tambahkan ikon untuk jenis attachment
-                              if (hasAttachment) {
-                                if (attachmentType === 'image') {
-                                  return '📷 ' + (cleanContent.replace(/\[File: .+\]/g, 'Foto'));
-                                } else if (attachmentType === 'audio') {
-                                  return '🔊 ' + (cleanContent.replace(/🔊 Pesan Suara \(.+\)/g, 'Pesan Suara'));
-                                } else if (attachmentType === 'video') {
-                                  return '🎥 ' + (cleanContent.replace(/\[File: .+\]/g, 'Video'));
-                                } else if (attachmentType === 'document') {
-                                  return '📄 ' + (cleanContent.replace(/\[File: .+\]/g, 'Dokumen'));
-                                }
+                              if (attachmentType === 'image') {
+                                cleanContent = 'Foto';
+                              } else if (attachmentType === 'audio') {
+                                cleanContent = 'Pesan Suara';
+                              } else if (attachmentType === 'video') {
+                                cleanContent = 'Video';
+                              } else if (attachmentType === 'document') {
+                                cleanContent = 'Dokumen';
                               }
-                              
-                              if (cleanContent) {
-                                return cleanContent.substring(0, 60) + (cleanContent.length > 60 ? '...' : '');
-                              }
-                              return 'Pesan';
-                            })()}
-                          </div>
+                            }
+                            
+                            return cleanContent;
+                          })()}
                         </div>
                       </div>
                     )}
