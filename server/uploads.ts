@@ -38,10 +38,21 @@ const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCa
     'application/vnd.ms-powerpoint',
     'application/vnd.openxmlformats-officedocument.presentationml.presentation',
     'text/plain',
+    // Format Audio
     'audio/mpeg',
+    'audio/mp3',
     'audio/wav',
+    'audio/wave',
+    'audio/webm',
+    'audio/ogg',
+    'audio/mp4',
+    'audio/x-m4a',
+    'audio/*', // Menerima semua jenis audio
+    // Format Video
     'video/mp4',
-    'video/mpeg'
+    'video/mpeg',
+    'video/webm',
+    'video/ogg'
   ];
   
   if (allowedTypes.includes(file.mimetype)) {

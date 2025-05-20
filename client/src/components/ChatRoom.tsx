@@ -177,12 +177,22 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   // Upload voice attachment
   const uploadVoiceAttachment = async (blob: Blob): Promise<{ name: string; url: string; type: string; size: number } | null> => {
     const formData = new FormData();
+    // Deteksi MIME type yang lebih umum diterima oleh server
+    const audioType = blob.type || 'audio/webm';
+    console.log("Detected audio blob type:", audioType);
+    
+    // Gunakan ekstensi file yang sesuai dengan tipe MIME
+    const fileExt = audioType.includes('webm') ? 'webm' : 
+                   audioType.includes('ogg') ? 'ogg' : 
+                   audioType.includes('mp4') ? 'm4a' : 'mp3';
+                   
     const audioFile = new File(
       [blob], 
-      `voice_note_${Date.now()}.mp3`, 
-      { type: 'audio/mp3' }
+      `voice_note_${Date.now()}.${fileExt}`, 
+      { type: audioType }
     );
     
+    console.log("Creating audio file with name:", audioFile.name, "and type:", audioFile.type);
     formData.append('file', audioFile);
     
     try {
