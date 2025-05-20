@@ -909,73 +909,65 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
                     )}
                     
-                    {/* Reply indicator - persis seperti screenshot yang diberikan */}
-                    {msg.replyToId && (
-                      <div className="mb-1">
-                        <div className="flex items-start">
-                          <div className="text-[#a6c455] mr-1 text-xs">↪</div>
-                          <div className="text-[#a6c455] uppercase text-xs font-medium tracking-wider">
-                            {(() => {
-                              // Dapatkan nama pengirim
-                              const senderName = msg.replyInfo?.senderName || 
-                                (messages && Array.isArray(messages) && 
-                                messages.find((m: any) => m.id === msg.replyToId)?.senderName) || 
-                                'unknown';
-                              
-                              // Format waktu
-                              const timestamp = msg.replyInfo?.timestamp || 
-                                (messages && Array.isArray(messages) && 
-                                messages.find((m: any) => m.id === msg.replyToId)?.createdAt);
-                              
-                              let timeStr = '';
-                              if (timestamp) {
-                                const date = new Date(timestamp);
-                                timeStr = date.getHours().toString().padStart(2, '0') + 
-                                  ':' + date.getMinutes().toString().padStart(2, '0');
-                              }
-                              
-                              return `${senderName} ${timeStr}`;
-                            })()}
+                    {/* Reply indicator - hanya tampilkan pesan balasan jika dari pengguna lain */}
+                    {msg.replyToId && (() => {
+                      // Dapatkan data pengirim pesan yang dibalas
+                      const originalSenderId = (messages && Array.isArray(messages) && 
+                          messages.find((m: any) => m.id === msg.replyToId)?.senderId) || 0;
+                        
+                      // Tampilkan hanya jika pengirim asli bukan user saat ini
+                      if (originalSenderId !== user?.id) {
+                        return (
+                          <div className="flex mt-0.5 mb-1 pl-1">
+                            <div className="w-1 bg-[#a6c455] rounded-full mr-2"></div>
+                            <div className="text-xs text-gray-400">
+                              {(() => {
+                                // Dapatkan pesan yang dibalas
+                                const replyContent = msg.replyInfo?.content || 
+                                  (messages && Array.isArray(messages) && 
+                                   messages.find((m: any) => m.id === msg.replyToId)?.content) || '';
+                                
+                                // Bersihkan konten
+                                const cleanContent = replyContent
+                                  .replace(/<[^>]*>/g, '')
+                                  .replace(/\[File: .+\]/g, 'Foto')
+                                  .replace(/🔊 Pesan Suara \(.+\)/g, 'Pesan Suara')
+                                  .replace(/\[Diteruskan\]/g, '');
+                                
+                                // Periksa attachment
+                                const hasAttachment = msg.replyInfo?.hasAttachment || 
+                                  (messages && Array.isArray(messages) && 
+                                   messages.find((m: any) => m.id === msg.replyToId)?.hasAttachment) || false;
+                                
+                                if (hasAttachment) {
+                                  const attachmentType = 
+                                    (messages && Array.isArray(messages) && 
+                                     messages.find((m: any) => m.id === msg.replyToId)?.attachmentType) || '';
+                                  
+                                  if (attachmentType === 'image') {
+                                    return 'Foto';
+                                  } else if (attachmentType === 'audio') {
+                                    return 'Pesan Suara';
+                                  } else if (attachmentType === 'video') {
+                                    return 'Video';
+                                  } else if (attachmentType === 'document') {
+                                    return 'Dokumen';
+                                  }
+                                }
+                                
+                                // Batasi panjang teks
+                                if (cleanContent.length > 30) {
+                                  return cleanContent.substring(0, 30) + '...';
+                                }
+                                
+                                return cleanContent || 'Pesan';
+                              })()}
+                            </div>
                           </div>
-                        </div>
-                        <div className="text-gray-300 text-xs pl-4 mb-1">
-                          {(() => {
-                            // Dapatkan konten pesan
-                            const replyContent = msg.replyInfo?.content || 
-                              (messages && Array.isArray(messages) && 
-                               messages.find((m: any) => m.id === msg.replyToId)?.content) || '';
-                            
-                            // Bersihkan konten dari tag dan format khusus
-                            let cleanContent = replyContent.replace(/<[^>]*>/g, '')
-                              .replace(/\[File: .+\]/g, 'Foto')
-                              .replace(/🔊 Pesan Suara \(.+\)/g, 'Pesan Suara');
-                            
-                            // Periksa jika pesan adalah attachment
-                            const hasAttachment = msg.replyInfo?.hasAttachment || 
-                              (messages && Array.isArray(messages) && 
-                               messages.find((m: any) => m.id === msg.replyToId)?.hasAttachment) || false;
-                            
-                            if (hasAttachment) {
-                              const attachmentType = 
-                                (messages && Array.isArray(messages) && 
-                                 messages.find((m: any) => m.id === msg.replyToId)?.attachmentType) || '';
-                              
-                              if (attachmentType === 'image') {
-                                cleanContent = 'Foto';
-                              } else if (attachmentType === 'audio') {
-                                cleanContent = 'Pesan Suara';
-                              } else if (attachmentType === 'video') {
-                                cleanContent = 'Video';
-                              } else if (attachmentType === 'document') {
-                                cleanContent = 'Dokumen';
-                              }
-                            }
-                            
-                            return cleanContent;
-                          })()}
-                        </div>
-                      </div>
-                    )}
+                        );
+                      }
+                      return null;
+                    })()}
                     
                     {/* Tampilkan isi pesan jika bukan pesan suara */}
                     {!(msg.hasAttachment && msg.attachmentType === 'audio') && (
