@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, MoreVertical, Shield, Trash, Reply, Forward, X, User, Users, ArrowLeft, Mic } from 'lucide-react';
+import { Send, MoreVertical, Shield, Trash, Reply, Forward, X, User, Users, ArrowLeft, Mic, Volume2 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,7 @@ import { type Conversation, type Message } from '@shared/schema';
 import AttachmentUploader from './AttachmentUploader';
 import MessageAttachment from './MessageAttachment';
 import VoiceRecorder from './VoiceRecorder';
-import AudioPlayer from './AudioPlayer';
+import AudioPlayerInline from './AudioPlayerInline';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -903,10 +903,17 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                     {/* Render attachment jika ada */}
                     {msg.hasAttachment && msg.attachmentUrl && (
                       <>
-                        {/* Pesan audio langsung ditampilkan di dalam pesan, bukan dengan MessageAttachment */}
+                        {/* Pesan audio langsung ditampilkan dengan AudioPlayerInline */}
                         {msg.attachmentType === 'audio' ? (
-                          <div className="mb-1 mt-1">
-                            <AudioPlayer src={msg.attachmentUrl} filename={msg.attachmentName || 'audio.mp3'} />
+                          <div className="pt-1">
+                            <div className="flex items-center mb-1">
+                              <Volume2 className="h-4 w-4 text-white/70 mr-1" />
+                              <span className="text-sm text-white/80">Pesan Suara</span>
+                            </div>
+                            <AudioPlayerInline 
+                              src={msg.attachmentUrl} 
+                              filename={msg.attachmentName || 'audio.mp3'} 
+                            />
                           </div>
                         ) : (
                           <MessageAttachment 
