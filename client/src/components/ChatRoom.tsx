@@ -904,45 +904,14 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                     {/* Render attachment jika ada */}
                     {msg.hasAttachment && msg.attachmentUrl && (
                       <>
-                        {/* Pesan audio langsung ditampilkan dengan format militer */}
+                        {/* Pesan audio ditampilkan dengan AudioMessage */}
                         {msg.attachmentType === 'audio' ? (
                           <div className="pt-1">
-                            <div className="w-full">
-                              {/* Audio element tersembunyi */}
-                              <audio src={msg.attachmentUrl} preload="metadata" />
-                              
-                              {/* Bubble yang persis sama seperti screenshot - dengan warna hijau army */}
-                              <div className="rounded-md overflow-hidden bg-[#486c42]">
-                                {/* Header pesan audio */}
-                                <div className="flex items-center justify-between px-3 py-2">
-                                  <div className="flex items-center">
-                                    <Volume2 className="h-5 w-5 text-white mr-2" />
-                                    <span className="text-white font-medium">Pesan Suara</span>
-                                  </div>
-                                  <div>
-                                    <button>
-                                      <MoreVertical className="h-5 w-5 text-white/70" />
-                                    </button>
-                                  </div>
-                                </div>
-                                
-                                {/* Klasifikasi dan timestamp */}
-                                <div className="bg-[#405e3a] px-3 py-1 flex items-center">
-                                  <div className="flex items-center">
-                                    <span className="h-2 w-2 rounded-full bg-green-400 mr-1"></span>
-                                    <span className="text-xs text-green-300 uppercase">
-                                      UNCLASSIFIED
-                                    </span>
-                                    <span className="text-xs text-white/70 ml-1">
-                                      {formatDistanceToNow(new Date(msg.timestamp || new Date()), { 
-                                        addSuffix: true,
-                                        locale: id
-                                      }).replace('sekitar ', '')}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
+                            <AudioMessage 
+                              src={msg.attachmentUrl} 
+                              filename={msg.attachmentName} 
+                              timestamp={msg.timestamp}
+                            />
                           </div>
                         ) : (
                           <MessageAttachment 
