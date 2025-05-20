@@ -706,18 +706,40 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   
   const messageGroups = groupMessagesByDate(Array.isArray(messages) ? messages : []);
   
-  // UI untuk reply message
+  // UI untuk reply message (tampilan sudah mengikuti WhatsApp style)
   const ReplyPreview = () => {
     if (!replyToMessage) return null;
 
     return (
       <div className="px-4 py-2 bg-[#2a2a2a] border-t border-[#333333] flex items-start">
         <div className="flex-1">
-          <p className="text-xs text-[#a6c455] flex items-center">
-            <Reply className="h-3 w-3 mr-1" />
-            Membalas {replyToMessage.senderId === user?.id ? 'pesan Anda' : replyToMessage.senderName}
-          </p>
-          <p className="text-xs text-gray-400 truncate">{replyToMessage.content}</p>
+          <div className="flex items-center">
+            <div className="w-1 h-full bg-[#a6c455] mr-2"></div>
+            <div className="flex-1">
+              <p className="text-xs text-[#a6c455] flex items-center">
+                <Reply className="h-3 w-3 mr-1" />
+                Membalas {replyToMessage.senderId === user?.id ? 'pesan Anda' : replyToMessage.senderName}
+              </p>
+              
+              {/* Preview konten sesuai dengan jenis pesan balasan */}
+              {replyToMessage.hasAttachment ? (
+                <div className="text-xs text-gray-400 flex items-center">
+                  <span className="text-[#a6c455] mr-1">
+                    {replyToMessage.attachmentType === 'audio' ? '🔊' : '📎'}
+                  </span>
+                  <span className="truncate">
+                    {replyToMessage.attachmentType === 'audio' 
+                      ? 'Pesan Suara' 
+                      : (replyToMessage.attachmentName || 'File')}
+                  </span>
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400 truncate max-w-[90%]">
+                  {replyToMessage.content || '<Pesan kosong>'}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
         <Button 
           variant="ghost" 
