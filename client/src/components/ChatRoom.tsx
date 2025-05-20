@@ -727,32 +727,46 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                         </div>
                         
                         {/* Preview pesan yang dibalas dengan kotak dan garis hijau di sisi kiri */}
-                        {(() => {
-                          try {
-                            if (!Array.isArray(messages)) return null;
-                            
-                            for (let i = 0; i < messages.length; i++) {
-                              if (messages[i].id === msg.replyToId) {
-                                return (
-                                  <div className="bg-[#2a2a2a] rounded-md p-1.5 border-l-4 border-[#8ba742] mb-1.5">
-                                    {messages[i].hasAttachment ? (
+                        <div className="bg-[#2a2a2a] rounded-md p-1.5 border-l-4 border-[#8ba742] mb-1.5">
+                          {(() => {
+                            try {
+                              // Cari di messages dulu
+                              if (Array.isArray(messages)) {
+                                for (let i = 0; i < messages.length; i++) {
+                                  if (messages[i].id === msg.replyToId) {
+                                    // Pesan ditemukan di array pesan
+                                    return messages[i].hasAttachment ? (
                                       <div className="text-xs text-gray-400 line-clamp-1">
                                         <span className="text-[#8ba742] mr-1">📎</span>
                                         <span>{messages[i].attachmentName || 'File'}</span>
                                       </div>
                                     ) : (
                                       <p className="text-xs text-gray-400 line-clamp-1">{messages[i].content || '<Pesan kosong>'}</p>
-                                    )}
+                                    );
+                                  }
+                                }
+                              }
+                              
+                              // Jika tidak ditemukan di messages tapi ada replyInfo
+                              if (msg.replyInfo) {
+                                return msg.replyInfo.hasAttachment ? (
+                                  <div className="text-xs text-gray-400 line-clamp-1">
+                                    <span className="text-[#8ba742] mr-1">📎</span>
+                                    <span>{msg.replyInfo.attachmentName || 'File'}</span>
                                   </div>
+                                ) : (
+                                  <p className="text-xs text-gray-400 line-clamp-1">{msg.replyInfo.content || '<Pesan kosong>'}</p>
                                 );
                               }
+                              
+                              // Fallback jika tidak ada di keduanya
+                              return <p className="text-xs text-gray-400 line-clamp-1">Pesan yang dibalas tidak tersedia</p>;
+                            } catch (err) {
+                              console.error("Error rendering reply preview:", err);
+                              return <p className="text-xs text-gray-400 line-clamp-1">Error menampilkan pesan</p>;
                             }
-                            return null;
-                          } catch (err) {
-                            console.error("Error rendering reply preview:", err);
-                            return null;
-                          }
-                        })()}
+                          })()}
+                        </div>
                       </div>
                     )}
                     
