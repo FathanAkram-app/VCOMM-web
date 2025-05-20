@@ -909,19 +909,44 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
                     )}
                     
-                    {/* Reply message format persis seperti screenshot contoh */}
+                    {/* Reply message format sesuai dengan kode yang diberikan */}
                     {msg.replyToId && (
                       <>
-                        {/* Saya mengikuti format yang persis seperti pada gambar yang Anda berikan */}
                         <div className="text-xs mb-0.5">
                           <span className="text-[#a6c455] mr-1">↪</span>
                           <span className="text-[#a6c455] uppercase font-medium tracking-wide">
-                            CHARLIE {/* Hardcode CHARLIE sesuai contoh di screenshot */} 
-                            09:40
+                            {(() => {
+                              // Dapatkan nama pengirim pesan yang dibalas
+                              const senderName = messages && Array.isArray(messages) 
+                                ? (messages.find((m: any) => m.id === msg.replyToId)?.senderName || 'UNKNOWN')
+                                : 'UNKNOWN';
+                              
+                              // Format waktu
+                              const timestamp = messages && Array.isArray(messages)
+                                ? messages.find((m: any) => m.id === msg.replyToId)?.timestamp
+                                : '';
+                                
+                              let timeStr = '';
+                              if (timestamp) {
+                                try {
+                                  const date = new Date(timestamp);
+                                  timeStr = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                                } catch (e) {
+                                  timeStr = '';
+                                }
+                              }
+                              
+                              return `${senderName} ${timeStr}`;
+                            })()}
                           </span>
                         </div>
                         <div className="text-[#d7d7d7] text-xs mb-1.5 ml-3">
-                          Acknowledged. Stand by for further instructions.
+                          {(() => {
+                            // Dapatkan konten pesan yang dibalas
+                            return messages && Array.isArray(messages) 
+                              ? (messages.find((m: any) => m.id === msg.replyToId)?.content || '')
+                              : '';
+                          })()}
                         </div>
                       </>
                     )}
