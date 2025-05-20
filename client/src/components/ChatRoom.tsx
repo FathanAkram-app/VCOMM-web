@@ -50,6 +50,13 @@ interface ChatMessage {
   attachmentSize?: number;
   // Reply functionality
   replyToId?: number;
+  // Reply info yang ditambahkan dari server
+  replyInfo?: {
+    content: string;
+    senderName: string;
+    hasAttachment?: boolean;
+    attachmentName?: string;
+  };
 }
 
 interface ChatRoomProps {
