@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Volume2, Play, Pause } from 'lucide-react';
+import { Volume2, Play, Pause, MoreVertical } from 'lucide-react';
 
 interface AudioMessageProps {
   src: string;
@@ -80,44 +80,29 @@ const AudioMessage: React.FC<AudioMessageProps> = ({ src, filename, timestamp })
         preload="metadata"
       />
 
-      {/* Voice recording UI - exact match to screenshot */}
-      <div className="flex flex-col mb-1">
-        <div className="flex items-center text-white bg-[#2e412c] px-3 py-1.5 rounded-t-md">
-          <Volume2 className="h-5 w-5 mr-2" />
-          <span className="font-medium">Voice recording - {formatTime(duration)}</span>
+      {/* Green bubble header - exactly like screenshot */}
+      <div className="rounded-t-md bg-[#506a3e] px-3 py-2 flex items-center justify-between">
+        <div className="flex items-center">
+          <Volume2 className="h-4 w-4 text-white/90 mr-2" />
+          <span className="text-white text-sm font-medium">Pesan Suara</span>
         </div>
-        
-        <div className="flex items-center bg-[#496e45] px-3 py-1.5 rounded-b-md">
-          <button 
-            onClick={handlePlayClick}
-            className="w-8 h-8 rounded-full bg-[#395939] flex items-center justify-center mr-3"
-          >
-            {isPlaying ? (
-              <Pause className="h-4 w-4 text-white" />
-            ) : (
-              <Play className="h-4 w-4 text-white ml-0.5" />
-            )}
-          </button>
-          
-          <div className="flex-1">
-            <div className="w-full bg-[#395939] h-1.5 rounded-full overflow-hidden">
-              <div 
-                className="bg-white h-full" 
-                style={{ width: `${(currentTime / duration) * 100 || 0}%` }}
-              />
-            </div>
-          </div>
-          
-          <div className="ml-3 text-sm text-white">
-            {formatTime(currentTime)}
-          </div>
+        <MoreVertical className="h-4 w-4 text-white/70" />
+      </div>
+      
+      {/* Classification subtitle - exactly like screenshot */}
+      <div className="bg-[#3f5232] px-3 py-1">
+        <div className="flex items-center">
+          <div className="h-2 w-2 rounded-full bg-green-400 mr-1"></div>
+          <span className="text-xs text-green-300 uppercase">UNCLASSIFIED</span>
+          <span className="text-xs text-white/70 ml-1">kurang dari 1 menit yang lalu</span>
         </div>
       </div>
       
-      {/* Additional info line - font and sizing to match screenshot */}
-      <div className="flex items-center ml-2">
-        <span className="text-xs text-[#8ba880] font-medium">Voice Note - {formatTime(duration)}</span>
-        <span className="text-xs text-[#7e9b75] ml-2">{getFileSizeText(filename)}</span>
+      {/* Audio player - hidden but functional */}
+      <div className="hidden">
+        <button onClick={handlePlayClick}>
+          {isPlaying ? 'Pause' : 'Play'}
+        </button>
       </div>
     </div>
   );
