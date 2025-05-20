@@ -684,6 +684,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error broadcasting to conversation:', error);
     }
   }
+  
+  // Message delete endpoint
+  app.delete('/api/messages/:id', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const messageId = parseInt(req.params.id);
+      if (isNaN(messageId)) {
+        return res.status(400).json({ message: "Invalid message ID" });
+      }
+      
+      const message = await storage.getMessage(messageId);
+      
+      if (!message) {
+        return res.status(404).json({ message: "Message not found" });
+      }
+      
+      // Pengecekan apakah pengirim pesan adalah pengguna yang sedang login
+      if (message.senderId !== req.session?.user?.id) {
+        return res.status(403).json({ message: "You can only delete your own messages" });
+      }
+      
+      const deletedMessage = await storage.deleteMessage(messageId);
+      
+      // Send real-time notification about the deleted message
+      const wsMessage: WebSocketMessage = {
+        type: 'new_message',
+        payload: {
+          ...deletedMessage,
+          action: 'delete'
+        }
+      };
+      
+      await broadcastToConversation(deletedMessage.conversationId, wsMessage);
+      
+      res.status(200).json(deletedMessage);
+    } catch (error) {
+      console.error("Error deleting message:", error);
+      res.status(500).json({ message: "Failed to delete message" });
+    }
+  });
+  
+  // Forward message endpoint
+  app.post('/api/messages/:id/forward', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const messageId = parseInt(req.params.id);
+      if (isNaN(messageId)) {
+        return res.status(400).json({ message: "Invalid message ID" });
+      }
+      
+      const { conversationId } = req.body;
+      if (!conversationId) {
+        return res.status(400).json({ message: "Conversation ID is required" });
+      }
+      
+      const userId = req.session?.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      
+      const newConversationId = parseInt(conversationId);
+      
+      // Forward the message
+      const forwardedMessage = await storage.forwardMessage(messageId, newConversationId, userId);
+      
+      // Send real-time notification about the new message
+      const wsMessage: WebSocketMessage = {
+        type: 'new_message',
+        payload: forwardedMessage
+      };
+      
+      await broadcastToConversation(newConversationId, wsMessage);
+      
+      res.status(201).json(forwardedMessage);
+    } catch (error) {
+      console.error("Error forwarding message:", error);
+      res.status(500).json({ message: "Failed to forward message" });
+    }
+  });
 
   return httpServer;
 }

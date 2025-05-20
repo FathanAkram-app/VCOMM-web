@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Send, MoreVertical, Shield } from 'lucide-react';
+import { ArrowLeft, Send, MoreVertical, Shield, Trash, Reply, Forward, X } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,20 @@ import { id } from 'date-fns/locale';
 import { type Conversation, type Message } from '@shared/schema';
 import AttachmentUploader from './AttachmentUploader';
 import MessageAttachment from './MessageAttachment';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle 
+} from "@/components/ui/dialog";
 
 // Interface untuk data chat
 interface ChatData {
