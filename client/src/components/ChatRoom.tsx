@@ -906,13 +906,10 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                         {/* Pesan audio langsung ditampilkan dengan AudioPlayerInline */}
                         {msg.attachmentType === 'audio' ? (
                           <div className="pt-1">
-                            <div className="flex items-center mb-1">
-                              <Volume2 className="h-4 w-4 text-white/70 mr-1" />
-                              <span className="text-sm text-white/80">Pesan Suara</span>
-                            </div>
                             <AudioPlayerInline 
                               src={msg.attachmentUrl} 
-                              filename={msg.attachmentName || 'audio.mp3'} 
+                              filename={msg.attachmentName || 'audio.mp3'}
+                              fileSize={msg.attachmentSize}
                             />
                           </div>
                         ) : (
