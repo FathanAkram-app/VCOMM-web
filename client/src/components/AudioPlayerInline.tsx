@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Volume2, MoreVertical } from 'lucide-react';
+import { Play, Pause, MoreVertical } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { id } from 'date-fns/locale';
 
 interface AudioPlayerInlineProps {
   src: string;
-  filename: string;
+  filename?: string;
   fileSize?: number;
   timestamp?: string;
 }
@@ -18,42 +18,21 @@ const AudioPlayerInline: React.FC<AudioPlayerInlineProps> = ({
 }) => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  
+  // Format waktu audio (mm:ss)
+  const formatAudioTime = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
+  };
   
   // URL lengkap untuk file audio
   const audioUrl = src.startsWith('http') ? src : window.location.origin + src;
 
-  // Format waktu relatif
-  const getRelativeTime = (timestamp?: string) => {
-    if (!timestamp) return 'kurang dari 1 menit yang lalu';
-    try {
-      return formatDistanceToNow(new Date(timestamp), { 
-        addSuffix: true,
-        locale: id
-      }).replace('sekitar ', '');
-    } catch (e) {
-      return 'kurang dari 1 menit yang lalu';
-    }
-  };
-
-  // Event listeners untuk mendapatkan durasi audio
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const handleLoadedMetadata = () => {
-      setDuration(audio.duration);
-    };
-
-    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-
-    return () => {
-      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-    };
-  }, []);
-
   // Toggle play/pause
-  const handlePlay = () => {
+  const handlePlayPause = () => {
     if (!audioRef.current) return;
     
     if (isPlaying) {
@@ -61,8 +40,47 @@ const AudioPlayerInline: React.FC<AudioPlayerInlineProps> = ({
     } else {
       audioRef.current.play().catch(err => console.error("Error playing audio:", err));
     }
-    setIsPlaying(!isPlaying);
   };
+
+  // Update time display
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
+  };
+
+  // Set duration when metadata is loaded
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration);
+    }
+  };
+
+  // Handle audio ended
+  const handleEnded = () => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+    }
+  };
+
+  // Update isPlaying state when audio plays/pauses
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+    
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
+    
+    return () => {
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
+    };
+  }, []);
 
   return (
     <div className="w-full">
@@ -70,36 +88,37 @@ const AudioPlayerInline: React.FC<AudioPlayerInlineProps> = ({
       <audio
         ref={audioRef}
         src={audioUrl}
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={handleEnded}
         preload="metadata"
       />
 
-      {/* Bubble yang persis sama seperti screenshot - dengan warna hijau army */}
-      <div className="rounded-md overflow-hidden bg-[#486c42]">
-        {/* Header pesan audio */}
-        <div className="flex items-center justify-between px-3 py-2">
-          <div className="flex items-center">
-            <Volume2 className="h-5 w-5 text-white mr-2" />
-            <span className="text-white font-medium">Pesan Suara</span>
-          </div>
-          <div>
-            <button>
-              <MoreVertical className="h-5 w-5 text-white/70" />
-            </button>
-          </div>
+      {/* Header dengan ikon dan text */}
+      <div 
+        className="flex items-center justify-between bg-[#47573a] rounded-t-md px-3 py-2"
+        onClick={handlePlayPause}
+      >
+        <div className="flex items-center space-x-2">
+          {isPlaying ? (
+            <Pause className="h-4 w-4 text-white" />
+          ) : (
+            <Play className="h-4 w-4 text-white" />
+          )}
+          <span className="text-white text-sm">Pesan Suara</span>
         </div>
-        
-        {/* Klasifikasi dan timestamp */}
-        <div className="bg-[#405e3a] px-3 py-1 flex items-center">
-          <div className="flex items-center">
-            <span className="h-2 w-2 rounded-full bg-green-400 mr-1"></span>
-            <span className="text-xs text-green-300 uppercase">
-              UNCLASSIFIED
-            </span>
-            <span className="text-xs text-white/70 ml-1">
-              {timestamp ? getRelativeTime(timestamp) : "kurang dari 1 menit yang lalu"}
-            </span>
-          </div>
+        <MoreVertical className="h-4 w-4 text-white/70" />
+      </div>
+      
+      {/* UNCLASSIFIED status dan durasi */}
+      <div className="flex items-center justify-between bg-[#394733] rounded-b-md px-3 py-1">
+        <div className="flex items-center space-x-1">
+          <div className="h-2 w-2 bg-green-400 rounded-full"></div>
+          <span className="text-xs text-green-300 uppercase">UNCLASSIFIED</span>
         </div>
+        <span className="text-xs text-gray-300">
+          {formatAudioTime(duration)} yang lalu
+        </span>
       </div>
     </div>
   );
