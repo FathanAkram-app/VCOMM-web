@@ -383,6 +383,9 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     
     if ((!message.trim() && !attachment) || !user) return;
     
+    // Log actual reply information
+    console.log("Current reply state:", replyToMessage);
+    
     // If we have an attachment, include it in the message
     if (attachment) {
       const messageData = {
@@ -395,14 +398,18 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
         replyToId: replyToMessage ? replyToMessage.id : undefined
       };
       
+      console.log("Sending message with attachment and reply data:", messageData);
       sendMessageMutation.mutate(messageData);
       setAttachment(null);
     } else {
       // Send normal text message with reply info if applicable
       const messageData = {
         content: message.trim(),
-        replyToId: replyToMessage ? replyToMessage.id : undefined
+        replyToId: replyToMessage ? replyToMessage.id : undefined,
+        conversationId: chatId
       };
+      
+      console.log("Sending text message with reply data:", messageData);
       sendMessageMutation.mutate(messageData);
     }
     
@@ -691,31 +698,49 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
                     )}
                     
-                    {/* Implementasi yang sangat sederhana untuk fitur balas */}
-                    {(msg.replyToId || msg.replyInfo) && (
-                      <div className="border-l-4 border-[#8ba742] pl-2 mb-2 py-1 rounded bg-gray-800 text-gray-200 text-xs">
-                        <div className="flex items-center gap-1 text-[#8ba742] mb-1">
-                          <Reply className="w-3 h-3" />
-                          <span>Balasan</span>
-                        </div>
-                        <div>
+                    {/* Pendekatan untuk WhatsApp style dengan background yang tepat */}
+                    {msg.replyToId && (
+                      <div className="border-l-4 border-[#435c1a] pl-2 mb-2 py-1 bg-[rgba(0,0,0,0.2)] rounded">
+                        <div className="text-xs text-[#a6c455] mb-0.5 flex items-center">
+                          <Reply className="h-3 w-3 mr-1" />
+                          <div>
                           {(() => {
-                            // Cara 1: Coba gunakan replyInfo dari server
-                            if (msg.replyInfo) {
-                              return msg.replyInfo.content || "[Lampiran]";
-                            }
+                            // Coba temukan siapa pengirim pesan yang dibalas
+                            const originalMsg = Array.isArray(messages) 
+                              ? messages.find(m => m.id === msg.replyToId) 
+                              : null;
                             
-                            // Cara 2: Cari di array messages dengan replyToId
-                            if (Array.isArray(messages)) {
-                              const replyMsg = messages.find(m => m.id === msg.replyToId);
-                              if (replyMsg) {
-                                return replyMsg.hasAttachment 
-                                  ? `[File: ${replyMsg.attachmentName || 'Lampiran'}]` 
-                                  : (replyMsg.content || "Pesan kosong");
+                            return originalMsg 
+                              ? `${originalMsg.senderName}` 
+                              : "Balasan";
+                          })()}
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-300 break-words">
+                          {(() => {
+                            // Cari pesan yang dibalas
+                            const originalMsg = Array.isArray(messages) 
+                              ? messages.find(m => m.id === msg.replyToId) 
+                              : null;
+                            
+                            if (originalMsg) {
+                              if (originalMsg.hasAttachment) {
+                                return (
+                                  <div className="flex items-center">
+                                    <span className="text-[#8ba742] mr-1">📎</span>
+                                    <span>{originalMsg.attachmentName || 'File'}</span>
+                                  </div>
+                                );
+                              } else {
+                                // Potong pesan panjang
+                                const maxLength = 50;
+                                const content = originalMsg.content || "";
+                                return content.length > maxLength 
+                                  ? content.substring(0, maxLength) + "..." 
+                                  : content;
                               }
                             }
                             
-                            // Fallback jika tidak ketemu
                             return "Pesan sebelumnya";
                           })()}
                         </div>
