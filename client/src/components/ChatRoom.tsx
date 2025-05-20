@@ -907,8 +907,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       <>
                         {/* Pesan audio ditampilkan dengan tampilan militer hijau sesuai gambar */}
                         {msg.attachmentType === 'audio' ? (
-                          <AudioPlayer 
-                            messageId={msg.id} 
+                          <FakeAudioPlayer 
                             timestamp={msg.timestamp} 
                           />
                         ) : (
