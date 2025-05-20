@@ -42,6 +42,9 @@ export default function VoiceRecorder({ onSendAudio, onCancel }: VoiceRecorderPr
       setRecordingTime(0);
       actualDurationRef.current = 0;
       
+      // Simpan waktu mulai yang tepat untuk penghitungan durasi
+      const startTimeMs = Date.now();
+      
       // Request audio permission
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
@@ -78,12 +81,17 @@ export default function VoiceRecorder({ onSendAudio, onCancel }: VoiceRecorderPr
         stream.getTracks().forEach(track => track.stop());
         
         if (audioChunksRef.current.length > 0) {
-          // Save the final recording duration
-          const finalDuration = recordingTime;
+          // Hitung durasi berdasarkan waktu sejak mulai merekam hingga berhenti
+          const recordingDurationMs = Date.now() - startTimeMs;
+          const recordingDurationSec = Math.floor(recordingDurationMs / 1000);
           
-          // Gunakan durasi dari timer sebagai fallback yang pasti
-          const safeDuration = finalDuration > 0 ? finalDuration : 1;
+          // Pastikan durasi tidak kurang dari 1 detik
+          const safeDuration = Math.max(recordingDurationSec, 1);
+          console.log(`Calculated actual recording duration: ${safeDuration}s from ${recordingDurationMs}ms`);
+          
+          // Update durasi dari perhitungan waktu nyata, bukan dari timer UI
           actualDurationRef.current = safeDuration;
+          setRecordingTime(safeDuration);
           
           // Create blob and URL for audio
           const audioType = 'audio/webm'; // Format yang didukung secara luas
@@ -91,7 +99,7 @@ export default function VoiceRecorder({ onSendAudio, onCancel }: VoiceRecorderPr
           const url = URL.createObjectURL(blob);
           
           // Log durasi yang digunakan
-          console.log(`Created audio blob of size: ${blob.size} bytes, timer duration: ${safeDuration}s`);
+          console.log(`Created audio blob of size: ${blob.size} bytes, actual duration: ${safeDuration}s`);
           
           // Set data yang diperlukan untuk UI dan pengiriman
           setAudioBlob(blob);
@@ -105,17 +113,16 @@ export default function VoiceRecorder({ onSendAudio, onCancel }: VoiceRecorderPr
       });
       
       // Set up recorder with small timeslice for more frequent dataavailable events
-      recorder.start(1000); // Collect data every second
+      recorder.start(500); // Collect data every 500ms untuk lebih akurat
       setIsRecording(true);
       console.log("MediaRecorder started");
       
       // Start timer for UI display
       timerRef.current = setInterval(() => {
-        setRecordingTime(prev => {
-          const newTime = prev + 1;
-          return newTime;
-        });
-      }, 1000);
+        // Perbarui timer berdasarkan waktu nyata yang telah berlalu
+        const elapsedSec = Math.floor((Date.now() - startTimeMs) / 1000);
+        setRecordingTime(elapsedSec);
+      }, 200); // Update setiap 200ms untuk animasi yang lebih halus
       
       // Safety mechanism: automatically stop after 2 minutes
       setTimeout(() => {
