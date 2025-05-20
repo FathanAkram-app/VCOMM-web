@@ -70,6 +70,12 @@ export const messages = pgTable("messages", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   classification: varchar("classification"),
+  // Attachment fields
+  hasAttachment: boolean("has_attachment").default(false),
+  attachmentType: varchar("attachment_type"), // 'image', 'document', 'audio', 'video'
+  attachmentUrl: varchar("attachment_url"),
+  attachmentName: varchar("attachment_name"),
+  attachmentSize: integer("attachment_size"), // in bytes
 });
 
 // Schema types
@@ -101,6 +107,11 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
   senderId: true,
   conversationId: true,
   classification: true,
+  hasAttachment: true,
+  attachmentType: true,
+  attachmentUrl: true,
+  attachmentName: true,
+  attachmentSize: true,
 });
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 

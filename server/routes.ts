@@ -1,4 +1,4 @@
-import type { Express, Request } from "express";
+import express, { type Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
@@ -9,6 +9,8 @@ import {
   insertConversationSchema,
   insertConversationMemberSchema
 } from "@shared/schema";
+import { upload, getAttachmentType, handleUploadError } from "./uploads";
+import path from "path";
 
 interface AuthenticatedWebSocket extends WebSocket {
   userId?: number;
@@ -30,6 +32,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
 
   // Auth routes are defined in auth.ts
+  
+  // Serve static uploads
+  app.use('/uploads', isAuthenticated, express.static(path.join(process.cwd(), 'uploads')));
+  
+  // Upload file attachment
+  app.post('/api/attachments/upload', isAuthenticated, upload.single('file'), handleUploadError, async (req: AuthRequest & { file?: Express.Multer.File }, res: Response) => {
+    try {
+      // Pastikan file berhasil diupload
+      if (!req.file) {
+        return res.status(400).json({ message: 'Tidak ada file yang diupload' });
+      }
+      
+      const userId = req.session?.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: 'Tidak terautentikasi' });
+      }
+      
+      // Dapatkan informasi file
+      const file = req.file;
+      const fileUrl = `/uploads/${file.filename}`;
+      const attachmentType = getAttachmentType(file.mimetype);
+      
+      // Kirim response dengan detail file
+      res.status(201).json({
+        success: true,
+        file: {
+          url: fileUrl,
+          name: file.originalname,
+          type: attachmentType,
+          size: file.size,
+          mimetype: file.mimetype
+        }
+      });
+    } catch (error) {
+      console.error('Error saat upload file:', error);
+      res.status(500).json({ message: 'Gagal mengupload file' });
+    }
+  });
   
   // Get all users (for personnel list)
   app.get('/api/all-users', isAuthenticated, async (req: AuthRequest, res) => {
