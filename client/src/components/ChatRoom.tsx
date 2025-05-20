@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Send, Paperclip, MoreVertical, Shield } from 'lucide-react';
+import { ArrowLeft, Send, MoreVertical, Shield } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,8 @@ import { queryClient } from '@/lib/queryClient';
 import { formatDistanceToNow } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { type Conversation, type Message } from '@shared/schema';
+import AttachmentUploader from './AttachmentUploader';
+import MessageAttachment from './MessageAttachment';
 
 // Interface untuk data chat
 interface ChatData {
@@ -26,6 +28,12 @@ interface ChatMessage {
   timestamp: string;
   isRead: boolean;
   classification?: string;
+  // Attachment fields
+  hasAttachment?: boolean;
+  attachmentType?: string;
+  attachmentUrl?: string;
+  attachmentName?: string;
+  attachmentSize?: number;
 }
 
 interface ChatRoomProps {
@@ -151,13 +159,50 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     scrollToBottom();
   }, [messages]);
   
+  // State for attachment
+  const [attachment, setAttachment] = useState<{
+    url: string;
+    name: string;
+    type: string;
+    size: number;
+    mimetype: string;
+  } | null>(null);
+
+  // Handle file upload complete
+  const handleFileUploaded = (fileData: {
+    url: string;
+    name: string;
+    type: string;
+    size: number;
+    mimetype: string;
+  }) => {
+    setAttachment(fileData);
+  };
+
   // Handle sending messages
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!message.trim() || !user) return;
+    if ((!message.trim() && !attachment) || !user) return;
     
-    sendMessageMutation.mutate(message);
+    // If we have an attachment, include it in the message
+    if (attachment) {
+      const messageData = {
+        content: message.trim() || `[File: ${attachment.name}]`,
+        hasAttachment: true,
+        attachmentType: attachment.type,
+        attachmentUrl: attachment.url,
+        attachmentName: attachment.name,
+        attachmentSize: attachment.size
+      };
+      
+      sendMessageMutation.mutate(messageData);
+      setAttachment(null);
+    } else {
+      // Send normal text message
+      sendMessageMutation.mutate(message);
+    }
+    
     setMessage('');
   };
   
@@ -348,32 +393,51 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
       
       {/* Message input - positioned fixed for mobile */}
       <div className="border-t border-[#333333] p-3 bg-[#1a1a1a] fixed bottom-0 left-0 right-0 z-10">
-        <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
-          <Button 
-            type="button"
-            variant="ghost" 
-            size="icon"
-            className="text-[#a6c455]"
-          >
-            <Paperclip className="h-5 w-5" />
-          </Button>
+        <form onSubmit={handleSendMessage} className="flex flex-col">
+          {/* Show attachment preview if any */}
+          {attachment && (
+            <div className="flex items-center justify-between mb-2 bg-[#2a2a2a] p-2 rounded">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-white truncate max-w-[200px]">
+                  {attachment.name}
+                </span>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setAttachment(null)}
+                className="text-gray-400 hover:text-white h-6 w-6 p-0"
+              >
+                <span className="sr-only">Cancel</span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </Button>
+            </div>
+          )}
           
-          <Input
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Ketik pesan..."
-            className="flex-1 bg-[#252525] border-[#444444] text-white placeholder-gray-500 focus-visible:ring-[#4d5d30]"
-          />
-          
-          <Button 
-            type="submit"
-            disabled={!message.trim() || sendMessageMutation.isPending}
-            variant="ghost"
-            size="icon"
-            className="text-[#a6c455]"
-          >
-            <Send className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center space-x-2">
+            <AttachmentUploader onFileUploaded={handleFileUploaded} />
+            
+            <Input
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Ketik pesan..."
+              className="flex-1 bg-[#252525] border-[#444444] text-white placeholder-gray-500 focus-visible:ring-[#4d5d30]"
+            />
+            
+            <Button 
+              type="submit"
+              disabled={(!message.trim() && !attachment) || sendMessageMutation.isPending}
+              variant="ghost"
+              size="icon"
+              className="text-[#a6c455]"
+            >
+              <Send className="h-5 w-5" />
+            </Button>
+          </div>
         </form>
       </div>
     </div>

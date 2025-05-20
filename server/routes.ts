@@ -37,7 +37,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/uploads', isAuthenticated, express.static(path.join(process.cwd(), 'uploads')));
   
   // Upload file attachment
-  app.post('/api/attachments/upload', isAuthenticated, upload.single('file'), handleUploadError, async (req: AuthRequest & { file?: Express.Multer.File }, res: Response) => {
+  app.post('/api/attachments/upload', isAuthenticated, upload.single('file'), handleUploadError, async (req: any, res: Response) => {
     try {
       // Pastikan file berhasil diupload
       if (!req.file) {
