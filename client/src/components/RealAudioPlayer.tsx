@@ -33,51 +33,66 @@ export default function RealAudioPlayer({ messageId, timestamp, audioUrl }: Real
     if (audioUrl) {
       console.log(`Setting audio source for message ${messageId} to: ${audioUrl}`);
       
-      try {
-        // Periksa untuk nilai null atau undefined atau string kosong
-        if (!audioUrl || audioUrl === 'undefined' || audioUrl === 'null' || audioUrl === '') {
-          console.error(`Invalid audio URL for message ${messageId}: "${audioUrl}"`);
-          throw new Error('Invalid audio URL');
-        }
-        
-        // Pastikan URL adalah absolut dan benar
-        let absoluteUrl = audioUrl;
-        
-        // Jika URL tidak dimulai dengan http atau blob, tambahkan origin
-        if (!audioUrl.startsWith('http') && !audioUrl.startsWith('blob:')) {
-          // Buat URL absolut dengan origin server
-          absoluteUrl = window.location.origin + (audioUrl.startsWith('/') ? '' : '/') + audioUrl;
-        }
-        
-        console.log(`Normalized audio URL for message ${messageId}: ${absoluteUrl}`);
-        
-        // Audio akan mendeteksi MIME type secara otomatis berdasarkan ekstensi
-        // Pastikan ekstensi file benar (tambahkan .webm jika perlu)
-        if (!absoluteUrl.includes('.webm') && !absoluteUrl.includes('.mp3') && !absoluteUrl.includes('.ogg')) {
-          absoluteUrl = `${absoluteUrl}.webm`;
-          console.log(`Added .webm extension to URL: ${absoluteUrl}`);
-        }
-        
-        // Log URL yang akan digunakan untuk debugging
-        console.log(`Final audio URL for message ${messageId}: ${absoluteUrl}`);
-        
-        // Atur source audio dan muat langsung
-        audio.src = absoluteUrl;
-        audio.load(); // Explicitly load the audio
-        
-        // Verifikasi pemutaran dengan try play/pause langsung setelah load
-        audio.play().then(() => {
-          // Pemutaran berhasil dimulai, segera pause
-          audio.pause();
-          audio.currentTime = 0;
-          console.log(`Audio for message ${messageId} verified as playable`);
-        }).catch(err => {
-          console.warn(`Initial playback test failed for message ${messageId}:`, err);
-          // Error tetap ditangani oleh handler terpisah
-        });
-      } catch (error) {
-        console.error(`Error setting audio source for message ${messageId}:`, error);
+      // Periksa untuk nilai null atau undefined atau string kosong
+      if (!audioUrl || audioUrl === 'undefined' || audioUrl === 'null' || audioUrl === '') {
+        console.error(`Invalid audio URL for message ${messageId}: "${audioUrl}"`);
+        // Gunakan simulasi jika URL tidak valid
+        simulatePlayback();
+        return;
       }
+      
+      // Pastikan URL adalah absolut
+      let finalUrl = audioUrl;
+      
+      // Jika URL tidak dimulai dengan http atau blob, tambahkan origin
+      if (!audioUrl.startsWith('http') && !audioUrl.startsWith('blob:')) {
+        // Buat URL absolut dengan origin server
+        finalUrl = window.location.origin + (audioUrl.startsWith('/') ? '' : '/') + audioUrl;
+      }
+      
+      console.log(`Preparing audio for playback at: ${finalUrl} for message ${messageId}`);
+      
+      // Cek jika URL sudah memiliki ekstensi
+      if (!finalUrl.includes('.webm') && !finalUrl.includes('.mp3') && !finalUrl.includes('.ogg')) {
+        // Tambahkan ekstensi .webm untuk URL tanpa ekstensi
+        finalUrl = `${finalUrl}.webm`;
+        console.log(`Added .webm extension, new URL: ${finalUrl}`);
+      }
+      
+      // Set error handler sebelum mengatur source
+      audio.onerror = (event) => {
+        console.error(`Error loading audio for message ${messageId}:`, event);
+        
+        // Jika gagal dengan URL yang diberikan, coba cara lain
+        if (audio.src.includes('.webm')) {
+          // Coba ganti .webm dengan .mp3
+          const mp3Url = audio.src.replace('.webm', '.mp3');
+          console.log(`Trying MP3 format instead: ${mp3Url}`);
+          audio.src = mp3Url;
+          audio.load();
+        } else if (audio.src.includes('.mp3')) {
+          // Jika .mp3 juga gagal, coba dengan file langsung di /uploads tanpa path lain
+          const filename = audioUrl.split('/').pop();
+          const uploadUrl = `/uploads/${filename || `voice_note_${messageId}.webm`}`;
+          console.log(`Trying direct upload path: ${uploadUrl}`);
+          audio.src = uploadUrl;
+          audio.load();
+        } else {
+          // Semua upaya gagal, gunakan simulasi
+          console.log(`All audio play attempts failed for message ${messageId}, using simulation`);
+          simulatePlayback();
+        }
+      };
+      
+      // Set event handler untuk saat audio siap diputar
+      audio.oncanplaythrough = () => {
+        console.log(`Audio is ready to play for message ${messageId}, duration: ${audio.duration}s`);
+        setDuration(audio.duration || 0);
+      };
+      
+      // Atur sumber audio dan muat
+      audio.src = finalUrl;
+      audio.load();
     } else {
       console.error(`No audio URL provided for message ${messageId}`);
     }
