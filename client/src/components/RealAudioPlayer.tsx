@@ -29,7 +29,13 @@ export default function RealAudioPlayer({ messageId, timestamp, audioUrl }: Real
     // Set initial source if available
     if (audioUrl) {
       console.log(`Setting audio source to: ${audioUrl}`);
-      audio.src = audioUrl;
+      // Ensure the audio URL is absolute
+      const absoluteUrl = audioUrl.startsWith('http') ? 
+        audioUrl : 
+        (window.location.origin + (audioUrl.startsWith('/') ? '' : '/') + audioUrl);
+      
+      console.log(`Normalized audio URL: ${absoluteUrl}`);
+      audio.src = absoluteUrl;
       audio.load(); // Explicitly load the audio
     }
     
@@ -103,15 +109,17 @@ export default function RealAudioPlayer({ messageId, timestamp, audioUrl }: Real
     } else {
       try {
         // Make sure we have the latest URL
-        if (audioUrl && (!audioRef.current.src || !audioRef.current.src.includes(audioUrl))) {
-          console.log(`Updating audio source to: ${audioUrl}`);
-          audioRef.current.src = audioUrl;
+        if (audioUrl) {
+          // Ensure URL is absolute
+          const absoluteUrl = audioUrl.startsWith('http') ? 
+            audioUrl : 
+            (window.location.origin + (audioUrl.startsWith('/') ? '' : '/') + audioUrl);
+          
+          console.log(`Preparing audio for playback at: ${absoluteUrl}`);
+          
+          // Always reset the source to ensure fresh playback
+          audioRef.current.src = absoluteUrl;
           audioRef.current.load(); // Explicitly load the audio
-        }
-        
-        // If we have an audio file, try to play it
-        if (audioUrl && audioRef.current.src) {
-          console.log('Attempting to play actual audio');
           
           // Try to play the audio
           audioRef.current.play()
@@ -121,15 +129,16 @@ export default function RealAudioPlayer({ messageId, timestamp, audioUrl }: Real
             })
             .catch(error => {
               console.error('Failed to play audio, falling back to simulation:', error);
+              // If we failed to play, use simulation
               simulatePlayback();
             });
         } else {
           // No audio file available, fall back to simulation
-          console.log('No valid audio source, using simulation');
+          console.log('No valid audio source specified, using simulation');
           simulatePlayback();
         }
       } catch (error) {
-        console.error('Error during audio playback, using simulation:', error);
+        console.error('Error during audio playback setup, using simulation:', error);
         simulatePlayback();
       }
     }
