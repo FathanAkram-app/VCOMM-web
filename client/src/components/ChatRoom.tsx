@@ -698,52 +698,40 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
                     )}
                     
-                    {/* Pendekatan untuk WhatsApp style dengan background yang tepat */}
+                    {/* Format yang lebih sederhana: pesan yang dibalas di atas dengan label (balas) */}
                     {msg.replyToId && (
-                      <div className="border-l-4 border-[#435c1a] pl-2 mb-2 py-1 bg-[rgba(0,0,0,0.2)] rounded">
-                        <div className="text-xs text-[#a6c455] mb-0.5 flex items-center">
-                          <Reply className="h-3 w-3 mr-1" />
-                          <div>
-                          {(() => {
-                            // Coba temukan siapa pengirim pesan yang dibalas
-                            const originalMsg = Array.isArray(messages) 
-                              ? messages.find(m => m.id === msg.replyToId) 
-                              : null;
-                            
-                            return originalMsg 
-                              ? `${originalMsg.senderName}` 
-                              : "Balasan";
-                          })()}
-                          </div>
-                        </div>
-                        <div className="text-xs text-gray-300 break-words">
-                          {(() => {
-                            // Cari pesan yang dibalas
-                            const originalMsg = Array.isArray(messages) 
-                              ? messages.find(m => m.id === msg.replyToId) 
-                              : null;
-                            
-                            if (originalMsg) {
-                              if (originalMsg.hasAttachment) {
-                                return (
+                      <div className="rounded-md border border-[#3a4221] mb-2 overflow-hidden">
+                        {/* Pesan asli yang dibalas */}
+                        {(() => {
+                          const originalMsg = Array.isArray(messages) 
+                            ? messages.find(m => m.id === msg.replyToId) 
+                            : null;
+                          
+                          if (originalMsg) {
+                            return (
+                              <div className="bg-[#292c20] p-2 text-xs border-b border-[#3a4221]">
+                                <div className="flex justify-between mb-1">
+                                  <span className="text-[#a6c455] font-medium">{originalMsg.senderName}</span>
+                                  <span className="text-gray-400">(balas)</span>
+                                </div>
+                                {originalMsg.hasAttachment ? (
                                   <div className="flex items-center">
                                     <span className="text-[#8ba742] mr-1">📎</span>
-                                    <span>{originalMsg.attachmentName || 'File'}</span>
+                                    <span className="text-gray-300">{originalMsg.attachmentName || 'File'}</span>
                                   </div>
-                                );
-                              } else {
-                                // Potong pesan panjang
-                                const maxLength = 50;
-                                const content = originalMsg.content || "";
-                                return content.length > maxLength 
-                                  ? content.substring(0, maxLength) + "..." 
-                                  : content;
-                              }
-                            }
-                            
-                            return "Pesan sebelumnya";
-                          })()}
-                        </div>
+                                ) : (
+                                  <p className="text-gray-300 line-clamp-2">{originalMsg.content || 'Pesan kosong'}</p>
+                                )}
+                              </div>
+                            );
+                          }
+                          
+                          return (
+                            <div className="bg-[#292c20] p-2 text-xs">
+                              <p className="text-gray-400">Pesan sebelumnya</p>
+                            </div>
+                          );
+                        })()}
                       </div>
                     )}
                     
