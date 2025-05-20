@@ -71,14 +71,26 @@ export default function MessageAttachment({
       case 'audio':
         return (
           <div className="mb-1">
-            <audio 
-              controls 
-              className="max-w-full" 
-              preload="metadata"
-            >
-              <source src={attachmentUrl} />
-              Browser Anda tidak mendukung tag audio.
-            </audio>
+            <div className="bg-[#222222] rounded-lg p-2">
+              <audio 
+                controls 
+                className="w-full" 
+                preload="metadata"
+                src={attachmentUrl}
+                onError={(e) => {
+                  console.error("Error loading audio:", e);
+                }}
+              >
+                <source src={attachmentUrl} type="audio/mpeg" />
+                <source src={attachmentUrl} type="audio/webm" />
+                <source src={attachmentUrl} type="audio/mp4" />
+                <source src={attachmentUrl} type="audio/ogg" />
+                Browser Anda tidak mendukung tag audio.
+              </audio>
+              <div className="text-xs text-center mt-1 text-gray-400">
+                Jika audio tidak dapat diputar, silakan gunakan tombol unduh
+              </div>
+            </div>
           </div>
         );
       default:
