@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { File, FileText, Image, Music, Video, Download, Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import AudioPlayer from '@/components/AudioPlayer';
 
 interface MessageAttachmentProps {
   attachmentType: string;
@@ -78,58 +79,16 @@ export default function MessageAttachment({
         
         return (
           <div className="mb-1">
-            <div className="bg-[#222222] rounded-lg p-3">
-              {/* Header */}
-              <div className="flex items-center justify-center mb-2">
+            <div className="bg-[#222222] rounded-lg p-2">
+              {/* Gunakan AudioPlayer Custom */}
+              <div className="flex items-center mb-2 px-2">
                 <Volume2 className="h-5 w-5 text-green-500 mr-2" />
                 <span className="text-sm font-medium text-gray-300">Pesan Suara</span>
               </div>
               
-              {/* Audio Player Standar */}
-              <audio 
-                controls 
-                className="w-full" 
-                controlsList="nodownload"
-                style={{ 
-                  backgroundColor: '#333', 
-                  borderRadius: '8px',
-                  color: 'white',
-                  padding: '4px'
-                }}
-              >
-                <source src={audioUrl} type="audio/webm" />
-                <source src={audioUrl} type="audio/mpeg" />
-                <source src={audioUrl} type="audio/mp4" />
-                <source src={audioUrl} type="audio/ogg" />
-                Browser Anda tidak mendukung pemutar audio.
-              </audio>
-              
-              {/* Tombol alternatif */}
-              <div className="flex justify-between mt-3">
-                <Button
-                  size="sm" 
-                  variant="outline"
-                  className="bg-[#303030] text-white hover:bg-[#404040] border-[#444] w-[48%]"
-                  onClick={() => {
-                    // Buka di tab baru
-                    window.open(audioUrl, '_blank');
-                  }}
-                >
-                  <Music className="h-4 w-4 mr-1" />
-                  <span className="text-xs">Putar di Tab Baru</span>
-                </Button>
-                
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="bg-[#303030] text-gray-300 hover:text-white hover:bg-[#404040] border-[#444] w-[48%]"
-                  asChild
-                >
-                  <a href={audioUrl} download={attachmentName} rel="noopener noreferrer">
-                    <Download className="h-4 w-4 mr-1" />
-                    <span className="text-xs">Unduh Audio</span>
-                  </a>
-                </Button>
+              {/* Import AudioPlayer component untuk audio yang lebih bagus */}
+              <div className="mb-2">
+                <AudioPlayer src={audioUrl} filename={attachmentName} />
               </div>
             </div>
           </div>
