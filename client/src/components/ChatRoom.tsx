@@ -897,21 +897,35 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                     )}
                     
                     {/* Tampilkan isi pesan jika bukan pesan suara */}
-                    {!(msg.hasAttachment && msg.attachmentUrl && msg.attachmentType === 'audio') && (
+                    {!(msg.hasAttachment && msg.attachmentType === 'audio') && (
                       <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
                     )}
                     
                     {/* Render attachment jika ada */}
-                    {msg.hasAttachment && msg.attachmentUrl && (
+                    {msg.hasAttachment && (
                       <>
-                        {/* Pesan audio ditampilkan dengan AudioPlayerInline */}
+                        {/* Pesan audio ditampilkan dengan tampilan militer hijau */}
                         {msg.attachmentType === 'audio' ? (
-                          <div className="pt-1">
-                            <AudioPlayerInline 
-                              src={msg.attachmentUrl} 
-                              filename={msg.attachmentName || ""} 
-                              timestamp={msg.timestamp}
-                            />
+                          <div className="pt-1 w-full max-w-[90%]">
+                            {/* Header Pesan Suara - dengan warna hijau militer */}
+                            <div className="flex items-center justify-between bg-[#47573a] rounded-t-md px-3 py-2">
+                              <div className="flex items-center space-x-2">
+                                <Volume2 className="h-4 w-4 text-white" />
+                                <span className="text-white text-sm">Pesan Suara</span>
+                              </div>
+                              <MoreVertical className="h-4 w-4 text-white/70" />
+                            </div>
+                            
+                            {/* UNCLASSIFIED status dan durasi */}
+                            <div className="flex items-center justify-between bg-[#394733] rounded-b-md px-3 py-1">
+                              <div className="flex items-center space-x-1">
+                                <div className="h-2 w-2 bg-green-400 rounded-full"></div>
+                                <span className="text-xs text-green-300 uppercase">UNCLASSIFIED</span>
+                              </div>
+                              <span className="text-xs text-gray-300">
+                                {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
+                              </span>
+                            </div>
                           </div>
                         ) : (
                           <MessageAttachment 

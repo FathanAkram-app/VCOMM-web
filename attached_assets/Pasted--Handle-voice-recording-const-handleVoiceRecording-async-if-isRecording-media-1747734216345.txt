@@ -1,0 +1,74 @@
+ // Handle voice recording
+  const handleVoiceRecording = async () => {
+    if (isRecording && mediaRecorder) {
+      // Stop recording
+      mediaRecorder.stop();
+      setIsRecording(false);
+      
+      // We don't reset timer immediately to show the final duration
+      setTimeout(() => {
+        setRecordingTime(0);
+      }, 1000);
+      
+    } else {
+      // Start recording
+      try {
+        audioChunks.current = [];
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const recorder = new MediaRecorder(stream);
+        
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            audioChunks.current.push(e.data);
+          }
+        };
+        
+        recorder.onstop = () => {
+          // Create audio blob and URL
+          const audioBlob = new Blob(audioChunks.current, { type: 'audio/webm' });
+          const url = URL.createObjectURL(audioBlob);
+          setAudioURL(url);
+          
+          // Create a File object from the Blob for easier handling
+          const audioFile = new File(
+            [audioBlob], 
+            `voice_recording_${new Date().getTime()}.webm`, 
+            { type: 'audio/webm' }
+          );
+          
+          // Process the audio recording as an attachment
+          const audioAttachment = {
+            id: Math.random().toString(36).substring(2, 9),
+            name: `Voice Note - ${formatTime(recordingTime)}`,
+            type: 'audio/webm',
+            size: audioBlob.size,
+            url: url,
+            icon: '🎤'
+          };
+          
+          // Send the audio message
+          const newMessage = {
+            id: messages.length + 1,
+            content: "🎤 Voice recording - " + formatTime(recordingTime),
+            sender: { id: user?.id || 1, username: user?.username || "ALPHA1" },
+            timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+            isRead: true,
+            audioUrl: url,
+            attachments: [audioAttachment]
+          };
+          
+          setMessages([...messages, newMessage]);
+          
+          // Stop all tracks
+          stream.getTracks().forEach(track => track.stop());
+        };
+        
+        setMediaRecorder(recorder);
+        recorder.start();
+        setIsRecording(true);
+      } catch (err) {
+        console.error("Error accessing microphone:", err);
+        alert("Could not access microphone. Please check permissions.");
+      }
+    }
+  };
