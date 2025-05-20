@@ -909,18 +909,26 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
                     )}
                     
-                    {/* Reply indicator - tampilan sesuai dengan screenshot yang dikirim */}
+                    {/* Reply indicator - tampilan persis dengan screenshot yang dikirim */}
                     {msg.replyToId && (
-                      <div className="mb-1">
+                      <div className="mb-[0.25rem]">
                         <div className="flex items-start">
                           <div className="flex-none text-[#a6c455] text-xs mr-1">↳</div>
                           <div className="flex flex-col">
-                            <span className="text-[#a6c455] text-xs uppercase tracking-wide font-medium">
-                              {msg.replyInfo?.senderName || 
-                               (messages && Array.isArray(messages) && 
-                                messages.find((m: any) => m.id === msg.replyToId)?.senderName) || 
-                               'Membalas pesan'}
-                            </span>
+                            <div className="flex items-center gap-1">
+                              <span className="text-[#a6c455] text-[10px] uppercase tracking-wide font-medium">
+                                {msg.replyInfo?.senderName || 
+                                 (messages && Array.isArray(messages) && 
+                                  messages.find((m: any) => m.id === msg.replyToId)?.senderName) || 
+                                 'Membalas pesan'}
+                              </span>
+                              <span className="text-[#a6c455] text-[10px] uppercase tracking-wide font-normal">
+                                {msg.replyInfo?.classification || 
+                                 (messages && Array.isArray(messages) && 
+                                  messages.find((m: any) => m.id === msg.replyToId)?.classification) || 
+                                 ''}
+                              </span>
+                            </div>
                             
                             <span className="text-gray-400 text-[10px] leading-tight">
                               {(() => {
