@@ -937,44 +937,78 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                           })()}
                         </div>
                         
-                        {/* Preview pesan yang dibalas dengan kotak dan garis hijau di sisi kiri */}
-                        <div className="bg-[#2a2a2a] rounded-md p-1.5 border-l-4 border-[#8ba742] mb-1.5">
+                        {/* Preview pesan yang dibalas dengan style sesuai referensi */}
+                        <div className="bg-[#2a2a2a] rounded-md p-2 border-l-4 border-[#8ba742] mb-1.5 max-w-[95%]">
                           {(() => {
                             try {
+                              // Variabel untuk menyimpan data pesan yang dirujuk
+                              let repliedMsgContent = null;
+                              let repliedMsgHasAttachment = false;
+                              let repliedMsgAttachmentName = '';
+                              let repliedMsgAttachmentType = '';
+                              let repliedMsgSenderName = '';
+                              
                               // Cari di messages dulu
                               if (Array.isArray(messages)) {
                                 for (let i = 0; i < messages.length; i++) {
                                   if (messages[i].id === msg.replyToId) {
                                     // Pesan ditemukan di array pesan
-                                    return messages[i].hasAttachment ? (
-                                      <div className="text-xs text-gray-400 line-clamp-1">
-                                        <span className="text-[#8ba742] mr-1">📎</span>
-                                        <span>{messages[i].attachmentName || 'File'}</span>
-                                      </div>
-                                    ) : (
-                                      <p className="text-xs text-gray-400 line-clamp-1">{messages[i].content || '<Pesan kosong>'}</p>
-                                    );
+                                    repliedMsgContent = messages[i].content;
+                                    repliedMsgHasAttachment = messages[i].hasAttachment;
+                                    repliedMsgAttachmentName = messages[i].attachmentName;
+                                    repliedMsgAttachmentType = messages[i].attachmentType;
+                                    repliedMsgSenderName = messages[i].senderName;
+                                    break;
                                   }
                                 }
                               }
                               
                               // Jika tidak ditemukan di messages tapi ada replyInfo
-                              if (msg.replyInfo) {
-                                return msg.replyInfo.hasAttachment ? (
-                                  <div className="text-xs text-gray-400 line-clamp-1">
-                                    <span className="text-[#8ba742] mr-1">📎</span>
-                                    <span>{msg.replyInfo.attachmentName || 'File'}</span>
+                              if (!repliedMsgContent && msg.replyInfo) {
+                                repliedMsgContent = msg.replyInfo.content;
+                                repliedMsgHasAttachment = msg.replyInfo.hasAttachment;
+                                repliedMsgAttachmentName = msg.replyInfo.attachmentName;
+                                repliedMsgSenderName = msg.replyInfo.senderName;
+                                // Cek apakah pesan berisi audio
+                                if (repliedMsgContent && repliedMsgContent.includes('🔊 Pesan Suara')) {
+                                  repliedMsgAttachmentType = 'audio';
+                                }
+                              }
+                              
+                              // Tampilkan pesan sesuai jenisnya
+                              if (repliedMsgHasAttachment || (repliedMsgContent && repliedMsgContent.includes('🔊 Pesan Suara'))) {
+                                const isAudio = repliedMsgAttachmentType === 'audio' || 
+                                               (repliedMsgContent && repliedMsgContent.includes('🔊 Pesan Suara'));
+                                
+                                return (
+                                  <div className="flex flex-col">
+                                    <p className="text-xs font-medium text-[#a6c455] mb-0.5">{repliedMsgSenderName || 'Unknown'}</p>
+                                    <div className="text-xs text-gray-300 flex items-center">
+                                      <span className="text-[#a6c455] mr-1">
+                                        {isAudio ? '🔊' : '📎'}
+                                      </span>
+                                      <span className="truncate">
+                                        {isAudio 
+                                          ? 'Pesan Suara' 
+                                          : (repliedMsgAttachmentName || 'File')}
+                                      </span>
+                                    </div>
                                   </div>
-                                ) : (
-                                  <p className="text-xs text-gray-400 line-clamp-1">{msg.replyInfo.content || '<Pesan kosong>'}</p>
+                                );
+                              } else if (repliedMsgContent) {
+                                return (
+                                  <div className="flex flex-col">
+                                    <p className="text-xs font-medium text-[#a6c455] mb-0.5">{repliedMsgSenderName || 'Unknown'}</p>
+                                    <p className="text-xs text-gray-300 line-clamp-2">{repliedMsgContent}</p>
+                                  </div>
                                 );
                               }
                               
                               // Fallback jika tidak ada di keduanya
-                              return <p className="text-xs text-gray-400 line-clamp-1">Pesan yang dibalas tidak tersedia</p>;
+                              return <p className="text-xs text-gray-400">Pesan yang dibalas tidak tersedia</p>;
                             } catch (err) {
                               console.error("Error rendering reply preview:", err);
-                              return <p className="text-xs text-gray-400 line-clamp-1">Error menampilkan pesan</p>;
+                              return <p className="text-xs text-gray-400">Error menampilkan pesan</p>;
                             }
                           })()}
                         </div>
