@@ -685,35 +685,38 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
                     )}
                     
-                    {/* Jika ini adalah balasan, tampilkan pesan yang dibalas dengan UI sederhana */}
+                    {/* Jika ini adalah balasan, tampilkan pesan yang dibalas secara sederhana */}
                     {msg.replyToId && (
                       <div className="bg-[#2a2a2a] p-2 rounded mb-2 text-xs border-l-2 border-[#4d5d30]">
                         <p className="text-[#a6c455] font-medium mb-1">
-                          Membalas Pesan
+                          <Reply className="h-3 w-3 mr-1 inline" />
+                          Balasan
                         </p>
                         <p className="text-gray-400 break-words">
                           {(() => {
-                            // Cari pesan yang dibalas dari array messages
-                            const replyToMessage = Array.isArray(messages) 
-                              ? messages.find(m => m.id === msg.replyToId) 
-                              : null;
-                              
-                            if (replyToMessage) {
-                              // Jika ada attachment
-                              if (replyToMessage.hasAttachment) {
-                                return `[File: ${replyToMessage.attachmentName || 'Attachment'}]`;
+                            // Cari pesan secara manual
+                            for (let i = 0; i < messages.length; i++) {
+                              if (messages[i].id === msg.replyToId) {
+                                // Format pesan yang dibalas
+                                const originalMsg = messages[i];
+                                const sender = originalMsg.senderName || 'User';
+                                let content = originalMsg.content || '';
+                                
+                                // Jika pesan terlalu panjang
+                                if (content.length > 30) {
+                                  content = content.substring(0, 30) + '...';
+                                }
+                                
+                                // Jika pesan adalah attachment
+                                if (originalMsg.hasAttachment) {
+                                  content = `[File: ${originalMsg.attachmentName || 'Attachment'}]`;
+                                }
+                                
+                                return `"${content}" - ${sender}`;
                               }
-                              
-                              // Jika isi pesan terlalu panjang
-                              if (replyToMessage.content && replyToMessage.content.length > 50) {
-                                return replyToMessage.content.substring(0, 50) + '...';
-                              }
-                              
-                              // Tampilkan isi pesan yang dibalas
-                              return replyToMessage.content || 'Pesan kosong';
                             }
                             
-                            return 'Pesan sebelumnya';
+                            return "Pesan sebelumnya";
                           })()}
                         </p>
                       </div>
