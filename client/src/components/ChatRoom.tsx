@@ -691,24 +691,36 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
                     )}
                     
-                    {/* Simple method to display quote: just show quoted text without complex logic */}
+                    {/* Use replyInfo if available, otherwise do direct lookup */}
                     {msg.replyToId && (
-                      <div className="border-l-4 border-[#8ba742] pl-2 mb-2 py-1 bg-[rgba(139,167,66,0.1)] rounded text-[11px]">
-                        <div className="flex items-center text-[#8ba742] font-medium mb-0.5">
+                      <div className="border-l-4 border-[#8ba742] pl-2 mb-2 py-1 bg-[rgba(30,40,14,0.3)] rounded text-[11px]">
+                        <div className="flex items-center text-[#a6c455] font-medium mb-0.5">
                           <Reply className="h-3 w-3 mr-1" />
-                          <span>Membalas</span>
+                          {msg.replyInfo?.senderName ? (
+                            <span>{msg.replyInfo.senderName} dibalas</span>
+                          ) : (
+                            <span>Membalas</span>
+                          )}
                         </div>
-                        <div className="text-gray-400 truncate">
-                          {Array.isArray(messages) && messages.some(m => m.id === msg.replyToId) 
-                            ? (() => {
-                                const original = messages.find(m => m.id === msg.replyToId)!;
-                                if (original.hasAttachment) {
-                                  return `[File: ${original.attachmentName || 'Attachment'}]`;
-                                } else {
-                                  return original.content || 'Pesan kosong';
-                                }
-                              })()
-                            : 'Pesan sebelumnya'}
+                        <div className="text-gray-300 truncate">
+                          {/* Try to use replyInfo first, then fall back to direct lookup */}
+                          {msg.replyInfo?.content ? (
+                            msg.replyInfo.hasAttachment ? 
+                              `[File: ${msg.replyInfo.attachmentName || 'Lampiran'}]` :
+                              msg.replyInfo.content
+                          ) : (
+                            // Fallback to direct lookup
+                            Array.isArray(messages) && messages.some(m => m.id === msg.replyToId) 
+                              ? (() => {
+                                  const original = messages.find(m => m.id === msg.replyToId)!;
+                                  if (original.hasAttachment) {
+                                    return `[File: ${original.attachmentName || 'Lampiran'}]`;
+                                  } else {
+                                    return original.content || 'Pesan kosong';
+                                  }
+                                })()
+                              : 'Pesan sebelumnya'
+                          )}
                         </div>
                       </div>
                     )}
