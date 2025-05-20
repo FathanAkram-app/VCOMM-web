@@ -69,71 +69,24 @@ export default function MessageAttachment({
           </div>
         );
       case 'audio':
-        // Perbaiki URL audio jika perlu
+        // Gunakan komponen AudioPlayer yang baru
         const audioUrl = attachmentUrl.startsWith('http') 
           ? attachmentUrl 
           : window.location.origin + attachmentUrl;
           
-        // Debug informasi untuk audio
-        console.log('Audio URL:', audioUrl);
-        console.log('Attachment name:', attachmentName);
+        // Import dinamis komponen AudioPlayer
+        const AudioPlayer = React.lazy(() => import('./AudioPlayer'));
           
         return (
           <div className="mb-1">
-            <div className="bg-[#222222] rounded-lg p-2">
-              <div className="flex items-center justify-center">
-                <Music className="h-5 w-5 text-purple-500 mr-2" />
-                <span className="text-sm text-green-400 font-medium">Pesan Suara</span>
+            <React.Suspense fallback={
+              <div className="bg-[#222222] rounded-lg p-3 text-center">
+                <Music className="h-5 w-5 text-purple-500 mx-auto mb-2" />
+                <span className="text-sm text-green-400">Memuat pemutar audio...</span>
               </div>
-              
-              {/* Player audio dengan src langsung */}
-              <audio 
-                src={audioUrl}
-                controls 
-                className="w-full mt-2" 
-                preload="auto"
-                controlsList="nodownload"
-                style={{ 
-                  backgroundColor: '#333',
-                  borderRadius: '8px',
-                  padding: '4px',
-                }}
-                onError={(e) => {
-                  console.error('Error saat memuat audio:', e);
-                }}
-                onLoadStart={() => console.log('Audio loading started')}
-                onCanPlay={() => console.log('Audio can be played')}
-              />
-              
-              {/* Tombol alternatif untuk unduh dan putar */}
-              <div className="flex justify-center space-x-2 mt-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="bg-[#2C2C2C] text-gray-300 hover:text-white hover:bg-[#3A3A3A] border-[#444]"
-                  asChild
-                >
-                  <a href={audioUrl} download={attachmentName} target="_blank" rel="noopener noreferrer">
-                    <Download className="h-3 w-3 mr-1" />
-                    <span className="text-xs">Unduh Audio</span>
-                  </a>
-                </Button>
-                
-                {/* Tombol putar alternatif */}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="bg-green-900 text-gray-200 hover:bg-green-800 border-green-700"
-                  onClick={() => {
-                    // Buka audio di tab baru sebagai fallback
-                    window.open(audioUrl, '_blank');
-                  }}
-                >
-                  <Music className="h-3 w-3 mr-1" />
-                  <span className="text-xs">Putar di Tab Baru</span>
-                </Button>
-              </div>
-            </div>
+            }>
+              <AudioPlayer src={audioUrl} filename={attachmentName} />
+            </React.Suspense>
           </div>
         );
       default:
