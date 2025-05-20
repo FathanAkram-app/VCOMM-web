@@ -12,6 +12,7 @@ import { type Conversation, type Message } from '@shared/schema';
 import AttachmentUploader from './AttachmentUploader';
 import MessageAttachment from './MessageAttachment';
 import VoiceRecorder from './VoiceRecorder';
+import AudioPlayer from './AudioPlayer';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -894,16 +895,28 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       </div>
                     )}
                     
-                    <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
+                    {/* Tampilkan isi pesan jika bukan pesan suara */}
+                    {!(msg.hasAttachment && msg.attachmentUrl && msg.attachmentType === 'audio') && (
+                      <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
+                    )}
                     
-                    {/* Render attachment if present */}
+                    {/* Render attachment jika ada */}
                     {msg.hasAttachment && msg.attachmentUrl && (
-                      <MessageAttachment 
-                        attachmentType={msg.attachmentType || 'document'} 
-                        attachmentUrl={msg.attachmentUrl} 
-                        attachmentName={msg.attachmentName || 'file'} 
-                        attachmentSize={msg.attachmentSize}
-                      />
+                      <>
+                        {/* Pesan audio langsung ditampilkan di dalam pesan, bukan dengan MessageAttachment */}
+                        {msg.attachmentType === 'audio' ? (
+                          <div className="mb-1 mt-1">
+                            <AudioPlayer src={msg.attachmentUrl} filename={msg.attachmentName || 'audio.mp3'} />
+                          </div>
+                        ) : (
+                          <MessageAttachment 
+                            attachmentType={msg.attachmentType || 'document'} 
+                            attachmentUrl={msg.attachmentUrl} 
+                            attachmentName={msg.attachmentName || 'file'} 
+                            attachmentSize={msg.attachmentSize}
+                          />
+                        )}
+                      </>
                     )}
                     
                     {/* Message action dropdown menu */}
