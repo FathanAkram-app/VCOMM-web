@@ -698,23 +698,23 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
                     )}
                     
-                    {/* Format sederhana: teks pesan asli dimodifikasi untuk menampilkan balasan */}
+                    {/* Format balasan pesan dengan tampilan yang lebih jelas dan border hijau */}
                     {msg.replyToId && (
-                      <div className="bg-[#2a2a2a] p-2 mb-2 rounded-md text-xs border-l-2 border-[#8ba742]">
+                      <div className="bg-[#2a2a2a] p-2 mb-2 rounded border-l-4 border-[#8ba742]">
                         <div className="flex items-center gap-2 mb-1">
                           <Reply className="h-3 w-3 text-[#8ba742]" />
-                          <span className="text-[#8ba742] font-medium">Balasan</span>
+                          <span className="text-[#8ba742] font-medium text-xs">Balasan</span>
                         </div>
                         {(() => {
                           try {
                             // Mencari pesan yang dibalas dari array pesan
-                            if (!Array.isArray(messages)) return <span className="text-gray-500">Pesan sebelumnya</span>;
+                            if (!Array.isArray(messages)) return <span className="text-gray-500 text-xs">Pesan sebelumnya</span>;
                             
                             for (let i = 0; i < messages.length; i++) {
                               if (messages[i].id === msg.replyToId) {
                                 // Pesan ditemukan
                                 return (
-                                  <div className="text-gray-300">
+                                  <div className="text-gray-300 text-xs">
                                     <span className="font-medium text-[#a6c455] mr-1">{messages[i].senderName}:</span>
                                     {messages[i].hasAttachment 
                                       ? <span>[File: {messages[i].attachmentName || 'Lampiran'}]</span>
@@ -724,10 +724,10 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                                 );
                               }
                             }
-                            return <span className="text-gray-500">Pesan tidak ditemukan</span>;
+                            return <span className="text-gray-500 text-xs">Pesan tidak ditemukan</span>;
                           } catch (err) {
                             console.error("Error rendering reply:", err);
-                            return <span className="text-gray-500">Error menampilkan balasan</span>;
+                            return <span className="text-gray-500 text-xs">Error menampilkan balasan</span>;
                           }
                         })()}
                       </div>
