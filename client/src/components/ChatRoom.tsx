@@ -61,6 +61,11 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   const [message, setMessage] = useState('');
   const [chatData, setChatData] = useState<ChatData | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [selectedMessage, setSelectedMessage] = useState<ChatMessage | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isForwardDialogOpen, setIsForwardDialogOpen] = useState(false);
+  const [replyToMessage, setReplyToMessage] = useState<ChatMessage | null>(null);
+  const [conversations, setConversations] = useState<{id: number, name: string}[]>([]);
   
   // Fetch chat data
   const { data: chat } = useQuery({
@@ -102,7 +107,8 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
         payload = {
           conversationId: chatId,
           content,
-          classification: 'UNCLASSIFIED'
+          classification: 'UNCLASSIFIED',
+          replyToId: replyToMessage ? replyToMessage.id : undefined
         };
       } else {
         // Message with attachment
@@ -114,7 +120,8 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
           attachmentType: content.attachmentType,
           attachmentUrl: content.attachmentUrl,
           attachmentName: content.attachmentName,
-          attachmentSize: content.attachmentSize
+          attachmentSize: content.attachmentSize,
+          replyToId: replyToMessage ? replyToMessage.id : undefined
         };
       }
       
