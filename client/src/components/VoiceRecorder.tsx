@@ -85,9 +85,34 @@ export default function VoiceRecorder({ onSendAudio, onCancel }: VoiceRecorderPr
           // Create blob and URL from collected chunks
           const audioType = 'audio/webm'; // This format is widely supported
           const blob = new Blob(audioChunksRef.current, { type: audioType });
-          const url = URL.createObjectURL(blob);
           
-          console.log(`Created audio blob of size: ${blob.size} bytes, duration: ${finalDuration}s`);
+          // Create a temporary audio element to get actual duration
+          const tempAudio = new Audio();
+          const tempUrl = URL.createObjectURL(blob);
+          tempAudio.src = tempUrl;
+          
+          // Ensure we have a valid duration
+          actualDurationRef.current = finalDuration > 0 ? finalDuration : 1;
+          
+          // Listen for metadata to retrieve actual duration
+          tempAudio.addEventListener('loadedmetadata', () => {
+            const actualDuration = Math.ceil(tempAudio.duration);
+            if (actualDuration > 0) {
+              console.log(`Audio duration from metadata: ${actualDuration}s`);
+              actualDurationRef.current = actualDuration;
+              
+              // Update the UI to show the correct duration
+              setRecordingTime(actualDuration);
+            } else {
+              console.log(`Using timer-based duration: ${finalDuration}s`);
+            }
+            
+            // Clean up the temporary URL
+            URL.revokeObjectURL(tempUrl);
+          });
+          
+          const url = URL.createObjectURL(blob);
+          console.log(`Created audio blob of size: ${blob.size} bytes, timer duration: ${finalDuration}s`);
           
           setAudioBlob(blob);
           setAudioUrl(url);
@@ -153,6 +178,11 @@ export default function VoiceRecorder({ onSendAudio, onCancel }: VoiceRecorderPr
   
   const handleSendAudio = () => {
     if (audioUrl && audioBlob) {
+      // Ensure we have the final duration before sending
+      if (actualDurationRef.current === 0 && recordingTime > 0) {
+        actualDurationRef.current = recordingTime;
+      }
+      
       console.log(`Sending audio, duration: ${actualDurationRef.current}s, size: ${audioBlob.size} bytes`);
       onSendAudio(audioBlob, audioUrl, actualDurationRef.current);
     } else {

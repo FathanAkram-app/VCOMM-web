@@ -26,17 +26,27 @@ export default function RealAudioPlayer({ messageId, timestamp, audioUrl }: Real
     const audio = new Audio();
     audioRef.current = audio;
     
+    // Ensure preload is eager
+    audio.preload = "auto";
+    
     // Set initial source if available
     if (audioUrl) {
       console.log(`Setting audio source to: ${audioUrl}`);
-      // Ensure the audio URL is absolute
-      const absoluteUrl = audioUrl.startsWith('http') ? 
-        audioUrl : 
-        (window.location.origin + (audioUrl.startsWith('/') ? '' : '/') + audioUrl);
       
-      console.log(`Normalized audio URL: ${absoluteUrl}`);
-      audio.src = absoluteUrl;
-      audio.load(); // Explicitly load the audio
+      try {
+        // Ensure the audio URL is absolute
+        let absoluteUrl = audioUrl;
+        
+        if (!audioUrl.startsWith('http') && !audioUrl.startsWith('blob:')) {
+          absoluteUrl = window.location.origin + (audioUrl.startsWith('/') ? '' : '/') + audioUrl;
+        }
+        
+        console.log(`Normalized audio URL: ${absoluteUrl}`);
+        audio.src = absoluteUrl;
+        audio.load(); // Explicitly load the audio
+      } catch (error) {
+        console.error("Error setting audio source:", error);
+      }
     }
     
     // Event listener untuk update durasi dan progress
