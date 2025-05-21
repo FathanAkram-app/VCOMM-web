@@ -435,7 +435,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const messages = await storage.getMessagesForChat(chatId, isRoom);
       
       // Tandai pesan sebagai dibaca
-      await storage.markMessagesAsRead(chatId, userId, isRoom);
+      await storage.markMessagesAsRead(chatId, isRoom, userId);
       
       return res.status(200).json(messages);
     } catch (error) {
