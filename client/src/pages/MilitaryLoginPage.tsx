@@ -41,8 +41,15 @@ export default function MilitaryLoginPage() {
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Login gagal');
+        try {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Login gagal');
+        } catch (jsonError) {
+          // Jika tidak bisa di-parse sebagai JSON, gunakan respons text
+          const errorText = await response.text();
+          console.error("Response bukan JSON:", errorText);
+          throw new Error('Server error: Tidak bisa memproses login');
+        }
       }
       
       // Jika berhasil login, arahkan ke halaman chat
@@ -93,8 +100,15 @@ export default function MilitaryLoginPage() {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Registrasi gagal');
+        try {
+          const error = await response.json();
+          throw new Error(error.message || 'Registrasi gagal');
+        } catch (jsonError) {
+          // Jika tidak bisa di-parse sebagai JSON, gunakan respons text
+          const errorText = await response.text();
+          console.error("Response bukan JSON:", errorText);
+          throw new Error('Server error: Tidak bisa memproses registrasi');
+        }
       }
       
       const responseData = await response.json();

@@ -231,6 +231,25 @@ export const insertGroupCallParticipantSchema = createInsertSchema(groupCallPart
   leftAt: true 
 });
 
+// Login and Register Schemas
+export const loginSchema = z.object({
+  callsign: z.string().min(1, "Call sign diperlukan"),
+  password: z.string().min(1, "Password diperlukan"),
+});
+
+export const registerUserSchema = z.object({
+  callsign: z.string().min(1, "Call sign diperlukan"),
+  password: z.string().min(6, "Password minimal 6 karakter"),
+  passwordConfirm: z.string().min(6, "Konfirmasi password diperlukan"),
+  nrp: z.string().optional(),
+  fullName: z.string().optional(),
+  rank: z.string().optional(),
+  branch: z.string().default("ARM"),
+}).refine((data) => data.password === data.passwordConfirm, {
+  message: "Password dan konfirmasi password tidak sama",
+  path: ["passwordConfirm"],
+});
+
 // Types for database entities
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
