@@ -97,55 +97,71 @@ export default function Chat() {
     checkAuth();
   }, []);
   
-  // Fungsi untuk mengambil daftar chat user
+  // Fungsi untuk mengambil daftar chat user dari database
   const fetchUserChats = async (userId: string) => {
     try {
       console.log("Mengambil daftar chat untuk user ID:", userId);
       
-      // Untuk demo, gunakan data statis
-      const staticChats = [
-        {
-          id: 1,
-          name: "Tactical Team Alpha",
+      // Fetch direct chats dari API
+      const directChatsResponse = await fetch('/api/direct-chats', {
+        credentials: 'include'
+      });
+      
+      if (!directChatsResponse.ok) {
+        console.error("Error mengambil direct chats:", await directChatsResponse.text());
+        setChats([]);
+        return;
+      }
+      
+      const directChats = await directChatsResponse.json();
+      console.log("Direct chats dari API:", directChats);
+      
+      // Fetch rooms dari API
+      const roomsResponse = await fetch('/api/rooms', {
+        credentials: 'include'
+      });
+      
+      let rooms: any[] = [];
+      if (roomsResponse.ok) {
+        rooms = await roomsResponse.json();
+        console.log("Rooms dari API:", rooms);
+      } else {
+        console.error("Error mengambil rooms:", await roomsResponse.text());
+      }
+      
+      // Format data untuk tampilan
+      const formattedChats = [
+        // Format direct chats
+        ...directChats.map((chat: any) => {
+          const otherUserId = chat.user1Id === userId ? chat.user2Id : chat.user1Id;
+          const otherUser = allUsers.find(u => u.id === otherUserId);
+          
+          return {
+            id: chat.id,
+            name: otherUser?.callsign || 'User',
+            isGroup: false,
+            isOnline: otherUser?.status === 'online',
+            unread: 0, // Untuk saat ini, kita asumsikan tidak ada pesan yang belum dibaca
+            lastMessage: chat.lastMessage || "Mulai chat baru",
+            lastMessageTime: chat.lastActivityAt ? new Date(chat.lastActivityAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '',
+            otherUserId
+          };
+        }),
+        
+        // Format rooms
+        ...rooms.map((room: any) => ({
+          id: room.id,
+          name: room.name,
           isGroup: true,
-          members: 8,
-          unread: 3,
-          lastMessage: "Mission briefing at 0800",
-          lastMessageTime: "07:30",
-        },
-        {
-          id: 2,
-          name: "Lt. Johnson",
-          isGroup: false,
-          isOnline: true,
-          unread: 0,
-          lastMessage: "Copy that",
-          lastMessageTime: "08:45",
-          otherUserId: 101
-        },
-        {
-          id: 3,
-          name: "Operations Planning",
-          isGroup: true,
-          members: 12,
-          unread: 5,
-          lastMessage: "Updated coordinates",
-          lastMessageTime: "09:15",
-        },
-        {
-          id: 4,
-          name: "Sgt. Martinez",
-          isGroup: false,
-          isOnline: false,
-          unread: 2,
-          lastMessage: "Equipment request approved",
-          lastMessageTime: "Yesterday",
-          otherUserId: 102
-        }
+          members: room.memberCount || 0,
+          unread: 0, // Untuk saat ini, kita asumsikan tidak ada pesan yang belum dibaca
+          lastMessage: room.lastMessage || "Group created",
+          lastMessageTime: room.lastActivityAt ? new Date(room.lastActivityAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '',
+        }))
       ];
       
-      setChats(staticChats);
-      console.log("Daftar chat diperbarui:", staticChats);
+      setChats(formattedChats);
+      console.log("Daftar chat diperbarui:", formattedChats);
       
     } catch (error) {
       console.error('Error mengambil daftar chat:', error);
