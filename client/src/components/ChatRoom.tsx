@@ -181,6 +181,29 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
     }
     
     try {
+      // Jika chatId adalah numerik dan kita mencoba direct chat, pertama coba ambil direct chat dengan ID tersebut
+      if (!isRoom && !isNaN(Number(targetUserId))) {
+        try {
+          console.log(`Mencoba mendapatkan direct chat dengan ID ${targetUserId}`);
+          const directChatResponse = await fetch(`/api/direct-chats/${targetUserId}`, { 
+            credentials: 'include' 
+          });
+          
+          if (directChatResponse.ok) {
+            const directChat = await directChatResponse.json();
+            if (directChat && directChat.id) {
+              console.log(`Direct chat dengan ID ${directChat.id} ditemukan langsung:`, directChat);
+              setActualChatId(directChat.id);
+              return directChat.id;
+            }
+          } else {
+            console.log(`Direct chat dengan ID ${targetUserId} tidak ditemukan, akan mencari berdasarkan user`);
+          }
+        } catch (error) {
+          console.log(`Error saat mencoba mendapatkan direct chat dengan ID ${targetUserId}:`, error);
+        }
+      }
+      
       // Dapatkan pengguna sebelum membuat direct chat
       const usersResponse = await fetch('/api/users', {
         credentials: 'include'
@@ -195,14 +218,26 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
       console.log("Daftar pengguna:", usersList);
       
       // Cari pengguna target
-      const targetUser = usersList.find((u: any) => u.id === targetUserId);
+      const targetUser = usersList.find((u: any) => u.id === targetUserId || u.id === String(targetUserId));
       
       if (!targetUser) {
         console.error(`Pengguna dengan ID ${targetUserId} tidak ditemukan`);
-        // Jika target user tidak ditemukan, coba direct-chat dengan ID 1bb756f5-dd07-49ff-a12d-60785456aaab (eko)
-        const defaultTarget = usersList.find((u: any) => u.callsign === "eko");
+        // Jika target user tidak ditemukan dan numerik, coba ambil direct chat dengan ID tersebut
+        if (!isNaN(Number(targetUserId))) {
+          try {
+            console.log(`Mencoba mendapatkan direct chat langsung dengan ID ${targetUserId}`);
+            // Asumsi chatId adalah ID direct chat
+            setActualChatId(Number(targetUserId));
+            return Number(targetUserId);
+          } catch (error) {
+            console.error(`Error saat menggunakan ID ${targetUserId} sebagai ID direct chat:`, error);
+          }
+        }
+        
+        // Jika masih gagal, coba user default
+        const defaultTarget = usersList.find((u: any) => u.callsign === "alif");
         if (!defaultTarget) {
-          console.error("Default target user (eko) juga tidak ditemukan");
+          console.error("Default target user (alif) juga tidak ditemukan");
           return null;
         }
         console.log("Menggunakan default target user:", defaultTarget);
@@ -218,6 +253,8 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
       
       if (directChatsResponse.ok) {
         const directChats = await directChatsResponse.json();
+        console.log("Semua direct chats:", directChats);
+        
         const existingChat = directChats.find((chat: any) => 
           (chat.user1Id === user.id && chat.user2Id === targetUserId) || 
           (chat.user1Id === targetUserId && chat.user2Id === user.id)
