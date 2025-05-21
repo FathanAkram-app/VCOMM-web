@@ -30,10 +30,35 @@ export default function MilitaryLoginPage() {
     
     setIsLoading(true);
     try {
-      await login({ callsign, password });
-      setLocation("/");
-    } catch (error) {
+      // Login secara langsung dengan fetch untuk mendapatkan respons
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ callsign, password }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Login gagal');
+      }
+      
+      // Jika berhasil login, arahkan ke halaman dashboard/comms
+      const userData = await response.json();
+      console.log("Login berhasil:", userData);
+      
+      // Simpan data user ke localStorage untuk state management
+      localStorage.setItem('currentUser', JSON.stringify({
+        ...userData,
+        isAuthenticated: true
+      }));
+      
+      // Redirect ke dashboard
+      window.location.href = "/dashboard";
+    } catch (error: any) {
       console.error("Login error:", error);
+      alert(error.message || "Login gagal");
     } finally {
       setIsLoading(false);
     }
