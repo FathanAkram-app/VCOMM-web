@@ -91,271 +91,219 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-black">
-      <div className="flex flex-col w-full max-w-md">
-        {/* Logo */}
-        <div className="mb-6 text-center">
-          <div className="inline-block w-24 h-24 rounded-lg bg-green-800/30 border-2 border-green-400 flex items-center justify-center mb-2">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+    <div className="min-h-screen flex items-center justify-center bg-black">
+      <div className="w-full max-w-md">
+        {/* Logo and Title */}
+        <div className="text-center mb-6">
+          <div className="w-24 h-24 mx-auto rounded-lg bg-green-700 border-2 border-green-400 flex items-center justify-center relative">
+            <div className="absolute inset-0 bg-green-700 rounded-lg"></div>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+              className="w-14 h-14 text-black relative z-10" strokeWidth="1">
+              <path strokeLinecap="round" strokeLinejoin="round" 
+                d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
             </svg>
           </div>
-          <h1 className="text-xl text-green-400 font-bold uppercase mb-1">SECURE COMMS</h1>
-          <p className="text-xs text-gray-400 uppercase tracking-wide">MILITARY PERSONNEL AUTHENTICATION REQUIRED</p>
+          <h1 className="text-xl font-bold text-green-500 mt-2">SECURE COMMS</h1>
+          <p className="text-xs text-zinc-400 tracking-wide">MILITARY PERSONNEL AUTHENTICATION REQUIRED</p>
         </div>
 
-        {/* Tab buttons */}
-        <div className="grid grid-cols-2 mb-6 border-b border-zinc-800">
-          <button
-            className={`py-3 text-center uppercase text-sm font-medium ${
-              activeTab === 'login' ? 'bg-green-800/20 text-white' : 'bg-zinc-800/30 text-gray-400'
-            }`}
+        {/* Login/Register Tabs */}
+        <div className="grid grid-cols-2 mb-4">
+          <button 
             onClick={() => setActiveTab('login')}
+            className={`py-3 ${activeTab === 'login' ? 'bg-green-800 text-white' : 'bg-zinc-800 text-zinc-400'}`}
           >
             LOGIN
           </button>
-          <button
-            className={`py-3 text-center uppercase text-sm font-medium ${
-              activeTab === 'register' ? 'bg-green-800/20 text-white' : 'bg-zinc-800/30 text-gray-400'
-            }`}
+          <button 
             onClick={() => setActiveTab('register')}
+            className={`py-3 ${activeTab === 'register' ? 'bg-green-800 text-white' : 'bg-zinc-800 text-zinc-400'}`}
           >
             REGISTER
           </button>
         </div>
 
-        {/* Login form */}
         {activeTab === 'login' && (
-          <form onSubmit={handleLogin} className="space-y-4">
+          <div className="space-y-4">
             <div>
-              <label className="block text-xs text-gray-400 uppercase mb-1">CALLSIGN / USERNAME</label>
+              <label className="block text-xs text-zinc-400 mb-1">CALLSIGN / USERNAME</label>
               <input
                 type="text"
                 value={callsign}
                 onChange={(e) => setCallsign(e.target.value)}
-                className="w-full py-2 px-3 bg-transparent border border-zinc-800 rounded text-gray-200 placeholder-gray-500 uppercase text-sm"
                 placeholder="ENTER CALLSIGN"
-                required
+                className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-zinc-300"
               />
             </div>
 
             <div>
-              <label className="block text-xs text-gray-400 uppercase mb-1">NRP / PERSONNEL ID</label>
+              <label className="block text-xs text-zinc-400 mb-1">NRP / PERSONNEL ID</label>
               <input
                 type="text"
                 value={nrp}
                 onChange={(e) => setNrp(e.target.value)}
-                className="w-full py-2 px-3 bg-transparent border border-zinc-800 rounded text-gray-200 placeholder-gray-500 uppercase text-sm"
                 placeholder="ENTER NRP"
-                required
+                className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-zinc-300"
               />
             </div>
 
-            <div className="relative">
-              <div className="flex items-center justify-between">
-                <label className="block text-xs text-gray-400 uppercase mb-1">SECURITY CODE / PASSWORD</label>
-                <span className="text-xs text-gray-600 mb-1 flex items-center">
+            <div>
+              <div className="flex justify-between items-center">
+                <label className="block text-xs text-zinc-400 mb-1">SECURITY CODE / PASSWORD</label>
+                <div className="text-xs text-zinc-600 flex items-center">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
                   ENCRYPTED
-                </span>
+                </div>
               </div>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full py-2 px-3 bg-transparent border border-zinc-800 rounded text-gray-200 placeholder-gray-500 uppercase text-sm"
                 placeholder="ENTER SECURITY CODE"
-                required
+                className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-zinc-300"
               />
             </div>
 
-            {error && (
-              <div className="bg-red-900/30 border border-red-900 text-red-400 px-3 py-2 rounded text-xs">
-                {error}
-              </div>
-            )}
-
-            <p className="text-gray-600 text-xs uppercase tracking-wide text-center">
+            <div className="text-xs text-zinc-600 text-center">
               UNAUTHORIZED ACCESS IS STRICTLY PROHIBITED
-            </p>
+            </div>
 
             <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-green-800 hover:bg-green-700 text-white font-medium uppercase rounded flex items-center justify-center"
+              onClick={handleLogin}
+              className="w-full bg-green-800 hover:bg-green-700 text-white py-3 rounded flex items-center justify-center"
             >
-              {loading ? (
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-              )}
-              {loading ? 'PROCESSING...' : 'SECURE LOGIN'}
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              SECURE LOGIN
             </button>
-          </form>
+
+            <div className="text-xs text-zinc-600 text-center">
+              © INTRANET COMMUNICATION ONLY • CLASSIFIED
+            </div>
+          </div>
         )}
 
-        {/* Registration form */}
         {activeTab === 'register' && (
-          <form onSubmit={handleRegister} className="space-y-3">
+          <div className="space-y-4">
             <div>
-              <label className="block text-xs text-gray-400 uppercase mb-1">CALLSIGN / USERNAME</label>
+              <label className="block text-xs text-zinc-400 mb-1">CALLSIGN / USERNAME</label>
               <input
                 type="text"
                 value={callsign}
                 onChange={(e) => setCallsign(e.target.value)}
-                className="w-full py-2 px-3 bg-transparent border border-zinc-800 rounded text-gray-200 placeholder-gray-500 uppercase text-sm"
                 placeholder="ENTER CALLSIGN"
-                required
+                className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-zinc-300"
               />
             </div>
 
             <div>
-              <label className="block text-xs text-gray-400 uppercase mb-1">NRP / PERSONNEL ID</label>
+              <label className="block text-xs text-zinc-400 mb-1">NRP / PERSONNEL ID</label>
               <input
                 type="text"
                 value={nrp}
                 onChange={(e) => setNrp(e.target.value)}
-                className="w-full py-2 px-3 bg-transparent border border-zinc-800 rounded text-gray-200 placeholder-gray-500 uppercase text-sm"
                 placeholder="ENTER NRP"
-                required
+                className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-zinc-300"
               />
             </div>
 
             <div>
-              <label className="block text-xs text-gray-400 uppercase mb-1">FULL NAME</label>
+              <label className="block text-xs text-zinc-400 mb-1">FULL NAME</label>
               <input
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="w-full py-2 px-3 bg-transparent border border-zinc-800 rounded text-gray-200 placeholder-gray-500 uppercase text-sm"
                 placeholder="ENTER FULL NAME"
-                required
+                className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-zinc-300"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-gray-400 uppercase mb-1">RANK</label>
+                <label className="block text-xs text-zinc-400 mb-1">RANK</label>
                 <select
                   value={rank}
                   onChange={(e) => setRank(e.target.value)}
-                  className="w-full py-2 px-3 bg-zinc-900 border border-zinc-800 rounded text-gray-200 uppercase text-sm"
-                  required
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-zinc-300"
                 >
                   <option value="">SELECT RANK</option>
                   <option value="PVT">PVT - Private</option>
-                  <option value="PFC">PFC - Private First Class</option>
-                  <option value="SPC">SPC - Specialist</option>
                   <option value="CPL">CPL - Corporal</option>
                   <option value="SGT">SGT - Sergeant</option>
-                  <option value="SSG">SSG - Staff Sergeant</option>
-                  <option value="SFC">SFC - Sergeant First Class</option>
-                  <option value="MSG">MSG - Master Sergeant</option>
-                  <option value="1SG">1SG - First Sergeant</option>
-                  <option value="SGM">SGM - Sergeant Major</option>
-                  <option value="CSM">CSM - Command Sergeant Major</option>
-                  <option value="2LT">2LT - Second Lieutenant</option>
-                  <option value="1LT">1LT - First Lieutenant</option>
+                  <option value="LT">LT - Lieutenant</option>
                   <option value="CPT">CPT - Captain</option>
                   <option value="MAJ">MAJ - Major</option>
-                  <option value="LTC">LTC - Lieutenant Colonel</option>
                   <option value="COL">COL - Colonel</option>
-                  <option value="BG">BG - Brigadier General</option>
-                  <option value="MG">MG - Major General</option>
-                  <option value="LTG">LTG - Lieutenant General</option>
                   <option value="GEN">GEN - General</option>
                 </select>
               </div>
-              
+
               <div>
-                <label className="block text-xs text-gray-400 uppercase mb-1">BRANCH</label>
+                <label className="block text-xs text-zinc-400 mb-1">BRANCH</label>
                 <select
                   value={branch}
                   onChange={(e) => setBranch(e.target.value)}
-                  className="w-full py-2 px-3 bg-zinc-900 border border-zinc-800 rounded text-gray-200 uppercase text-sm"
-                  required
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-zinc-300"
                 >
                   <option value="">SELECT BRANCH</option>
                   <option value="INF">INF - Infantry</option>
                   <option value="ARM">ARM - Armor</option>
-                  <option value="ART">ART - Artillery</option>
                   <option value="AVI">AVI - Aviation</option>
-                  <option value="ENG">ENG - Engineer</option>
                   <option value="SIG">SIG - Signal</option>
-                  <option value="MI">MI - Military Intelligence</option>
-                  <option value="MP">MP - Military Police</option>
+                  <option value="INT">INT - Intelligence</option>
                   <option value="MED">MED - Medical</option>
                   <option value="LOG">LOG - Logistics</option>
-                  <option value="SF">SF - Special Forces</option>
+                  <option value="ENG">ENG - Engineers</option>
                 </select>
               </div>
             </div>
 
             <div>
-              <label className="block text-xs text-gray-400 uppercase mb-1">SECURITY CODE / PASSWORD</label>
+              <label className="block text-xs text-zinc-400 mb-1">SECURITY CODE / PASSWORD</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full py-2 px-3 bg-transparent border border-zinc-800 rounded text-gray-200 placeholder-gray-500 uppercase text-sm"
                 placeholder="ENTER SECURITY CODE"
-                required
+                className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-zinc-300"
               />
             </div>
 
             <div>
-              <label className="block text-xs text-gray-400 uppercase mb-1">CONFIRM SECURITY CODE</label>
+              <label className="block text-xs text-zinc-400 mb-1">CONFIRM SECURITY CODE</label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full py-2 px-3 bg-transparent border border-zinc-800 rounded text-gray-200 placeholder-gray-500 uppercase text-sm"
                 placeholder="CONFIRM SECURITY CODE"
-                required
+                className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-zinc-300"
               />
             </div>
 
-            {error && (
-              <div className="bg-red-900/30 border border-red-900 text-red-400 px-3 py-2 rounded text-xs">
-                {error}
-              </div>
-            )}
-
-            <p className="text-gray-600 text-xs text-center mt-2">
+            <div className="text-xs text-zinc-600 text-center">
               BY REGISTERING, YOU ACCEPT ALL MILITARY COMMUNICATION PROTOCOLS
-            </p>
+            </div>
 
             <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-green-800 hover:bg-green-700 text-white font-medium uppercase flex items-center justify-center rounded"
+              onClick={handleRegister}
+              className="w-full bg-green-800 hover:bg-green-700 text-white py-3 rounded flex items-center justify-center"
             >
-              {loading ? (
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                </svg>
-              )}
-              {loading ? 'PROCESSING...' : 'REGISTER PERSONNEL'}
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              </svg>
+              REGISTER PERSONNEL
             </button>
-          </form>
-        )}
 
-        <div className="text-center mt-4">
-          <p className="text-xs text-gray-600">© INTRANET COMMUNICATION ONLY • CLASSIFIED</p>
-        </div>
+            <div className="text-xs text-zinc-600 text-center">
+              © INTRANET COMMUNICATION ONLY • CLASSIFIED
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
+}
 }
