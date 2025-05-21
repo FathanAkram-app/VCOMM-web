@@ -69,7 +69,8 @@ export type User = typeof users.$inferSelect;
 
 // Registration schema with password confirmation
 export const registerUserSchema = insertUserSchema.extend({
-  passwordConfirm: z.string().min(6)
+  passwordConfirm: z.string().min(6),
+  branch: z.string().min(1).max(50)
 }).refine(data => data.password === data.passwordConfirm, {
   message: "Passwords do not match",
   path: ["passwordConfirm"]

@@ -68,11 +68,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // API rute untuk pendaftaran (register)
   app.post('/api/register', async (req: Request, res: Response) => {
-    const { callsign, nrp, password, passwordConfirm, fullName, rank } = req.body;
+    const { callsign, nrp, password, passwordConfirm, fullName, rank, branch } = req.body;
     
     // Validasi data
-    if (!callsign || !password || !passwordConfirm) {
-      return res.status(400).json({ message: 'Callsign, password, dan konfirmasi password diperlukan' });
+    if (!callsign || !password || !passwordConfirm || !branch) {
+      return res.status(400).json({ message: 'Callsign, password, konfirmasi password, dan cabang (branch) diperlukan' });
     }
     
     if (password !== passwordConfirm) {
@@ -89,20 +89,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Hash password sebelum disimpan
       const hashedPassword = await bcrypt.hash(password, 10);
       
+      // Log data user yang akan dibuat untuk debugging
+      console.log("User data yang akan dibuat:", {
+        callsign,
+        nrp,
+        fullName,
+        rank,
+        branch
+      });
+      
       // Buat user baru dengan password yang sudah di-hash
-      const newUser = await storage.createUser({
+      const userData = {
         callsign,
         nrp,
         password: hashedPassword,
         passwordConfirm: hashedPassword, // Gunakan password yang sudah di-hash
         fullName,
-        rank
-      });
+        rank,
+        branch // Tambahkan branch sesuai kebutuhan database
+      };
+      
+      const newUser = await storage.createUser(userData);
       
       // Set user session setelah registrasi sukses
       if (req.session) {
         req.session.userId = newUser.id;
       }
+      
+      // Log registrasi berhasil
+      console.log(`User ${callsign} (ID: ${newUser.id}) berhasil registrasi dengan branch: ${branch}`);
       
       return res.status(201).json({
         message: 'Registrasi berhasil',
@@ -111,7 +126,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           callsign: newUser.callsign,
           nrp: newUser.nrp,
           fullName: newUser.fullName,
-          rank: newUser.rank
+          rank: newUser.rank,
+          branch: newUser.branch
         }
       });
     } catch (error) {

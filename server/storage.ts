@@ -87,10 +87,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(userData: RegisterUser): Promise<User> {
+    // Menghapus passwordConfirm karena tidak ada di tabel users
+    const { passwordConfirm, ...userDataWithoutConfirm } = userData;
+    
+    console.log("Data yang akan diinsert ke database:", {
+      ...userDataWithoutConfirm,
+      password: "***HIDDEN***" // Jangan tampilkan password
+    });
+    
     const [user] = await db
       .insert(users)
       .values({
-        ...userData,
+        ...userDataWithoutConfirm,
         status: "offline",
         profileImageUrl: null,
         createdAt: new Date(),
