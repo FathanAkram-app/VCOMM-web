@@ -180,7 +180,6 @@ export const notifications = pgTable("notifications", {
 
 // Schemas for data insertion
 export const insertUserSchema = createInsertSchema(users).omit({ 
-  id: true, 
   createdAt: true, 
   updatedAt: true, 
   lastOnline: true 

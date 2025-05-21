@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
 import { AlertTriangle, Lock } from "lucide-react";
-import logoPath from "@assets/image_1747656117538.png";
+import logoPath from "@assets/Icon Chat NXXZ.png";
 
 export default function MilitaryLoginPage() {
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
@@ -50,17 +50,37 @@ export default function MilitaryLoginPage() {
     
     setIsLoading(true);
     try {
-      await register({
+      // Siapkan data untuk registrasi
+      const formData = {
         callsign: regCallsign,
         password: regPassword,
-        nrp: regNrp,
-        fullName: regFullName,
-        rank: regRank,
+        passwordConfirm: regPassword,
+        nrp: regNrp || "",
+        fullName: regFullName || "",
+        rank: regRank || "",
         branch: regBranch || "ARM"
+      };
+      
+      // Panggil endpoint registrasi secara langsung
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
       });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Registrasi gagal');
+      }
+      
+      // Jika berhasil, pindah ke tab login
       setActiveTab("login");
-    } catch (error) {
+      alert("Registrasi berhasil! Silahkan login.");
+    } catch (error: any) {
       console.error("Register error:", error);
+      alert(error.message || "Terjadi kesalahan saat registrasi");
     } finally {
       setIsLoading(false);
     }

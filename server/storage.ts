@@ -114,19 +114,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(userData: InsertUser): Promise<User> {
-    // Hash password before storing
-    const hashedPassword = await bcrypt.hash(userData.password, 10);
+    // Gunakan password yang sudah di-hash dari userData
+    // ID harus ada dalam userData dari routes.ts (UUID)
+    
+    console.log("Creating user with data:", {
+      ...userData,
+      password: "*****" // Sembunyikan password untuk logging
+    });
     
     const [user] = await db
       .insert(users)
       .values({
         ...userData,
-        password: hashedPassword,
         createdAt: new Date(),
         updatedAt: new Date(),
         lastOnline: new Date()
       })
       .returning();
+    
+    console.log("User created successfully with ID:", user.id);
     return user;
   }
 

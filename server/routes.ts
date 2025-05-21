@@ -6,6 +6,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import bcrypt from 'bcryptjs';
+import { v4 as uuidv4 } from 'uuid';
 
 // Inisialisasi multer untuk upload file
 const uploadDir = path.join(process.cwd(), 'uploads');
@@ -98,15 +99,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         branch
       });
       
+      // Generate UUID untuk ID pengguna
+      const userId = uuidv4();
+      
       // Buat user baru dengan password yang sudah di-hash
       const userData = {
+        id: userId,
         callsign,
         nrp,
         password: hashedPassword,
         passwordConfirm: hashedPassword, // Gunakan password yang sudah di-hash
         fullName,
         rank,
-        branch // Tambahkan branch sesuai kebutuhan database
+        branch, // Tambahkan branch sesuai kebutuhan database
+        role: 'user',
+        status: 'offline'
       };
       
       const newUser = await storage.createUser(userData);
