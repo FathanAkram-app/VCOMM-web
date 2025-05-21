@@ -343,25 +343,56 @@ export class DatabaseStorage implements IStorage {
   
   // Verifikasi akses ke chat
   async isUserInChat(userId: string, chatId: number, isRoom: boolean): Promise<boolean> {
-    if (isRoom) {
-      // Verifikasi apakah user adalah anggota room
-      return await this.isUserInRoom(userId, chatId);
-    } else {
-      // Verifikasi apakah chat direct ini milik user
-      const [directChat] = await db
-        .select()
-        .from(directChats)
-        .where(
-          and(
-            eq(directChats.id, chatId),
-            or(
-              eq(directChats.user1Id, userId),
-              eq(directChats.user2Id, userId)
+    console.log(`[isUserInChat] Checking access for user ${userId} to chat ${chatId} (isRoom: ${isRoom})`);
+    
+    try {
+      if (isRoom) {
+        // Verifikasi apakah user adalah anggota room
+        const isInRoom = await this.isUserInRoom(userId, chatId);
+        console.log(`[isUserInChat] Room check result: ${isInRoom}`);
+        return isInRoom;
+      } else {
+        // Verifikasi apakah chat direct ini milik user
+        const [directChat] = await db
+          .select()
+          .from(directChats)
+          .where(
+            and(
+              eq(directChats.id, chatId),
+              or(
+                eq(directChats.user1Id, userId),
+                eq(directChats.user2Id, userId)
+              )
             )
-          )
-        );
-      
-      return !!directChat;
+          );
+        
+        const hasAccess = !!directChat;
+        console.log(`[isUserInChat] Direct chat check result: ${hasAccess}`);
+        
+        if (!hasAccess) {
+          // Debug: Cari chat dengan ID ini
+          const [checkChat] = await db.select().from(directChats).where(eq(directChats.id, chatId));
+          console.log(`[isUserInChat] Direct chat exists: ${!!checkChat}`, checkChat || 'Not found');
+          
+          // Debug: Periksa semua direct chat milik user ini
+          const userChats = await db
+            .select()
+            .from(directChats)
+            .where(
+              or(
+                eq(directChats.user1Id, userId),
+                eq(directChats.user2Id, userId)
+              )
+            );
+          console.log(`[isUserInChat] User ${userId} has ${userChats.length} direct chats:`, 
+            userChats.map(c => `ID: ${c.id}, user1: ${c.user1Id}, user2: ${c.user2Id}`));
+        }
+        
+        return hasAccess;
+      }
+    } catch (error) {
+      console.error(`[isUserInChat] Error checking access:`, error);
+      return false;
     }
   }
   
