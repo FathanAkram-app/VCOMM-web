@@ -319,6 +319,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // API rute untuk membuat direct chat baru
+  app.post('/api/direct-chats', async (req: Request, res: Response) => {
+    const { user1Id, user2Id } = req.body;
+    
+    if (!user1Id || !user2Id) {
+      return res.status(400).json({ message: 'ID pengguna diperlukan' });
+    }
+    
+    try {
+      // Periksa apakah chat sudah ada
+      const existingChat = await storage.getDirectChatBetweenUsers(user1Id, user2Id);
+      
+      if (existingChat) {
+        console.log(`Direct chat between users ${user1Id} and ${user2Id} already exists`);
+        return res.status(200).json(existingChat);
+      }
+      
+      // Buat chat baru
+      const newChat = await storage.createDirectChat({
+        user1Id,
+        user2Id
+      });
+      
+      console.log(`Created new direct chat with ID ${newChat.id} between users ${user1Id} and ${user2Id}`);
+      return res.status(201).json(newChat);
+    } catch (error) {
+      console.error('Error creating direct chat:', error);
+      return res.status(500).json({ message: 'Terjadi kesalahan saat membuat chat' });
+    }
+  });
+  
   // API rute untuk memeriksa panggilan aktif di ruangan
   app.get('/api/rooms/:roomId/active-call', async (req: Request, res: Response) => {
     const roomId = parseInt(req.params.roomId);
