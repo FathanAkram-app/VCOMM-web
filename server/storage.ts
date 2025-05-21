@@ -36,6 +36,7 @@ export interface IStorage {
   getUserByNrp(nrp: string): Promise<User | undefined>;
   createUser(data: InsertUser): Promise<User>;
   updateUserLastOnline(userId: string): Promise<User | undefined>;
+  updateUserStatus(userId: string, status: string): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
   upsertUser(user: InsertUser): Promise<User>;
   verifyPassword(hashedPassword: string, plainPassword: string): Promise<boolean>;
@@ -143,6 +144,18 @@ export class DatabaseStorage implements IStorage {
       .update(users)
       .set({ 
         lastOnline: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+  
+  async updateUserStatus(userId: string, status: string): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ 
+        status: status,
         updatedAt: new Date()
       })
       .where(eq(users.id, userId))
