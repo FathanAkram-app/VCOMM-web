@@ -508,24 +508,29 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
   
   // Render the room members dialog
   const renderMembersDialog = () => {
-    const room = getRoomData();
-    
+    // Menggunakan roomData state yang sudah kita definisikan
     return (
       <Dialog open={showMembersDialog} onOpenChange={setShowMembersDialog}>
         <DialogContent className="bg-[#1a1a1a] border-[#2c2c2c] text-white max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-[#a2bd62]">{room.name} - MEMBERS</DialogTitle>
+            <DialogTitle className="text-[#a2bd62]">{roomData.name} - MEMBERS</DialogTitle>
           </DialogHeader>
           <div className="mt-2">
             <ul className="divide-y divide-[#2c2c2c]">
-              {room.members.map((member: any) => (
-                <li key={member.id} className="py-2 flex items-center">
-                  <div className="w-8 h-8 bg-[#353535] rounded-full flex items-center justify-center text-xs mr-3">
-                    {member.callsign.substring(0, 2)}
-                  </div>
-                  <span>{member.callsign}</span>
+              {Array.isArray(roomData.members) && roomData.members.length > 0 ? (
+                roomData.members.map((member: any) => (
+                  <li key={member.id} className="py-2 flex items-center">
+                    <div className="w-8 h-8 bg-[#353535] rounded-full flex items-center justify-center text-xs mr-3">
+                      {member.callsign ? member.callsign.substring(0, 2) : "??"}
+                    </div>
+                    <span>{member.callsign || "Unknown Member"}</span>
+                  </li>
+                ))
+              ) : (
+                <li className="py-2 text-center">
+                  <span className="text-gray-400">No members available</span>
                 </li>
-              ))}
+              )}
             </ul>
           </div>
         </DialogContent>
