@@ -1,76 +1,99 @@
 import { useState, useEffect } from 'react';
+import IncomingCallModal from './IncomingCallModal';
 import AudioCall from './AudioCall';
 import VideoCall from './VideoCall';
-import IncomingCallModal from './IncomingCallModal';
+import { useLocation } from 'wouter';
 
 /**
  * CallManager Component
  * 
- * Komponen ini menangani tampilan panggilan berdasarkan jenis panggilan aktif
- * (audio atau video) dan menampilkan modal panggilan masuk saat ada
- * panggilan masuk tetapi belum ada panggilan aktif.
+ * Komponen ini mengatur navigasi antara interface panggilan video dan audio
+ * berdasarkan tipe panggilan aktif. Juga menangani menampilkan modal panggilan masuk
+ * ketika ada panggilan masuk tapi belum ada panggilan aktif.
  */
 export default function CallManager() {
-  // Status panggilan (untuk demo tanpa context)
-  const [activeCall, setActiveCall] = useState<null | {type: 'audio'|'video', peerId: string}>(null);
-  const [incomingCall, setIncomingCall] = useState<null | {type: 'audio'|'video', callerId: string, callerName: string}>(null);
+  const [callStatus, setCallStatus] = useState<{
+    isActive: boolean;
+    callType: 'audio' | 'video' | null;
+    callerId?: number;
+    callerName?: string;
+    roomId?: number;
+    isIncoming: boolean;
+  }>({
+    isActive: false,
+    callType: null,
+    isIncoming: false
+  });
+  
+  const [, setLocation] = useLocation();
 
-  // Demo - handler panggilan masuk
-  useEffect(() => {
-    const handleIncomingCall = (e: CustomEvent) => {
-      setIncomingCall({
-        type: e.detail.type,
-        callerId: e.detail.callerId,
-        callerName: e.detail.callerName
-      });
-    };
-
-    // @ts-ignore
-    window.addEventListener('incoming-call', handleIncomingCall);
+  // Fungsi untuk menerima panggilan
+  const handleAcceptCall = () => {
+    if (!callStatus.callType) return;
     
-    return () => {
-      // @ts-ignore
-      window.removeEventListener('incoming-call', handleIncomingCall);
-    };
+    setCallStatus(prev => ({
+      ...prev,
+      isActive: true,
+      isIncoming: false
+    }));
+  };
+  
+  // Fungsi untuk menolak/mengakhiri panggilan
+  const handleRejectCall = () => {
+    setCallStatus({
+      isActive: false,
+      callType: null,
+      isIncoming: false
+    });
+  };
+  
+  // Pantau WebSocket untuk panggilan masuk
+  useEffect(() => {
+    // Demo - simulasi panggilan masuk setelah delay
+    // Akan diganti dengan logika WebSocket nyata
+    const demoIncomingCall = setTimeout(() => {
+      if (Math.random() > 0.7) {
+        console.log("Demo: Incoming call simulation");
+        // Ganti ini dengan logika WebSocket nyata
+      }
+    }, 15000);
+    
+    return () => clearTimeout(demoIncomingCall);
   }, []);
 
-  // Handler menerima panggilan
-  const handleAcceptCall = () => {
-    if (incomingCall) {
-      setActiveCall({
-        type: incomingCall.type,
-        peerId: incomingCall.callerId
-      });
-      setIncomingCall(null);
-    }
-  };
-
-  // Handler menolak panggilan
-  const handleRejectCall = () => {
-    setIncomingCall(null);
-  };
-
-  // Handler mengakhiri panggilan
-  const handleEndCall = () => {
-    setActiveCall(null);
-  };
-
-  // Tampilkan komponen berdasarkan status
-  if (activeCall) {
-    if (activeCall.type === 'audio') {
-      return <AudioCall peerId={activeCall.peerId} onEnd={handleEndCall} />;
-    } else {
-      return <VideoCall peerId={activeCall.peerId} onEnd={handleEndCall} />;
-    }
+  // Tidak ada UI jika tidak ada panggilan aktif atau masuk
+  if (!callStatus.isActive && !callStatus.isIncoming) {
+    return null;
   }
-
-  // Tampilkan modal panggilan masuk jika ada
-  return incomingCall ? (
-    <IncomingCallModal
-      callerName={incomingCall.callerName}
-      callType={incomingCall.type}
-      onAccept={handleAcceptCall}
-      onReject={handleRejectCall}
-    />
-  ) : null;
+  
+  // Tampilkan modal panggilan masuk
+  if (callStatus.isIncoming && !callStatus.isActive) {
+    return (
+      <IncomingCallModal
+        callerName={callStatus.callerName || "Unknown"}
+        callType={callStatus.callType || "audio"}
+        onAccept={handleAcceptCall}
+        onReject={handleRejectCall}
+      />
+    );
+  }
+  
+  // Tampilkan interface panggilan berdasarkan tipe
+  if (callStatus.isActive && callStatus.callType) {
+    return callStatus.callType === 'audio' ? (
+      <AudioCall 
+        callerId={callStatus.callerId}
+        callerName={callStatus.callerName}
+        onEndCall={handleRejectCall}
+      />
+    ) : (
+      <VideoCall
+        callerId={callStatus.callerId}
+        callerName={callStatus.callerName}
+        onEndCall={handleRejectCall}
+      />
+    );
+  }
+  
+  return null;
 }
