@@ -329,28 +329,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // API rute untuk membuat direct chat baru
   app.post('/api/direct-chats', async (req: Request, res: Response) => {
-    const { user1Id, user2Id } = req.body;
-    
-    if (!user1Id || !user2Id) {
-      return res.status(400).json({ message: 'ID pengguna diperlukan' });
+    if (!req.session?.user) {
+      return res.status(401).json({ message: 'Tidak terautentikasi' });
     }
+    const userId = req.session.user.id;
+    const { otherUserId } = req.body;
+    
+    if (!otherUserId) {
+      return res.status(400).json({ message: 'ID pengguna tujuan (otherUserId) diperlukan' });
+    }
+    
+    console.log(`[DEBUG] Membuat direct chat antara ${userId} dan ${otherUserId}`);
     
     try {
       // Periksa apakah chat sudah ada
-      const existingChat = await storage.getDirectChatBetweenUsers(user1Id, user2Id);
+      const existingChat = await storage.getDirectChatBetweenUsers(userId, otherUserId);
       
       if (existingChat) {
-        console.log(`Direct chat between users ${user1Id} and ${user2Id} already exists`);
+        console.log(`[DEBUG] Direct chat sudah ada dengan ID: ${existingChat.id}`);
         return res.status(200).json(existingChat);
       }
       
       // Buat chat baru
       const newChat = await storage.createDirectChat({
-        user1Id,
-        user2Id
+        user1Id: userId,
+        user2Id: otherUserId
       });
       
-      console.log(`Created new direct chat with ID ${newChat.id} between users ${user1Id} and ${user2Id}`);
+      console.log(`[DEBUG] Direct chat baru dibuat dengan ID: ${newChat.id} antara pengguna ${userId} dan ${otherUserId}`);
       return res.status(201).json(newChat);
     } catch (error) {
       console.error('Error creating direct chat:', error);
