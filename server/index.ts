@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import * as dotenv from 'dotenv';
+import session from 'express-session';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -9,6 +10,18 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Konfigurasi session
+app.use(session({
+  secret: 'nxzz-military-comms-secure-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // Set ke true di produksi dengan HTTPS
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 1 minggu
+  }
+}));
 
 app.use((req, res, next) => {
   const start = Date.now();
