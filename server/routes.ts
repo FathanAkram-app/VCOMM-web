@@ -487,7 +487,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         messageData.roomId = chatId;
       } else {
         console.log(`[DEBUG] Pesan untuk direct chat ${chatId}`);
-        messageData.directChatId = chatId;
+        // Untuk kompatibilitas dengan tabel yang ada, kita gunakan conversationId
+        messageData.conversationId = chatId;
       }
       
       // Tambahkan forwarded message jika ada
