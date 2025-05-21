@@ -1,5 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
-import ChatMessage from './ChatMessage';
+import { useState, useRef, useEffect } from "react";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { ArrowLeft, Paperclip, Send, Mic, StopCircle, Reply, Forward, Trash2, MoreVertical, X, CornerDownRight, Phone, Video, Users, User } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 
 interface ChatRoomProps {
   chatId: number;
@@ -10,495 +13,756 @@ interface ChatRoomProps {
   forwardedMessage?: any;
 }
 
-interface Message {
-  id: number;
-  senderId: number;
-  content: string;
-  timestamp: string;
-  attachments?: {
+export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateToChat, forwardedMessage }: ChatRoomProps) {
+  const [message, setMessage] = useState("");
+  const [showMembersDialog, setShowMembersDialog] = useState(false);
+  
+  // Get current user from localStorage
+  const getCurrentUser = () => {
+    try {
+      const userData = localStorage.getItem('currentUser');
+      if (userData) {
+        return JSON.parse(userData);
+      }
+      return { id: '1', callsign: 'ALPHA1' };
+    } catch (error) {
+      console.error("Error getting user data:", error);
+      return { id: '1', callsign: 'ALPHA1' };
+    }
+  };
+  
+  const user = getCurrentUser();
+  
+  // Get room data from local storage or parent component props
+  const getRoomData = () => {
+    try {
+      // Try to get room data from local storage first
+      const storedRooms = localStorage.getItem('roomData');
+      if (storedRooms) {
+        const rooms = JSON.parse(storedRooms);
+        const room = rooms.find((r: any) => r.id === chatId);
+        if (room) return room;
+      }
+      
+      // Fallback to mock data if necessary
+      return {
+        id: chatId,
+        name: chatName,
+        members: Array.from({ length: Math.floor(Math.random() * 10) + 3 }, (_, i) => ({
+          id: i + 1,
+          callsign: `OPERATOR-${i+1}`
+        }))
+      };
+    } catch (error) {
+      console.error("Error getting room data:", error);
+      return {
+        id: chatId,
+        name: chatName,
+        members: []
+      };
+    }
+  };
+  
+  // Mock messages based on chat type
+  const getInitialMessages = () => {
+    if (isRoom) {
+      // Group chat messages
+      return [
+        {
+          id: 1,
+          content: "Awaiting further instructions for Operation Alpha.",
+          sender: { id: 2, callsign: "BRAVO2" },
+          timestamp: "10:45",
+          isRead: true
+        },
+        {
+          id: 2,
+          content: "Coordinates received. Moving to rendezvous point.",
+          sender: { id: 3, callsign: "CHARLIE3" },
+          timestamp: "10:46",
+          isRead: true
+        },
+        {
+          id: 3,
+          content: "Supplies will be at the designated location at 1200 hours.",
+          sender: { id: 1, callsign: "ALPHA1" },
+          timestamp: "10:50",
+          isRead: true
+        },
+        {
+          id: 4,
+          content: "Roger that. Will proceed with caution.",
+          sender: { id: 4, callsign: "DELTA4" },
+          timestamp: "10:52",
+          isRead: true
+        },
+        {
+          id: 5,
+          content: "UAV surveillance confirms area is clear. Proceed with mission.",
+          sender: { id: 1, callsign: "ALPHA1" },
+          timestamp: "10:55",
+          isRead: true
+        }
+      ];
+    } else {
+      // Direct chat messages
+      // Determine the other user based on chatName
+      const otherUsername = chatName;
+      const otherUserId = chatId;
+      
+      return [
+        {
+          id: 1,
+          content: `Secure direct communication established with ${otherUsername}.`,
+          sender: { id: 1, callsign: "ALPHA1" },
+          timestamp: "09:30",
+          isRead: true
+        },
+        {
+          id: 2,
+          content: "Status report requested for your current position.",
+          sender: { id: otherUserId, callsign: otherUsername },
+          timestamp: "09:32",
+          isRead: true
+        },
+        {
+          id: 3,
+          content: "All systems nominal. Maintaining position at grid reference Delta-7.",
+          sender: { id: 1, callsign: "ALPHA1" },
+          timestamp: "09:35",
+          isRead: true
+        },
+        {
+          id: 4,
+          content: "Acknowledged. Stand by for further instructions.",
+          sender: { id: otherUserId, callsign: otherUsername },
+          timestamp: "09:40",
+          isRead: true
+        }
+      ];
+    }
+  };
+  
+  const [messages, setMessages] = useState(getInitialMessages());
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Enhanced attachment type to handle different file types
+  type Attachment = {
     url: string;
     name: string;
     type: string;
-  }[];
-  replyToId?: number;
-  replyToContent?: string;
-}
-
-interface MessageWithSender extends Message {
-  sender: {
-    id: number;
-    callsign: string;
-    rank?: string;
-    profileImageUrl?: string;
+    size: number;
+    file: File;
   };
-}
-
-export default function ChatRoom({ 
-  chatId, 
-  isRoom, 
-  chatName, 
-  onBack, 
-  onNavigateToChat,
-  forwardedMessage
-}: ChatRoomProps) {
-  const [messages, setMessages] = useState<MessageWithSender[]>([]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [attachments, setAttachments] = useState<File[]>([]);
-  const [replyTo, setReplyTo] = useState<Message | null>(null);
+  
+  // Message action states
+  const [activeMessageId, setActiveMessageId] = useState<number | null>(null);
+  const [showMessageActions, setShowMessageActions] = useState(false);
+  const [showForwardDialog, setShowForwardDialog] = useState(false);
+  const [showReplyForm, setShowReplyForm] = useState(false);
+  const [replyingToMessage, setReplyingToMessage] = useState<any | null>(null);
+  const [forwardingMessage, setForwardingMessage] = useState<any | null>(null);
+  
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [currentUser, setCurrentUser] = useState<{id: number, callsign: string} | null>(null);
+  const [audioURL, setAudioURL] = useState<string | null>(null);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const audioChunks = useRef<BlobPart[]>([]);
   
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
-  
+  // Voice recording timer
   useEffect(() => {
-    // Ambil informasi user
-    const fetchCurrentUser = async () => {
-      try {
-        const response = await fetch('/api/auth/user');
-        if (response.ok) {
-          const user = await response.json();
-          setCurrentUser(user);
-        }
-      } catch (error) {
-        console.error('Error fetching current user:', error);
-      }
-    };
+    let interval: ReturnType<typeof setInterval>;
     
-    fetchCurrentUser();
-  }, []);
-  
-  useEffect(() => {
-    // Ambil pesan ketika chat dibuka
-    const fetchMessages = async () => {
-      setIsLoading(true);
-      try {
-        const endpoint = isRoom ? `/api/rooms/${chatId}/messages` : `/api/chats/${chatId}/messages`;
-        const response = await fetch(endpoint);
-        
-        if (response.ok) {
-          const data = await response.json();
-          setMessages(data);
-        }
-      } catch (error) {
-        console.error('Error fetching messages:', error);
-      } finally {
-        setIsLoading(false);
-        // Tunggu sampai render selesai, lalu scroll ke bawah
-        setTimeout(() => scrollToBottom(), 100);
-      }
-    };
-    
-    fetchMessages();
-    
-    // Jika ada pesan yang diteruskan, isi input message
-    if (forwardedMessage) {
-      setInputMessage('[Diteruskan] ' + forwardedMessage.content);
-    }
-    
-    // Clean up
-    return () => {
-      if (recordingTimerRef.current) {
-        clearInterval(recordingTimerRef.current);
-      }
-      
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-        mediaRecorderRef.current.stop();
-      }
-    };
-  }, [chatId, isRoom, forwardedMessage]);
-  
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-  
-  const handleSendMessage = async () => {
-    if (!inputMessage.trim() && attachments.length === 0) return;
-    
-    try {
-      // Jika ada attachment, kirim dengan FormData
-      if (attachments.length > 0) {
-        const formData = new FormData();
-        formData.append('content', inputMessage);
-        
-        if (replyTo) {
-          formData.append('replyToId', replyTo.id.toString());
-        }
-        
-        attachments.forEach(file => {
-          formData.append('attachments', file);
-        });
-        
-        const endpoint = isRoom ? `/api/rooms/${chatId}/messages` : `/api/chats/${chatId}/messages`;
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          body: formData
-        });
-        
-        if (response.ok) {
-          const newMessage = await response.json();
-          setMessages(prev => [...prev, newMessage]);
-          setInputMessage('');
-          setAttachments([]);
-          setReplyTo(null);
-          scrollToBottom();
-        }
-      } else {
-        // Kirim pesan teks biasa
-        const endpoint = isRoom ? `/api/rooms/${chatId}/messages` : `/api/chats/${chatId}/messages`;
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            content: inputMessage,
-            replyToId: replyTo?.id
-          })
-        });
-        
-        if (response.ok) {
-          const newMessage = await response.json();
-          setMessages(prev => [...prev, newMessage]);
-          setInputMessage('');
-          setReplyTo(null);
-          scrollToBottom();
-        }
-      }
-    } catch (error) {
-      console.error('Error sending message:', error);
-    }
-  };
-  
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-  
-  const handleAttachmentClick = () => {
-    fileInputRef.current?.click();
-  };
-  
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files);
-      setAttachments(prev => [...prev, ...newFiles]);
-      
-      // Reset input value agar event change terpicu lagi untuk file yang sama
-      e.target.value = '';
-    }
-  };
-  
-  const removeAttachment = (index: number) => {
-    setAttachments(prev => prev.filter((_, i) => i !== index));
-  };
-  
-  const handleReply = (message: MessageWithSender) => {
-    setReplyTo(message);
-  };
-  
-  const cancelReply = () => {
-    setReplyTo(null);
-  };
-  
-  const handleMessageDelete = async (messageId: number) => {
-    try {
-      const endpoint = isRoom ? `/api/rooms/${chatId}/messages/${messageId}` : `/api/chats/${chatId}/messages/${messageId}`;
-      const response = await fetch(endpoint, {
-        method: 'DELETE'
-      });
-      
-      if (response.ok) {
-        setMessages(prev => prev.filter(msg => msg.id !== messageId));
-      }
-    } catch (error) {
-      console.error('Error deleting message:', error);
-    }
-  };
-  
-  const handleForwardMessage = (message: MessageWithSender) => {
-    // Buka dialog untuk memilih chat tujuan
-    // Implementasi di versi selanjutnya
-  };
-  
-  const handleVoiceRecording = async () => {
     if (isRecording) {
+      interval = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isRecording]);
+  
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
+  
+  // Handle forwarded message if provided
+  useEffect(() => {
+    if (forwardedMessage) {
+      // If this component was rendered with a forwarded message, add it to the messages
+      setMessages(prevMessages => [...prevMessages, forwardedMessage]);
+    }
+  }, [forwardedMessage]);
+  
+  // Function to format seconds into MM:SS
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const secs = (seconds % 60).toString().padStart(2, '0');
+    return `${mins}:${secs}`;
+  };
+  
+  // Get file icon based on file type
+  const getFileIcon = (type: string) => {
+    if (type.startsWith('image/')) return '🖼️';
+    if (type.startsWith('video/')) return '🎬';
+    if (type.startsWith('audio/')) return '🎵';
+    if (type.includes('pdf')) return '📄';
+    if (type.includes('word')) return '📝';
+    if (type.includes('excel') || type.includes('sheet')) return '📊';
+    if (type.includes('zip') || type.includes('compressed')) return '📦';
+    return '📎';
+  };
+  
+  // Format file size
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + ' B';
+    else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    else return (bytes / 1048576).toFixed(1) + ' MB';
+  };
+  
+  // Handle file attachment selection
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    // Create attachment objects with all necessary data
+    const newAttachments = Array.from(files).map(file => ({
+      url: URL.createObjectURL(file),
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      file: file
+    }));
+    
+    setAttachments([...attachments, ...newAttachments]);
+    
+    // Clear the input so the same file can be selected again
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+  
+  // Handle voice recording
+  const handleVoiceRecording = async () => {
+    if (isRecording && mediaRecorder) {
       // Stop recording
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-        mediaRecorderRef.current.stop();
-      }
-      
-      if (recordingTimerRef.current) {
-        clearInterval(recordingTimerRef.current);
-        recordingTimerRef.current = null;
-      }
-      
+      mediaRecorder.stop();
       setIsRecording(false);
+      
+      // We don't reset timer immediately to show the final duration
+      setTimeout(() => {
+        setRecordingTime(0);
+      }, 1000);
+      
     } else {
       // Start recording
       try {
+        audioChunks.current = [];
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const mediaRecorder = new MediaRecorder(stream);
-        mediaRecorderRef.current = mediaRecorder;
-        audioChunksRef.current = [];
+        const recorder = new MediaRecorder(stream);
         
-        mediaRecorder.ondataavailable = (event) => {
-          if (event.data.size > 0) {
-            audioChunksRef.current.push(event.data);
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            audioChunks.current.push(e.data);
           }
         };
         
-        mediaRecorder.onstop = async () => {
-          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/mpeg' });
+        recorder.onstop = () => {
+          // Create audio blob and URL
+          const audioBlob = new Blob(audioChunks.current, { type: 'audio/webm' });
+          const url = URL.createObjectURL(audioBlob);
+          setAudioURL(url);
           
-          // Berikan nama file yang unik dengan timestamp
-          const timestamp = new Date().getTime();
-          const file = new File([audioBlob], `voice_note_${timestamp}.mp3`, { type: 'audio/mpeg' });
+          // Create a File object from the Blob for easier handling
+          const audioFile = new File(
+            [audioBlob], 
+            `voice_recording_${new Date().getTime()}.webm`, 
+            { type: 'audio/webm' }
+          );
           
-          // Auto send audio message
-          const formData = new FormData();
-          formData.append('content', '🎤 Voice Message');
-          formData.append('attachments', file);
+          // Process the audio recording as an attachment
+          const audioAttachment = {
+            url: url,
+            name: `Voice Note - ${formatTime(recordingTime)}`,
+            type: 'audio/webm',
+            size: audioBlob.size,
+            file: audioFile
+          };
           
-          const endpoint = isRoom ? `/api/rooms/${chatId}/messages` : `/api/chats/${chatId}/messages`;
-          try {
-            const response = await fetch(endpoint, {
-              method: 'POST',
-              body: formData
-            });
-            
-            if (response.ok) {
-              const newMessage = await response.json();
-              setMessages(prev => [...prev, newMessage]);
-              scrollToBottom();
-            }
-          } catch (error) {
-            console.error('Error sending voice message:', error);
-          }
+          // Add the audio attachment
+          setAttachments([...attachments, audioAttachment]);
           
-          // Stop tracks
+          // Stop all tracks
           stream.getTracks().forEach(track => track.stop());
-          setRecordingTime(0);
         };
         
-        mediaRecorder.start();
+        setMediaRecorder(recorder);
+        recorder.start();
         setIsRecording(true);
-        
-        // Update timer
-        let seconds = 0;
-        recordingTimerRef.current = setInterval(() => {
-          seconds++;
-          setRecordingTime(seconds);
-        }, 1000);
-      } catch (error) {
-        console.error('Error starting voice recording:', error);
+      } catch (err) {
+        console.error("Error accessing microphone:", err);
+        alert("Could not access microphone. Please check permissions.");
       }
     }
   };
   
-  const formatRecordingTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  // Handle message actions
+  const handleMessageLongPress = (messageId: number) => {
+    setActiveMessageId(messageId);
+    setShowMessageActions(true);
   };
-
+  
+  const handleReply = (msg: any) => {
+    setReplyingToMessage(msg);
+    setShowReplyForm(true);
+    setShowMessageActions(false);
+  };
+  
+  const handleForward = (msg: any) => {
+    setForwardingMessage(msg);
+    setShowForwardDialog(true);
+    setShowMessageActions(false);
+  };
+  
+  const handleDelete = (messageId: number) => {
+    setMessages(messages.filter(msg => msg.id !== messageId));
+    setShowMessageActions(false);
+  };
+  
+  // Helper function to generate a unique message ID
+  const generateUniqueId = () => {
+    return Date.now() + Math.floor(Math.random() * 1000);
+  };
+  
+  // Send message function
+  const sendMessage = () => {
+    if (message.trim() === '' && attachments.length === 0) return;
+    
+    let content = message;
+    
+    // Handle reply case
+    if (showReplyForm && replyingToMessage) {
+      content = `Replying to "${replyingToMessage.content.substring(0, 30)}${replyingToMessage.content.length > 30 ? '...' : ''}": ${content}`;
+    }
+    
+    const newMessage = {
+      id: generateUniqueId(),
+      content: content,
+      sender: { id: user.id, callsign: user.callsign },
+      timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+      isRead: true,
+      attachments: attachments.length > 0 ? [...attachments] : undefined,
+      replyTo: showReplyForm ? replyingToMessage : undefined
+    };
+    
+    setMessages([...messages, newMessage]);
+    setMessage('');
+    setAttachments([]);
+    setShowReplyForm(false);
+    setReplyingToMessage(null);
+  };
+  
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+  
+  // Mock startCall function
+  const startCall = (isVideo: boolean) => {
+    alert(`${isVideo ? 'Video' : 'Audio'} call with ${chatName} initiated!`);
+  };
+  
+  // Generate a list of contacts for the forward dialog
+  const getContacts = () => {
+    return [
+      { id: 101, name: "ALPHA SQUAD", isRoom: true },
+      { id: 102, name: "SUPPORT TEAM", isRoom: true },
+      { id: 103, name: "COMMAND CENTER", isRoom: true },
+      { id: 2, name: "BRAVO2", isRoom: false },
+      { id: 3, name: "CHARLIE3", isRoom: false },
+      { id: 4, name: "DELTA4", isRoom: false }
+    ];
+  };
+  
+  // Render the room members dialog
+  const renderMembersDialog = () => {
+    const room = getRoomData();
+    
+    return (
+      <Dialog open={showMembersDialog} onOpenChange={setShowMembersDialog}>
+        <DialogContent className="bg-[#1a1a1a] border-[#2c2c2c] text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-[#a2bd62]">{room.name} - MEMBERS</DialogTitle>
+          </DialogHeader>
+          <div className="mt-2">
+            <ul className="divide-y divide-[#2c2c2c]">
+              {room.members.map((member: any) => (
+                <li key={member.id} className="py-2 flex items-center">
+                  <div className="w-8 h-8 bg-[#353535] rounded-full flex items-center justify-center text-xs mr-3">
+                    {member.callsign.substring(0, 2)}
+                  </div>
+                  <span>{member.callsign}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+  
+  // Render the forward dialog
+  const renderForwardDialog = () => {
+    const contacts = getContacts();
+    
+    return (
+      <Dialog open={showForwardDialog} onOpenChange={setShowForwardDialog}>
+        <DialogContent className="bg-[#1a1a1a] border-[#2c2c2c] text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-[#a2bd62]">FORWARD MESSAGE</DialogTitle>
+          </DialogHeader>
+          <div className="mt-2">
+            <div className="bg-[#0c0c0c] p-3 rounded mb-4 border border-[#2c2c2c]">
+              <p className="text-xs text-gray-400 mb-1">FORWARDING:</p>
+              <p className="text-sm">{forwardingMessage?.content}</p>
+            </div>
+            <p className="text-sm mb-2">Select recipient:</p>
+            <ul className="divide-y divide-[#2c2c2c]">
+              {contacts.map(contact => (
+                <li
+                  key={`${contact.isRoom ? 'room' : 'chat'}-${contact.id}`}
+                  className="py-2 hover:bg-[#252525] cursor-pointer flex items-center"
+                  onClick={() => {
+                    if (onNavigateToChat) {
+                      onNavigateToChat(contact.id, contact.isRoom, forwardingMessage);
+                    }
+                    setShowForwardDialog(false);
+                  }}
+                >
+                  <div className="w-8 h-8 bg-[#353535] rounded-full flex items-center justify-center mr-3">
+                    {contact.isRoom ? <Users size={14} /> : <User size={14} />}
+                  </div>
+                  <span>{contact.name}</span>
+                  {contact.isRoom && (
+                    <span className="ml-2 text-xs text-gray-400">(Group)</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+  
   return (
-    <div className="h-full flex flex-col">
-      {/* Chat header */}
-      <div className="chat-header">
+    <div className="flex flex-col h-full bg-black">
+      {/* Header */}
+      <div className="bg-[#1a1a1a] border-b border-[#2c2c2c] p-3 flex justify-between items-center">
         <div className="flex items-center">
-          <button 
-            onClick={onBack} 
-            className="mr-2 p-1 rounded-full hover:bg-[#5c6249] transition-colors"
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="mr-2 text-white hover:bg-[#252525]"
+            onClick={onBack}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
+            <ArrowLeft size={18} />
+          </Button>
           <div className="flex items-center">
-            <div className="w-8 h-8 bg-[#5c6249] rounded-full flex items-center justify-center mr-2">
-              {isRoom ? (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              ) : (
-                chatName.charAt(0).toUpperCase()
-              )}
+            <div className="w-8 h-8 bg-[#353535] rounded-full flex items-center justify-center mr-2">
+              <span className="text-[#a2bd62] text-xs font-bold">
+                {chatName.substring(0, 2).toUpperCase()}
+              </span>
             </div>
             <div>
-              <h3 className="font-medium">{chatName}</h3>
-              <div className="text-xs text-gray-300">
-                {isRoom ? 'Tactical Group' : 'Direct Message'}
-              </div>
+              <h2 className="font-bold text-white">{chatName}</h2>
+              <p className="text-xs text-gray-400">
+                {isRoom ? 'Tactical Channel' : 'Direct Comms'}
+              </p>
             </div>
           </div>
         </div>
         <div className="flex">
-          <button 
-            className="p-2 rounded-full hover:bg-[#5c6249] transition-colors"
-            onClick={() => alert('Audio call feature coming soon')}
+          <Button 
+            variant="ghost" 
+            size="icon"
+            className="text-white hover:bg-[#252525]"
+            onClick={() => startCall(false)}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-            </svg>
-          </button>
-          <button 
-            className="p-2 rounded-full hover:bg-[#5c6249] transition-colors"
-            onClick={() => alert('Video call feature coming soon')}
+            <Phone size={18} />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            className="text-white hover:bg-[#252525]"
+            onClick={() => startCall(true)}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-          </button>
+            <Video size={18} />
+          </Button>
+          {isRoom && (
+            <Button 
+              variant="ghost" 
+              size="icon"
+              className="text-white hover:bg-[#252525]"
+              onClick={() => setShowMembersDialog(true)}
+            >
+              <Users size={18} />
+            </Button>
+          )}
         </div>
       </div>
       
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto p-4 bg-[#28292a] space-y-4 custom-scrollbar">
-        {isLoading ? (
-          <div className="flex justify-center items-center h-full">
-            <div className="text-[#8d9c6b] animate-pulse">Loading messages...</div>
-          </div>
-        ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="w-16 h-16 bg-[#3f4433] rounded-full flex items-center justify-center mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-[#9eb36b]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
+      <div className="flex-1 overflow-y-auto p-4 bg-[#0c0c0c]">
+        {messages.map((msg) => {
+          const isCurrentUser = msg.sender.id === user.id;
+          
+          return (
+            <div
+              key={msg.id}
+              className={`mb-4 ${isCurrentUser ? 'flex flex-col items-end' : 'flex flex-col items-start'}`}
+            >
+              {/* Message container */}
+              <div 
+                className={`relative max-w-[80%] ${isCurrentUser ? 'bg-[#1e3a14] rounded-tl-lg rounded-tr-lg rounded-bl-lg' : 'bg-[#1a1a1a] rounded-tr-lg rounded-tl-lg rounded-br-lg'}`}
+                onClick={() => handleMessageLongPress(msg.id)}
+              >
+                {/* Reply indicator */}
+                {msg.replyTo && (
+                  <div className="border-l-2 border-[#a2bd62] bg-[#1c1c1c] px-3 py-1 mt-1 mx-1 rounded text-xs text-gray-400 flex items-center">
+                    <CornerDownRight size={12} className="mr-1" />
+                    <div className="truncate">
+                      <span className="text-[#a2bd62] mr-1">{msg.replyTo.sender.callsign}:</span>
+                      {msg.replyTo.content.substring(0, 40)}{msg.replyTo.content.length > 40 ? '...' : ''}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Message content */}
+                <div className="px-3 py-2">
+                  {!isCurrentUser && (
+                    <div className="text-xs text-[#a2bd62] font-bold mb-1">{msg.sender.callsign}</div>
+                  )}
+                  <div className="break-words">{msg.content}</div>
+                  
+                  {/* Attachments */}
+                  {msg.attachments && msg.attachments.length > 0 && (
+                    <div className="mt-2 space-y-2">
+                      {msg.attachments.map((attachment: any, index: number) => (
+                        <div 
+                          key={index}
+                          className="bg-[#252525] p-2 rounded flex items-center text-sm"
+                        >
+                          <span className="mr-2 text-lg">
+                            {attachment.icon || getFileIcon(attachment.type)}
+                          </span>
+                          <div className="flex-1 overflow-hidden">
+                            <div className="truncate">{attachment.name}</div>
+                            <div className="text-xs text-gray-400">
+                              {formatFileSize(attachment.size)}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Audio attachment */}
+                  {msg.audioUrl && (
+                    <div className="mt-2">
+                      <audio src={msg.audioUrl} controls className="w-full h-10" />
+                    </div>
+                  )}
+                </div>
+                
+                {/* Timestamp */}
+                <div className={`text-xs text-gray-400 px-3 pb-1 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
+                  {msg.timestamp}
+                </div>
+                
+                {/* Message actions - visible when a message is long-pressed/selected */}
+                {activeMessageId === msg.id && showMessageActions && (
+                  <div className="absolute top-0 right-0 mt-2 mr-2 bg-[#252525] rounded shadow-lg z-10">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className="text-white p-1 h-auto"
+                      onClick={() => setShowMessageActions(false)}
+                    >
+                      <X size={14} />
+                    </Button>
+                    <div className="p-1 flex">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="text-white p-1 h-auto"
+                        onClick={() => handleReply(msg)}
+                      >
+                        <Reply size={14} />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="text-white p-1 h-auto"
+                        onClick={() => handleForward(msg)}
+                      >
+                        <Forward size={14} />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="text-white p-1 h-auto"
+                        onClick={() => handleDelete(msg.id)}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-            <h3 className="text-[#9eb36b] font-bold uppercase mb-2">SECURE LINE ESTABLISHED</h3>
-            <p className="text-gray-400 text-sm max-w-xs">This is the beginning of your secure conversation. All messages are encrypted.</p>
-          </div>
-        ) : (
-          messages.map(message => (
-            <ChatMessage
-              key={message.id}
-              message={message}
-              isMine={message.senderId === currentUser?.id}
-              onDelete={() => handleMessageDelete(message.id)}
-              onReply={() => handleReply(message)}
-              onForward={() => handleForwardMessage(message)}
-            />
-          ))
-        )}
-        
-        {/* Invisible div for auto-scrolling */}
+          );
+        })}
         <div ref={messagesEndRef} />
       </div>
       
-      {/* Reply preview */}
-      {replyTo && (
-        <div className="bg-[#3f4433] p-2 mx-2 rounded-t-md flex justify-between items-start">
-          <div className="flex-1 overflow-hidden">
-            <div className="text-xs text-[#9eb36b] font-medium mb-1">
-              Replying to {replyTo.sender?.callsign || 'User'}
+      {/* Reply form */}
+      {showReplyForm && replyingToMessage && (
+        <div className="bg-[#1a1a1a] border-t border-[#2c2c2c] p-2 flex items-start">
+          <div className="flex-1 pl-2 border-l-2 border-[#a2bd62]">
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-[#a2bd62]">
+                Replying to {replyingToMessage.sender.callsign}
+              </span>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="p-0 h-6 w-6 text-gray-400 hover:text-white"
+                onClick={() => {
+                  setShowReplyForm(false);
+                  setReplyingToMessage(null);
+                }}
+              >
+                <X size={14} />
+              </Button>
             </div>
-            <div className="text-sm text-white truncate">{replyTo.content}</div>
+            <p className="text-xs text-gray-400 truncate">{replyingToMessage.content}</p>
           </div>
-          <button 
-            onClick={cancelReply}
-            className="text-gray-400 hover:text-white"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
         </div>
       )}
       
-      {/* Attachment preview */}
+      {/* File attachments preview */}
       {attachments.length > 0 && (
-        <div className="bg-[#3f4433] p-2 mx-2 flex-wrap flex gap-2">
-          {attachments.map((file, index) => (
+        <div className="bg-[#1a1a1a] border-t border-[#2c2c2c] p-2 flex flex-wrap gap-2">
+          {attachments.map((attachment, index) => (
             <div 
-              key={index} 
-              className="bg-[#5c6249] rounded p-1 text-xs flex items-center"
+              key={index}
+              className="bg-[#252525] rounded p-2 flex items-center text-sm"
             >
-              <span className="truncate max-w-[120px]">{file.name}</span>
-              <button 
-                onClick={() => removeAttachment(index)}
-                className="ml-1 text-white hover:text-red-300"
+              <span className="mr-2 text-lg">{getFileIcon(attachment.type)}</span>
+              <div className="max-w-[120px] overflow-hidden">
+                <div className="truncate">{attachment.name}</div>
+                <div className="text-xs text-gray-400">
+                  {formatFileSize(attachment.size)}
+                </div>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="ml-2 p-0 h-6 w-6 text-gray-400 hover:text-white"
+                onClick={() => {
+                  const newAttachments = [...attachments];
+                  newAttachments.splice(index, 1);
+                  setAttachments(newAttachments);
+                }}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+                <X size={14} />
+              </Button>
             </div>
           ))}
         </div>
       )}
       
       {/* Input area */}
-      <div className="chat-footer">
-        {isRecording ? (
-          <div className="flex-1 flex items-center justify-between bg-[#3f4433] rounded-lg p-3">
-            <div className="flex items-center">
-              <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse mr-2"></div>
-              <span className="text-white">Recording... {formatRecordingTime(recordingTime)}</span>
-            </div>
-            <button 
-              onClick={handleVoiceRecording}
-              className="bg-[#5c6249] text-white rounded-full p-2 hover:bg-[#4a4e3a]"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        ) : (
-          <>
-            <button 
-              onClick={handleAttachmentClick}
-              className="p-2 text-white hover:bg-[#3f4433] rounded-full mr-2"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-              </svg>
-            </button>
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleFileChange} 
-              className="hidden" 
-              multiple 
-            />
-            <textarea 
-              className="message-input resize-none focus:outline-none"
-              placeholder="Type a secure message..."
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              rows={1}
-            />
-            {inputMessage.trim() || attachments.length > 0 ? (
-              <button 
-                onClick={handleSendMessage}
-                className="p-2 text-white hover:bg-[#3f4433] rounded-full ml-2"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
-              </button>
+      <div className="bg-[#1a1a1a] border-t border-[#2c2c2c] p-3 flex items-center">
+        <input
+          type="file"
+          multiple
+          onChange={handleFileSelect}
+          ref={fileInputRef}
+          className="hidden"
+        />
+        <Button 
+          variant="ghost" 
+          size="icon"
+          className="text-gray-400 hover:text-white"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <Paperclip size={20} />
+        </Button>
+        
+        <div className="flex-1 mx-2">
+          <Input
+            placeholder="Type a message..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="bg-[#252525] border-[#353535] text-white focus:border-[#a2bd62]"
+          />
+        </div>
+        
+        {message.trim() === '' && attachments.length === 0 ? (
+          <Button 
+            variant="ghost" 
+            size="icon"
+            className={`${isRecording ? 'text-red-500' : 'text-gray-400 hover:text-white'}`}
+            onClick={handleVoiceRecording}
+          >
+            {isRecording ? (
+              <>
+                <StopCircle size={20} />
+                <span className="sr-only">Stop recording</span>
+              </>
             ) : (
-              <button 
-                onClick={handleVoiceRecording}
-                className="p-2 text-white hover:bg-[#3f4433] rounded-full ml-2"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                </svg>
-              </button>
+              <>
+                <Mic size={20} />
+                <span className="sr-only">Start recording</span>
+              </>
             )}
-          </>
+          </Button>
+        ) : (
+          <Button 
+            variant="ghost" 
+            size="icon"
+            className="text-[#a2bd62] hover:text-[#b8d670]"
+            onClick={sendMessage}
+          >
+            <Send size={20} />
+          </Button>
+        )}
+        
+        {/* Recording indicator */}
+        {isRecording && (
+          <div className="absolute bottom-16 left-0 right-0 bg-red-900 bg-opacity-80 text-white py-2 px-4 flex justify-between items-center">
+            <div className="flex items-center">
+              <div className="h-3 w-3 rounded-full bg-red-500 mr-2 animate-pulse"></div>
+              <span>Recording voice message</span>
+            </div>
+            <span>{formatTime(recordingTime)}</span>
+          </div>
         )}
       </div>
+      
+      {/* Dialogs */}
+      {renderMembersDialog()}
+      {renderForwardDialog()}
     </div>
   );
 }

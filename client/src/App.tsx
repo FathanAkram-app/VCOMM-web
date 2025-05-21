@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { Toaster } from "@/components/ui/toaster";
 import MilitaryLoginPage from "./pages/MilitaryLoginPage";
+import Chat from "./pages/Chat";
 
 // Create a query client for tanstack/react-query
 const queryClient = new QueryClient({
@@ -23,6 +24,7 @@ export default function App() {
             <Switch>
               <Route path="/" component={MilitaryLoginPage} />
               <Route path="/login" component={MilitaryLoginPage} />
+              <Route path="/chat" component={Chat} />
               {/* Add more routes as they are developed */}
             </Switch>
           </Router>

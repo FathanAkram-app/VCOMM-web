@@ -44,7 +44,7 @@ export default function MilitaryLoginPage() {
         throw new Error(errorData.message || 'Login gagal');
       }
       
-      // Jika berhasil login, arahkan ke halaman dashboard/comms
+      // Jika berhasil login, arahkan ke halaman chat
       const userData = await response.json();
       console.log("Login berhasil:", userData);
       
@@ -54,8 +54,8 @@ export default function MilitaryLoginPage() {
         isAuthenticated: true
       }));
       
-      // Redirect ke dashboard
-      window.location.href = "/dashboard";
+      // Redirect ke chat
+      window.location.href = "/chat";
     } catch (error: any) {
       console.error("Login error:", error);
       alert(error.message || "Login gagal");
