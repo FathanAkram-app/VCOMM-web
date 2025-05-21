@@ -33,19 +33,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Fetch the current user
   const { data: user, isLoading } = useQuery<User | null>({
-    queryKey: ['/api/user'],
+    queryKey: ['/api/auth/user'],
     retry: false,
   });
 
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (credentials: { callsign: string; password: string }) => {
-      const response = await fetch('/api/login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(credentials),
+        credentials: 'include', // Penting untuk menyimpan cookie
       });
 
       if (!response.ok) {
@@ -88,12 +89,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         branch: 'ARM' // Nilai default untuk branch
       };
       
-      const response = await fetch('/api/register', {
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(dataToSend),
+        credentials: 'include', // Penting untuk menyimpan cookie
       });
 
       if (!response.ok) {
