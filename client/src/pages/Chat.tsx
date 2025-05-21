@@ -3,6 +3,18 @@ import { useLocation } from 'wouter';
 import WhatsAppStyleChatList from '@/components/WhatsAppStyleChatList';
 import ChatRoom from '@/components/ChatRoom';
 
+type ChatItem = {
+  id: number;
+  name: string;
+  isRoom: boolean;
+  isOnline?: boolean;
+  members?: number;
+  unread?: number;
+  lastMessage?: string;
+  lastMessageTime?: string;
+  otherUserId?: number;
+};
+
 export default function Chat() {
   const [, setLocation] = useLocation();
   const [activeChat, setActiveChat] = useState<{id: number, isRoom: boolean, name: string} | null>(null);
@@ -10,7 +22,7 @@ export default function Chat() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Mock chat data untuk tampilan awal
-  const [chats, setChats] = useState<any[]>([
+  const [chats, setChats] = useState<ChatItem[]>([
     {
       id: 1,
       name: "Tactical Team Alpha",
@@ -67,12 +79,25 @@ export default function Chat() {
     } else {
       setLocation("/login");
     }
+    console.log("Chat component mounted");
   }, [setLocation]);
 
   // Handle logout
   const handleLogout = () => {
-    localStorage.removeItem("currentUser");
-    setLocation("/login");
+    fetch('/api/logout', {
+      method: 'GET',
+      credentials: 'include',
+    })
+    .then(() => {
+      localStorage.removeItem("currentUser");
+      setLocation("/login");
+    })
+    .catch(error => {
+      console.error("Logout error:", error);
+      // Hapus data user dari localStorage meskipun API error
+      localStorage.removeItem("currentUser");
+      setLocation("/login");
+    });
   };
 
   // Handle pemilihan chat
@@ -117,7 +142,6 @@ export default function Chat() {
       {/* Header */}
       <header className="bg-[#1a1a1a] border-b border-[#2c2c2c] p-3 flex justify-between items-center">
         <div className="flex items-center">
-          <img src="/assets/Icon Chat NXXZ.png" alt="NXXZ Comms" className="h-8 w-8 mr-2" />
           <h1 className="text-lg font-bold text-[#a2bd62]">SECURE COMMS</h1>
         </div>
         <div className="flex items-center">
@@ -145,7 +169,6 @@ export default function Chat() {
             <div className="flex-1 overflow-y-auto">
               <WhatsAppStyleChatList 
                 chats={chats}
-                activeChat={activeChat ? { id: activeChat.id, isRoom: activeChat.isRoom } : null}
                 onSelectChat={handleSelectChat}
               />
             </div>
