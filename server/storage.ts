@@ -765,6 +765,52 @@ export class DatabaseStorage implements IStorage {
       .from(groupCalls)
       .where(eq(groupCalls.active, true));
   }
+  
+  // Implementasi fungsi untuk mendapatkan daftar chat pengguna
+  async getChatsForUser(userId: string): Promise<any[]> {
+    try {
+      // 1. Ambil direct chats user
+      const userDirectChats = await this.getUserDirectChats(userId);
+      
+      // 2. Ambil rooms user
+      const userRooms = await this.getUserRooms(userId);
+      
+      // 3. Gabungkan keduanya dalam format yang sesuai
+      return {
+        directChats: userDirectChats,
+        rooms: userRooms
+      };
+    } catch (error) {
+      console.error('Error getting chats for user:', error);
+      return { directChats: [], rooms: [] };
+    }
+  }
+  
+  // Implementasi fungsi untuk mendapatkan pesan dalam suatu chat
+  async getMessagesForChat(chatId: number, isRoom: boolean): Promise<Message[]> {
+    try {
+      if (isRoom) {
+        return await this.getMessagesByRoomId(chatId);
+      } else {
+        return await this.getMessagesByDirectChatId(chatId);
+      }
+    } catch (error) {
+      console.error('Error getting messages for chat:', error);
+      return [];
+    }
+  }
+  
+  // Implementasi fungsi untuk menandai pesan sebagai sudah dibaca
+  async markMessagesAsRead(chatId: number, isRoom: boolean, userId: string): Promise<void> {
+    try {
+      // Logika untuk menandai pesan sebagai sudah dibaca
+      // Untuk saat ini, kita bisa mengimplementasikan versi sederhana
+      console.log(`Marking messages as read for chatId=${chatId}, isRoom=${isRoom}, userId=${userId}`);
+      // Implementasi sebenarnya akan melibatkan update message status di database
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
+  }
 }
 
 // Export DatabaseStorage instance to be used in the application
