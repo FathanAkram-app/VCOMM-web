@@ -429,6 +429,32 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
         setMessages(prev => prev.map(msg => msg.id === tempId ? sentMessage : msg));
         
       } else {
+        // Jika bukan room, pastikan direct chat sudah dibuat terlebih dahulu
+        if (!isRoom) {
+          try {
+            console.log(`Memastikan direct chat dengan pengguna ID ${chatId} sudah ada`);
+            
+            // Coba buat direct chat jika belum ada
+            const createChatResponse = await fetch('/api/direct-chats', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ otherUserId: chatId }),
+              credentials: 'include'
+            });
+            
+            if (!createChatResponse.ok) {
+              console.warn(`Gagal membuat direct chat: ${createChatResponse.status} ${createChatResponse.statusText}`);
+            } else {
+              const directChat = await createChatResponse.json();
+              console.log("Direct chat dibuat atau ditemukan:", directChat);
+            }
+          } catch (chatError) {
+            console.error("Error saat memastikan direct chat:", chatError);
+          }
+        }
+        
         // Kirim pesan teks biasa
         const messageData = {
           content,
@@ -450,6 +476,8 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
         
         setMessages(prev => [...prev, tempMessage]);
         
+        console.log(`Mengirim pesan ke chatId=${chatId}, isRoom=${isRoom}`, messageData);
+        
         // Kirim pesan ke server
         const response = await fetch(`/api/chats/${chatId}/messages`, {
           method: 'POST',
@@ -461,6 +489,9 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
         });
         
         if (!response.ok) {
+          console.error(`Error server: ${response.status} ${response.statusText}`);
+          const errorData = await response.text();
+          console.error(`Response error: ${errorData}`);
           throw new Error(`Error sending message: ${response.status} ${response.statusText}`);
         }
         
