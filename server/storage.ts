@@ -59,6 +59,9 @@ export interface IStorage {
   createDirectChat(data: InsertDirectChat): Promise<DirectChat>;
   getUserDirectChats(userId: string): Promise<DirectChat[]>;
   
+  // Verifikasi akses ke chat
+  isUserInChat(userId: string, chatId: number, isRoom: boolean): Promise<boolean>;
+  
   // Message operations
   createMessage(data: InsertMessage): Promise<Message>;
   getMessagesByRoomId(roomId: number): Promise<Message[]>;
@@ -336,6 +339,30 @@ export class DatabaseStorage implements IStorage {
           eq(directChats.user2Id, userId)
         )
       );
+  }
+  
+  // Verifikasi akses ke chat
+  async isUserInChat(userId: string, chatId: number, isRoom: boolean): Promise<boolean> {
+    if (isRoom) {
+      // Verifikasi apakah user adalah anggota room
+      return await this.isUserInRoom(userId, chatId);
+    } else {
+      // Verifikasi apakah chat direct ini milik user
+      const [directChat] = await db
+        .select()
+        .from(directChats)
+        .where(
+          and(
+            eq(directChats.id, chatId),
+            or(
+              eq(directChats.user1Id, userId),
+              eq(directChats.user2Id, userId)
+            )
+          )
+        );
+      
+      return !!directChat;
+    }
   }
   
   // Message operations
