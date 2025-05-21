@@ -82,87 +82,59 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
     fetchRoomData();
   }, [chatId, isRoom, chatName]);
   
-  // Mock messages based on chat type
-  const getInitialMessages = () => {
-    if (isRoom) {
-      // Group chat messages
-      return [
-        {
-          id: 1,
-          content: "Awaiting further instructions for Operation Alpha.",
-          sender: { id: 2, callsign: "BRAVO2" },
-          timestamp: "10:45",
-          isRead: true
-        },
-        {
-          id: 2,
-          content: "Coordinates received. Moving to rendezvous point.",
-          sender: { id: 3, callsign: "CHARLIE3" },
-          timestamp: "10:46",
-          isRead: true
-        },
-        {
-          id: 3,
-          content: "Supplies will be at the designated location at 1200 hours.",
-          sender: { id: 1, callsign: "ALPHA1" },
-          timestamp: "10:50",
-          isRead: true
-        },
-        {
-          id: 4,
-          content: "Roger that. Will proceed with caution.",
-          sender: { id: 4, callsign: "DELTA4" },
-          timestamp: "10:52",
-          isRead: true
-        },
-        {
-          id: 5,
-          content: "UAV surveillance confirms area is clear. Proceed with mission.",
-          sender: { id: 1, callsign: "ALPHA1" },
-          timestamp: "10:55",
-          isRead: true
-        }
-      ];
-    } else {
-      // Direct chat messages
-      // Determine the other user based on chatName
-      const otherUsername = chatName;
-      const otherUserId = chatId;
+  // Fungsi untuk scroll ke bawah chat
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+  
+  // Fungsi untuk mengambil pesan dari database
+  const fetchMessages = async () => {
+    try {
+      console.log(`Mengambil pesan untuk chat ID ${chatId} (isRoom: ${isRoom})`);
+      const response = await fetch(`/api/chats/${chatId}/messages?isRoom=${isRoom}`, {
+        credentials: 'include'
+      });
       
-      return [
-        {
-          id: 1,
-          content: `Secure direct communication established with ${otherUsername}.`,
-          sender: { id: 1, callsign: "ALPHA1" },
-          timestamp: "09:30",
-          isRead: true
-        },
-        {
-          id: 2,
-          content: "Status report requested for your current position.",
-          sender: { id: otherUserId, callsign: otherUsername },
-          timestamp: "09:32",
-          isRead: true
-        },
-        {
-          id: 3,
-          content: "All systems nominal. Maintaining position at grid reference Delta-7.",
-          sender: { id: 1, callsign: "ALPHA1" },
-          timestamp: "09:35",
-          isRead: true
-        },
-        {
-          id: 4,
-          content: "Acknowledged. Stand by for further instructions.",
-          sender: { id: otherUserId, callsign: otherUsername },
-          timestamp: "09:40",
-          isRead: true
-        }
-      ];
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Error ${response.status}: ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log("Pesan dari API:", data);
+      
+      // Format pesan untuk ditampilkan
+      const formattedMessages = data.map((msg: any) => {
+        return {
+          id: msg.id,
+          content: msg.content,
+          sender: {
+            id: msg.sender?.id || msg.senderId,
+            callsign: msg.sender?.callsign || 'User'
+          },
+          timestamp: msg.sentAt ? new Date(msg.sentAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '',
+          isRead: msg.status === 'read',
+          attachments: msg.attachment ? [msg.attachment] : [],
+          type: msg.type || 'text',
+          replyTo: msg.replyToId ? {
+            id: msg.replyToId,
+            content: msg.replyInfo?.content || 'Pesan sebelumnya',
+            sender: msg.replyInfo?.senderName || 'User'
+          } : null
+        };
+      });
+      
+      setMessages(formattedMessages);
+      // Scroll ke pesan terakhir
+      setTimeout(scrollToBottom, 100);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      // Gunakan array kosong sebagai fallback jika terjadi error
+      setMessages([]);
     }
   };
   
-  const [messages, setMessages] = useState(getInitialMessages());
+  const [messages, setMessages] = useState<any[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [users, setUsers] = useState<any[]>([]);
   
