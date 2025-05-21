@@ -2,6 +2,7 @@ import express, { Express, Request, Response } from 'express';
 import { createServer, Server } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { storage } from './storage';
+import { pool } from './db';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -487,8 +488,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         messageData.roomId = chatId;
       } else {
         console.log(`[DEBUG] Pesan untuk direct chat ${chatId}`);
-        // Untuk kompatibilitas dengan tabel yang ada, kita gunakan conversationId
-        messageData.conversationId = chatId;
+        
+        // Untuk direct chat, kita perlu mendapatkan conversation_id yang benar
+        try {
+          // Dapatkan direct chat dan user terkait
+          const directChatResult = await pool.query(
+            `SELECT * FROM direct_chats WHERE id = $1`,
+            [chatId]
+          );
+          
+          if (directChatResult.rows.length === 0) {
+            console.log(`[DEBUG] Direct chat dengan ID ${chatId} tidak ditemukan`);
+            return res.status(404).json({ message: 'Direct chat tidak ditemukan' });
+          }
+          
+          const directChat = directChatResult.rows[0];
+          console.log(`[DEBUG] Direct chat ditemukan:`, directChat);
+          
+          // Cari conversation yang cocok untuk dua user
+          const conversationResult = await pool.query(
+            `SELECT * FROM conversations 
+             WHERE name LIKE 'Direct Chat%' 
+             AND (name LIKE '%' || $1 || '-' || $2 || '%' OR name LIKE '%' || $2 || '-' || $1 || '%')`,
+            [directChat.user1_id.substring(0, 1), directChat.user2_id.substring(0, 1)]
+          );
+          
+          // Ambil salah satu conversation, prioritaskan yang paling baru
+          if (conversationResult.rows.length > 0) {
+            const conversation = conversationResult.rows[0];
+            console.log(`[DEBUG] Conversation ditemukan dengan ID: ${conversation.id}`);
+            messageData.conversationId = conversation.id;
+          } else {
+            // Jika tidak ada conversation yang cocok, gunakan direct chat id sebagai room id
+            // Ini untuk fallback meskipun kemungkinan error
+            console.log(`[DEBUG] Tidak ada conversation yang cocok, menggunakan direct chat id: ${chatId}`);
+            messageData.roomId = chatId;
+          }
+        } catch (error) {
+          console.error(`[DEBUG] Error saat mencari conversation:`, error);
+          // Fallback ke chatId jika terjadi error
+          messageData.conversationId = chatId;
+        }
       }
       
       // Tambahkan forwarded message jika ada
