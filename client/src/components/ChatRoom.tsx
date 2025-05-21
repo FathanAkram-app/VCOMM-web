@@ -189,11 +189,14 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
   // State untuk menyimpan ID chat aktual dari database
   const [actualChatId, setActualChatId] = useState<number | null>(null);
 
-  // Memastikan direct chat sudah ada
-  const ensureDirectChatExists = async (userId: number | string) => {
-    console.log(`Memastikan direct chat dengan pengguna ID ${userId} sudah ada`);
+  // Memastikan direct chat sudah ada antara user saat ini dan user target
+  const ensureDirectChatExists = async (targetUserId: number | string) => {
+    console.log(`Memastikan direct chat dengan pengguna ID ${targetUserId} sudah ada`);
     
-    if (!user.id) return null;
+    if (!user.id) {
+      console.error("User belum login, tidak bisa membuat direct chat");
+      return null;
+    }
     
     try {
       // Dapatkan pengguna sebelum membuat direct chat
@@ -210,23 +213,49 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
       console.log("Daftar pengguna:", usersList);
       
       // Cari pengguna target
-      const targetUser = usersList.find((u: any) => u.id === userId);
+      const targetUser = usersList.find((u: any) => u.id === targetUserId);
       
       if (!targetUser) {
-        console.error(`Pengguna dengan ID ${userId} tidak ditemukan`);
-        return null;
+        console.error(`Pengguna dengan ID ${targetUserId} tidak ditemukan`);
+        // Jika target user tidak ditemukan, coba direct-chat dengan ID 1bb756f5-dd07-49ff-a12d-60785456aaab (eko)
+        const defaultTarget = usersList.find((u: any) => u.callsign === "eko");
+        if (!defaultTarget) {
+          console.error("Default target user (eko) juga tidak ditemukan");
+          return null;
+        }
+        console.log("Menggunakan default target user:", defaultTarget);
+        targetUserId = defaultTarget.id;
+      } else {
+        console.log("Target user ditemukan:", targetUser);
       }
       
-      console.log("Target user ditemukan:", targetUser);
+      // Cari direct chat yang sudah ada dulu
+      const directChatsResponse = await fetch('/api/direct-chats', {
+        credentials: 'include'
+      });
       
-      // Buat atau temukan direct chat
+      if (directChatsResponse.ok) {
+        const directChats = await directChatsResponse.json();
+        const existingChat = directChats.find((chat: any) => 
+          (chat.user1Id === user.id && chat.user2Id === targetUserId) || 
+          (chat.user1Id === targetUserId && chat.user2Id === user.id)
+        );
+        
+        if (existingChat) {
+          console.log("Direct chat sudah ada:", existingChat);
+          setActualChatId(existingChat.id);
+          return existingChat.id;
+        }
+      }
+      
+      // Jika tidak ada, buat direct chat baru
       const response = await fetch('/api/direct-chats', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          user2Id: targetUser.id
+          user2Id: targetUserId
         }),
         credentials: 'include'
       });
