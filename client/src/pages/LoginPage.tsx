@@ -1,313 +1,307 @@
-import { useState } from "react";
-import { useAuth } from "../hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShieldAlert, AlertCircle, Lock } from "lucide-react";
+import * as React from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { useLocation } from 'wouter';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from '@/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+
+// Login schema
+const loginSchema = z.object({
+  callsign: z.string().min(3, { message: 'Callsign harus minimal 3 karakter' }),
+  password: z.string().min(6, { message: 'Password harus minimal 6 karakter' }),
+});
+
+// Registration schema
+const registerSchema = z.object({
+  callsign: z.string().min(3, { message: 'Callsign harus minimal 3 karakter' }),
+  password: z.string().min(6, { message: 'Password harus minimal 6 karakter' }),
+  nrp: z.string().optional(),
+  rank: z.string().optional(),
+  fullName: z.string().min(2, { message: 'Nama lengkap harus minimal 2 karakter' }).optional(),
+});
+
+type LoginValues = z.infer<typeof loginSchema>;
+type RegisterValues = z.infer<typeof registerSchema>;
 
 export default function LoginPage() {
-  // Login form states
-  const [callsign, setCallsign] = useState("");
-  const [password, setPassword] = useState("");
-  
-  // Registration form states
-  const [regCallsign, setRegCallsign] = useState("");
-  const [regNrp, setRegNrp] = useState("");
-  const [regFullName, setRegFullName] = useState("");
-  const [regRank, setRegRank] = useState("");
-  const [regBranch, setRegBranch] = useState("");
-  const [regPassword, setRegPassword] = useState("");
-  const [regConfirmPassword, setRegConfirmPassword] = useState("");
-  
-  const { loginMutation, registerMutation, authError } = useAuth();
+  const { login, register } = useAuth();
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = React.useState<boolean>(false);
+  const [activeTab, setActiveTab] = React.useState<string>('login');
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (callsign.trim() && password.trim()) {
-      loginMutation.mutate({ 
-        callsign, 
-        password 
-      });
+  // Login form
+  const loginForm = useForm<LoginValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      callsign: '',
+      password: '',
+    },
+  });
+
+  // Register form
+  const registerForm = useForm<RegisterValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      callsign: '',
+      password: '',
+      nrp: '',
+      rank: '',
+      fullName: '',
+    },
+  });
+
+  // Handle login form submission
+  const onLoginSubmit = async (values: LoginValues) => {
+    setIsLoading(true);
+    try {
+      await login(values);
+      setLocation('/');
+    } catch (error) {
+      console.error('Login error:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
-  
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!regCallsign.trim() || !regPassword.trim()) {
-      return; // Basic validation
+
+  // Handle registration form submission
+  const onRegisterSubmit = async (values: RegisterValues) => {
+    setIsLoading(true);
+    try {
+      await register(values);
+      setActiveTab('login');
+      toast({
+        title: 'Registrasi berhasil',
+        description: 'Silahkan login dengan akun baru Anda',
+        variant: 'success',
+      });
+    } catch (error) {
+      console.error('Registration error:', error);
+    } finally {
+      setIsLoading(false);
     }
-    
-    if (regPassword !== regConfirmPassword) {
-      alert("Password tidak cocok!");
-      return;
-    }
-    
-    // Register the user
-    registerMutation.mutate({
-      callsign: regCallsign,
-      password: regPassword,
-      passwordConfirm: regConfirmPassword,
-      nrp: regNrp,
-      fullName: regFullName,
-      rank: regRank,
-      branch: regBranch
-    });
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col justify-center items-center p-4">
-      {authError && (
-        <div className="mb-4 p-3 bg-red-600/20 border border-red-600 text-red-600 rounded max-w-md w-full">
-          <p className="text-sm font-medium">{authError}</p>
+    <div className="flex items-center justify-center min-h-screen bg-zinc-950 p-4">
+      <div className="w-full max-w-md space-y-6">
+        {/* App Logo and Title */}
+        <div className="flex flex-col items-center justify-center space-y-2 text-center">
+          <div className="bg-military-green rounded-full p-3 border-2 border-military-accent">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-white"
+            >
+              <path d="m12 8-9.04 9.06a2.82 2.82 0 1 0 3.98 3.98L16 12" />
+              <circle cx="17" cy="7" r="5" />
+            </svg>
+          </div>
+          <h1 className="text-3xl font-bold tracking-tighter text-white">NXZZ-VComm</h1>
+          <p className="text-sm text-zinc-400">Secure Military Communication Platform</p>
         </div>
-      )}
-      
-      <Card className="w-full max-w-md border-2 border-accent bg-background shadow-md">
-        <CardHeader className="space-y-1 text-center military-header">
-          <div className="flex justify-center mb-3">
-            <div className="w-20 h-20 rounded-sm bg-secondary text-secondary-foreground flex items-center justify-center border-2 border-accent">
-              <ShieldAlert className="h-10 w-10" />
-            </div>
-          </div>
-          <CardTitle className="text-2xl font-bold tracking-wider uppercase text-primary-foreground">SECURE COMMS</CardTitle>
-          <CardDescription className="text-primary-foreground/80 font-medium">
-            MILITARY PERSONNEL AUTHENTICATION REQUIRED
-          </CardDescription>
-        </CardHeader>
-        
-        <Tabs defaultValue="login" className="w-full">
-          <div className="border-b border-accent">
-            <TabsList className="grid grid-cols-2 w-full bg-background">
-              <TabsTrigger 
-                value="login"
-                className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground font-bold rounded-none border-r border-accent"
-              >
-                LOGIN
-              </TabsTrigger>
-              <TabsTrigger 
-                value="register" 
-                className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground font-bold rounded-none"
-              >
-                REGISTER
-              </TabsTrigger>
-            </TabsList>
-          </div>
-          
-          {/* Login Tab */}
-          <TabsContent value="login" className="m-0">
-            <CardContent className="p-6">
-              <form onSubmit={handleLogin}>
-                <div className="grid gap-5">
-                  <div className="space-y-2">
-                    <Label htmlFor="callsign" className="text-sm font-bold uppercase">CALLSIGN / USERNAME</Label>
-                    <Input
-                      id="callsign"
-                      placeholder="ENTER CALLSIGN"
-                      value={callsign}
-                      onChange={(e) => setCallsign(e.target.value)}
-                      required
-                      className="bg-muted border-accent font-medium placeholder:text-muted-foreground/50"
+
+        {/* Login/Register Card */}
+        <Card className="border-military-accent bg-zinc-900 text-white">
+          <CardHeader>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 bg-zinc-800">
+                <TabsTrigger value="login" className="data-[state=active]:bg-military-green data-[state=active]:text-white">
+                  Login
+                </TabsTrigger>
+                <TabsTrigger value="register" className="data-[state=active]:bg-military-green data-[state=active]:text-white">
+                  Register
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {activeTab === 'login' ? (
+              <Form {...loginForm}>
+                <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+                  <FormField
+                    control={loginForm.control}
+                    name="callsign"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white">Callsign</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Masukkan callsign" 
+                            {...field} 
+                            className="bg-zinc-800 border-zinc-700 text-white"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={loginForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white">Password</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="password" 
+                            placeholder="Masukkan password" 
+                            {...field} 
+                            className="bg-zinc-800 border-zinc-700 text-white"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button 
+                    type="submit" 
+                    variant="military" 
+                    disabled={isLoading} 
+                    className="w-full"
+                  >
+                    {isLoading ? 'Memproses...' : 'Login'}
+                  </Button>
+                </form>
+              </Form>
+            ) : (
+              <Form {...registerForm}>
+                <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
+                  <FormField
+                    control={registerForm.control}
+                    name="callsign"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white">Callsign</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Masukkan callsign" 
+                            {...field} 
+                            className="bg-zinc-800 border-zinc-700 text-white"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={registerForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white">Password</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="password" 
+                            placeholder="Masukkan password" 
+                            {...field} 
+                            className="bg-zinc-800 border-zinc-700 text-white"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormField
+                      control={registerForm.control}
+                      name="nrp"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-white">NRP</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="Nomor Registrasi Personil" 
+                              {...field} 
+                              className="bg-zinc-800 border-zinc-700 text-white"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={registerForm.control}
+                      name="rank"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-white">Pangkat</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="Pangkat/Jabatan" 
+                              {...field} 
+                              className="bg-zinc-800 border-zinc-700 text-white"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="password" className="text-sm font-bold uppercase flex items-center">
-                      <span>SECURITY CODE / PASSWORD</span>
-                      <span className="ml-2 inline-flex items-center px-1 py-0.5 text-xs military-badge">
-                        <Lock className="h-3 w-3 mr-1" /> ENCRYPTED
-                      </span>
-                    </Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="ENTER SECURITY CODE"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      className="bg-muted border-accent font-medium placeholder:text-muted-foreground/50"
-                    />
-                    <div className="py-2 px-3 bg-primary/10 border border-accent/50 mt-2">
-                      <p className="text-xs text-accent font-medium">
-                        UNAUTHORIZED ACCESS IS STRICTLY PROHIBITED.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </form>
-            </CardContent>
-            
-            <CardFooter className="border-t border-accent p-6">
-              <Button 
-                className="w-full military-button text-lg uppercase font-bold tracking-wider h-12" 
-                onClick={handleLogin}
-                disabled={loginMutation.isPending || !callsign.trim() || !password.trim()}
-              >
-                {loginMutation.isPending ? "AUTHENTICATING..." : "SECURE LOGIN"}
-              </Button>
-            </CardFooter>
-          </TabsContent>
-          
-          {/* Registration Tab */}
-          <TabsContent value="register" className="m-0">
-            <CardContent className="p-6">
-              <form onSubmit={handleRegister} className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                <div className="grid gap-5">
-                  <div className="py-2 px-3 bg-primary/10 border border-accent/50">
-                    <p className="text-xs text-accent font-medium flex items-center">
-                      <AlertCircle className="h-3 w-3 mr-1" />
-                      LENGKAPI FORM REGISTRASI PERSONEL MILITER
-                    </p>
-                  </div>
-                  
-                  {/* Call Sign / Username */}
-                  <div className="space-y-2">
-                    <Label htmlFor="reg-callsign" className="text-sm font-bold uppercase">
-                      CALL SIGN / USERNAME
-                    </Label>
-                    <Input
-                      id="reg-callsign"
-                      placeholder="ENTER CALLSIGN"
-                      value={regCallsign}
-                      onChange={(e) => setRegCallsign(e.target.value)}
-                      required
-                      className="bg-muted border-accent font-medium placeholder:text-muted-foreground/50"
-                    />
-                  </div>
-                  
-                  {/* NRP */}
-                  <div className="space-y-2">
-                    <Label htmlFor="reg-nrp" className="text-sm font-bold uppercase">
-                      NRP / NOMOR REGISTER PUSAT
-                    </Label>
-                    <Input
-                      id="reg-nrp"
-                      placeholder="ENTER NRP"
-                      value={regNrp}
-                      onChange={(e) => setRegNrp(e.target.value)}
-                      required
-                      className="bg-muted border-accent font-medium placeholder:text-muted-foreground/50"
-                    />
-                  </div>
-                  
-                  {/* Full Name */}
-                  <div className="space-y-2">
-                    <Label htmlFor="reg-fullname" className="text-sm font-bold uppercase">
-                      NAMA LENGKAP
-                    </Label>
-                    <Input
-                      id="reg-fullname"
-                      placeholder="ENTER FULL NAME"
-                      value={regFullName}
-                      onChange={(e) => setRegFullName(e.target.value)}
-                      required
-                      className="bg-muted border-accent font-medium placeholder:text-muted-foreground/50"
-                    />
-                  </div>
-                  
-                  {/* Rank */}
-                  <div className="space-y-2">
-                    <Label htmlFor="reg-rank" className="text-sm font-bold uppercase">
-                      PANGKAT
-                    </Label>
-                    <Select
-                      value={regRank}
-                      onValueChange={setRegRank}
-                    >
-                      <SelectTrigger id="reg-rank" className="bg-muted border-accent">
-                        <SelectValue placeholder="PILIH PANGKAT" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Letnan Dua">LETNAN DUA</SelectItem>
-                        <SelectItem value="Letnan Satu">LETNAN SATU</SelectItem>
-                        <SelectItem value="Kapten">KAPTEN</SelectItem>
-                        <SelectItem value="Mayor">MAYOR</SelectItem>
-                        <SelectItem value="Letnan Kolonel">LETNAN KOLONEL</SelectItem>
-                        <SelectItem value="Kolonel">KOLONEL</SelectItem>
-                        <SelectItem value="Brigadir Jenderal">BRIGADIR JENDERAL</SelectItem>
-                        <SelectItem value="Mayor Jenderal">MAYOR JENDERAL</SelectItem>
-                        <SelectItem value="Letnan Jenderal">LETNAN JENDERAL</SelectItem>
-                        <SelectItem value="Jenderal">JENDERAL</SelectItem>
-                        <SelectItem value="Sersan">SERSAN</SelectItem>
-                        <SelectItem value="Sersan Mayor">SERSAN MAYOR</SelectItem>
-                        <SelectItem value="Sersan Kepala">SERSAN KEPALA</SelectItem>
-                        <SelectItem value="Prajurit">PRAJURIT</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {/* Branch */}
-                  <div className="space-y-2">
-                    <Label htmlFor="reg-branch" className="text-sm font-bold uppercase">
-                      KESATUAN / MATRA
-                    </Label>
-                    <Select
-                      value={regBranch}
-                      onValueChange={setRegBranch}
-                    >
-                      <SelectTrigger id="reg-branch" className="bg-muted border-accent">
-                        <SelectValue placeholder="PILIH KESATUAN" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="AD">TNI AD</SelectItem>
-                        <SelectItem value="AL">TNI AL</SelectItem>
-                        <SelectItem value="AU">TNI AU</SelectItem>
-                        <SelectItem value="POLRI">POLRI</SelectItem>
-                        <SelectItem value="Marinir">MARINIR</SelectItem>
-                        <SelectItem value="Komando">KOMANDO</SelectItem>
-                        <SelectItem value="Kopassus">KOPASSUS</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {/* Password */}
-                  <div className="space-y-2">
-                    <Label htmlFor="reg-password" className="text-sm font-bold uppercase">
-                      PASSWORD
-                    </Label>
-                    <Input
-                      id="reg-password"
-                      type="password"
-                      placeholder="ENTER PASSWORD"
-                      value={regPassword}
-                      onChange={(e) => setRegPassword(e.target.value)}
-                      required
-                      className="bg-muted border-accent font-medium placeholder:text-muted-foreground/50"
-                    />
-                  </div>
-                  
-                  {/* Confirm Password */}
-                  <div className="space-y-2">
-                    <Label htmlFor="reg-confirm-password" className="text-sm font-bold uppercase">
-                      KONFIRMASI PASSWORD
-                    </Label>
-                    <Input
-                      id="reg-confirm-password"
-                      type="password"
-                      placeholder="CONFIRM PASSWORD"
-                      value={regConfirmPassword}
-                      onChange={(e) => setRegConfirmPassword(e.target.value)}
-                      required
-                      className="bg-muted border-accent font-medium placeholder:text-muted-foreground/50"
-                    />
-                  </div>
-                </div>
-                
-                <Button 
-                  type="submit"
-                  className="w-full military-button text-lg uppercase font-bold tracking-wider h-12 mt-6" 
-                  disabled={registerMutation.isPending}
-                >
-                  {registerMutation.isPending ? "PROCESSING..." : "REGISTER"}
-                </Button>
-              </form>
-            </CardContent>
-          </TabsContent>
-        </Tabs>
-      </Card>
+                  <FormField
+                    control={registerForm.control}
+                    name="fullName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white">Nama Lengkap</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Masukkan nama lengkap" 
+                            {...field} 
+                            className="bg-zinc-800 border-zinc-700 text-white"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button 
+                    type="submit" 
+                    variant="military" 
+                    disabled={isLoading} 
+                    className="w-full"
+                  >
+                    {isLoading ? 'Memproses...' : 'Register'}
+                  </Button>
+                </form>
+              </Form>
+            )}
+          </CardContent>
+          <CardFooter className="border-t border-zinc-800 flex justify-center">
+            <p className="text-xs text-zinc-500">
+              © 2023 Military Communications Division. All rights reserved.
+            </p>
+          </CardFooter>
+        </Card>
+      </div>
     </div>
   );
 }
