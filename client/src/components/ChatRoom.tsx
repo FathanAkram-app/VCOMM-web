@@ -17,51 +17,70 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
   const [message, setMessage] = useState("");
   const [showMembersDialog, setShowMembersDialog] = useState(false);
   
-  // Get current user from localStorage
-  const getCurrentUser = () => {
-    try {
-      const userData = localStorage.getItem('currentUser');
-      if (userData) {
-        return JSON.parse(userData);
-      }
-      return { id: '1', callsign: 'ALPHA1' };
-    } catch (error) {
-      console.error("Error getting user data:", error);
-      return { id: '1', callsign: 'ALPHA1' };
-    }
-  };
+  // State untuk menyimpan data user dari session
+  const [user, setUser] = useState<any>({ id: '', callsign: '' });
   
-  const user = getCurrentUser();
-  
-  // Get room data from local storage or parent component props
-  const getRoomData = () => {
-    try {
-      // Try to get room data from local storage first
-      const storedRooms = localStorage.getItem('roomData');
-      if (storedRooms) {
-        const rooms = JSON.parse(storedRooms);
-        const room = rooms.find((r: any) => r.id === chatId);
-        if (room) return room;
+  // Ambil data user dari session saat komponen dimuat
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await fetch('/api/user', {
+          credentials: 'include' // Penting untuk mengirimkan cookies
+        });
+        
+        if (response.ok) {
+          const userData = await response.json();
+          console.log("User data dari session di ChatRoom:", userData);
+          setUser(userData);
+        } else {
+          console.error("Gagal mengambil data user di ChatRoom");
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
       }
-      
-      // Fallback to mock data if necessary
-      return {
-        id: chatId,
-        name: chatName,
-        members: Array.from({ length: Math.floor(Math.random() * 10) + 3 }, (_, i) => ({
-          id: i + 1,
-          callsign: `OPERATOR-${i+1}`
-        }))
-      };
-    } catch (error) {
-      console.error("Error getting room data:", error);
-      return {
-        id: chatId,
-        name: chatName,
-        members: []
-      };
-    }
-  };
+    };
+    
+    fetchCurrentUser();
+  }, []);
+  
+  // State untuk menyimpan data room/chat
+  const [roomData, setRoomData] = useState<any>({
+    id: chatId,
+    name: chatName,
+    members: []
+  });
+  
+  // Ambil data room dari API
+  useEffect(() => {
+    const fetchRoomData = async () => {
+      if (isRoom) {
+        try {
+          const response = await fetch(`/api/rooms/${chatId}`, {
+            credentials: 'include'
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log("Room data from API:", data);
+            setRoomData(data);
+          } else {
+            console.error("Failed to fetch room data:", await response.text());
+          }
+        } catch (error) {
+          console.error("Error fetching room data:", error);
+        }
+      } else {
+        // For direct chats, just use the props data
+        setRoomData({
+          id: chatId,
+          name: chatName,
+          isDirect: true
+        });
+      }
+    };
+    
+    fetchRoomData();
+  }, [chatId, isRoom, chatName]);
   
   // Mock messages based on chat type
   const getInitialMessages = () => {
