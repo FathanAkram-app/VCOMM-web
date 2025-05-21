@@ -706,7 +706,9 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto p-4 bg-[#0c0c0c]">
         {messages.map((msg) => {
-          const isCurrentUser = msg.sender.id === user.id;
+          // Pastikan struktur pesan yang konsisten antara pesan lokal dan dari server
+          const sender = msg.sender || { id: msg.senderId, callsign: 'User' };
+          const isCurrentUser = sender.id === user.id;
           
           return (
             <div
@@ -723,7 +725,7 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
                   <div className="border-l-2 border-[#a2bd62] bg-[#1c1c1c] px-3 py-1 mt-1 mx-1 rounded text-xs text-gray-400 flex items-center">
                     <CornerDownRight size={12} className="mr-1" />
                     <div className="truncate">
-                      <span className="text-[#a2bd62] mr-1">{msg.replyTo.sender.callsign}:</span>
+                      <span className="text-[#a2bd62] mr-1">{msg.replyTo.sender?.callsign || 'User'}:</span>
                       {msg.replyTo.content.substring(0, 40)}{msg.replyTo.content.length > 40 ? '...' : ''}
                     </div>
                   </div>
@@ -732,12 +734,12 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
                 {/* Message content */}
                 <div className="px-3 py-2">
                   {!isCurrentUser && (
-                    <div className="text-xs text-[#a2bd62] font-bold mb-1">{msg.sender.callsign}</div>
+                    <div className="text-xs text-[#a2bd62] font-bold mb-1">{sender.callsign}</div>
                   )}
                   <div className="break-words">{msg.content}</div>
                   
                   {/* Attachments */}
-                  {msg.attachments && msg.attachments.length > 0 && (
+                  {msg.attachments && Array.isArray(msg.attachments) && msg.attachments.length > 0 && (
                     <div className="mt-2 space-y-2">
                       {msg.attachments.map((attachment: any, index: number) => (
                         <div 
