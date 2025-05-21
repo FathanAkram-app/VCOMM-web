@@ -68,19 +68,25 @@ export async function setupAuth(app: express.Express) {
         return res.status(400).json({ message: "Call sign already taken" });
       }
       
-      // Check if NRP already exists
-      const existingUserByNrp = await storage.getUserByNrp(parseResult.data.nrp);
-      if (existingUserByNrp) {
-        return res.status(400).json({ message: "NRP/ID already registered" });
+      // Check if NRP already exists (jika disediakan)
+      if (parseResult.data.nrp) {
+        const existingUserByNrp = await storage.getUserByNrp(parseResult.data.nrp);
+        if (existingUserByNrp) {
+          return res.status(400).json({ message: "NRP/ID already registered" });
+        }
       }
       
       // Hash password
       const hashedPassword = await bcrypt.hash(parseResult.data.password, 10);
       
-      // Create user with UUID
+      // Siapkan data user yang valid dengan mengambil hanya field yang dibutuhkan
       const userData = {
         id: uuidv4(), // Generate UUID for user ID
-        ...parseResult.data,
+        callsign: parseResult.data.callsign,
+        nrp: parseResult.data.nrp || null,
+        fullName: parseResult.data.fullName || null,
+        rank: parseResult.data.rank || null,
+        branch: parseResult.data.branch || "ARM",
         password: hashedPassword,
         status: 'offline'
       };
