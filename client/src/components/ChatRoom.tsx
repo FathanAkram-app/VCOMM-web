@@ -340,27 +340,123 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
   };
   
   // Send message function
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (message.trim() === '' && attachments.length === 0) return;
     
     let content = message;
+    let replyToId = null;
+    
+    // Jika ada attachment tapi tidak ada teks
+    if (message.trim() === '' && attachments.length > 0) {
+      content = "Sent attachment";
+    }
     
     // Handle reply case
     if (showReplyForm && replyingToMessage) {
-      content = `Replying to "${replyingToMessage.content.substring(0, 30)}${replyingToMessage.content.length > 30 ? '...' : ''}": ${content}`;
+      replyToId = replyingToMessage.id;
     }
     
-    const newMessage = {
-      id: generateUniqueId(),
-      content: content,
-      sender: { id: user.id, callsign: user.callsign },
-      timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-      isRead: true,
-      attachments: attachments.length > 0 ? [...attachments] : undefined,
-      replyTo: showReplyForm ? replyingToMessage : undefined
-    };
+    try {
+      if (attachments.length > 0) {
+        // Kirim pesan dengan attachment
+        const formData = new FormData();
+        formData.append('content', content);
+        formData.append('isRoom', isRoom.toString());
+        
+        if (replyToId) {
+          formData.append('replyToId', replyToId.toString());
+        }
+        
+        // Tambahkan semua file attachment
+        attachments.forEach((attachment, index) => {
+          if (attachment.file) {
+            formData.append('file', attachment.file);
+          }
+        });
+        
+        // Tampilkan pesan loading
+        console.log("Mengirim pesan dengan attachment...");
+        
+        // Tambahkan pesan sementara ke daftar
+        const tempId = generateUniqueId();
+        const tempMessage = {
+          id: tempId,
+          content: content,
+          sender: { id: user.id, callsign: user.callsign },
+          timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+          isRead: true,
+          attachments: attachments.length > 0 ? [...attachments] : undefined,
+          replyTo: showReplyForm ? replyingToMessage : undefined,
+          status: 'sending'
+        };
+        
+        setMessages(prev => [...prev, tempMessage]);
+        
+        // Kirim pesan ke server
+        const response = await fetch(`/api/chats/${chatId}/attachments`, {
+          method: 'POST',
+          body: formData,
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Error sending message: ${response.status} ${response.statusText}`);
+        }
+        
+        const sentMessage = await response.json();
+        console.log("Pesan dengan attachment berhasil dikirim:", sentMessage);
+        
+        // Update pesan temp dengan data dari server
+        setMessages(prev => prev.map(msg => msg.id === tempId ? sentMessage : msg));
+        
+      } else {
+        // Kirim pesan teks biasa
+        const messageData = {
+          content,
+          isRoom,
+          replyToId
+        };
+        
+        // Tambahkan pesan sementara ke daftar
+        const tempId = generateUniqueId();
+        const tempMessage = {
+          id: tempId,
+          content,
+          sender: { id: user.id, callsign: user.callsign },
+          timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+          isRead: true,
+          replyTo: showReplyForm ? replyingToMessage : undefined,
+          status: 'sending'
+        };
+        
+        setMessages(prev => [...prev, tempMessage]);
+        
+        // Kirim pesan ke server
+        const response = await fetch(`/api/chats/${chatId}/messages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(messageData),
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Error sending message: ${response.status} ${response.statusText}`);
+        }
+        
+        const sentMessage = await response.json();
+        console.log("Pesan berhasil dikirim:", sentMessage);
+        
+        // Update pesan temp dengan data dari server
+        setMessages(prev => prev.map(msg => msg.id === tempId ? sentMessage : msg));
+      }
+    } catch (error) {
+      console.error("Gagal mengirim pesan:", error);
+      alert("Gagal mengirim pesan. Silakan coba lagi.");
+    }
     
-    setMessages([...messages, newMessage]);
+    // Reset state
     setMessage('');
     setAttachments([]);
     setShowReplyForm(false);
