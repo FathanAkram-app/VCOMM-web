@@ -37,6 +37,7 @@ export default function MilitaryLoginPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ callsign, password }),
+        credentials: 'include' // Penting untuk mengirim/menerima cookies
       });
       
       if (!response.ok) {
@@ -48,13 +49,8 @@ export default function MilitaryLoginPage() {
       const userData = await response.json();
       console.log("Login berhasil:", userData);
       
-      // Simpan data user ke localStorage untuk state management
-      localStorage.setItem('currentUser', JSON.stringify({
-        ...userData,
-        isAuthenticated: true
-      }));
-      
-      // Redirect ke chat
+      // Redirect ke chat tanpa menggunakan localStorage
+      // Server sudah menyimpan sesi pengguna melalui cookies
       window.location.href = "/chat";
     } catch (error: any) {
       console.error("Login error:", error);
@@ -93,12 +89,16 @@ export default function MilitaryLoginPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
+        credentials: 'include' // Penting untuk mengirim/menerima cookies
       });
       
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || 'Registrasi gagal');
       }
+      
+      const responseData = await response.json();
+      console.log("Registrasi berhasil:", responseData);
       
       // Jika berhasil, pindah ke tab login
       setActiveTab("login");

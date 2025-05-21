@@ -212,11 +212,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // API rute untuk mendapatkan user saat ini
   app.get('/api/user', async (req: Request, res: Response) => {
-    const userId = req.session?.userId;
-    
-    if (!userId) {
+    if (!req.session?.user) {
       return res.status(401).json({ message: 'Tidak terautentikasi' });
     }
+    
+    const userId = req.session.user.id;
     
     try {
       const user = await storage.getUser(userId);

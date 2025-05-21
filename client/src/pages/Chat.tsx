@@ -68,30 +68,29 @@ export default function Chat() {
   useEffect(() => {
     async function checkAuth() {
       try {
-        // Cek data dari localStorage dulu
-        const userData = localStorage.getItem("currentUser");
-        if (userData) {
-          try {
-            const userObj = JSON.parse(userData);
-            console.log("User data dari localStorage:", userObj);
-            setUser(userObj);
-            setIsLoading(false);
-            
-            // Load chats data
-            fetchUserChats(userObj.id);
-            fetchAllUsers();
-          } catch (error) {
-            console.error("Error parsing user data dari localStorage:", error);
-            localStorage.removeItem("currentUser");
-            window.location.href = '/login';
-          }
-        } else {
-          console.error('Tidak ada data user di localStorage, redirect ke login');
-          window.location.href = '/login';
+        setIsLoading(true);
+        // Mengambil data user dari session server melalui API
+        const response = await fetch('/api/user', {
+          credentials: 'include' // Penting untuk mengirimkan cookies
+        });
+        
+        if (!response.ok) {
+          throw new Error('Tidak terautentikasi');
         }
+        
+        const userObj = await response.json();
+        console.log("User data dari session:", userObj);
+        setUser(userObj);
+        
+        // Load chats data
+        fetchUserChats(userObj.id);
+        fetchAllUsers();
       } catch (error) {
         console.error('Error checking authentication:', error);
+        // Redirect ke halaman login jika tidak terautentikasi
         window.location.href = '/login';
+      } finally {
+        setIsLoading(false);
       }
     }
     
