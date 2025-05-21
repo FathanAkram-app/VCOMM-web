@@ -162,8 +162,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await logoutMutation.mutateAsync();
   };
 
-  const value = {
-    user,
+  const value: AuthContextType = {
+    user: user ?? null,
     isLoading,
     isAuthenticated: !!user,
     login,
