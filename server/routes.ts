@@ -5,6 +5,7 @@ import { storage } from './storage';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import bcrypt from 'bcryptjs';
 
 // Inisialisasi multer untuk upload file
 const uploadDir = path.join(process.cwd(), 'uploads');
@@ -64,6 +65,55 @@ const clients = new Map<number, WebSocketClient>();
 export async function registerRoutes(app: Express): Promise<Server> {
   // Rute statis untuk file yang diupload
   app.use('/uploads', express.static(uploadDir));
+  
+  // API rute untuk pendaftaran (register)
+  app.post('/api/register', async (req: Request, res: Response) => {
+    const { callsign, nrp, password, passwordConfirm, fullName, rank } = req.body;
+    
+    // Validasi data
+    if (!callsign || !password || !passwordConfirm) {
+      return res.status(400).json({ message: 'Callsign, password, dan konfirmasi password diperlukan' });
+    }
+    
+    if (password !== passwordConfirm) {
+      return res.status(400).json({ message: 'Password dan konfirmasi password tidak cocok' });
+    }
+    
+    try {
+      // Periksa apakah callsign sudah digunakan
+      const existingUser = await storage.getUserByCallsign(callsign);
+      if (existingUser) {
+        return res.status(409).json({ message: 'Callsign sudah digunakan' });
+      }
+      
+      // Hash password sebelum disimpan
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      // Buat user baru dengan password yang sudah di-hash
+      const newUser = await storage.createUser({
+        callsign,
+        nrp,
+        password: hashedPassword,
+        passwordConfirm,
+        fullName,
+        rank
+      });
+      
+      return res.status(201).json({
+        message: 'Registrasi berhasil',
+        user: {
+          id: newUser.id,
+          callsign: newUser.callsign,
+          nrp: newUser.nrp,
+          fullName: newUser.fullName,
+          rank: newUser.rank
+        }
+      });
+    } catch (error) {
+      console.error('Error registering user:', error);
+      return res.status(500).json({ message: 'Terjadi kesalahan saat registrasi' });
+    }
+  });
   
   // API rute untuk login
   app.post('/api/login', async (req: Request, res: Response) => {
