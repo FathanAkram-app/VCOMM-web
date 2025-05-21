@@ -465,15 +465,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Kirim pesan
-      const message = await storage.createMessage({
+      const messageData: any = {
         senderId: userId,
-        chatId,
-        isRoom,
         content,
-        forwardedFromId: forwardedFromId || null,
-        attachmentUrl: null,
-        attachmentType: null
-      });
+      };
+      
+      // Menentukan apakah pesan dikirim ke room atau direct chat
+      if (isRoom) {
+        messageData.roomId = chatId;
+      } else {
+        messageData.directChatId = chatId;
+      }
+      
+      // Tambahkan forwarded message jika ada
+      if (forwardedFromId) {
+        messageData.forwardedFromId = forwardedFromId;
+      }
+      
+      const message = await storage.createMessage(messageData);
       
       // Broadcast pesan ke semua anggota chat
       broadcastNewMessage(message, chatId, isRoom);
