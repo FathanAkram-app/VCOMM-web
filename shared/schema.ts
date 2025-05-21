@@ -29,10 +29,10 @@ export const sessions = pgTable(
 export const users = pgTable("users", {
   id: text("id").primaryKey().notNull(),
   callsign: varchar("callsign", { length: 50 }).notNull().unique(),
-  nrp: varchar("nrp", { length: 50 }).notNull().unique(),
+  nrp: varchar("nrp", { length: 50 }),
   fullName: varchar("full_name", { length: 255 }),
   rank: varchar("rank", { length: 50 }),
-  branch: varchar("branch", { length: 100 }),
+  branch: varchar("branch", { length: 100 }).default("ARM"),
   password: varchar("password", { length: 255 }).notNull(),
   profileImageUrl: varchar("profile_image_url", { length: 255 }),
   role: varchar("role", { length: 50 }).default("user"),

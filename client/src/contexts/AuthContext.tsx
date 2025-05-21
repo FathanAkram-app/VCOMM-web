@@ -33,14 +33,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Fetch the current user
   const { data: user, isLoading } = useQuery<User | null>({
-    queryKey: ['/api/auth/me'],
+    queryKey: ['/api/user'],
     retry: false,
   });
 
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (credentials: { callsign: string; password: string }) => {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/api/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -56,7 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
       toast({
         title: 'Login berhasil',
         description: 'Selamat datang kembali',
@@ -81,12 +81,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       rank?: string;
       fullName?: string;
     }) => {
-      const response = await fetch('/api/auth/register', {
+      // Menambahkan passwordConfirm yang dibutuhkan server
+      const dataToSend = {
+        ...userData,
+        passwordConfirm: userData.password,
+        branch: 'ARM' // Nilai default untuk branch
+      };
+      
+      const response = await fetch('/api/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(userData),
+        body: JSON.stringify(dataToSend),
       });
 
       if (!response.ok) {
@@ -97,7 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
       toast({
         title: 'Registrasi berhasil',
         description: 'Akun baru telah dibuat',
@@ -116,7 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Logout mutation
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/api/auth/logout', {
+      const response = await fetch('/api/logout', {
         method: 'POST',
       });
 
@@ -128,7 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
       toast({
         title: 'Logout berhasil',
         description: 'Anda telah keluar dari sistem',
