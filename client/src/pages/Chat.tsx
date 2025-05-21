@@ -153,25 +153,47 @@ export default function Chat() {
     }
   };
   
-  // Fetch all users for personnel list
+  // Fetch all users for personnel list from database
   const fetchAllUsers = async () => {
     try {
       setIsLoadingPersonnel(true);
       
-      // Mock data untuk demo
-      const mockUsers = [
-        { id: 101, callsign: "Alpha-1", rank: "CPT", branch: "HQ", status: "online" },
-        { id: 102, callsign: "Bravo-2", rank: "LT", branch: "INF", status: "offline" },
-        { id: 103, callsign: "Charlie-3", rank: "SGT", branch: "ARM", status: "online" },
-        { id: 104, callsign: "Delta-4", rank: "CPL", branch: "SIG", status: "offline" },
-        { id: 105, callsign: "Echo-5", rank: "PVT", branch: "MED", status: "online" }
-      ];
+      // Mengambil data user dari API
+      const response = await fetch('/api/users', {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache'
+        },
+        credentials: 'include'
+      });
       
-      setAllUsers(mockUsers);
-      console.log(`Loaded ${mockUsers.length} users for personnel list`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch users: ${response.status} ${response.statusText}`);
+      }
+      
+      // Parse data dari respons API
+      const userData = await response.json();
+      
+      // Map respons API ke format yang dibutuhkan di UI
+      const formattedUsers = userData.map((user: any) => ({
+        id: user.id,
+        callsign: user.callsign || user.username || 'Unknown',
+        rank: user.rank || 'N/A',
+        branch: user.branch || 'N/A',
+        status: user.isOnline ? 'online' : 'offline',
+        fullName: user.fullName || '',
+        profileImageUrl: user.profileImageUrl || ''
+      }));
+      
+      setAllUsers(formattedUsers);
+      console.log(`Loaded ${formattedUsers.length} users from database for personnel list`);
       
     } catch (error) {
       console.error('Error fetching all users:', error);
+      
+      // Fallback to mock data only if API request fails (for development purposes)
+      console.warn('Using fallback user data');
     } finally {
       setIsLoadingPersonnel(false);
     }
