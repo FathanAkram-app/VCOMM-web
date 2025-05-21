@@ -318,8 +318,8 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
           if (processedMessages.length > 0) {
             setMessages(processedMessages);
           } else if (messages.length === 0) {
-            // Hanya gunakan pesan contoh jika memang belum ada pesan sama sekali
-            setMessages(getInitialMessages());
+            // Jika tidak ada pesan, tampilkan array kosong
+            setMessages([]);
           }
         } else {
           console.error("Failed to fetch messages:", await response.text());
