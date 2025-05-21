@@ -186,17 +186,103 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
     fetchUsers();
   }, []);
   
+  // State untuk menyimpan ID chat aktual dari database
+  const [actualChatId, setActualChatId] = useState<number | null>(null);
+
+  // Memastikan direct chat sudah ada
+  const ensureDirectChatExists = async (userId: number | string) => {
+    console.log(`Memastikan direct chat dengan pengguna ID ${userId} sudah ada`);
+    
+    if (!user.id) return null;
+    
+    try {
+      // Dapatkan pengguna sebelum membuat direct chat
+      const usersResponse = await fetch('/api/users', {
+        credentials: 'include'
+      });
+      
+      if (!usersResponse.ok) {
+        console.error("Failed to fetch users:", await usersResponse.text());
+        return null;
+      }
+      
+      const usersList = await usersResponse.json();
+      console.log("Daftar pengguna:", usersList);
+      
+      // Cari pengguna target
+      const targetUser = usersList.find((u: any) => u.id === userId);
+      
+      if (!targetUser) {
+        console.error(`Pengguna dengan ID ${userId} tidak ditemukan`);
+        return null;
+      }
+      
+      console.log("Target user ditemukan:", targetUser);
+      
+      // Buat atau temukan direct chat
+      const response = await fetch('/api/direct-chats', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          user2Id: targetUser.id
+        }),
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        console.error("Failed to create direct chat:", await response.text());
+        return null;
+      }
+      
+      const directChat = await response.json();
+      console.log("Direct chat dibuat atau ditemukan:", directChat);
+      
+      // Set actual chat ID untuk digunakan dalam pengiriman dan pengambilan pesan
+      if (directChat && directChat.id) {
+        console.log(`Mengupdate chatId dari ${chatId} menjadi ${directChat.id} untuk pengiriman pesan`);
+        setActualChatId(directChat.id);
+        return directChat.id;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error("Error ensuring direct chat exists:", error);
+      return null;
+    }
+  };
+  
+  // Saat component mount atau chatId berubah, pastikan direct chat exists jika tidak berupa room
+  // Saat component mount atau chatId berubah, pastikan direct chat exists jika tidak berupa room
+  useEffect(() => {
+    if (user && user.id) {
+      if (chatId && !isRoom) {
+        console.log(`Memastikan direct chat untuk user ID ${user.id} dengan target ID ${chatId}`);
+        // Untuk direct chat, cari atau buat direct chat dengan ID yang sesuai
+        ensureDirectChatExists(chatId);
+      } else if (chatId && isRoom) {
+        // Untuk room, gunakan ID yang ada langsung
+        console.log(`Menggunakan room ID ${chatId} langsung`);
+        setActualChatId(chatId);
+      }
+    }
+  }, [chatId, isRoom, user]);
+
   // Fetch messages from the server
   useEffect(() => {
+    // Jika actualChatId belum tersedia, tunggu
+    if (!actualChatId) return;
+    
     const fetchMessages = async () => {
-      if (!chatId) return;
-      
       try {
         // URL for API request
         const url = isRoom 
-          ? `/api/rooms/${chatId}/messages` 
-          : `/api/chats/${chatId}/messages`;
+          ? `/api/rooms/${actualChatId}/messages` 
+          : `/api/chats/${actualChatId}/messages`;
           
+        console.log(`Fetching messages from ${url}`);
+        
         const response = await fetch(url, {
           credentials: 'include'
         });
@@ -228,10 +314,15 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
             };
           });
           
-          setMessages(processedMessages.length > 0 ? processedMessages : getInitialMessages());
+          if (processedMessages.length > 0) {
+            setMessages(processedMessages);
+          } else if (messages.length === 0) {
+            // Hanya gunakan pesan contoh jika memang belum ada pesan sama sekali
+            setMessages(getInitialMessages());
+          }
         } else {
           console.error("Failed to fetch messages:", await response.text());
-          // Tetap gunakan pesan contoh jika gagal mengambil dari server
+          // Tidak mengganti pesan yang sudah ada jika gagal mengambil dari server
         }
       } catch (error) {
         console.error("Error fetching messages:", error);
@@ -246,7 +337,7 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
     }, 5000);
     
     return () => clearInterval(intervalId);
-  }, [chatId, isRoom, users]);
+  }, [actualChatId, isRoom, users]);
   
   // Enhanced attachment type to handle different file types
   type Attachment = {
@@ -959,8 +1050,8 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
         </div>
       )}
       
-      {/* Input area */}
-      <div className="bg-[#1a1a1a] border-t border-[#2c2c2c] p-3 flex items-center">
+      {/* Input area - fixed for mobile display */}
+      <div className="bg-[#1a1a1a] border-t border-[#2c2c2c] p-3 flex items-center w-full sticky bottom-0">
         <input
           type="file"
           multiple
@@ -970,28 +1061,28 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
         />
         <Button 
           variant="ghost" 
-          size="icon"
-          className="text-gray-400 hover:text-white"
+          size="sm"
+          className="text-gray-400 hover:text-white flex-shrink-0 w-10 h-10 p-0"
           onClick={() => fileInputRef.current?.click()}
         >
           <Paperclip size={20} />
         </Button>
         
-        <div className="flex-1 mx-2">
+        <div className="flex-1 mx-2 min-w-0">
           <Input
             placeholder="Type a message..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="bg-[#252525] border-[#353535] text-white focus:border-[#a2bd62]"
+            className="bg-[#252525] border-[#353535] text-white focus:border-[#a2bd62] w-full"
           />
         </div>
         
         {message.trim() === '' && attachments.length === 0 ? (
           <Button 
             variant="ghost" 
-            size="icon"
-            className={`${isRecording ? 'text-red-500' : 'text-gray-400 hover:text-white'}`}
+            size="sm"
+            className={`${isRecording ? 'text-red-500' : 'text-gray-400 hover:text-white'} flex-shrink-0 w-10 h-10 p-0`}
             onClick={handleVoiceRecording}
           >
             {isRecording ? (
@@ -1009,8 +1100,8 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
         ) : (
           <Button 
             variant="ghost" 
-            size="icon"
-            className="text-[#a2bd62] hover:text-[#b8d670]"
+            size="sm"
+            className="text-[#a2bd62] hover:text-[#b8d670] flex-shrink-0 w-10 h-10 p-0"
             onClick={sendMessage}
           >
             <Send size={20} />
