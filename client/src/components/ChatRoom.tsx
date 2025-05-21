@@ -164,6 +164,89 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
   
   const [messages, setMessages] = useState(getInitialMessages());
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [users, setUsers] = useState<any[]>([]);
+  
+  // Ambil daftar semua pengguna untuk menampilkan nama pengirim
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch('/api/users', {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const usersData = await response.json();
+          console.log("Loaded", usersData.length, "users from database for personnel list");
+          setUsers(usersData);
+        }
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    };
+    
+    fetchUsers();
+  }, []);
+  
+  // Fetch messages from the server
+  useEffect(() => {
+    const fetchMessages = async () => {
+      if (!chatId) return;
+      
+      try {
+        // URL for API request
+        const url = isRoom 
+          ? `/api/rooms/${chatId}/messages` 
+          : `/api/chats/${chatId}/messages`;
+          
+        const response = await fetch(url, {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const messagesData = await response.json();
+          console.log("Pesan dari server:", messagesData);
+          
+          // Proses pesan dari server
+          const processedMessages = messagesData.map((msg: any) => {
+            // Cari data pengirim
+            const senderUser = users.find(u => u.id === msg.senderId);
+            const senderName = senderUser?.callsign || 'Unknown';
+            
+            // Format waktu
+            const timestamp = msg.timestamp || msg.sentAt || new Date();
+            const formattedTime = new Date(timestamp).toLocaleTimeString([], {
+              hour: '2-digit', 
+              minute: '2-digit'
+            });
+            
+            return {
+              ...msg,
+              sender: { 
+                id: msg.senderId, 
+                callsign: senderName 
+              },
+              timestamp: formattedTime
+            };
+          });
+          
+          setMessages(processedMessages.length > 0 ? processedMessages : getInitialMessages());
+        } else {
+          console.error("Failed to fetch messages:", await response.text());
+          // Tetap gunakan pesan contoh jika gagal mengambil dari server
+        }
+      } catch (error) {
+        console.error("Error fetching messages:", error);
+      }
+    };
+    
+    fetchMessages();
+    
+    // Setup polling for new messages - refresh every 5 seconds
+    const intervalId = setInterval(() => {
+      fetchMessages();
+    }, 5000);
+    
+    return () => clearInterval(intervalId);
+  }, [chatId, isRoom, users]);
   
   // Enhanced attachment type to handle different file types
   type Attachment = {
