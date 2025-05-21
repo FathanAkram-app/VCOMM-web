@@ -907,7 +907,7 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
       </div>
       
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto p-4 bg-[#0c0c0c]">
+      <div className="flex-1 overflow-y-auto p-4 bg-[#0c0c0c] pb-16">
         {messages.map((msg) => {
           // Pastikan struktur pesan yang konsisten antara pesan lokal dan dari server
           const sender = msg.sender || { id: msg.senderId, callsign: 'User' };
@@ -1080,7 +1080,7 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
       )}
       
       {/* Input area - fixed for mobile display */}
-      <div className="bg-[#1a1a1a] border-t border-[#2c2c2c] p-3 flex items-center w-full sticky bottom-0">
+      <div className="bg-[#1a1a1a] border-t border-[#2c2c2c] p-3 flex items-center w-full fixed bottom-0 left-0 right-0 z-50">
         <input
           type="file"
           multiple
@@ -1103,7 +1103,7 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="bg-[#252525] border-[#353535] text-white focus:border-[#a2bd62] w-full"
+            className="bg-[#252525] border-[#353535] text-white focus:border-[#a2bd62] w-full h-10"
           />
         </div>
         
