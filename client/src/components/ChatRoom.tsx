@@ -477,6 +477,11 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
             } else {
               const directChat = await createChatResponse.json();
               console.log("Direct chat dibuat atau ditemukan:", directChat);
+              
+              // Perbarui chatId untuk mengirim pesan
+              const directChatId = directChat.id;
+              console.log(`Mengupdate chatId dari ${chatId} menjadi ${directChatId} untuk pengiriman pesan`);
+              chatId = directChatId;
             }
           } catch (chatError) {
             console.error("Error saat memastikan direct chat:", chatError);
