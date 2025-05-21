@@ -1,3 +1,4 @@
+import { Pool } from 'pg';
 import {
   users,
   rooms,
@@ -397,17 +398,76 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Message operations
-  async createMessage(data: InsertMessage): Promise<Message> {
-    const [message] = await db
-      .insert(messages)
-      .values({
-        ...data,
-        sentAt: new Date(),
-        updatedAt: new Date()
-      })
-      .returning();
+  async createMessage(data: any): Promise<any> {
+    console.log("[DEBUG] createMessage called with data:", data);
     
-    return message;
+    try {
+      // Jika ada conversationId, ini adalah pesan ke conversation lama
+      if (data.conversationId) {
+        // Pastikan conversation ada
+        const conversationId = data.conversationId;
+        delete data.conversationId; // Hapus dari object karena schema tidak mengenalnya
+        
+        console.log(`[DEBUG] Mencoba mencari conversation dengan ID: ${conversationId}`);
+        // Gunakan nama table literal karena kita tahu bahwa tabel 'conversations' ada di database
+        // tapi mungkin tidak didefinisikan dalam model
+        // Gunakan pg pool untuk query langsung
+        const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+        const result = await pool.query(
+          `SELECT * FROM conversations WHERE id = $1`,
+          [conversationId]
+        );
+        
+        const conversations = result.rows;
+        console.log(`[DEBUG] Query conversation result:`, conversations);
+        
+        if (!conversations || conversations.length === 0) {
+          console.log(`[DEBUG] Conversation dengan ID ${conversationId} tidak ditemukan`);
+          throw new Error(`Conversation dengan ID ${conversationId} tidak ditemukan`);
+        }
+        
+        // Gunakan roomId untuk direct chat juga (agar backward compatible)
+        data.roomId = conversationId;
+      }
+      
+      console.log(`[DEBUG] Nilai akhir yang akan disimpan:`, data);
+      
+      // Insert pesan ke database
+      const [message] = await db
+        .insert(messages)
+        .values({
+          ...data,
+          sentAt: new Date(),
+          updatedAt: new Date()
+        })
+        .returning();
+      
+      console.log(`[DEBUG] Pesan berhasil dibuat dengan ID: ${message.id}`);
+      
+      // Update conversation dengan pesan terakhir
+      if (message.roomId) {
+        try {
+          // Gunakan raw SQL untuk update conversation
+          await db.execute(
+            `UPDATE conversations 
+             SET last_message = $1, 
+                 last_message_time = $2, 
+                 updated_at = $3 
+             WHERE id = $4`,
+            [data.content, new Date(), new Date(), message.roomId]
+          );
+          
+          console.log(`[DEBUG] Conversation ${message.roomId} diupdate dengan pesan terakhir`);
+        } catch (updateError) {
+          console.error(`[DEBUG] Gagal update conversation:`, updateError);
+        }
+      }
+      
+      return message;
+    } catch (error) {
+      console.error(`[DEBUG] Error dalam createMessage:`, error);
+      throw error;
+    }
   }
 
   async getMessagesByRoomId(roomId: number): Promise<Message[]> {
