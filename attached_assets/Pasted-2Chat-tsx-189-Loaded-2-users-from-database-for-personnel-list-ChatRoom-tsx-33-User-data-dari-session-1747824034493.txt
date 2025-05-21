@@ -1,0 +1,70 @@
+2Chat.tsx:189 Loaded 2 users from database for personnel list
+ChatRoom.tsx:33 User data dari session di ChatRoom: {id: '1bb756f5-dd07-49ff-a12d-60785456aaab', callsign: 'eko', nrp: '123123', fullName: 'eko a', rank: 'PVT'}
+ChatRoom.tsx:435 Memastikan direct chat dengan pengguna ID 5 sudah ada
+ChatRoom.tsx:451 Daftar pengguna: (2) [{…}, {…}]
+ChatRoom.tsx:463 Target user ditemukan: {id: '6c4e9bfc-1486-4848-b568-9811470fdc7d', callsign: 'zulham', nrp: '3232321', fullName: 'zulham a', rank: 'PVT', …}
+ChatRoom.tsx:479 Direct chat dibuat atau ditemukan: {id: 2, user1Id: '1bb756f5-dd07-49ff-a12d-60785456aaab', user2Id: '6c4e9bfc-1486-4848-b568-9811470fdc7d', lastActivityAt: '2025-05-21T10:33:49.734Z', createdAt: '2025-05-21T10:33:49.714Z'}
+ChatRoom.tsx:483 Mengupdate chatId dari 5 menjadi 2 untuk pengiriman pesan
+ChatRoom.tsx:512 Mengirim pesan ke chatId=2, isRoom=false {content: '1739', isRoom: false, replyToId: null}
+ChatRoom.tsx:515 
+            
+            
+           POST https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/api/chats/2/messages 500 (Internal Server Error)
+sendMessage @ ChatRoom.tsx:515
+await in sendMessage
+handleKeyDown @ ChatRoom.tsx:552
+callCallback2 @ chunk-WERSD76P.js?v=22edd9a1:3674
+invokeGuardedCallbackDev @ chunk-WERSD76P.js?v=22edd9a1:3699
+invokeGuardedCallback @ chunk-WERSD76P.js?v=22edd9a1:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-WERSD76P.js?v=22edd9a1:3736
+executeDispatch @ chunk-WERSD76P.js?v=22edd9a1:7014
+processDispatchQueueItemsInOrder @ chunk-WERSD76P.js?v=22edd9a1:7034
+processDispatchQueue @ chunk-WERSD76P.js?v=22edd9a1:7043
+dispatchEventsForPlugins @ chunk-WERSD76P.js?v=22edd9a1:7051
+(anonymous) @ chunk-WERSD76P.js?v=22edd9a1:7174
+batchedUpdates$1 @ chunk-WERSD76P.js?v=22edd9a1:18913
+batchedUpdates @ chunk-WERSD76P.js?v=22edd9a1:3579
+dispatchEventForPluginEventSystem @ chunk-WERSD76P.js?v=22edd9a1:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-WERSD76P.js?v=22edd9a1:5478
+dispatchEvent @ chunk-WERSD76P.js?v=22edd9a1:5472
+dispatchDiscreteEvent @ chunk-WERSD76P.js?v=22edd9a1:5449Understand this error
+ChatRoom.tsx:525 Error server: 500 Internal Server Error
+sendMessage @ ChatRoom.tsx:525
+await in sendMessage
+handleKeyDown @ ChatRoom.tsx:552
+callCallback2 @ chunk-WERSD76P.js?v=22edd9a1:3674
+invokeGuardedCallbackDev @ chunk-WERSD76P.js?v=22edd9a1:3699
+invokeGuardedCallback @ chunk-WERSD76P.js?v=22edd9a1:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-WERSD76P.js?v=22edd9a1:3736
+executeDispatch @ chunk-WERSD76P.js?v=22edd9a1:7014
+processDispatchQueueItemsInOrder @ chunk-WERSD76P.js?v=22edd9a1:7034
+processDispatchQueue @ chunk-WERSD76P.js?v=22edd9a1:7043
+dispatchEventsForPlugins @ chunk-WERSD76P.js?v=22edd9a1:7051
+(anonymous) @ chunk-WERSD76P.js?v=22edd9a1:7174
+batchedUpdates$1 @ chunk-WERSD76P.js?v=22edd9a1:18913
+batchedUpdates @ chunk-WERSD76P.js?v=22edd9a1:3579
+dispatchEventForPluginEventSystem @ chunk-WERSD76P.js?v=22edd9a1:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-WERSD76P.js?v=22edd9a1:5478
+dispatchEvent @ chunk-WERSD76P.js?v=22edd9a1:5472
+dispatchDiscreteEvent @ chunk-WERSD76P.js?v=22edd9a1:5449Understand this error
+ChatRoom.tsx:527 Response error: {"message":"Terjadi kesalahan"}
+sendMessage @ ChatRoom.tsx:527
+await in sendMessage
+handleKeyDown @ ChatRoom.tsx:552
+callCallback2 @ chunk-WERSD76P.js?v=22edd9a1:3674
+invokeGuardedCallbackDev @ chunk-WERSD76P.js?v=22edd9a1:3699
+invokeGuardedCallback @ chunk-WERSD76P.js?v=22edd9a1:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-WERSD76P.js?v=22edd9a1:3736
+executeDispatch @ chunk-WERSD76P.js?v=22edd9a1:7014
+processDispatchQueueItemsInOrder @ chunk-WERSD76P.js?v=22edd9a1:7034
+processDispatchQueue @ chunk-WERSD76P.js?v=22edd9a1:7043
+dispatchEventsForPlugins @ chunk-WERSD76P.js?v=22edd9a1:7051
+(anonymous) @ chunk-WERSD76P.js?v=22edd9a1:7174
+batchedUpdates$1 @ chunk-WERSD76P.js?v=22edd9a1:18913
+batchedUpdates @ chunk-WERSD76P.js?v=22edd9a1:3579
+dispatchEventForPluginEventSystem @ chunk-WERSD76P.js?v=22edd9a1:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-WERSD76P.js?v=22edd9a1:5478
+dispatchEvent @ chunk-WERSD76P.js?v=22edd9a1:5472
+dispatchDiscreteEvent @ chunk-WERSD76P.js?v=22edd9a1:5449Understand this error
+ChatRoom.tsx:538 Gagal mengirim pesan: Error: Error sending message: 500 Internal Server Error
+    at sendMessage (ChatRoom.tsx:528:17)
