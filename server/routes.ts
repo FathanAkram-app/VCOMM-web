@@ -544,13 +544,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // API rute untuk menghapus pesan
-  app.delete('/api/messages/:messageId', async (req: Request, res: Response) => {
-    const userId = req.session?.userId;
-    
-    if (!userId) {
+  // API rute untuk mendapatkan info user yang sedang login
+  app.get('/api/auth/me', async (req: Request, res: Response) => {
+    if (!req.session?.user) {
       return res.status(401).json({ message: 'Tidak terautentikasi' });
     }
+    
+    try {
+      const userData = await storage.getUser(req.session.user.id);
+      if (!userData) {
+        return res.status(404).json({ message: 'User tidak ditemukan' });
+      }
+      
+      // Kembalikan data user tanpa password
+      const { password, ...userWithoutPassword } = userData;
+      return res.status(200).json(userWithoutPassword);
+    } catch (error) {
+      console.error('Error fetching current user:', error);
+      return res.status(500).json({ message: 'Terjadi kesalahan saat mengambil data user' });
+    }
+  });
+  
+  // API rute untuk menghapus pesan
+  app.delete('/api/messages/:messageId', async (req: Request, res: Response) => {
+    if (!req.session?.user) {
+      return res.status(401).json({ message: 'Tidak terautentikasi' });
+    }
+    
+    const userId = req.session.user.id;
     
     const messageId = parseInt(req.params.messageId);
     
