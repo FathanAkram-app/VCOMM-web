@@ -1,3 +1,4 @@
+import * as schema from "@shared/schema";
 import {
   users,
   rooms,
@@ -798,10 +799,74 @@ export class DatabaseStorage implements IStorage {
   // Implementasi fungsi untuk mendapatkan pesan dalam suatu chat
   async getMessagesForChat(chatId: number, isRoom: boolean): Promise<Message[]> {
     try {
+      console.log(`[DEBUG] Mengambil pesan untuk ${isRoom ? 'room' : 'direct chat'} ID: ${chatId}`);
+      
       if (isRoom) {
-        return await this.getMessagesByRoomId(chatId);
+        console.log(`[DEBUG] Mengambil pesan untuk room ID: ${chatId}`);
+        const roomMessages = await this.getMessagesByRoomId(chatId);
+        console.log(`[DEBUG] Ditemukan ${roomMessages.length} pesan untuk room ID: ${chatId}`);
+        return roomMessages;
       } else {
-        return await this.getMessagesByDirectChatId(chatId);
+        console.log(`[DEBUG] Mengambil pesan untuk direct chat ID: ${chatId}`);
+        
+        // Coba ambil direct chat terlebih dahulu
+        const [directChat] = await db
+          .select()
+          .from(directChats)
+          .where(eq(directChats.id, chatId));
+          
+        if (!directChat) {
+          console.log(`[DEBUG] Direct chat dengan ID ${chatId} tidak ditemukan`);
+          return [];
+        }
+        
+        console.log(`[DEBUG] Direct chat ditemukan:`, directChat);
+        
+        // Ambil semua pesan yang terkait dengan direct chat ini
+        const directMessages = await db
+          .select()
+          .from(schema.messages)
+          .where(eq(schema.messages.directChatId, chatId))
+          .orderBy(asc(schema.messages.sentAt));
+        
+        console.log(`[DEBUG] Ditemukan ${directMessages.length} pesan untuk direct chat ID: ${chatId}`);
+        
+        // Jika tidak ada pesan, coba cek apakah ada pesan dengan roomId yang sama
+        if (directMessages.length === 0) {
+          console.log(`[DEBUG] Mencoba mencari pesan dengan roomId = ${chatId}`);
+          const altMessages = await db
+            .select()
+            .from(schema.messages)
+            .where(eq(schema.messages.roomId, chatId))
+            .orderBy(asc(schema.messages.sentAt));
+            
+          console.log(`[DEBUG] Ditemukan ${altMessages.length} pesan alternative untuk direct chat ID: ${chatId}`);
+          
+          // Jika ada, update messages tersebut agar directChatId-nya benar
+          if (altMessages.length > 0) {
+            console.log(`[DEBUG] Memperbaiki pesan-pesan dengan roomId = ${chatId}`);
+            for (const msg of altMessages) {
+              await db
+                .update(schema.messages)
+                .set({
+                  directChatId: chatId,
+                  roomId: null
+                })
+                .where(eq(schema.messages.id, msg.id));
+            }
+            
+            // Ambil pesan-pesan yang sudah diperbaiki
+            const fixedMessages = await db
+              .select()
+              .from(schema.messages)
+              .where(eq(schema.messages.directChatId, chatId))
+              .orderBy(asc(schema.messages.sentAt));
+            
+            return fixedMessages;
+          }
+        }
+        
+        return directMessages;
       }
     } catch (error) {
       console.error('Error getting messages for chat:', error);
