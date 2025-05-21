@@ -6,10 +6,11 @@ import { z } from "zod";
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   callsign: varchar("callsign", { length: 50 }).notNull().unique(),
-  nrp: varchar("nrp", { length: 50 }),
+  nrp: varchar("nrp", { length: 50 }).notNull(),
+  fullName: varchar("full_name", { length: 100 }).notNull(),
+  rank: varchar("rank", { length: 50 }).notNull(),
+  branch: varchar("branch", { length: 50 }).notNull(), // Cabang militer: AD, AU, AL, dll
   password: text("password").notNull(),
-  fullName: varchar("full_name", { length: 100 }),
-  rank: varchar("rank", { length: 50 }),
   profileImageUrl: text("profile_image_url"),
   status: varchar("status", { length: 20 }).default("offline"),
   createdAt: timestamp("created_at").defaultNow(),

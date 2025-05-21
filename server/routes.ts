@@ -94,10 +94,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         callsign,
         nrp,
         password: hashedPassword,
-        passwordConfirm,
+        passwordConfirm: hashedPassword, // Gunakan password yang sudah di-hash
         fullName,
         rank
       });
+      
+      // Set user session setelah registrasi sukses
+      if (req.session) {
+        req.session.userId = newUser.id;
+      }
       
       return res.status(201).json({
         message: 'Registrasi berhasil',
@@ -130,8 +135,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: 'Callsign atau password salah' });
       }
       
-      // Verifikasi password
-      const isPasswordValid = await storage.verifyPassword(user.id, password);
+      // Verifikasi password langsung dengan bcrypt
+      const isPasswordValid = await bcrypt.compare(password, user.password);
       
       if (!isPasswordValid) {
         return res.status(401).json({ message: 'Callsign atau password salah' });
@@ -141,6 +146,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.session) {
         req.session.userId = user.id;
       }
+      
+      // Log login berhasil
+      console.log(`User ${user.callsign} (ID: ${user.id}) berhasil login`);
       
       return res.status(200).json({
         id: user.id,
