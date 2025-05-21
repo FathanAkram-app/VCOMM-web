@@ -400,6 +400,52 @@ export class DatabaseStorage implements IStorage {
     console.log("[DEBUG] createMessage called with data:", data);
     
     try {
+      // Jika ini direct chat, perlu pastikan kita gunakan directChatId, bukan roomId
+      if (data.roomId && !data.isRoom) {
+        console.log(`[DEBUG] Ini direct chat (ID: ${data.roomId}), memeriksa apakah perlu penyesuaian...`);
+        
+        // Periksa apakah ID ada di tabel direct_chats
+        const directChatResult = await pool.query(
+          `SELECT * FROM direct_chats WHERE id = $1`,
+          [data.roomId]
+        );
+        
+        if (directChatResult.rows.length > 0) {
+          console.log(`[DEBUG] ID ${data.roomId} ditemukan di tabel direct_chats, mengubah ke directChatId`);
+          // Ini adalah direct chat, gunakan directChatId dan hapus roomId
+          data.directChatId = data.roomId;
+          delete data.roomId;
+        } else {
+          console.log(`[DEBUG] ID ${data.roomId} tidak ditemukan di tabel direct_chats, mencari di tabel rooms...`);
+          // Cek apakah ID ada di tabel rooms
+          const roomResult = await pool.query(
+            `SELECT * FROM rooms WHERE id = $1`,
+            [data.roomId]
+          );
+          
+          if (roomResult.rows.length === 0) {
+            console.log(`[DEBUG] ID ${data.roomId} juga tidak ditemukan di tabel rooms, mencari di conversations...`);
+            
+            // Coba cari direct_chat dengan kedua user
+            if (data.senderId) {
+              // Coba temukan direct_chat yang sesuai dari senderId
+              const matchResult = await pool.query(
+                `SELECT * FROM direct_chats WHERE 
+                 (user1_id = $1 OR user2_id = $1)`,
+                [data.senderId]
+              );
+              
+              if (matchResult.rows.length > 0) {
+                const directChat = matchResult.rows[0];
+                console.log(`[DEBUG] Menemukan direct_chat yang cocok: ${directChat.id}`);
+                data.directChatId = directChat.id;
+                delete data.roomId;
+              }
+            }
+          }
+        }
+      }
+      
       // Jika ada conversationId, ini adalah pesan ke conversation lama
       if (data.conversationId) {
         // Pastikan conversation ada
@@ -423,20 +469,45 @@ export class DatabaseStorage implements IStorage {
           throw new Error(`Conversation dengan ID ${conversationId} tidak ditemukan`);
         }
         
-        // Gunakan roomId untuk direct chat juga (agar backward compatible)
-        data.roomId = conversationId;
+        // Cek apakah ini direct chat
+        if (conversations[0].name && conversations[0].name.startsWith('Direct Chat')) {
+          console.log(`[DEBUG] Conversation ini mungkin direct chat, cek tabel direct_chats`);
+          
+          // Cari apakah ada direct chat dengan ID ini
+          const directChatResult = await pool.query(
+            `SELECT * FROM direct_chats WHERE id = $1`,
+            [conversationId]
+          );
+          
+          if (directChatResult.rows.length > 0) {
+            console.log(`[DEBUG] Menemukan direct chat dengan ID ${conversationId}`);
+            data.directChatId = conversationId;
+          } else {
+            data.roomId = conversationId;
+          }
+        } else {
+          // Gunakan roomId untuk room biasa
+          data.roomId = conversationId;
+        }
       }
       
       console.log(`[DEBUG] Nilai akhir yang akan disimpan:`, data);
       
       // Insert pesan ke database
+      const messageData = { 
+        ...data,
+        sentAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      // Hapus isRoom karena tidak termasuk dalam skema database
+      if (messageData.isRoom !== undefined) {
+        delete messageData.isRoom;
+      }
+      
       const [message] = await db
         .insert(messages)
-        .values({
-          ...data,
-          sentAt: new Date(),
-          updatedAt: new Date()
-        })
+        .values(messageData)
         .returning();
       
       console.log(`[DEBUG] Pesan berhasil dibuat dengan ID: ${message.id}`);
