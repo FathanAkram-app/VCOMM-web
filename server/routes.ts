@@ -545,7 +545,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[DEBUG] Pesan berhasil disimpan dengan ID: ${message.id}`);
       
       // Broadcast pesan ke semua anggota chat
-      // DISABLE SEMENTARA: broadcastNewMessage(message, chatId, isRoom);
+      broadcastNewMessage(message, chatId, isRoom);
       
       return res.status(201).json(message);
     } catch (error) {
