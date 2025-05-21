@@ -48,11 +48,37 @@ export default function DashboardPage() {
 
   const fetchChatList = async () => {
     try {
-      const response = await fetch('/api/chats');
-      if (response.ok) {
-        const data = await response.json();
-        setChatList(data);
+      // Fetch direct chats
+      const directChatsResponse = await fetch('/api/direct-chats', {
+        credentials: 'include'
+      });
+      
+      let directChats = [];
+      if (directChatsResponse.ok) {
+        directChats = await directChatsResponse.json();
+        console.log("Direct chats berhasil diambil:", directChats);
+      } else {
+        console.error("Error mengambil direct chats:", await directChatsResponse.text());
       }
+      
+      // Fetch rooms
+      const roomsResponse = await fetch('/api/rooms', {
+        credentials: 'include'
+      });
+      
+      let rooms = [];
+      if (roomsResponse.ok) {
+        rooms = await roomsResponse.json();
+        console.log("Rooms berhasil diambil:", rooms);
+      } else {
+        console.error("Error mengambil rooms:", await roomsResponse.text());
+      }
+      
+      // Gabungkan dua array
+      const combinedList = [...directChats, ...rooms];
+      console.log("Kombinasi chat list:", combinedList);
+      
+      setChatList(combinedList);
     } catch (error) {
       console.error('Error fetching chat list:', error);
     }

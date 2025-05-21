@@ -775,14 +775,23 @@ export class DatabaseStorage implements IStorage {
       // 2. Ambil rooms user
       const userRooms = await this.getUserRooms(userId);
       
-      // 3. Gabungkan keduanya dalam format yang sesuai
-      return {
-        directChats: userDirectChats,
-        rooms: userRooms
-      };
+      // 3. Buat array gabungan
+      const result: any[] = [];
+      
+      // Tambahkan direct chats ke array result
+      if (userDirectChats && userDirectChats.length > 0) {
+        result.push(...userDirectChats);
+      }
+      
+      // Tambahkan rooms ke array result
+      if (userRooms && userRooms.length > 0) {
+        result.push(...userRooms);
+      }
+      
+      return result;
     } catch (error) {
       console.error('Error getting chats for user:', error);
-      return { directChats: [], rooms: [] };
+      return [];
     }
   }
   
