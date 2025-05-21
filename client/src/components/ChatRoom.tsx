@@ -435,12 +435,40 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
             console.log(`Memastikan direct chat dengan pengguna ID ${chatId} sudah ada`);
             
             // Coba buat direct chat jika belum ada
+            // Di mode non-group, chatId pada komponen ini sebenarnya adalah targetUserId
+            // Tapi kita perlu memperoleh UUID yang tepat dari user yang tersedia
+            // Coba dapatkan daftar pengguna dari server
+            const usersResponse = await fetch('/api/users', {
+              credentials: 'include'
+            });
+            
+            if (!usersResponse.ok) {
+              console.error("Gagal mendapatkan daftar pengguna");
+              throw new Error("Gagal mendapatkan daftar pengguna");
+            }
+            
+            const users = await usersResponse.json();
+            console.log("Daftar pengguna:", users);
+            
+            // Cari user dengan ID atau callsign yang cocok (asumsi chatName adalah callsign)
+            const targetUser = users.find((u: any) => 
+              u.id === chatId.toString() || u.callsign === chatName
+            );
+            
+            if (!targetUser) {
+              console.error(`Pengguna dengan ID ${chatId} atau callsign ${chatName} tidak ditemukan`);
+              throw new Error(`Pengguna dengan ID ${chatId} atau callsign ${chatName} tidak ditemukan`);
+            }
+            
+            console.log(`Target user ditemukan:`, targetUser);
+            
+            // Buat direct chat dengan user yang ditemukan
             const createChatResponse = await fetch('/api/direct-chats', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'
               },
-              body: JSON.stringify({ otherUserId: chatId }),
+              body: JSON.stringify({ otherUserId: targetUser.id }),
               credentials: 'include'
             });
             
