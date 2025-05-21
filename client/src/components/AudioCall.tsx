@@ -187,16 +187,7 @@ export default function AudioCall({ callerId, callerName, onEndCall }: AudioCall
         </div>
       </div>
       
-      <style jsx global>{`
-        @keyframes soundwave {
-          0% {
-            height: 4px;
-          }
-          100% {
-            height: 24px;
-          }
-        }
-      `}</style>
+
     </div>
   );
 }

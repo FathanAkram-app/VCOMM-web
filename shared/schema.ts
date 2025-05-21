@@ -219,3 +219,15 @@ export type MessageWithSender = Message & {
   };
   isRead: boolean;
 };
+
+// Tipe untuk daftar chat yang ditampilkan di UI
+export interface ChatListItem {
+  id: number;
+  name: string;
+  isRoom: boolean;
+  lastMessage?: string;
+  lastMessageTime?: string;
+  unreadCount: number;
+  isOnline?: boolean;
+  otherUserId?: number;
+}

@@ -122,16 +122,7 @@ export default function IncomingCallModal({ callerName, callType, onAccept, onRe
         </div>
       </div>
       
-      <style jsx global>{`
-        @keyframes wave {
-          0% {
-            height: 8px;
-          }
-          100% {
-            height: 24px;
-          }
-        }
-      `}</style>
+
     </div>
   );
 }
