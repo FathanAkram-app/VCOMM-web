@@ -102,12 +102,20 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
       
       const data = await response.json();
       console.log("Pesan dari API:", data);
+      console.log("Jumlah pesan diterima:", data.length);
       
       // Format pesan untuk ditampilkan
       const formattedMessages = data.map((msg: any) => {
-        return {
+        console.log("Memproses pesan:", {
           id: msg.id,
           content: msg.content,
+          senderId: msg.senderId,
+          timestamp: msg.sentAt
+        });
+        
+        return {
+          id: msg.id,
+          content: msg.content || "(Pesan kosong)",
           sender: {
             id: msg.sender?.id || msg.senderId,
             callsign: msg.sender?.callsign || 'User'
@@ -123,6 +131,8 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
           } : null
         };
       });
+      
+      console.log("Pesan setelah diformat:", formattedMessages);
       
       setMessages(formattedMessages);
       // Scroll ke pesan terakhir
