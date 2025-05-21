@@ -1,308 +1,313 @@
-import { useState } from 'react';
-import { useLocation } from 'wouter';
+import { useState } from "react";
+import { useAuth } from "../hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ShieldAlert, AlertCircle, Lock } from "lucide-react";
 
 export default function LoginPage() {
-  const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
-  const [callsign, setCallsign] = useState('');
-  const [nrp, setNrp] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [rank, setRank] = useState('');
-  const [branch, setBranch] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [, setLocation] = useLocation();
+  // Login form states
+  const [callsign, setCallsign] = useState("");
+  const [password, setPassword] = useState("");
+  
+  // Registration form states
+  const [regCallsign, setRegCallsign] = useState("");
+  const [regNrp, setRegNrp] = useState("");
+  const [regFullName, setRegFullName] = useState("");
+  const [regRank, setRegRank] = useState("");
+  const [regBranch, setRegBranch] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+  const [regConfirmPassword, setRegConfirmPassword] = useState("");
+  
+  const { loginMutation, registerMutation, authError } = useAuth();
 
-  // Handle login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ callsign, password }),
+    if (callsign.trim() && password.trim()) {
+      loginMutation.mutate({ 
+        callsign, 
+        password 
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login gagal');
-      }
-
-      localStorage.setItem('user', JSON.stringify(data));
-      setLocation('/dashboard');
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
     }
   };
-
-  // Handle registration
+  
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-
-    // Validasi password
-    if (password !== confirmPassword) {
-      setError('Security Code tidak cocok');
+    
+    if (!regCallsign.trim() || !regPassword.trim()) {
+      return; // Basic validation
+    }
+    
+    if (regPassword !== regConfirmPassword) {
+      alert("Password tidak cocok!");
       return;
     }
-
-    setLoading(true);
-
-    try {
-      const response = await fetch('/api/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          callsign,
-          nrp,
-          password,
-          fullName,
-          rank,
-          branch
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Registrasi gagal');
-      }
-
-      // Switch to login after successful registration
-      setActiveTab('login');
-      setPassword('');
-      setError('');
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    
+    // Register the user
+    registerMutation.mutate({
+      callsign: regCallsign,
+      password: regPassword,
+      passwordConfirm: regConfirmPassword,
+      nrp: regNrp,
+      fullName: regFullName,
+      rank: regRank,
+      branch: regBranch
+    });
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black">
-      <div className="w-full max-w-md">
-        {/* Logo and Title */}
-        <div className="text-center mb-6">
-          <div className="w-24 h-24 mx-auto rounded-lg bg-green-700 border-2 border-green-400 flex items-center justify-center relative">
-            <div className="absolute inset-0 bg-green-700 rounded-lg"></div>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" 
-              className="w-14 h-14 text-black relative z-10" strokeWidth="1">
-              <path strokeLinecap="round" strokeLinejoin="round" 
-                d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-            </svg>
+    <div className="min-h-screen bg-background flex flex-col justify-center items-center p-4">
+      {authError && (
+        <div className="mb-4 p-3 bg-red-600/20 border border-red-600 text-red-600 rounded max-w-md w-full">
+          <p className="text-sm font-medium">{authError}</p>
+        </div>
+      )}
+      
+      <Card className="w-full max-w-md border-2 border-accent bg-background shadow-md">
+        <CardHeader className="space-y-1 text-center military-header">
+          <div className="flex justify-center mb-3">
+            <div className="w-20 h-20 rounded-sm bg-secondary text-secondary-foreground flex items-center justify-center border-2 border-accent">
+              <ShieldAlert className="h-10 w-10" />
+            </div>
           </div>
-          <h1 className="text-xl font-bold text-green-500 mt-2">SECURE COMMS</h1>
-          <p className="text-xs text-zinc-400 tracking-wide">MILITARY PERSONNEL AUTHENTICATION REQUIRED</p>
-        </div>
-
-        {/* Login/Register Tabs */}
-        <div className="grid grid-cols-2 mb-4">
-          <button 
-            onClick={() => setActiveTab('login')}
-            className={`py-3 ${activeTab === 'login' ? 'bg-green-800 text-white' : 'bg-zinc-800 text-zinc-400'}`}
-          >
-            LOGIN
-          </button>
-          <button 
-            onClick={() => setActiveTab('register')}
-            className={`py-3 ${activeTab === 'register' ? 'bg-green-800 text-white' : 'bg-zinc-800 text-zinc-400'}`}
-          >
-            REGISTER
-          </button>
-        </div>
-
-        {activeTab === 'login' && (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs text-zinc-400 mb-1">CALLSIGN / USERNAME</label>
-              <input
-                type="text"
-                value={callsign}
-                onChange={(e) => setCallsign(e.target.value)}
-                placeholder="ENTER CALLSIGN"
-                className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-zinc-300"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs text-zinc-400 mb-1">NRP / PERSONNEL ID</label>
-              <input
-                type="text"
-                value={nrp}
-                onChange={(e) => setNrp(e.target.value)}
-                placeholder="ENTER NRP"
-                className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-zinc-300"
-              />
-            </div>
-
-            <div>
-              <div className="flex justify-between items-center">
-                <label className="block text-xs text-zinc-400 mb-1">SECURITY CODE / PASSWORD</label>
-                <div className="text-xs text-zinc-600 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                  ENCRYPTED
+          <CardTitle className="text-2xl font-bold tracking-wider uppercase text-primary-foreground">SECURE COMMS</CardTitle>
+          <CardDescription className="text-primary-foreground/80 font-medium">
+            MILITARY PERSONNEL AUTHENTICATION REQUIRED
+          </CardDescription>
+        </CardHeader>
+        
+        <Tabs defaultValue="login" className="w-full">
+          <div className="border-b border-accent">
+            <TabsList className="grid grid-cols-2 w-full bg-background">
+              <TabsTrigger 
+                value="login"
+                className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground font-bold rounded-none border-r border-accent"
+              >
+                LOGIN
+              </TabsTrigger>
+              <TabsTrigger 
+                value="register" 
+                className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground font-bold rounded-none"
+              >
+                REGISTER
+              </TabsTrigger>
+            </TabsList>
+          </div>
+          
+          {/* Login Tab */}
+          <TabsContent value="login" className="m-0">
+            <CardContent className="p-6">
+              <form onSubmit={handleLogin}>
+                <div className="grid gap-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="callsign" className="text-sm font-bold uppercase">CALLSIGN / USERNAME</Label>
+                    <Input
+                      id="callsign"
+                      placeholder="ENTER CALLSIGN"
+                      value={callsign}
+                      onChange={(e) => setCallsign(e.target.value)}
+                      required
+                      className="bg-muted border-accent font-medium placeholder:text-muted-foreground/50"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="password" className="text-sm font-bold uppercase flex items-center">
+                      <span>SECURITY CODE / PASSWORD</span>
+                      <span className="ml-2 inline-flex items-center px-1 py-0.5 text-xs military-badge">
+                        <Lock className="h-3 w-3 mr-1" /> ENCRYPTED
+                      </span>
+                    </Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="ENTER SECURITY CODE"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="bg-muted border-accent font-medium placeholder:text-muted-foreground/50"
+                    />
+                    <div className="py-2 px-3 bg-primary/10 border border-accent/50 mt-2">
+                      <p className="text-xs text-accent font-medium">
+                        UNAUTHORIZED ACCESS IS STRICTLY PROHIBITED.
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="ENTER SECURITY CODE"
-                className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-zinc-300"
-              />
-            </div>
-
-            <div className="text-xs text-zinc-600 text-center">
-              UNAUTHORIZED ACCESS IS STRICTLY PROHIBITED
-            </div>
-
-            <button
-              onClick={handleLogin}
-              className="w-full bg-green-800 hover:bg-green-700 text-white py-3 rounded flex items-center justify-center"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-              SECURE LOGIN
-            </button>
-
-            <div className="text-xs text-zinc-600 text-center">
-              © INTRANET COMMUNICATION ONLY • CLASSIFIED
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'register' && (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs text-zinc-400 mb-1">CALLSIGN / USERNAME</label>
-              <input
-                type="text"
-                value={callsign}
-                onChange={(e) => setCallsign(e.target.value)}
-                placeholder="ENTER CALLSIGN"
-                className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-zinc-300"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs text-zinc-400 mb-1">NRP / PERSONNEL ID</label>
-              <input
-                type="text"
-                value={nrp}
-                onChange={(e) => setNrp(e.target.value)}
-                placeholder="ENTER NRP"
-                className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-zinc-300"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs text-zinc-400 mb-1">FULL NAME</label>
-              <input
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="ENTER FULL NAME"
-                className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-zinc-300"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs text-zinc-400 mb-1">RANK</label>
-                <select
-                  value={rank}
-                  onChange={(e) => setRank(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-zinc-300"
+              </form>
+            </CardContent>
+            
+            <CardFooter className="border-t border-accent p-6">
+              <Button 
+                className="w-full military-button text-lg uppercase font-bold tracking-wider h-12" 
+                onClick={handleLogin}
+                disabled={loginMutation.isPending || !callsign.trim() || !password.trim()}
+              >
+                {loginMutation.isPending ? "AUTHENTICATING..." : "SECURE LOGIN"}
+              </Button>
+            </CardFooter>
+          </TabsContent>
+          
+          {/* Registration Tab */}
+          <TabsContent value="register" className="m-0">
+            <CardContent className="p-6">
+              <form onSubmit={handleRegister} className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                <div className="grid gap-5">
+                  <div className="py-2 px-3 bg-primary/10 border border-accent/50">
+                    <p className="text-xs text-accent font-medium flex items-center">
+                      <AlertCircle className="h-3 w-3 mr-1" />
+                      LENGKAPI FORM REGISTRASI PERSONEL MILITER
+                    </p>
+                  </div>
+                  
+                  {/* Call Sign / Username */}
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-callsign" className="text-sm font-bold uppercase">
+                      CALL SIGN / USERNAME
+                    </Label>
+                    <Input
+                      id="reg-callsign"
+                      placeholder="ENTER CALLSIGN"
+                      value={regCallsign}
+                      onChange={(e) => setRegCallsign(e.target.value)}
+                      required
+                      className="bg-muted border-accent font-medium placeholder:text-muted-foreground/50"
+                    />
+                  </div>
+                  
+                  {/* NRP */}
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-nrp" className="text-sm font-bold uppercase">
+                      NRP / NOMOR REGISTER PUSAT
+                    </Label>
+                    <Input
+                      id="reg-nrp"
+                      placeholder="ENTER NRP"
+                      value={regNrp}
+                      onChange={(e) => setRegNrp(e.target.value)}
+                      required
+                      className="bg-muted border-accent font-medium placeholder:text-muted-foreground/50"
+                    />
+                  </div>
+                  
+                  {/* Full Name */}
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-fullname" className="text-sm font-bold uppercase">
+                      NAMA LENGKAP
+                    </Label>
+                    <Input
+                      id="reg-fullname"
+                      placeholder="ENTER FULL NAME"
+                      value={regFullName}
+                      onChange={(e) => setRegFullName(e.target.value)}
+                      required
+                      className="bg-muted border-accent font-medium placeholder:text-muted-foreground/50"
+                    />
+                  </div>
+                  
+                  {/* Rank */}
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-rank" className="text-sm font-bold uppercase">
+                      PANGKAT
+                    </Label>
+                    <Select
+                      value={regRank}
+                      onValueChange={setRegRank}
+                    >
+                      <SelectTrigger id="reg-rank" className="bg-muted border-accent">
+                        <SelectValue placeholder="PILIH PANGKAT" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Letnan Dua">LETNAN DUA</SelectItem>
+                        <SelectItem value="Letnan Satu">LETNAN SATU</SelectItem>
+                        <SelectItem value="Kapten">KAPTEN</SelectItem>
+                        <SelectItem value="Mayor">MAYOR</SelectItem>
+                        <SelectItem value="Letnan Kolonel">LETNAN KOLONEL</SelectItem>
+                        <SelectItem value="Kolonel">KOLONEL</SelectItem>
+                        <SelectItem value="Brigadir Jenderal">BRIGADIR JENDERAL</SelectItem>
+                        <SelectItem value="Mayor Jenderal">MAYOR JENDERAL</SelectItem>
+                        <SelectItem value="Letnan Jenderal">LETNAN JENDERAL</SelectItem>
+                        <SelectItem value="Jenderal">JENDERAL</SelectItem>
+                        <SelectItem value="Sersan">SERSAN</SelectItem>
+                        <SelectItem value="Sersan Mayor">SERSAN MAYOR</SelectItem>
+                        <SelectItem value="Sersan Kepala">SERSAN KEPALA</SelectItem>
+                        <SelectItem value="Prajurit">PRAJURIT</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Branch */}
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-branch" className="text-sm font-bold uppercase">
+                      KESATUAN / MATRA
+                    </Label>
+                    <Select
+                      value={regBranch}
+                      onValueChange={setRegBranch}
+                    >
+                      <SelectTrigger id="reg-branch" className="bg-muted border-accent">
+                        <SelectValue placeholder="PILIH KESATUAN" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="AD">TNI AD</SelectItem>
+                        <SelectItem value="AL">TNI AL</SelectItem>
+                        <SelectItem value="AU">TNI AU</SelectItem>
+                        <SelectItem value="POLRI">POLRI</SelectItem>
+                        <SelectItem value="Marinir">MARINIR</SelectItem>
+                        <SelectItem value="Komando">KOMANDO</SelectItem>
+                        <SelectItem value="Kopassus">KOPASSUS</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Password */}
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-password" className="text-sm font-bold uppercase">
+                      PASSWORD
+                    </Label>
+                    <Input
+                      id="reg-password"
+                      type="password"
+                      placeholder="ENTER PASSWORD"
+                      value={regPassword}
+                      onChange={(e) => setRegPassword(e.target.value)}
+                      required
+                      className="bg-muted border-accent font-medium placeholder:text-muted-foreground/50"
+                    />
+                  </div>
+                  
+                  {/* Confirm Password */}
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-confirm-password" className="text-sm font-bold uppercase">
+                      KONFIRMASI PASSWORD
+                    </Label>
+                    <Input
+                      id="reg-confirm-password"
+                      type="password"
+                      placeholder="CONFIRM PASSWORD"
+                      value={regConfirmPassword}
+                      onChange={(e) => setRegConfirmPassword(e.target.value)}
+                      required
+                      className="bg-muted border-accent font-medium placeholder:text-muted-foreground/50"
+                    />
+                  </div>
+                </div>
+                
+                <Button 
+                  type="submit"
+                  className="w-full military-button text-lg uppercase font-bold tracking-wider h-12 mt-6" 
+                  disabled={registerMutation.isPending}
                 >
-                  <option value="">SELECT RANK</option>
-                  <option value="PVT">PVT - Private</option>
-                  <option value="CPL">CPL - Corporal</option>
-                  <option value="SGT">SGT - Sergeant</option>
-                  <option value="LT">LT - Lieutenant</option>
-                  <option value="CPT">CPT - Captain</option>
-                  <option value="MAJ">MAJ - Major</option>
-                  <option value="COL">COL - Colonel</option>
-                  <option value="GEN">GEN - General</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs text-zinc-400 mb-1">BRANCH</label>
-                <select
-                  value={branch}
-                  onChange={(e) => setBranch(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-zinc-300"
-                >
-                  <option value="">SELECT BRANCH</option>
-                  <option value="INF">INF - Infantry</option>
-                  <option value="ARM">ARM - Armor</option>
-                  <option value="AVI">AVI - Aviation</option>
-                  <option value="SIG">SIG - Signal</option>
-                  <option value="INT">INT - Intelligence</option>
-                  <option value="MED">MED - Medical</option>
-                  <option value="LOG">LOG - Logistics</option>
-                  <option value="ENG">ENG - Engineers</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs text-zinc-400 mb-1">SECURITY CODE / PASSWORD</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="ENTER SECURITY CODE"
-                className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-zinc-300"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs text-zinc-400 mb-1">CONFIRM SECURITY CODE</label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="CONFIRM SECURITY CODE"
-                className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-zinc-300"
-              />
-            </div>
-
-            <div className="text-xs text-zinc-600 text-center">
-              BY REGISTERING, YOU ACCEPT ALL MILITARY COMMUNICATION PROTOCOLS
-            </div>
-
-            <button
-              onClick={handleRegister}
-              className="w-full bg-green-800 hover:bg-green-700 text-white py-3 rounded flex items-center justify-center"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-              </svg>
-              REGISTER PERSONNEL
-            </button>
-
-            <div className="text-xs text-zinc-600 text-center">
-              © INTRANET COMMUNICATION ONLY • CLASSIFIED
-            </div>
-          </div>
-        )}
-      </div>
+                  {registerMutation.isPending ? "PROCESSING..." : "REGISTER"}
+                </Button>
+              </form>
+            </CardContent>
+          </TabsContent>
+        </Tabs>
+      </Card>
     </div>
   );
 }

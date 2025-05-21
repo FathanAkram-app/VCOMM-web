@@ -4,7 +4,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { Shield, Lock, AlertTriangle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,6 @@ export default function Login() {
   const [, setLocation] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { loginMutation } = useAuth();
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -32,14 +31,13 @@ export default function Login() {
     },
   });
 
+  const { login } = useAuth();
+  
   const onSubmit = async (values: LoginValues) => {
     setIsLoading(true);
     try {
       // Gunakan fungsi login dari useAuth
-      await loginMutation.mutateAsync({ 
-        callsign: values.callsign, 
-        password: values.password 
-      });
+      await login(values.callsign, values.password);
 
       // Tampilkan notifikasi berhasil
       toast({
@@ -137,8 +135,8 @@ export default function Login() {
             <div className="pt-2">
               <p className="uppercase text-center text-xs text-gray-500 mb-4">UNAUTHORIZED ACCESS IS STRICTLY PROHIBITED.</p>
               
-              <Button type="submit" disabled={isLoading || loginMutation.isPending} className="w-full bg-[#4d5d30] hover:bg-[#5a6b38] text-white py-3 font-bold uppercase tracking-wider">
-                {isLoading || loginMutation.isPending ? (
+              <Button type="submit" disabled={isLoading} className="w-full bg-[#4d5d30] hover:bg-[#5a6b38] text-white py-3 font-bold uppercase tracking-wider">
+                {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     <span>AUTHENTICATING...</span>

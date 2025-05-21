@@ -1,120 +1,133 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
-import { User } from "@shared/schema";
-import { useToast } from "./use-toast";
-import { useLocation } from "wouter";
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-interface AuthState {
-  user: User | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
+interface User {
+  id: number;
+  callsign: string;
+  nrp: string;
+  fullName?: string;
+  rank?: string;
+  branch?: string;
+  profileImageUrl?: string;
 }
 
-/**
- * Hook untuk menangani autentikasi pengguna
- */
-export function useAuth(): AuthState & {
-  logout: () => Promise<void>;
-  login: (callsign: string, password: string) => Promise<User>;
-} {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
+interface LoginCredentials {
+  callsign: string;
+  password: string;
+}
 
-  const { data: user, isLoading: isQueryLoading, refetch } = useQuery<User | null>({
-    queryKey: ["/api/auth/user"],
+interface RegisterCredentials {
+  callsign: string;
+  nrp: string;
+  password: string;
+  passwordConfirm: string;
+  fullName: string;
+  rank: string;
+  branch: string;
+}
+
+export function useAuth() {
+  const queryClient = useQueryClient();
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  // Fetch user data if logged in
+  const { data: user, isLoading, error } = useQuery<User>({
+    queryKey: ['/api/user'],
     retry: false,
-    staleTime: 0, // Tidak menyimpan cache, selalu fetch baru
-    gcTime: 0,
-    refetchOnWindowFocus: true // Refresh data ketika window aktif kembali
+    refetchOnWindowFocus: false,
   });
 
-  // Memperbarui status loading global
-  useEffect(() => {
-    if (!isQueryLoading) {
-      setIsLoading(false);
-    }
-  }, [isQueryLoading]);
-
-  // Fungsi untuk login
-  const login = async (callsign: string, password: string): Promise<User> => {
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
+  // Login mutation
+  const loginMutation = useMutation({
+    mutationFn: async (credentials: LoginCredentials) => {
+      const response = await fetch('/api/login', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ callsign, password }),
-        credentials: "include"
+        body: JSON.stringify(credentials),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Login gagal");
+        throw new Error(errorData.message || 'Login failed');
       }
 
-      const userData = await response.json();
-      console.log("Login berhasil, data user:", userData);
-      
-      // Refresh user data dalam cache
-      queryClient.setQueryData(["/api/auth/user"], userData);
-      
-      // Paksa refresh data user
-      await refetch();
-      
-      // Return user data
-      return userData;
-    } catch (error: any) {
-      console.error("Login error:", error);
-      throw error;
-    }
-  };
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(['/api/user'], data);
+      setAuthError(null);
+    },
+    onError: (error: Error) => {
+      setAuthError(error.message);
+    },
+  });
 
-  const [, setLocation] = useLocation();
-
-  // Fungsi untuk logout
-  const logout = async (): Promise<void> => {
-    try {
-      const response = await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include"
+  // Register mutation
+  const registerMutation = useMutation({
+    mutationFn: async (userData: RegisterCredentials) => {
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
       });
 
-      if (response.ok) {
-        // Clear query cache
-        queryClient.clear();
-        
-        // Set user data to null
-        queryClient.setQueryData(["/api/auth/user"], null);
-        
-        toast({
-          title: "Logout berhasil",
-          description: "Anda telah keluar dari sistem",
-        });
-        
-        // Redirect ke login setelah logout berhasil
-        setLocation("/login");
-      } else {
-        throw new Error("Gagal logout");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Registration failed');
       }
-    } catch (error) {
-      console.error("Logout error:", error);
-      toast({
-        variant: "destructive",
-        title: "Logout gagal",
-        description: "Terjadi kesalahan saat logout",
+
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(['/api/user'], data.user);
+      setAuthError(null);
+    },
+    onError: (error: Error) => {
+      setAuthError(error.message);
+    },
+  });
+
+  // Logout mutation
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/logout', {
+        method: 'POST',
       });
-      
-      // Jika logout gagal, tetap coba redirect ke login
-      setLocation("/login");
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Logout failed');
+      }
+
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.setQueryData(['/api/user'], null);
+      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+    },
+  });
+
+  // Clear error after 5 seconds
+  useEffect(() => {
+    if (authError) {
+      const timer = setTimeout(() => {
+        setAuthError(null);
+      }, 5000);
+      return () => clearTimeout(timer);
     }
-  };
+  }, [authError]);
 
   return {
-    user: user || null,
-    isLoading: isLoading && isQueryLoading,
+    user,
+    isLoading,
     isAuthenticated: !!user,
-    logout,
-    login
+    loginMutation,
+    registerMutation,
+    logoutMutation,
+    authError,
   };
 }
