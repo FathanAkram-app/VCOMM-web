@@ -16,6 +16,7 @@ import {
 import { db } from "./db";
 import { sql } from "drizzle-orm";
 import { eq, and, or, inArray, desc } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 
 // Storage interface
 export interface IStorage {
@@ -26,6 +27,7 @@ export interface IStorage {
   createUser(user: RegisterUser): Promise<User>;
   updateUserStatus(userId: number, status: string): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
+  verifyPassword(userId: number, password: string): Promise<boolean>;
 
   // Conversation operations (both groups and direct)
   getConversation(id: number): Promise<Conversation | undefined>;
@@ -54,6 +56,24 @@ export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
+  }
+  
+  async verifyPassword(userId: number, password: string): Promise<boolean> {
+    try {
+      // Ambil user dari database
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      
+      if (!user) {
+        return false;
+      }
+      
+      // Verifikasi password dengan bcrypt
+      const isValid = await bcrypt.compare(password, user.password);
+      return isValid;
+    } catch (error) {
+      console.error('Error verifying password:', error);
+      return false;
+    }
   }
 
   async getUserByCallsign(callsign: string): Promise<User | undefined> {
