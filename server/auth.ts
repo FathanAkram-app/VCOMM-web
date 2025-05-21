@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import session from 'express-session';
 import bcrypt from 'bcryptjs';
 import connectPg from 'connect-pg-simple';
+import { v4 as uuidv4 } from 'uuid';
 import { storage } from './storage';
 import { loginSchema, registerUserSchema } from '@shared/schema';
 
@@ -76,13 +77,15 @@ export async function setupAuth(app: express.Express) {
       // Hash password
       const hashedPassword = await bcrypt.hash(parseResult.data.password, 10);
       
-      // Create user
+      // Create user with UUID
       const userData = {
+        id: uuidv4(), // Generate UUID for user ID
         ...parseResult.data,
         password: hashedPassword,
         status: 'offline'
       };
       
+      console.log("Creating user with UUID:", userData.id);
       const user = await storage.createUser(userData);
       
       // Store user in session (auto login)
