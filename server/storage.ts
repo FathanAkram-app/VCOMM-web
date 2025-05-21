@@ -1,4 +1,3 @@
-import { Pool } from 'pg';
 import {
   users,
   rooms,
@@ -25,9 +24,8 @@ import {
   type GroupCallParticipant,
   type InsertGroupCallParticipant,
 } from "@shared/schema";
-import { db } from "./db";
-import { sql } from "drizzle-orm";
-import { eq, and, or, inArray, desc, isNull, asc } from "drizzle-orm";
+import { db, pool } from "./db";
+import { sql, eq, and, or, inArray, desc, isNull, asc } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
 // Storage interface
@@ -411,8 +409,7 @@ export class DatabaseStorage implements IStorage {
         console.log(`[DEBUG] Mencoba mencari conversation dengan ID: ${conversationId}`);
         // Gunakan nama table literal karena kita tahu bahwa tabel 'conversations' ada di database
         // tapi mungkin tidak didefinisikan dalam model
-        // Gunakan pg pool untuk query langsung
-        const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+        // Gunakan pool yang sudah diimpor dari db.ts
         const result = await pool.query(
           `SELECT * FROM conversations WHERE id = $1`,
           [conversationId]
@@ -447,8 +444,8 @@ export class DatabaseStorage implements IStorage {
       // Update conversation dengan pesan terakhir
       if (message.roomId) {
         try {
-          // Gunakan raw SQL untuk update conversation
-          await db.execute(
+          // Gunakan pool untuk update conversation
+          await pool.query(
             `UPDATE conversations 
              SET last_message = $1, 
                  last_message_time = $2, 
