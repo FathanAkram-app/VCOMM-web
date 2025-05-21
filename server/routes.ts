@@ -120,7 +120,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Set user session setelah registrasi sukses
       if (req.session) {
-        req.session.userId = newUser.id;
+        req.session.user = {
+          id: newUser.id,
+          callsign: newUser.callsign,
+          role: newUser.role
+        };
       }
       
       // Log registrasi berhasil
@@ -167,7 +171,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Set user session
       if (req.session) {
-        req.session.userId = user.id;
+        req.session.user = {
+          id: user.id,
+          callsign: user.callsign,
+          role: user.role
+        };
       }
       
       // Log login berhasil
@@ -303,11 +311,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // API rute untuk daftar chat
   app.get('/api/chats', async (req: Request, res: Response) => {
-    const userId = req.session?.userId;
-    
-    if (!userId) {
+    if (!req.session?.user) {
       return res.status(401).json({ message: 'Tidak terautentikasi' });
     }
+    
+    const userId = req.session.user.id;
     
     try {
       // Dapatkan daftar chat (direct dan room) untuk user ini
@@ -395,11 +403,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // API rute untuk dapatkan pesan dalam chat
   app.get('/api/chats/:chatId/messages', async (req: Request, res: Response) => {
-    const userId = req.session?.userId;
-    
-    if (!userId) {
+    if (!req.session?.user) {
       return res.status(401).json({ message: 'Tidak terautentikasi' });
     }
+    
+    const userId = req.session.user.id;
     
     const chatId = parseInt(req.params.chatId);
     const isRoom = req.query.isRoom === 'true';
@@ -431,11 +439,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // API rute untuk mengirim pesan teks
   app.post('/api/chats/:chatId/messages', async (req: Request, res: Response) => {
-    const userId = req.session?.userId;
-    
-    if (!userId) {
+    if (!req.session?.user) {
       return res.status(401).json({ message: 'Tidak terautentikasi' });
     }
+    
+    const userId = req.session.user.id;
     
     const chatId = parseInt(req.params.chatId);
     const { content, isRoom, forwardedFromId } = req.body;
@@ -479,11 +487,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // API rute untuk upload file dan kirim pesan dengan attachment
   app.post('/api/chats/:chatId/attachments', upload.single('file'), async (req: Request, res: Response) => {
-    const userId = req.session?.userId;
-    
-    if (!userId) {
+    if (!req.session?.user) {
       return res.status(401).json({ message: 'Tidak terautentikasi' });
     }
+    
+    const userId = req.session.user.id;
     
     const chatId = parseInt(req.params.chatId);
     const isRoom = req.body.isRoom === 'true';
