@@ -1,0 +1,69 @@
+User data dari session: {id: '1525fbb8-0435-4a0f-ae7c-3c8e0622d897', callsign: 'alif', nrp: '111111', fullName: 'alif', rank: 'PVT'}
+Chat.tsx:103 Mengambil daftar chat untuk user ID: 1525fbb8-0435-4a0f-ae7c-3c8e0622d897
+Chat.tsx:205 Loaded 4 users from database for personnel list
+Chat.tsx:167 Error mengambil daftar chat: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+fetchUserChats @ Chat.tsx:167
+await in fetchUserChats
+checkAuth @ Chat.tsx:86
+await in checkAuth
+(anonymous) @ Chat.tsx:97
+commitHookEffectListMount @ chunk-WERSD76P.js?v=c129a640:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=c129a640:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=c129a640:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=c129a640:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=c129a640:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=c129a640:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=c129a640:19447
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=c129a640:18868
+flushSyncCallbacks @ chunk-WERSD76P.js?v=c129a640:9119
+commitRootImpl @ chunk-WERSD76P.js?v=c129a640:19432
+commitRoot @ chunk-WERSD76P.js?v=c129a640:19277
+finishConcurrentRender @ chunk-WERSD76P.js?v=c129a640:18805
+performConcurrentWorkOnRoot @ chunk-WERSD76P.js?v=c129a640:18718
+workLoop @ chunk-WERSD76P.js?v=c129a640:197
+flushWork @ chunk-WERSD76P.js?v=c129a640:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=c129a640:384Understand this error
+Chat.tsx:205 Loaded 4 users from database for personnel list
+ChatRoom.tsx:150 Loaded 4 users from database for personnel list
+ChatRoom.tsx:33 User data dari session di ChatRoom: {id: '1525fbb8-0435-4a0f-ae7c-3c8e0622d897', callsign: 'alif', nrp: '111111', fullName: 'alif', rank: 'PVT'}
+ChatRoom.tsx:262 Memastikan direct chat untuk user ID 1525fbb8-0435-4a0f-ae7c-3c8e0622d897 dengan target ID 1
+ChatRoom.tsx:166 Memastikan direct chat dengan pengguna ID 1 sudah ada
+ChatRoom.tsx:185 Daftar pengguna: (4) [{…}, {…}, {…}, {…}]
+ChatRoom.tsx:191 Pengguna dengan ID 1 tidak ditemukan
+ensureDirectChatExists @ ChatRoom.tsx:191
+await in ensureDirectChatExists
+(anonymous) @ ChatRoom.tsx:264
+commitHookEffectListMount @ chunk-WERSD76P.js?v=c129a640:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=c129a640:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=c129a640:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=c129a640:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=c129a640:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=c129a640:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=c129a640:19447
+(anonymous) @ chunk-WERSD76P.js?v=c129a640:19328
+workLoop @ chunk-WERSD76P.js?v=c129a640:197
+flushWork @ chunk-WERSD76P.js?v=c129a640:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=c129a640:384Understand this error
+ChatRoom.tsx:198 Menggunakan default target user: {id: '1bb756f5-dd07-49ff-a12d-60785456aaab', callsign: 'eko', nrp: '123123', fullName: 'eko a', rank: 'PVT', …}
+ChatRoom.tsx:252 Error ensuring direct chat exists: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+ensureDirectChatExists @ ChatRoom.tsx:252
+await in ensureDirectChatExists
+(anonymous) @ ChatRoom.tsx:264
+commitHookEffectListMount @ chunk-WERSD76P.js?v=c129a640:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=c129a640:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=c129a640:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=c129a640:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=c129a640:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=c129a640:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=c129a640:19447
+(anonymous) @ chunk-WERSD76P.js?v=c129a640:19328
+workLoop @ chunk-WERSD76P.js?v=c129a640:197
+flushWork @ chunk-WERSD76P.js?v=c129a640:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=c129a640:384Understand this error
+ChatRoom.tsx:610 Memastikan direct chat dengan pengguna ID 1 sudah ada
+ChatRoom.tsx:626 Daftar pengguna: (4) [{…}, {…}, {…}, {…}]
+ChatRoom.tsx:638 Target user ditemukan: {id: '1bb756f5-dd07-49ff-a12d-60785456aaab', callsign: 'eko', nrp: '123123', fullName: 'eko a', rank: 'PVT', …}
+ChatRoom.tsx:654 Direct chat dibuat atau ditemukan: {id: 7, user1Id: '1525fbb8-0435-4a0f-ae7c-3c8e0622d897', user2Id: '1bb756f5-dd07-49ff-a12d-60785456aaab', lastActivityAt: '2025-05-21T11:39:14.923Z', createdAt: '2025-05-21T11:39:14.900Z'}
+ChatRoom.tsx:658 Mengupdate chatId dari 1 menjadi 7 untuk pengiriman pesan
+ChatRoom.tsx:687 Mengirim pesan ke chatId=7, isRoom=false {content: 'cek', isRoom: false, replyToId: null}
+ChatRoom.tsx:707 Pesan berhasil dikirim: {id: 15, content: 'cek', senderId: '1525fbb8-0435-4a0f-ae7c-3c8e0622d897', roomId: null, directChatId: 7, …}

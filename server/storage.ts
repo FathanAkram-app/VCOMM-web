@@ -40,6 +40,11 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   upsertUser(user: InsertUser): Promise<User>;
   verifyPassword(hashedPassword: string, plainPassword: string): Promise<boolean>;
+  
+  // Chat list operations
+  getChatsForUser(userId: string): Promise<any[]>;
+  getMessagesForChat(chatId: number, isRoom: boolean): Promise<Message[]>;
+  markMessagesAsRead(chatId: number, isRoom: boolean, userId: string): Promise<void>;
 
   // Room operations
   getRoom(id: number): Promise<Room | undefined>;
