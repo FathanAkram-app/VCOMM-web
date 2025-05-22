@@ -315,20 +315,12 @@ export default function Chat() {
   const handleSelectChat = (id: number, isGroup: boolean) => {
     console.log(`Selecting chat: id=${id}, isGroup=${isGroup}`);
     
-    // Untuk mencegah error, gunakan ID chat yang ada
-    // Dari log server, kita tahu bahwa user eko memiliki direct chat ID 2 dan 3, bukan 5
-    let validId = id;
-    if (!isGroup && id === 5) {
-      console.log("ID 5 tidak ditemukan, menggunakan ID 3 sebagai gantinya");
-      validId = 3;
-    }
-    
-    setActiveChat({ id: validId, isGroup });
+    setActiveChat({ id, isGroup });
     setShowChatRoom(true);
     
-    // Jika kita memiliki chat aktif, kita harus memuat pesan-pesan untuk chat tersebut
-    if (validId) {
-      fetchMessagesForChat(validId, isGroup);
+    // Memuat pesan-pesan untuk chat tersebut
+    if (id) {
+      fetchMessagesForChat(id, isGroup);
     }
   };
   
