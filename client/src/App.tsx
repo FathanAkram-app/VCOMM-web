@@ -160,6 +160,16 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {/* Always show install button for Chrome mobile */}
+        <div className="fixed top-4 right-4 z-40 sm:hidden">
+          <button 
+            onClick={handleManualInstall}
+            className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-xs font-medium shadow-lg flex items-center gap-1"
+          >
+            📱 Install App
+          </button>
+        </div>
       </CallProvider>
     </QueryClientProvider>
   );

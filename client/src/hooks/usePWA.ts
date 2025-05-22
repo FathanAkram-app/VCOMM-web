@@ -14,7 +14,10 @@ export function usePWA() {
             console.log('NXZZ-VComm: Service Worker registered successfully:', registration);
             // Show manual prompt after service worker is ready
             setTimeout(() => {
-              setShowManualPrompt(true);
+              // Only show manual prompt if beforeinstallprompt hasn't fired
+              if (!deferredPrompt) {
+                setShowManualPrompt(true);
+              }
             }, 3000);
           })
           .catch((error) => {
