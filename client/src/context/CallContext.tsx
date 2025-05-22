@@ -167,12 +167,30 @@ export function CallProvider({ children }: { children: ReactNode }) {
     console.log(`[CallContext] Starting ${callType} call to:`, peerName);
 
     try {
-      // Get user media
+      // Enhanced mobile-friendly media constraints
       const constraints = {
-        audio: true,
-        video: callType === 'video'
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          // Mobile-specific audio settings
+          sampleRate: 48000,
+          channelCount: 1
+        },
+        video: callType === 'video' ? {
+          facingMode: 'user', // Front camera default
+          width: { ideal: 640, max: 1280 },
+          height: { ideal: 480, max: 720 },
+          frameRate: { ideal: 15, max: 30 }
+        } : false
       };
 
+      // Check if mediaDevices is available (required for mobile)
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Media devices not supported on this browser');
+      }
+
+      console.log('[CallContext] Requesting media permissions for mobile...');
       const localStream = await navigator.mediaDevices.getUserMedia(constraints);
       console.log('[CallContext] Got local media stream');
 
@@ -207,9 +225,26 @@ export function CallProvider({ children }: { children: ReactNode }) {
       // Navigate to call interface
       setLocation(callType === 'video' ? '/video-call' : '/audio-call');
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('[CallContext] Error starting call:', error);
-      alert('Gagal memulai panggilan. Pastikan microphone dan camera tersedia.');
+      
+      let errorMessage = 'Gagal memulai panggilan. ';
+      
+      if (error.name === 'NotAllowedError') {
+        errorMessage += 'Silakan izinkan akses microphone dan camera di browser Anda. Refresh halaman dan coba lagi.';
+      } else if (error.name === 'NotFoundError') {
+        errorMessage += 'Microphone atau camera tidak ditemukan. Pastikan perangkat tersedia.';
+      } else if (error.name === 'NotSupportedError') {
+        errorMessage += 'Browser Anda tidak mendukung fitur ini. Gunakan Chrome atau Firefox terbaru.';
+      } else if (error.name === 'NotReadableError') {
+        errorMessage += 'Microphone atau camera sedang digunakan aplikasi lain. Tutup aplikasi lain dan coba lagi.';
+      } else if (error.name === 'OverconstrainedError') {
+        errorMessage += 'Pengaturan media tidak didukung. Coba gunakan browser yang berbeda.';
+      } else {
+        errorMessage += 'Pastikan microphone dan camera tersedia, dan browser mendukung WebRTC.';
+      }
+      
+      alert(errorMessage);
     }
   };
 
@@ -222,12 +257,29 @@ export function CallProvider({ children }: { children: ReactNode }) {
     console.log('[CallContext] Accepting call');
 
     try {
-      // Get user media
+      // Enhanced mobile-friendly media constraints for accepting calls
       const constraints = {
-        audio: true,
-        video: incomingCall.callType === 'video'
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 48000,
+          channelCount: 1
+        },
+        video: incomingCall.callType === 'video' ? {
+          facingMode: 'user',
+          width: { ideal: 640, max: 1280 },
+          height: { ideal: 480, max: 720 },
+          frameRate: { ideal: 15, max: 30 }
+        } : false
       };
 
+      // Check if mediaDevices is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Media devices not supported on this browser');
+      }
+
+      console.log('[CallContext] Requesting media permissions for mobile (accept call)...');
       const localStream = await navigator.mediaDevices.getUserMedia(constraints);
       console.log('[CallContext] Got local media stream for incoming call');
 
@@ -252,9 +304,26 @@ export function CallProvider({ children }: { children: ReactNode }) {
       // Navigate to call interface
       setLocation(incomingCall.callType === 'video' ? '/video-call' : '/audio-call');
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('[CallContext] Error accepting call:', error);
-      alert('Gagal menerima panggilan. Pastikan microphone dan camera tersedia.');
+      
+      let errorMessage = 'Gagal menerima panggilan. ';
+      
+      if (error.name === 'NotAllowedError') {
+        errorMessage += 'Silakan izinkan akses microphone dan camera di browser Anda. Refresh halaman dan coba lagi.';
+      } else if (error.name === 'NotFoundError') {
+        errorMessage += 'Microphone atau camera tidak ditemukan. Pastikan perangkat tersedia.';
+      } else if (error.name === 'NotSupportedError') {
+        errorMessage += 'Browser Anda tidak mendukung fitur ini. Gunakan Chrome atau Firefox terbaru.';
+      } else if (error.name === 'NotReadableError') {
+        errorMessage += 'Microphone atau camera sedang digunakan aplikasi lain. Tutup aplikasi lain dan coba lagi.';
+      } else if (error.name === 'OverconstrainedError') {
+        errorMessage += 'Pengaturan media tidak didukung. Coba gunakan browser yang berbeda.';
+      } else {
+        errorMessage += 'Pastikan microphone dan camera tersedia, dan browser mendukung WebRTC.';
+      }
+      
+      alert(errorMessage);
     }
   };
 
