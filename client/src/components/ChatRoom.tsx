@@ -305,12 +305,8 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
   useEffect(() => {
     if (user && user.id && chatId) {
       console.log(`Menggunakan chat ID ${chatId} langsung (${isRoom ? 'Room' : 'Direct Chat'})`);
-      // Hanya gunakan chatId yang valid dan bukan hardcode
-      if (chatId !== 1 || isRoom) {
-        setActualChatId(chatId);
-      } else {
-        console.log(`Chat ID ${chatId} tidak valid untuk user ini, skip...`);
-      }
+      // Gunakan chatId yang diberikan dari database
+      setActualChatId(chatId);
     }
   }, [chatId, isRoom, user]);
 

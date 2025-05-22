@@ -313,15 +313,20 @@ export default function Chat() {
   
   // Handle selecting a chat
   const handleSelectChat = (id: number, isGroup: boolean) => {
-    console.log(`Selecting chat: id=${id}, isGroup=${isGroup}`);
+    console.log(`[DEBUG] handleSelectChat called with: id=${id}, isGroup=${isGroup}`);
     
+    // Validasi: hanya gunakan chat ID yang valid dari database
+    if (!id || id === 1) {
+      console.error(`[DEBUG] Invalid chat ID: ${id}. Skipping selection.`);
+      return;
+    }
+    
+    console.log(`[DEBUG] Setting activeChat to: {id: ${id}, isGroup: ${isGroup}}`);
     setActiveChat({ id, isGroup });
     setShowChatRoom(true);
     
     // Memuat pesan-pesan untuk chat tersebut
-    if (id) {
-      fetchMessagesForChat(id, isGroup);
-    }
+    fetchMessagesForChat(id, isGroup);
   };
   
   // Fungsi untuk mengambil pesan-pesan untuk chat tertentu
