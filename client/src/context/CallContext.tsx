@@ -1,488 +1,398 @@
-import { createContext, useState, useEffect, ReactNode } from "react";
-import { useNavigate } from "wouter";
-import { useToast } from "../hooks/use-toast";
-import { useAuth } from "../hooks/use-auth";
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useLocation } from 'wouter';
+import { useAuth } from '@/hooks/useAuth';
 
-// Definisi interface untuk inisialisasi panggilan
-interface IncomingCall {
-  id: number;
-  callerId: number;
-  callerName: string;
-  isRoom: boolean;
-  roomId?: number;
-  roomName?: string;
-  callType: 'video' | 'audio';
-  sdp?: RTCSessionDescriptionInit;
-}
-
-// Definisi interface untuk panggilan aktif
-interface ActiveCall {
-  id: number;
-  peerId: number;
-  peerName: string;
-  isRoom: boolean;
-  roomId?: number;
-  roomName?: string;
-  callType: 'video' | 'audio';
-  startTime: Date;
-  status: 'connecting' | 'connected' | 'reconnecting' | 'ended';
-  localStream: MediaStream | null;
+interface CallState {
+  callId?: string;
+  callType: 'audio' | 'video';
+  status: 'idle' | 'calling' | 'ringing' | 'connected' | 'ended';
+  isIncoming: boolean;
+  peerUserId?: number;
+  peerName?: string;
+  localStream?: MediaStream;
   remoteStreams: Map<number, MediaStream>;
   audioEnabled: boolean;
   videoEnabled: boolean;
   isMuted: boolean;
+  startTime?: Date;
 }
 
-// Definisi interface untuk context call
 interface CallContextType {
-  incomingCall: IncomingCall | null;
-  activeCall: ActiveCall | null;
-  isCallLoading: boolean;
-  startCall: (userId: number, callType: 'video' | 'audio') => Promise<void>;
-  startRoomCall: (roomId: number, callType: 'video' | 'audio') => Promise<void>;
-  answerCall: () => Promise<void>;
+  activeCall: CallState | null;
+  incomingCall: CallState | null;
+  startCall: (peerUserId: number, peerName: string, callType: 'audio' | 'video') => void;
+  acceptCall: () => void;
   rejectCall: () => void;
-  hangupCall: () => Promise<void>;
+  hangupCall: () => void;
   toggleCallAudio: () => void;
   toggleCallVideo: () => void;
   toggleMute: () => void;
-  switchCallCamera: () => Promise<void>;
+  switchCallCamera: () => void;
 }
 
-export const CallContext = createContext<CallContextType | undefined>(undefined);
+const CallContext = createContext<CallContextType | undefined>(undefined);
 
-interface CallProviderProps {
-  children: ReactNode;
-}
-
-export const CallProvider = ({ children }: CallProviderProps) => {
+export function CallProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  
-  // State untuk panggilan
-  const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
-  const [activeCall, setActiveCall] = useState<ActiveCall | null>(null);
-  const [isCallLoading, setIsCallLoading] = useState(false);
-  
-  // Membuat panggilan ke pengguna lain
-  const startCall = async (userId: number, callType: 'video' | 'audio') => {
-    if (!user) {
-      toast({
-        title: "Authentication Error",
-        description: "You must be logged in to make calls.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (activeCall) {
-      toast({
-        title: "Call in Progress",
-        description: "Please end your current call before starting a new one.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsCallLoading(true);
-    
-    try {
-      // Get user info untuk display
-      const response = await fetch(`/api/users/${userId}`);
-      if (!response.ok) throw new Error("Failed to get user information");
-      const userInfo = await response.json();
-      
-      // Inisialisasi panggilan dengan WebRTC
-      const localStream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: callType === 'video',
-      });
-      
-      setActiveCall({
-        id: Date.now(),
-        peerId: userId,
-        peerName: userInfo.callsign || "UNKNOWN",
-        isRoom: false,
-        callType,
-        startTime: new Date(),
-        status: 'connecting',
-        localStream,
-        remoteStreams: new Map(),
-        audioEnabled: true,
-        videoEnabled: callType === 'video',
-        isMuted: false,
-      });
-      
-      // Navigate ke halaman call
-      navigate(`/${callType}-call`);
-      
-      // Kirim signal ke server untuk memulai panggilan
-      const callSignal = {
-        type: 'call-offer',
-        callerId: user.id,
-        callerName: user.callsign,
-        targetId: userId,
-        callType: callType,
-        isRoom: false,
-        // sdp: sdpOffer - ini akan ditambahkan saat WebRTC diimplementasikan sepenuhnya
-      };
+  const [, setLocation] = useLocation();
+  const [activeCall, setActiveCall] = useState<CallState | null>(null);
+  const [incomingCall, setIncomingCall] = useState<CallState | null>(null);
+  const [ws, setWs] = useState<WebSocket | null>(null);
 
-      // Kirim ke server melalui WebSocket (akan diimplementasikan)
-      // socket.send(JSON.stringify(callSignal));
-      console.log('Sending call signal:', callSignal);
-    } catch (error) {
-      console.error("Error starting call:", error);
-      toast({
-        title: "Call Failed",
-        description: "Failed to establish connection. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCallLoading(false);
-    }
-  };
-  
-  // Membuat panggilan ke group
-  const startRoomCall = async (roomId: number, callType: 'video' | 'audio') => {
-    if (!user) {
-      toast({
-        title: "Authentication Error",
-        description: "You must be logged in to make calls.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (activeCall) {
-      toast({
-        title: "Call in Progress",
-        description: "Please end your current call before starting a new one.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsCallLoading(true);
-    
-    try {
-      // Get room info untuk display
-      const response = await fetch(`/api/conversations/${roomId}`);
-      if (!response.ok) throw new Error("Failed to get room information");
-      const roomInfo = await response.json();
-      
-      // Inisialisasi panggilan dengan WebRTC
-      const localStream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: callType === 'video',
-      });
-      
-      setActiveCall({
-        id: Date.now(),
-        peerId: roomId, // Menggunakan roomId sebagai peerId
-        peerName: roomInfo.name || "GROUP CALL",
-        isRoom: true,
-        roomId,
-        roomName: roomInfo.name,
-        callType,
-        startTime: new Date(),
-        status: 'connecting',
-        localStream,
-        remoteStreams: new Map(),
-        audioEnabled: true,
-        videoEnabled: callType === 'video',
-        isMuted: false,
-      });
-      
-      // Navigate ke halaman call
-      navigate(`/group-${callType}-call`);
-      
-      // Kirim signal ke server untuk memulai panggilan group
-      const roomCallSignal = {
-        type: 'room-call-start',
-        callerId: user.id,
-        callerName: user.callsign,
-        roomId: roomId,
-        callType: callType,
-        isRoom: true,
-      };
+  // Initialize WebSocket connection
+  useEffect(() => {
+    if (!user) return;
 
-      // Kirim ke server melalui WebSocket (akan diimplementasikan)
-      // socket.send(JSON.stringify(roomCallSignal));
-      console.log('Sending room call signal:', roomCallSignal);
-    } catch (error) {
-      console.error("Error starting room call:", error);
-      toast({
-        title: "Group Call Failed",
-        description: "Failed to establish connection. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCallLoading(false);
-    }
-  };
-  
-  // Menjawab panggilan masuk
-  const answerCall = async () => {
-    if (!incomingCall) return;
-    
-    setIsCallLoading(true);
-    
-    try {
-      // Inisialisasi panggilan dengan WebRTC
-      const localStream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: incomingCall.callType === 'video',
-      });
-      
-      setActiveCall({
-        id: incomingCall.id,
-        peerId: incomingCall.callerId,
-        peerName: incomingCall.callerName,
-        isRoom: incomingCall.isRoom,
-        roomId: incomingCall.roomId,
-        roomName: incomingCall.roomName,
-        callType: incomingCall.callType,
-        startTime: new Date(),
-        status: 'connecting',
-        localStream,
-        remoteStreams: new Map(),
-        audioEnabled: true,
-        videoEnabled: incomingCall.callType === 'video',
-        isMuted: false,
-      });
-      
-      // Navigate ke halaman call yang sesuai
-      if (incomingCall.isRoom) {
-        navigate(`/group-${incomingCall.callType}-call`);
-      } else {
-        navigate(`/${incomingCall.callType}-call`);
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const websocket = new WebSocket(wsUrl);
+
+    websocket.onopen = () => {
+      console.log('[CallContext] WebSocket connected for calls');
+      setWs(websocket);
+    };
+
+    websocket.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        console.log('[CallContext] Received message:', message);
+        
+        switch (message.type) {
+          case 'incoming_call':
+            handleIncomingCall(message);
+            break;
+          case 'call_accepted':
+            handleCallAccepted(message);
+            break;
+          case 'call_rejected':
+            handleCallRejected(message);
+            break;
+          case 'call_ended':
+            handleCallEnded(message);
+            break;
+          case 'webrtc_offer':
+            handleWebRTCOffer(message);
+            break;
+          case 'webrtc_answer':
+            handleWebRTCAnswer(message);
+            break;
+          case 'webrtc_ice_candidate':
+            handleWebRTCIceCandidate(message);
+            break;
+        }
+      } catch (error) {
+        console.error('[CallContext] Error parsing WebSocket message:', error);
       }
-      
-      // Reset incoming call state
-      setIncomingCall(null);
-      
-      // Kirim signal ke server untuk menjawab panggilan (akan diimplementasikan)
-      // const callAnswerSignal = {
-      //   type: 'call-answer',
-      //   targetId: incomingCall.callerId,
-      //   isRoom: incomingCall.isRoom,
-      //   roomId: incomingCall.roomId,
-      //   sdp: sdpAnswer
-      // };
-      // socket.send(JSON.stringify(callAnswerSignal));
-    } catch (error) {
-      console.error("Error answering call:", error);
-      toast({
-        title: "Call Failed",
-        description: "Failed to establish connection. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCallLoading(false);
-    }
-  };
-  
-  // Menolak panggilan masuk
-  const rejectCall = () => {
-    if (!incomingCall) return;
-    
-    // Kirim signal ke server untuk menolak panggilan (akan diimplementasikan)
-    // const callRejectSignal = {
-    //   type: 'call-reject',
-    //   targetId: incomingCall.callerId,
-    //   isRoom: incomingCall.isRoom,
-    //   roomId: incomingCall.roomId
-    // };
-    // socket.send(JSON.stringify(callRejectSignal));
-    
-    // Reset incoming call state
-    setIncomingCall(null);
-  };
-  
-  // Mengakhiri panggilan aktif
-  const hangupCall = async () => {
-    if (!activeCall) return;
-    
-    try {
-      // Kirim signal ke server untuk mengakhiri panggilan (akan diimplementasikan)
-      // const callEndSignal = {
-      //   type: 'call-end',
-      //   targetId: activeCall.peerId,
-      //   isRoom: activeCall.isRoom,
-      //   roomId: activeCall.roomId
-      // };
-      // socket.send(JSON.stringify(callEndSignal));
-      
-      // Cleanup local streams
-      if (activeCall.localStream) {
-        activeCall.localStream.getTracks().forEach(track => track.stop());
-      }
-      
-      // Cleanup remote streams
-      activeCall.remoteStreams.forEach(stream => {
-        stream.getTracks().forEach(track => track.stop());
-      });
-      
-      // Reset active call state
-      setActiveCall(null);
-      
-      // Navigate back
-      navigate("/chat");
-    } catch (error) {
-      console.error("Error ending call:", error);
-      toast({
-        title: "Error",
-        description: "Failed to properly end call. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  // Toggle audio pada panggilan aktif
-  const toggleCallAudio = () => {
-    if (!activeCall) return;
-    
-    const newAudioEnabled = !activeCall.audioEnabled;
-    
-    // Update tracks pada local stream
-    if (activeCall.localStream) {
-      activeCall.localStream.getAudioTracks().forEach(track => {
-        track.enabled = newAudioEnabled;
-      });
-    }
-    
-    // Update state
-    setActiveCall({
-      ...activeCall,
-      audioEnabled: newAudioEnabled,
+    };
+
+    websocket.onclose = () => {
+      console.log('[CallContext] WebSocket disconnected');
+      setWs(null);
+    };
+
+    websocket.onerror = (error) => {
+      console.error('[CallContext] WebSocket error:', error);
+    };
+
+    return () => {
+      websocket.close();
+    };
+  }, [user]);
+
+  const handleIncomingCall = (message: any) => {
+    console.log('[CallContext] Incoming call from:', message.fromUserName);
+    setIncomingCall({
+      callId: message.callId,
+      callType: message.callType,
+      status: 'ringing',
+      isIncoming: true,
+      peerUserId: message.fromUserId,
+      peerName: message.fromUserName,
+      remoteStreams: new Map(),
+      audioEnabled: true,
+      videoEnabled: message.callType === 'video',
+      isMuted: false,
     });
   };
-  
-  // Toggle video pada panggilan aktif
-  const toggleCallVideo = () => {
-    if (!activeCall || activeCall.callType !== 'video') return;
-    
-    const newVideoEnabled = !activeCall.videoEnabled;
-    
-    // Update tracks pada local stream
-    if (activeCall.localStream) {
-      activeCall.localStream.getVideoTracks().forEach(track => {
-        track.enabled = newVideoEnabled;
-      });
-    }
-    
-    // Update state
-    setActiveCall({
-      ...activeCall,
-      videoEnabled: newVideoEnabled,
-    });
-  };
-  
-  // Toggle mute pada panggilan aktif (mute speaker, bukan mikrofon)
-  const toggleMute = () => {
-    if (!activeCall) return;
-    
-    // Update state
-    setActiveCall({
-      ...activeCall,
-      isMuted: !activeCall.isMuted,
-    });
-  };
-  
-  // Switch camera (front/back) pada perangkat mobile
-  const switchCallCamera = async () => {
-    if (!activeCall || activeCall.callType !== 'video') return;
-    
-    try {
-      // Get current video track
-      const currentVideoTrack = activeCall.localStream?.getVideoTracks()[0];
-      if (!currentVideoTrack) return;
-      
-      // Check if we're using front or back camera
-      const currentFacingMode = currentVideoTrack.getSettings().facingMode;
-      const newFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
-      
-      // Get new stream with switched camera
-      const newStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: newFacingMode },
-        audio: activeCall.audioEnabled,
-      });
-      
-      // Replace video track
-      const newVideoTrack = newStream.getVideoTracks()[0];
-      const audioTracks = activeCall.localStream?.getAudioTracks() || [];
-      
-      // Create a new stream with the new video track and existing audio tracks
-      const newLocalStream = new MediaStream([newVideoTrack, ...audioTracks]);
-      
-      // Stop old video track
-      currentVideoTrack.stop();
-      
-      // Update state with new stream
+
+  const handleCallAccepted = (message: any) => {
+    console.log('[CallContext] Call accepted');
+    if (activeCall) {
       setActiveCall({
         ...activeCall,
-        localStream: newLocalStream,
-      });
-      
-      // Update WebRTC connection - ini akan diimplementasikan saat WebRTC terintegrasi sepenuhnya
-      // peerConnection.getSenders().find(sender => sender.track.kind === 'video').replaceTrack(newVideoTrack);
-    } catch (error) {
-      console.error("Error switching camera:", error);
-      toast({
-        title: "Camera Error",
-        description: "Failed to switch camera. Please try again.",
-        variant: "destructive",
+        status: 'connected',
+        startTime: new Date(),
       });
     }
   };
-  
-  // Event handlers untuk WebSocket messages - ini akan diimplementasikan saat WebSocket terintegrasi
-  useEffect(() => {
-    // Mock handler untuk panggilan masuk untuk simulasi
-    const simulateIncomingCall = () => {
-      if (activeCall) return; // Jika sudah dalam panggilan, abaikan
-      
-      // Uncomment untuk mensimulasikan panggilan masuk setelah 5 detik
-      // setTimeout(() => {
-      //   if (!activeCall && !incomingCall) {
-      //     setIncomingCall({
-      //       id: 12345,
-      //       callerId: 2, // User ID pemanggil
-      //       callerName: "BRAVO2", // Nama pemanggil
-      //       isRoom: false,
-      //       callType: 'audio',
-      //     });
-      //   }
-      // }, 5000);
-    };
+
+  const handleCallRejected = (message: any) => {
+    console.log('[CallContext] Call rejected');
+    setActiveCall(null);
+    alert('Panggilan ditolak');
+  };
+
+  const handleCallEnded = (message: any) => {
+    console.log('[CallContext] Call ended');
+    setActiveCall(null);
+    setIncomingCall(null);
     
-    simulateIncomingCall();
+    // Clean up media streams
+    if (activeCall?.localStream) {
+      activeCall.localStream.getTracks().forEach(track => track.stop());
+    }
+  };
+
+  const handleWebRTCOffer = (message: any) => {
+    console.log('[CallContext] Received WebRTC offer');
+    // TODO: Implement WebRTC offer handling
+  };
+
+  const handleWebRTCAnswer = (message: any) => {
+    console.log('[CallContext] Received WebRTC answer');
+    // TODO: Implement WebRTC answer handling
+  };
+
+  const handleWebRTCIceCandidate = (message: any) => {
+    console.log('[CallContext] Received ICE candidate');
+    // TODO: Implement ICE candidate handling
+  };
+
+  const startCall = async (peerUserId: number, peerName: string, callType: 'audio' | 'video') => {
+    if (!ws || !user) {
+      console.error('[CallContext] WebSocket not connected or user not available');
+      return;
+    }
+
+    console.log(`[CallContext] Starting ${callType} call to:`, peerName);
+
+    try {
+      // Get user media
+      const constraints = {
+        audio: true,
+        video: callType === 'video'
+      };
+
+      const localStream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log('[CallContext] Got local media stream');
+
+      const callId = `call_${Date.now()}_${user.id}_${peerUserId}`;
+
+      const newCall: CallState = {
+        callId,
+        callType,
+        status: 'calling',
+        isIncoming: false,
+        peerUserId,
+        peerName,
+        localStream,
+        remoteStreams: new Map(),
+        audioEnabled: true,
+        videoEnabled: callType === 'video',
+        isMuted: false,
+      };
+
+      setActiveCall(newCall);
+
+      // Send call initiation message
+      ws.send(JSON.stringify({
+        type: 'initiate_call',
+        callId,
+        toUserId: peerUserId,
+        callType,
+        fromUserId: user.id,
+        fromUserName: user.callsign,
+      }));
+
+      // Navigate to call interface
+      setLocation(callType === 'video' ? '/video-call' : '/audio-call');
+
+    } catch (error) {
+      console.error('[CallContext] Error starting call:', error);
+      alert('Gagal memulai panggilan. Pastikan microphone dan camera tersedia.');
+    }
+  };
+
+  const acceptCall = async () => {
+    if (!incomingCall || !ws || !user) {
+      console.error('[CallContext] No incoming call or WebSocket not connected');
+      return;
+    }
+
+    console.log('[CallContext] Accepting call');
+
+    try {
+      // Get user media
+      const constraints = {
+        audio: true,
+        video: incomingCall.callType === 'video'
+      };
+
+      const localStream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log('[CallContext] Got local media stream for incoming call');
+
+      // Accept the call
+      setActiveCall({
+        ...incomingCall,
+        status: 'connected',
+        localStream,
+        startTime: new Date(),
+      });
+
+      setIncomingCall(null);
+
+      // Send call acceptance message
+      ws.send(JSON.stringify({
+        type: 'accept_call',
+        callId: incomingCall.callId,
+        toUserId: incomingCall.peerUserId,
+        fromUserId: user.id,
+      }));
+
+      // Navigate to call interface
+      setLocation(incomingCall.callType === 'video' ? '/video-call' : '/audio-call');
+
+    } catch (error) {
+      console.error('[CallContext] Error accepting call:', error);
+      alert('Gagal menerima panggilan. Pastikan microphone dan camera tersedia.');
+    }
+  };
+
+  const rejectCall = () => {
+    if (!incomingCall || !ws || !user) {
+      console.error('[CallContext] No incoming call or WebSocket not connected');
+      return;
+    }
+
+    console.log('[CallContext] Rejecting call');
+
+    // Send call rejection message
+    ws.send(JSON.stringify({
+      type: 'reject_call',
+      callId: incomingCall.callId,
+      toUserId: incomingCall.peerUserId,
+      fromUserId: user.id,
+    }));
+
+    setIncomingCall(null);
+  };
+
+  const hangupCall = () => {
+    if (!activeCall || !ws || !user) {
+      console.error('[CallContext] No active call or WebSocket not connected');
+      return;
+    }
+
+    console.log('[CallContext] Hanging up call');
+
+    // Stop local media stream
+    if (activeCall.localStream) {
+      activeCall.localStream.getTracks().forEach(track => track.stop());
+    }
+
+    // Send call end message
+    ws.send(JSON.stringify({
+      type: 'end_call',
+      callId: activeCall.callId,
+      toUserId: activeCall.peerUserId,
+      fromUserId: user.id,
+    }));
+
+    setActiveCall(null);
     
-    // Cleanup function
-    return () => {
-      // Pembersihan event handler WebSocket akan ditambahkan nanti
-    };
-  }, [activeCall, incomingCall]);
-  
+    // Navigate back to chat
+    setLocation('/');
+  };
+
+  const toggleCallAudio = () => {
+    if (!activeCall?.localStream) return;
+
+    const audioTrack = activeCall.localStream.getAudioTracks()[0];
+    if (audioTrack) {
+      audioTrack.enabled = !audioTrack.enabled;
+      setActiveCall({
+        ...activeCall,
+        audioEnabled: audioTrack.enabled,
+      });
+    }
+  };
+
+  const toggleCallVideo = () => {
+    if (!activeCall?.localStream) return;
+
+    const videoTrack = activeCall.localStream.getVideoTracks()[0];
+    if (videoTrack) {
+      videoTrack.enabled = !videoTrack.enabled;
+      setActiveCall({
+        ...activeCall,
+        videoEnabled: videoTrack.enabled,
+      });
+    }
+  };
+
+  const toggleMute = () => {
+    if (!activeCall?.localStream) return;
+
+    const audioTrack = activeCall.localStream.getAudioTracks()[0];
+    if (audioTrack) {
+      audioTrack.enabled = !activeCall.isMuted;
+      setActiveCall({
+        ...activeCall,
+        isMuted: !activeCall.isMuted,
+      });
+    }
+  };
+
+  const switchCallCamera = async () => {
+    if (!activeCall?.localStream || activeCall.callType !== 'video') return;
+
+    try {
+      // Get video track
+      const videoTrack = activeCall.localStream.getVideoTracks()[0];
+      if (!videoTrack) return;
+
+      // Stop current video track
+      videoTrack.stop();
+
+      // Get new video stream with different camera
+      const constraints = {
+        audio: false,
+        video: {
+          facingMode: videoTrack.getSettings().facingMode === 'user' ? 'environment' : 'user'
+        }
+      };
+
+      const newVideoStream = await navigator.mediaDevices.getUserMedia(constraints);
+      const newVideoTrack = newVideoStream.getVideoTracks()[0];
+
+      // Replace video track in local stream
+      const sender = activeCall.localStream.getVideoTracks()[0];
+      if (sender) {
+        activeCall.localStream.removeTrack(sender);
+        activeCall.localStream.addTrack(newVideoTrack);
+      }
+
+    } catch (error) {
+      console.error('[CallContext] Error switching camera:', error);
+    }
+  };
+
   return (
-    <CallContext.Provider
-      value={{
-        incomingCall,
-        activeCall,
-        isCallLoading,
-        startCall,
-        startRoomCall,
-        answerCall,
-        rejectCall,
-        hangupCall,
-        toggleCallAudio,
-        toggleCallVideo,
-        toggleMute,
-        switchCallCamera,
-      }}
-    >
+    <CallContext.Provider value={{
+      activeCall,
+      incomingCall,
+      startCall,
+      acceptCall,
+      rejectCall,
+      hangupCall,
+      toggleCallAudio,
+      toggleCallVideo,
+      toggleMute,
+      switchCallCamera,
+    }}>
       {children}
     </CallContext.Provider>
   );
-};
+}
+
+export { CallContext };

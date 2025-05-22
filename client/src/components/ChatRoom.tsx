@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
+import { useCall } from '@/hooks/useCall';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
 import { formatDistanceToNow } from 'date-fns';
@@ -70,6 +71,7 @@ interface ChatRoomProps {
 
 export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   const { user } = useAuth();
+  const { startCall } = useCall();
   const [message, setMessage] = useState('');
   const [chatData, setChatData] = useState<ChatData | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -791,8 +793,13 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
               size="icon"
               className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
               onClick={() => {
-                // TODO: Implement voice call
-                console.log('Voice call clicked');
+                if (chatData) {
+                  // Get the other user's ID from chat members
+                  const otherUserId = chat?.members?.find((member: any) => member.id !== user?.id)?.id;
+                  if (otherUserId) {
+                    startCall(otherUserId, chatData.name, 'audio');
+                  }
+                }
               }}
             >
               <Phone className="h-4 w-4" />
@@ -802,8 +809,13 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
               size="icon"
               className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
               onClick={() => {
-                // TODO: Implement video call
-                console.log('Video call clicked');
+                if (chatData) {
+                  // Get the other user's ID from chat members
+                  const otherUserId = chat?.members?.find((member: any) => member.id !== user?.id)?.id;
+                  if (otherUserId) {
+                    startCall(otherUserId, chatData.name, 'video');
+                  }
+                }
               }}
             >
               <Video className="h-4 w-4" />

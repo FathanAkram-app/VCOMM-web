@@ -8,6 +8,9 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import Chat from "@/pages/Chat";
 import NotFound from "@/pages/not-found";
+import AudioCall from "@/components/AudioCall";
+import VideoCall from "@/components/VideoCall";
+import { CallProvider } from "@/context/CallContext";
 
 // Komponen sederhana untuk mengecek login
 function AuthCheck({ children }: { children: React.ReactNode }) {
@@ -63,6 +66,16 @@ function Router() {
           <Chat />
         </AuthCheck>
       </Route>
+      <Route path="/audio-call">
+        <AuthCheck>
+          <AudioCall />
+        </AuthCheck>
+      </Route>
+      <Route path="/video-call">
+        <AuthCheck>
+          <VideoCall />
+        </AuthCheck>
+      </Route>
       <Route path="/">
         <Login />
       </Route>
@@ -74,8 +87,10 @@ function Router() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Toaster />
-      <Router />
+      <CallProvider>
+        <Toaster />
+        <Router />
+      </CallProvider>
     </QueryClientProvider>
   );
 }
