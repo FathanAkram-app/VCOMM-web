@@ -1,0 +1,32 @@
+{
+  "name": "NXZZ-VComm",
+  "short_name": "NXZZ-VComm",
+  "description": "Secure tactical communication platform for military operations",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#4ade80",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "categories": ["communication", "military", "tactical"],
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "permissions": [
+    "camera",
+    "microphone",
+    "notifications"
+  ],
+  "prefer_related_applications": false
+}
