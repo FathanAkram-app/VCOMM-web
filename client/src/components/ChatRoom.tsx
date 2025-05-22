@@ -301,18 +301,15 @@ export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateT
     }
   };
   
-  // Saat component mount atau chatId berubah, pastikan direct chat exists jika tidak berupa room
-  // Saat component mount atau chatId berubah, pastikan direct chat exists jika tidak berupa room
+  // Saat component mount atau chatId berubah, langsung gunakan chatId yang benar
   useEffect(() => {
-    if (user && user.id) {
-      if (chatId && !isRoom) {
-        console.log(`Memastikan direct chat untuk user ID ${user.id} dengan target ID ${chatId}`);
-        // Untuk direct chat, cari atau buat direct chat dengan ID yang sesuai
-        ensureDirectChatExists(chatId);
-      } else if (chatId && isRoom) {
-        // Untuk room, gunakan ID yang ada langsung
-        console.log(`Menggunakan room ID ${chatId} langsung`);
+    if (user && user.id && chatId) {
+      console.log(`Menggunakan chat ID ${chatId} langsung (${isRoom ? 'Room' : 'Direct Chat'})`);
+      // Hanya gunakan chatId yang valid dan bukan hardcode
+      if (chatId !== 1 || isRoom) {
         setActualChatId(chatId);
+      } else {
+        console.log(`Chat ID ${chatId} tidak valid untuk user ini, skip...`);
       }
     }
   }, [chatId, isRoom, user]);

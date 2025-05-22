@@ -1,0 +1,167 @@
+Loaded 4 users from database for personnel list
+ChatRoom.tsx:33 User data dari session di ChatRoom: {id: '70870c67-a64d-4c97-a3d5-26d427dbdb12', callsign: 'aji', nrp: '123123', fullName: 'aji', rank: 'PFC'}
+ChatRoom.tsx:309 Memastikan direct chat untuk user ID 70870c67-a64d-4c97-a3d5-26d427dbdb12 dengan target ID 1
+ChatRoom.tsx:176 Memastikan direct chat dengan pengguna ID 1 sudah ada
+ChatRoom.tsx:187 Mencoba mendapatkan direct chat dengan ID 1
+ChatRoom.tsx:203 Error saat mencoba mendapatkan direct chat dengan ID 1: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+ChatRoom.tsx:218 Daftar pengguna: (4) [{…}, {…}, {…}, {…}]
+ChatRoom.tsx:224 Pengguna dengan ID 1 tidak ditemukan
+ensureDirectChatExists @ ChatRoom.tsx:224
+await in ensureDirectChatExists
+(anonymous) @ ChatRoom.tsx:311
+commitHookEffectListMount @ chunk-WERSD76P.js?v=c129a640:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=c129a640:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=c129a640:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=c129a640:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=c129a640:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=c129a640:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=c129a640:19447
+(anonymous) @ chunk-WERSD76P.js?v=c129a640:19328
+workLoop @ chunk-WERSD76P.js?v=c129a640:197
+flushWork @ chunk-WERSD76P.js?v=c129a640:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=c129a640:384Understand this error
+ChatRoom.tsx:228 Mencoba mendapatkan direct chat langsung dengan ID 1
+ChatRoom.tsx:332 Fetching messages from /api/chats/1/messages
+ChatRoom.tsx:334 
+            
+            
+           GET https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/api/chats/1/messages 403 (Forbidden)
+fetchMessages2 @ ChatRoom.tsx:334
+(anonymous) @ ChatRoom.tsx:380
+commitHookEffectListMount @ chunk-WERSD76P.js?v=c129a640:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=c129a640:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=c129a640:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=c129a640:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=c129a640:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=c129a640:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=c129a640:19447
+(anonymous) @ chunk-WERSD76P.js?v=c129a640:19328
+workLoop @ chunk-WERSD76P.js?v=c129a640:197
+flushWork @ chunk-WERSD76P.js?v=c129a640:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=c129a640:384Understand this error
+ChatRoom.tsx:372 Failed to fetch messages: {"message":"Akses ditolak"}
+fetchMessages2 @ ChatRoom.tsx:372
+await in fetchMessages2
+(anonymous) @ ChatRoom.tsx:380
+commitHookEffectListMount @ chunk-WERSD76P.js?v=c129a640:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=c129a640:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=c129a640:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=c129a640:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=c129a640:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=c129a640:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=c129a640:19447
+(anonymous) @ chunk-WERSD76P.js?v=c129a640:19328
+workLoop @ chunk-WERSD76P.js?v=c129a640:197
+flushWork @ chunk-WERSD76P.js?v=c129a640:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=c129a640:384Understand this error
+ChatRoom.tsx:332 Fetching messages from /api/chats/1/messages
+ChatRoom.tsx:334 
+            
+            
+           GET https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/api/chats/1/messages 403 (Forbidden)
+fetchMessages2 @ ChatRoom.tsx:334
+(anonymous) @ ChatRoom.tsx:384
+setInterval
+(anonymous) @ ChatRoom.tsx:383
+commitHookEffectListMount @ chunk-WERSD76P.js?v=c129a640:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=c129a640:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=c129a640:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=c129a640:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=c129a640:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=c129a640:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=c129a640:19447
+(anonymous) @ chunk-WERSD76P.js?v=c129a640:19328
+workLoop @ chunk-WERSD76P.js?v=c129a640:197
+flushWork @ chunk-WERSD76P.js?v=c129a640:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=c129a640:384Understand this error
+ChatRoom.tsx:372 Failed to fetch messages: {"message":"Akses ditolak"}
+fetchMessages2 @ ChatRoom.tsx:372
+await in fetchMessages2
+(anonymous) @ ChatRoom.tsx:384
+setInterval
+(anonymous) @ ChatRoom.tsx:383
+commitHookEffectListMount @ chunk-WERSD76P.js?v=c129a640:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=c129a640:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=c129a640:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=c129a640:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=c129a640:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=c129a640:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=c129a640:19447
+(anonymous) @ chunk-WERSD76P.js?v=c129a640:19328
+workLoop @ chunk-WERSD76P.js?v=c129a640:197
+flushWork @ chunk-WERSD76P.js?v=c129a640:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=c129a640:384Understand this error
+ChatRoom.tsx:332 Fetching messages from /api/chats/1/messages
+ChatRoom.tsx:334 
+            
+            
+           GET https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/api/chats/1/messages 403 (Forbidden)
+fetchMessages2 @ ChatRoom.tsx:334
+(anonymous) @ ChatRoom.tsx:384
+setInterval
+(anonymous) @ ChatRoom.tsx:383
+commitHookEffectListMount @ chunk-WERSD76P.js?v=c129a640:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=c129a640:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=c129a640:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=c129a640:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=c129a640:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=c129a640:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=c129a640:19447
+(anonymous) @ chunk-WERSD76P.js?v=c129a640:19328
+workLoop @ chunk-WERSD76P.js?v=c129a640:197
+flushWork @ chunk-WERSD76P.js?v=c129a640:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=c129a640:384Understand this error
+ChatRoom.tsx:372 Failed to fetch messages: {"message":"Akses ditolak"}
+fetchMessages2 @ ChatRoom.tsx:372
+await in fetchMessages2
+(anonymous) @ ChatRoom.tsx:384
+setInterval
+(anonymous) @ ChatRoom.tsx:383
+commitHookEffectListMount @ chunk-WERSD76P.js?v=c129a640:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=c129a640:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=c129a640:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=c129a640:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=c129a640:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=c129a640:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=c129a640:19447
+(anonymous) @ chunk-WERSD76P.js?v=c129a640:19328
+workLoop @ chunk-WERSD76P.js?v=c129a640:197
+flushWork @ chunk-WERSD76P.js?v=c129a640:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=c129a640:384Understand this error
+ChatRoom.tsx:332 Fetching messages from /api/chats/1/messages
+ChatRoom.tsx:334 
+            
+            
+           GET https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/api/chats/1/messages 403 (Forbidden)
+fetchMessages2 @ ChatRoom.tsx:334
+(anonymous) @ ChatRoom.tsx:384
+setInterval
+(anonymous) @ ChatRoom.tsx:383
+commitHookEffectListMount @ chunk-WERSD76P.js?v=c129a640:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=c129a640:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=c129a640:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=c129a640:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=c129a640:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=c129a640:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=c129a640:19447
+(anonymous) @ chunk-WERSD76P.js?v=c129a640:19328
+workLoop @ chunk-WERSD76P.js?v=c129a640:197
+flushWork @ chunk-WERSD76P.js?v=c129a640:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=c129a640:384Understand this error
+ChatRoom.tsx:372 Failed to fetch messages: {"message":"Akses ditolak"}
+fetchMessages2 @ ChatRoom.tsx:372
+await in fetchMessages2
+(anonymous) @ ChatRoom.tsx:384
+setInterval
+(anonymous) @ ChatRoom.tsx:383
+commitHookEffectListMount @ chunk-WERSD76P.js?v=c129a640:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=c129a640:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=c129a640:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=c129a640:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=c129a640:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=c129a640:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=c129a640:19447
+(anonymous) @ chunk-WERSD76P.js?v=c129a640:19328
+workLoop @ chunk-WERSD76P.js?v=c129a640:197
+flushWork @ chunk-WERSD76P.js?v=c129a640:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=c129a640:384Understand this error
