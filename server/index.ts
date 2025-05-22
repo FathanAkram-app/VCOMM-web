@@ -3,6 +3,8 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { createHttpsServer } from "./https-config";
 import * as dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -65,8 +67,6 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   // Check if SSL certificates exist for HTTPS
-  const fs = require('fs');
-  const path = require('path');
   const certPath = path.join(process.cwd(), 'localhost+2.pem');
   const keyPath = path.join(process.cwd(), 'localhost+2-key.pem');
   
