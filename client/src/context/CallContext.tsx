@@ -223,38 +223,37 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const startCall = async (peerUserId: number, peerName: string, callType: 'audio' | 'video') => {
     if (!ws || !user) {
       console.error('[CallContext] WebSocket not connected or user not available');
+      alert('WebSocket tidak terhubung. Refresh halaman dan coba lagi.');
       return;
     }
 
     console.log(`[CallContext] Starting ${callType} call to:`, peerName);
+    
+    // Check mobile compatibility first
+    const { isMobile, isHTTPS, hasMediaDevices } = checkMobileCompatibility();
+    
+    if (!hasMediaDevices) {
+      alert('Browser Anda tidak mendukung akses media. Gunakan Chrome atau Safari terbaru.');
+      return;
+    }
 
     try {
-      // Enhanced mobile-friendly media constraints
-      const constraints = {
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          // Mobile-specific audio settings
-          sampleRate: 48000,
-          channelCount: 1
-        },
-        video: callType === 'video' ? {
-          facingMode: 'user', // Front camera default
-          width: { ideal: 640, max: 1280 },
-          height: { ideal: 480, max: 720 },
-          frameRate: { ideal: 15, max: 30 }
-        } : false
-      };
-
-      // Check if mediaDevices is available (required for mobile)
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('Media devices not supported on this browser');
+      // Very simple constraints for mobile compatibility
+      let constraints;
+      if (callType === 'video') {
+        constraints = { audio: true, video: true };
+      } else {
+        constraints = { audio: true };
       }
 
-      console.log('[CallContext] Requesting media permissions for mobile...');
+      console.log('[CallContext] Requesting media permissions with simple constraints:', constraints);
+      console.log('[CallContext] Device info:', { isMobile, isHTTPS, hasMediaDevices });
+      
       const localStream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log('[CallContext] Got local media stream');
+      console.log('[CallContext] ✅ Successfully got media stream:', {
+        audioTracks: localStream.getAudioTracks().length,
+        videoTracks: localStream.getVideoTracks().length
+      });
 
       const callId = `call_${Date.now()}_${user.id}_${peerUserId}`;
 
