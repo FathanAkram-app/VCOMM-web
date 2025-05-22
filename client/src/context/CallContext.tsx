@@ -101,64 +101,82 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const [incomingCall, setIncomingCall] = useState<CallState | null>(null);
   const [ws, setWs] = useState<WebSocket | null>(null);
 
-  // Initialize WebSocket connection
+  // Use existing WebSocket connection from global window object
   useEffect(() => {
     if (!user) return;
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    const websocket = new WebSocket(wsUrl);
-
-    websocket.onopen = () => {
-      console.log('[CallContext] WebSocket connected for calls');
-      setWs(websocket);
-    };
-
-    websocket.onmessage = (event) => {
-      try {
-        const message = JSON.parse(event.data);
-        console.log('[CallContext] Received message:', message);
+    // Check if global WebSocket exists (from chat)
+    const checkAndUseGlobalWebSocket = () => {
+      if (window.globalWebSocket && window.globalWebSocket.readyState === WebSocket.OPEN) {
+        console.log('[CallContext] Using existing global WebSocket for calls');
+        setWs(window.globalWebSocket);
         
-        switch (message.type) {
-          case 'incoming_call':
-            handleIncomingCall(message);
-            break;
-          case 'call_accepted':
-            handleCallAccepted(message);
-            break;
-          case 'call_rejected':
-            handleCallRejected(message);
-            break;
-          case 'call_ended':
-            handleCallEnded(message);
-            break;
-          case 'webrtc_offer':
-            handleWebRTCOffer(message);
-            break;
-          case 'webrtc_answer':
-            handleWebRTCAnswer(message);
-            break;
-          case 'webrtc_ice_candidate':
-            handleWebRTCIceCandidate(message);
-            break;
-        }
-      } catch (error) {
-        console.error('[CallContext] Error parsing WebSocket message:', error);
+        // Add call message listeners to existing WebSocket
+        const originalOnMessage = window.globalWebSocket.onmessage;
+        window.globalWebSocket.onmessage = (event) => {
+          // Call original handler first (for chat)
+          if (originalOnMessage) originalOnMessage(event);
+          
+          // Then handle call messages
+          try {
+            const message = JSON.parse(event.data);
+            
+            switch (message.type) {
+              case 'incoming_call':
+                handleIncomingCall(message);
+                break;
+              case 'call_accepted':
+                handleCallAccepted(message);
+                break;
+              case 'call_rejected':
+                handleCallRejected(message);
+                break;
+              case 'call_ended':
+                handleCallEnded(message);
+                break;
+              case 'webrtc_offer':
+                handleWebRTCOffer(message);
+                break;
+              case 'webrtc_answer':
+                handleWebRTCAnswer(message);
+                break;
+              case 'webrtc_ice_candidate':
+                handleWebRTCIceCandidate(message);
+                break;
+            }
+          } catch (error) {
+            // Ignore parsing errors from non-JSON messages
+          }
+        };
+        return true;
       }
+      return false;
     };
 
-    websocket.onclose = () => {
-      console.log('[CallContext] WebSocket disconnected');
-      setWs(null);
-    };
-
-    websocket.onerror = (error) => {
-      console.error('[CallContext] WebSocket error:', error);
-    };
-
-    return () => {
-      websocket.close();
-    };
+    // Try to use existing connection
+    if (!checkAndUseGlobalWebSocket()) {
+      // If no global WebSocket, wait a bit and try again
+      setTimeout(() => {
+        if (!checkAndUseGlobalWebSocket()) {
+          console.log('[CallContext] No global WebSocket found, creating new one');
+          // Create new WebSocket as fallback
+          const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+          const wsUrl = `${protocol}//${window.location.host}/ws`;
+          const websocket = new WebSocket(wsUrl);
+          
+          websocket.onopen = () => {
+            console.log('[CallContext] New WebSocket connected for calls');
+            setWs(websocket);
+            window.globalWebSocket = websocket;
+          };
+          
+          websocket.onclose = () => {
+            console.log('[CallContext] WebSocket disconnected');
+            setWs(null);
+          };
+        }
+      }, 1000);
+    }
   }, [user]);
 
   const handleIncomingCall = (message: any) => {
