@@ -254,7 +254,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         };
       }).catch((error) => {
         console.error('[CallContext] Failed to reconnect WebSocket:', error);
-        alert('Tidak dapat terhubung ke server. Periksa koneksi internet dan refresh halaman.');
+        alert('Tidak dapat terhubung ke server. Periksa koneksi jaringan dan refresh halaman.');
         return;
       });
     }
@@ -270,18 +270,35 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      // Very simple constraints for mobile compatibility
+      // Ultra-simple constraints for maximum mobile compatibility
       let constraints;
       if (callType === 'video') {
-        constraints = { audio: true, video: true };
+        constraints = { 
+          audio: true, 
+          video: { 
+            width: { ideal: 640 },
+            height: { ideal: 480 },
+            facingMode: 'user'
+          }
+        };
       } else {
         constraints = { audio: true };
       }
 
-      console.log('[CallContext] Requesting media permissions with simple constraints:', constraints);
+      console.log('[CallContext] Requesting media permissions with mobile-optimized constraints:', constraints);
       console.log('[CallContext] Device info:', { isMobile, isHTTPS, hasMediaDevices });
       
-      const localStream = await navigator.mediaDevices.getUserMedia(constraints);
+      // Try to get media stream with better error handling
+      const localStream = await navigator.mediaDevices.getUserMedia(constraints).catch(async (error) => {
+        console.error('[CallContext] Failed with optimized constraints, trying fallback:', error);
+        
+        // Fallback to most basic constraints
+        const fallbackConstraints = callType === 'video' 
+          ? { audio: true, video: true }
+          : { audio: true };
+          
+        return await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+      });
       console.log('[CallContext] ✅ Successfully got media stream:', {
         audioTracks: localStream.getAudioTracks().length,
         videoTracks: localStream.getVideoTracks().length
@@ -305,8 +322,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
       setActiveCall(newCall);
 
-      // Send call initiation message
-      ws.send(JSON.stringify({
+      // Send call initiation message (ws is guaranteed to be connected at this point)
+      ws!.send(JSON.stringify({
         type: 'initiate_call',
         callId,
         toUserId: peerUserId,
