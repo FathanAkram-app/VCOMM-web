@@ -94,6 +94,12 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     queryKey: [`/api/conversations/${chatId}`],
     enabled: !!chatId && !!user,
   });
+
+  // Fetch chat members
+  const { data: chatMembers } = useQuery({
+    queryKey: [`/api/conversations/${chatId}/members`],
+    enabled: !!chatId && !!user && !isGroup,
+  });
   
   // Fetch messages
   const { data: messages = [], refetch: refetchMessages } = useQuery({
@@ -793,11 +799,11 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
               size="icon"
               className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
               onClick={() => {
-                if (chatData) {
+                if (chatData && chatMembers) {
                   // Get the other user's ID from chat members
-                  const otherUserId = chat?.members?.find((member: any) => member.id !== user?.id)?.id;
-                  if (otherUserId) {
-                    startCall(otherUserId, chatData.name, 'audio');
+                  const otherMember = chatMembers.find((member: any) => member.userId !== user?.id);
+                  if (otherMember) {
+                    startCall(otherMember.userId, chatData.name, 'audio');
                   }
                 }
               }}
@@ -809,11 +815,11 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
               size="icon"
               className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
               onClick={() => {
-                if (chatData) {
+                if (chatData && chatMembers) {
                   // Get the other user's ID from chat members
-                  const otherUserId = chat?.members?.find((member: any) => member.id !== user?.id)?.id;
-                  if (otherUserId) {
-                    startCall(otherUserId, chatData.name, 'video');
+                  const otherMember = chatMembers.find((member: any) => member.userId !== user?.id);
+                  if (otherMember) {
+                    startCall(otherMember.userId, chatData.name, 'video');
                   }
                 }
               }}

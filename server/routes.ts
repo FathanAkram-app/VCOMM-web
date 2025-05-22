@@ -670,6 +670,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
           }
         }
+        
+        // Handle call initiation
+        if (data.type === 'initiate_call' && ws.userId) {
+          const { callId, toUserId, callType, fromUserId, fromUserName } = data.payload;
+          console.log(`[Call] User ${fromUserId} (${fromUserName}) initiating ${callType} call to ${toUserId}`);
+          
+          const targetClient = clients.get(toUserId);
+          if (targetClient && targetClient.readyState === targetClient.OPEN) {
+            targetClient.send(JSON.stringify({
+              type: 'incoming_call',
+              payload: {
+                callId,
+                callType,
+                fromUserId,
+                fromUserName
+              }
+            }));
+            console.log(`[Call] Sent incoming call notification to user ${toUserId}`);
+          } else {
+            // User is offline, send failure response
+            ws.send(JSON.stringify({
+              type: 'call_failed',
+              payload: {
+                callId,
+                reason: 'User is offline'
+              }
+            }));
+            console.log(`[Call] User ${toUserId} is offline, call failed`);
+          }
+        }
+        
+        // Handle call acceptance
+        if (data.type === 'accept_call' && ws.userId) {
+          const { callId, toUserId } = data.payload;
+          console.log(`[Call] User ${ws.userId} accepted call ${callId}`);
+          
+          const targetClient = clients.get(toUserId);
+          if (targetClient && targetClient.readyState === targetClient.OPEN) {
+            targetClient.send(JSON.stringify({
+              type: 'call_accepted',
+              payload: { callId }
+            }));
+            console.log(`[Call] Sent call accepted notification to user ${toUserId}`);
+          }
+        }
+        
+        // Handle call rejection
+        if (data.type === 'reject_call' && ws.userId) {
+          const { callId, toUserId } = data.payload;
+          console.log(`[Call] User ${ws.userId} rejected call ${callId}`);
+          
+          const targetClient = clients.get(toUserId);
+          if (targetClient && targetClient.readyState === targetClient.OPEN) {
+            targetClient.send(JSON.stringify({
+              type: 'call_rejected',
+              payload: { callId }
+            }));
+            console.log(`[Call] Sent call rejected notification to user ${toUserId}`);
+          }
+        }
+        
+        // Handle call end
+        if (data.type === 'end_call' && ws.userId) {
+          const { callId, toUserId } = data.payload;
+          console.log(`[Call] User ${ws.userId} ended call ${callId}`);
+          
+          const targetClient = clients.get(toUserId);
+          if (targetClient && targetClient.readyState === targetClient.OPEN) {
+            targetClient.send(JSON.stringify({
+              type: 'call_ended',
+              payload: { callId }
+            }));
+            console.log(`[Call] Sent call ended notification to user ${toUserId}`);
+          }
+        }
       } catch (error) {
         console.error('WebSocket message error:', error);
       }

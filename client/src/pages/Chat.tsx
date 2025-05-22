@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from '@/components/ui/input';
 import { useAuth } from '../hooks/useAuth';
 import ChatRoom from '../components/ChatRoom';
+import IncomingCallModal from '../components/IncomingCallModal';
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -1037,6 +1038,9 @@ export default function Chat() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Incoming Call Modal */}
+      <IncomingCallModal />
     </div>
   );
 }
