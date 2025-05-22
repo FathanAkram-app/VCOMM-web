@@ -315,8 +315,8 @@ export default function Chat() {
   const handleSelectChat = (id: number, isGroup: boolean) => {
     console.log(`[DEBUG] handleSelectChat called with: id=${id}, isGroup=${isGroup}`);
     
-    // Validasi: hanya gunakan chat ID yang valid dari database
-    if (!id || id === 1) {
+    // Validasi: pastikan ID valid
+    if (!id) {
       console.error(`[DEBUG] Invalid chat ID: ${id}. Skipping selection.`);
       return;
     }
