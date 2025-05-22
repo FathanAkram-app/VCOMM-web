@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { useCall } from "../hooks/useCall";
 import { Button } from "./ui/button";
 import { ChevronDown, Mic, MicOff, Video, VideoOff, Phone, Volume2, VolumeX, SwitchCamera } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function VideoCall() {
   const { activeCall, hangupCall, toggleCallAudio, toggleCallVideo, toggleMute, switchCallCamera } = useCall();
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const [callDuration, setCallDuration] = useState("00:00:00");
+  const [, setLocation] = useLocation();
   
   console.log("[VideoCall] Component rendering with activeCall:", activeCall);
   
@@ -50,22 +52,21 @@ export default function VideoCall() {
     };
   }, [activeCall]);
   
+  const handleEndCall = () => {
+    hangupCall();
+    // Navigate back to chat page instead of login
+    setLocation('/chat');
+  };
+  
+  const handleBackButton = () => {
+    // Navigate to chat page
+    setLocation('/chat');
+  };
+  
   if (!activeCall) {
-    console.log("[VideoCall] No active call, showing fallback UI");
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#171717]">
-        <div className="text-center p-8">
-          <h2 className="text-xl font-bold uppercase mb-4 text-[#a6c455]">CONNECTION INTERRUPTED</h2>
-          <p className="mb-6 text-white">Call data not available. Please try again.</p>
-          <Button 
-            onClick={() => window.history.back()}
-            className="bg-[#a6c455] text-black hover:bg-[#8fa644] font-bold"
-          >
-            RETURN TO COMMS
-          </Button>
-        </div>
-      </div>
-    );
+    console.log("[VideoCall] No active call, redirecting to chat");
+    setLocation('/chat');
+    return null;
   }
   
   const getStatusText = () => {
@@ -84,14 +85,14 @@ export default function VideoCall() {
   const hasRemoteStream = activeCall.remoteStreams?.size > 0;
   
   return (
-    <div className="h-full w-full flex flex-col bg-[#171717]">
+    <div className="fixed inset-0 z-50 bg-[#171717] flex flex-col">
       {/* Call Info Header */}
-      <div className="bg-[#1a1a1a] border-b border-[#333333] p-4 flex items-center">
+      <div className="bg-[#2a2a2a] border-b border-[#444444] p-4 flex items-center">
         <Button 
           variant="ghost" 
           size="icon" 
           className="mr-3 text-[#a6c455] hover:bg-[#333333]" 
-          onClick={() => window.history.back()}
+          onClick={handleBackButton}
         >
           <ChevronDown className="h-5 w-5" />
         </Button>
@@ -106,35 +107,35 @@ export default function VideoCall() {
       </div>
       
       {/* Main Video Area */}
-      <div className="flex-1 relative bg-[#1a1a1a]">
-        {/* Remote Video (Main Area) */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          {hasRemoteStream ? (
-            <video
-              ref={remoteVideoRef}
-              autoPlay
-              playsInline
-              muted={false}
-              className="w-full h-full object-cover"
-            />
-          ) : (
+      <div className="flex-1 relative bg-[#1a1a1a] overflow-hidden">
+        {/* Remote Video (Full Screen Background) */}
+        {hasRemoteStream ? (
+          <video
+            ref={remoteVideoRef}
+            autoPlay
+            playsInline
+            muted={false}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
-              <div className="w-32 h-32 rounded-none bg-[#333333] border-4 border-[#a6c455] flex items-center justify-center mx-auto mb-4">
-                <span className="text-4xl font-bold text-[#a6c455]">
+              <div className="w-40 h-40 bg-[#333333] border-4 border-[#a6c455] flex items-center justify-center mx-auto mb-6">
+                <span className="text-6xl font-bold text-[#a6c455]">
                   {activeCall.peerName ? activeCall.peerName.substring(0, 2).toUpperCase() : '??'}
                 </span>
               </div>
-              <div className="bg-[#2a2a2a] px-4 py-2 border border-[#a6c455]">
-                <p className="text-[#a6c455] uppercase font-bold text-sm">
+              <div className="bg-[#2a2a2a] px-6 py-3 border border-[#a6c455] inline-block">
+                <p className="text-[#a6c455] uppercase font-bold">
                   {getStatusText()}
                 </p>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
         
         {/* Local Video (Picture in Picture) */}
-        <div className="absolute top-4 right-4 w-40 h-30 bg-[#333333] border-2 border-[#a6c455] rounded-none overflow-hidden">
+        <div className="absolute top-6 right-6 w-36 h-48 bg-[#333333] border-3 border-[#a6c455] overflow-hidden z-10">
           <video
             ref={localVideoRef}
             autoPlay
@@ -145,66 +146,71 @@ export default function VideoCall() {
         </div>
       </div>
       
-      {/* Call Controls */}
-      <div className="bg-[#1a1a1a] px-6 py-8 flex justify-around items-center border-t border-[#333333]">
-        <Button 
-          variant="outline" 
-          size="icon" 
-          className={`w-16 h-16 rounded-sm ${
-            activeCall.audioEnabled 
-              ? 'bg-[#333333] border-[#a6c455] text-[#a6c455]' 
-              : 'bg-red-600 text-white border-red-600'
-          }`}
-          onClick={toggleCallAudio}
-        >
-          {activeCall.audioEnabled ? <Mic className="h-7 w-7" /> : <MicOff className="h-7 w-7" />}
-        </Button>
+      {/* Call Controls - Fixed at bottom */}
+      <div className="bg-[#2a2a2a] border-t border-[#444444] px-8 py-6">
+        <div className="flex justify-center items-center space-x-8">
+          {/* Mute Microphone */}
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className={`w-16 h-16 rounded-full border-2 ${
+              activeCall.audioEnabled 
+                ? 'bg-[#333333] border-[#a6c455] text-[#a6c455] hover:bg-[#444444]' 
+                : 'bg-red-600 text-white border-red-600 hover:bg-red-700'
+            }`}
+            onClick={toggleCallAudio}
+          >
+            {activeCall.audioEnabled ? <Mic className="h-6 w-6" /> : <MicOff className="h-6 w-6" />}
+          </Button>
+          
+          {/* End Call */}
+          <Button 
+            variant="destructive" 
+            size="icon" 
+            className="w-20 h-20 rounded-full bg-red-600 hover:bg-red-700 border-2 border-red-700"
+            onClick={handleEndCall}
+          >
+            <Phone className="h-8 w-8 rotate-135" />
+          </Button>
+          
+          {/* Toggle Camera */}
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className={`w-16 h-16 rounded-full border-2 ${
+              activeCall.videoEnabled 
+                ? 'bg-[#333333] border-[#a6c455] text-[#a6c455] hover:bg-[#444444]' 
+                : 'bg-red-600 text-white border-red-600 hover:bg-red-700'
+            }`}
+            onClick={toggleCallVideo}
+          >
+            {activeCall.videoEnabled ? <Video className="h-6 w-6" /> : <VideoOff className="h-6 w-6" />}
+          </Button>
+        </div>
         
-        <Button 
-          variant="destructive" 
-          size="icon" 
-          className="w-20 h-20 rounded-sm bg-red-600 hover:bg-red-700 font-bold uppercase"
-          onClick={hangupCall}
-        >
-          <Phone className="h-8 w-8 rotate-135" />
-        </Button>
-        
-        <Button 
-          variant="outline" 
-          size="icon" 
-          className={`w-16 h-16 rounded-sm ${
-            activeCall.videoEnabled 
-              ? 'bg-[#333333] border-[#a6c455] text-[#a6c455]' 
-              : 'bg-red-600 text-white border-red-600'
-          }`}
-          onClick={toggleCallVideo}
-        >
-          {activeCall.videoEnabled ? <Video className="h-7 w-7" /> : <VideoOff className="h-7 w-7" />}
-        </Button>
-      </div>
-      
-      {/* Bottom Actions */}
-      <div className="bg-[#171717] px-4 py-3 flex justify-center space-x-4">
-        <Button 
-          variant="outline" 
-          size="icon" 
-          className="text-[#a6c455] border-[#a6c455] hover:bg-[#333333]"
-          onClick={switchCallCamera}
-        >
-          <SwitchCamera className="h-5 w-5" />
-        </Button>
-        <Button 
-          variant="outline" 
-          size="icon" 
-          className={`${
-            !activeCall.isMuted 
-              ? 'text-[#a6c455] border-[#a6c455]' 
-              : 'text-red-500 border-red-500'
-          } hover:bg-[#333333]`}
-          onClick={toggleMute}
-        >
-          {!activeCall.isMuted ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
-        </Button>
+        {/* Secondary Controls */}
+        <div className="flex justify-center items-center space-x-6 mt-4">
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="w-12 h-12 rounded-full text-[#a6c455] border-[#a6c455] hover:bg-[#333333]"
+            onClick={switchCallCamera}
+          >
+            <SwitchCamera className="h-5 w-5" />
+          </Button>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className={`w-12 h-12 rounded-full ${
+              !activeCall.isMuted 
+                ? 'text-[#a6c455] border-[#a6c455]' 
+                : 'text-red-500 border-red-500'
+            } hover:bg-[#333333]`}
+            onClick={toggleMute}
+          >
+            {!activeCall.isMuted ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
+          </Button>
+        </div>
       </div>
     </div>
   );
