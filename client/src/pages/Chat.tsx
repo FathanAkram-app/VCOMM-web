@@ -163,6 +163,9 @@ export default function Chat() {
       setChats(formattedChats);
       console.log("Daftar chat diperbarui:", formattedChats);
       
+      // Jangan pernah auto-select chat, biarkan user memilih sendiri
+      // Hapus semua auto-selection yang menggunakan hardcode
+      
     } catch (error) {
       console.error('Error mengambil daftar chat:', error);
     }
