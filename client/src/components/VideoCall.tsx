@@ -1,43 +1,39 @@
 import { useEffect, useRef, useState } from "react";
 import { useCall } from "../hooks/useCall";
 import { Button } from "./ui/button";
-import { ChevronDown, Mic, MicOff, Camera, CameraOff, Phone, Volume2, Volume, MessageSquare, SwitchCamera } from "lucide-react";
+import { ChevronDown, Mic, MicOff, Video, VideoOff, Phone, Volume2, VolumeX, SwitchCamera } from "lucide-react";
 
 export default function VideoCall() {
   const { activeCall, hangupCall, toggleCallAudio, toggleCallVideo, toggleMute, switchCallCamera } = useCall();
   const localVideoRef = useRef<HTMLVideoElement>(null);
-  const remoteVideoRefs = useRef<Map<number, HTMLVideoElement | null>>(new Map());
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const [callDuration, setCallDuration] = useState("00:00:00");
-  const [isPortraitMode, setIsPortraitMode] = useState(true); // Default to portrait mode (9:16)
   
   console.log("[VideoCall] Component rendering with activeCall:", activeCall);
   
   // Attach local stream to video element
   useEffect(() => {
     console.log("[VideoCall] Local stream changed:", activeCall?.localStream);
-    if (activeCall?.localStream && localVideoRef.current) {
+    if (localVideoRef.current && activeCall?.localStream) {
       localVideoRef.current.srcObject = activeCall.localStream;
       console.log("[VideoCall] Local stream attached to video element");
     }
   }, [activeCall?.localStream]);
   
-  // Attach remote streams to video elements
+  // Handle remote streams
   useEffect(() => {
     console.log("[VideoCall] Remote streams changed:", activeCall?.remoteStreams);
-    if (activeCall) {
-      activeCall.remoteStreams.forEach((stream, peerId) => {
-        const videoElement = remoteVideoRefs.current.get(peerId);
-        if (videoElement && videoElement.srcObject !== stream) {
-          videoElement.srcObject = stream;
-          console.log(`[VideoCall] Remote stream attached for peer ${peerId}`);
-        }
-      });
+    if (remoteVideoRef.current && activeCall?.remoteStreams) {
+      const firstRemoteStream = Array.from(activeCall.remoteStreams.values())[0];
+      if (firstRemoteStream) {
+        remoteVideoRef.current.srcObject = firstRemoteStream;
+      }
     }
   }, [activeCall?.remoteStreams]);
   
   // Update call duration timer
   useEffect(() => {
-    if (!activeCall) return;
+    if (!activeCall || activeCall.status !== 'connected') return;
     
     console.log("[VideoCall] Setting up call duration timer");
     const interval = setInterval(() => {
@@ -54,17 +50,16 @@ export default function VideoCall() {
     };
   }, [activeCall]);
   
-  // Safety check - if no activeCall, show a fallback UI
   if (!activeCall) {
     console.log("[VideoCall] No active call, showing fallback UI");
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#171717]">
         <div className="text-center p-8">
-          <h2 className="text-xl font-bold uppercase mb-4">CONNECTION INTERRUPTED</h2>
-          <p className="mb-6">Call data not available. Please try again.</p>
+          <h2 className="text-xl font-bold uppercase mb-4 text-[#a6c455]">CONNECTION INTERRUPTED</h2>
+          <p className="mb-6 text-white">Call data not available. Please try again.</p>
           <Button 
             onClick={() => window.history.back()}
-            className="military-button"
+            className="bg-[#a6c455] text-black hover:bg-[#8fa644] font-bold"
           >
             RETURN TO COMMS
           </Button>
@@ -73,189 +68,142 @@ export default function VideoCall() {
     );
   }
   
-  // Get the main remote stream for display
-  const mainRemoteStream = activeCall.remoteStreams.size > 0 
-    ? activeCall.remoteStreams.values().next().value 
-    : null;
+  const getStatusText = () => {
+    switch (activeCall.status) {
+      case 'calling':
+        return 'CONNECTING...';
+      case 'ringing':
+        return 'RINGING...';
+      case 'connected':
+        return `CONNECTED • ${callDuration}`;
+      default:
+        return 'ESTABLISHING CONNECTION...';
+    }
+  };
   
-  // Create elements for additional remote streams
-  const additionalRemoteStreams = Array.from(activeCall.remoteStreams.entries())
-    .slice(1);
+  const hasRemoteStream = activeCall.remoteStreams?.size > 0;
   
   return (
-    <div className="h-full w-full flex flex-col bg-background">
-      {/* Video Call UI */}
-      <div className="relative flex-1">
-        {/* Call Info Banner */}
-        <div className="absolute top-0 inset-x-0 z-20 military-header px-4 py-3 text-white flex items-center justify-between">
-          <div className="flex items-center">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="mr-2 text-foreground hover:bg-muted/50" 
-              onClick={() => window.history.back()}
-            >
-              <ChevronDown className="h-5 w-5" />
-            </Button>
-            <div>
-              <h3 className="font-bold uppercase tracking-wide">{activeCall.peerName}</h3>
-              <p className="text-xs font-medium">{callDuration} | {activeCall.callType.toUpperCase()} TRANSMISSION</p>
-            </div>
-          </div>
-          <div>
-            <Button 
-              variant="outline" 
-              size="icon" 
-              className="text-foreground hover:bg-muted/50 border border-accent" 
-              onClick={switchCallCamera}
-            >
-              <SwitchCamera className="h-5 w-5" />
-            </Button>
-          </div>
+    <div className="h-full w-full flex flex-col bg-[#171717]">
+      {/* Call Info Header */}
+      <div className="bg-[#1a1a1a] border-b border-[#333333] p-4 flex items-center">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="mr-3 text-[#a6c455] hover:bg-[#333333]" 
+          onClick={() => window.history.back()}
+        >
+          <ChevronDown className="h-5 w-5" />
+        </Button>
+        <div className="flex-1">
+          <h3 className="text-white font-bold text-lg uppercase tracking-wide">
+            {activeCall.peerName || 'UNKNOWN OPERATOR'}
+          </h3>
+          <p className="text-xs text-[#a6c455] font-medium">
+            {getStatusText()} | VIDEO TRANSMISSION
+          </p>
         </div>
-        
-        {/* Main Video Area - Portrait Optimized */}
-        <div className="absolute inset-0 bg-accent/10 flex items-center justify-center border-b-2 border-accent">
-          {/* Remote Video (Full Screen) - optimized for portrait mode (9:16) */}
-          {mainRemoteStream ? (
-            <div className={`w-full h-full ${isPortraitMode ? 'flex items-center justify-center' : ''}`}>
-              <video
-                ref={(element) => {
-                  if (element && activeCall.remoteStreams.size > 0) {
-                    const peerId = Array.from(activeCall.remoteStreams.keys())[0];
-                    remoteVideoRefs.current.set(peerId, element);
-                  }
-                }}
-                autoPlay
-                playsInline
-                muted={activeCall.isMuted}
-                className={`${isPortraitMode ? 'h-full max-w-full object-contain' : 'w-full h-full object-cover'}`}
-              />
-            </div>
+      </div>
+      
+      {/* Main Video Area */}
+      <div className="flex-1 relative bg-[#1a1a1a]">
+        {/* Remote Video (Main Area) */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          {hasRemoteStream ? (
+            <video
+              ref={remoteVideoRef}
+              autoPlay
+              playsInline
+              muted={false}
+              className="w-full h-full object-cover"
+            />
           ) : (
-            <div className="text-foreground flex flex-col items-center justify-center">
-              <div className="w-28 h-28 rounded-none bg-secondary border-2 border-accent flex items-center justify-center mb-4">
-                <span className="text-4xl font-bold text-secondary-foreground">
-                  {activeCall.peerName.substring(0, 2).toUpperCase()}
+            <div className="text-center">
+              <div className="w-32 h-32 rounded-none bg-[#333333] border-4 border-[#a6c455] flex items-center justify-center mx-auto mb-4">
+                <span className="text-4xl font-bold text-[#a6c455]">
+                  {activeCall.peerName ? activeCall.peerName.substring(0, 2).toUpperCase() : '??'}
                 </span>
               </div>
-              <div className="bg-muted px-4 py-2 border border-accent">
-                <p className="text-accent uppercase font-bold">
-                  {activeCall.status === 'connecting' 
-                    ? 'ESTABLISHING CONNECTION...' 
-                    : activeCall.status === 'reconnecting'
-                    ? 'RE-ESTABLISHING CONNECTION...'
-                    : ''}
+              <div className="bg-[#2a2a2a] px-4 py-2 border border-[#a6c455]">
+                <p className="text-[#a6c455] uppercase font-bold text-sm">
+                  {getStatusText()}
                 </p>
               </div>
             </div>
           )}
         </div>
         
-        {/* Additional remote videos (for group calls) */}
-        <div className="absolute top-20 right-4 z-10 flex flex-col space-y-2">
-          {additionalRemoteStreams.map(([peerId, stream]) => (
-            <div 
-              key={peerId} 
-              className="w-28 h-36 bg-secondary border-2 border-accent overflow-hidden"
-            >
-              <video
-                ref={(element) => {
-                  if (element) {
-                    remoteVideoRefs.current.set(peerId, element);
-                  }
-                }}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-cover"
-              />
-            </div>
-          ))}
-        </div>
-        
-        {/* Local Video (Picture-in-Picture) - Positioned for mobile portrait view */}
-        <div className={`absolute z-10 ${
-          isPortraitMode 
-            ? 'bottom-24 right-4 w-1/3 rounded-md aspect-[9/16]' // Portrait (9:16) format
-            : 'bottom-24 right-4 w-1/3 aspect-video' // Standard (16:9) format
-        } bg-secondary border-2 border-accent overflow-hidden`}>
-          {activeCall.videoEnabled ? (
-            <video
-              ref={localVideoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-muted">
-              <div className="flex flex-col items-center">
-                <CameraOff className="text-accent h-8 w-8 mb-2" />
-                <p className="text-xs font-bold uppercase text-accent">Camera Off</p>
-              </div>
-            </div>
-          )}
+        {/* Local Video (Picture in Picture) */}
+        <div className="absolute top-4 right-4 w-40 h-30 bg-[#333333] border-2 border-[#a6c455] rounded-none overflow-hidden">
+          <video
+            ref={localVideoRef}
+            autoPlay
+            playsInline
+            muted
+            className="w-full h-full object-cover"
+          />
         </div>
       </div>
       
       {/* Call Controls */}
-      <div className="bg-background px-4 py-5 flex justify-around items-center border-t-2 border-accent">
+      <div className="bg-[#1a1a1a] px-6 py-8 flex justify-around items-center border-t border-[#333333]">
         <Button 
           variant="outline" 
           size="icon" 
-          className={`w-14 h-14 rounded-sm ${
+          className={`w-16 h-16 rounded-sm ${
             activeCall.audioEnabled 
-              ? 'bg-secondary border border-accent' 
-              : 'bg-destructive text-destructive-foreground'
+              ? 'bg-[#333333] border-[#a6c455] text-[#a6c455]' 
+              : 'bg-red-600 text-white border-red-600'
           }`}
           onClick={toggleCallAudio}
         >
-          {activeCall.audioEnabled ? <Mic className="h-6 w-6" /> : <MicOff className="h-6 w-6" />}
-        </Button>
-        
-        <Button 
-          variant="outline" 
-          size="icon" 
-          className={`w-14 h-14 rounded-sm ${
-            activeCall.videoEnabled 
-              ? 'bg-secondary border border-accent' 
-              : 'bg-destructive text-destructive-foreground'
-          }`}
-          onClick={toggleCallVideo}
-        >
-          {activeCall.videoEnabled ? <Camera className="h-6 w-6" /> : <CameraOff className="h-6 w-6" />}
+          {activeCall.audioEnabled ? <Mic className="h-7 w-7" /> : <MicOff className="h-7 w-7" />}
         </Button>
         
         <Button 
           variant="destructive" 
           size="icon" 
-          className="w-16 h-16 rounded-sm font-bold uppercase"
+          className="w-20 h-20 rounded-sm bg-red-600 hover:bg-red-700 font-bold uppercase"
           onClick={hangupCall}
         >
-          <Phone className="h-7 w-7 rotate-135" />
+          <Phone className="h-8 w-8 rotate-135" />
         </Button>
         
         <Button 
           variant="outline" 
           size="icon" 
-          className={`w-14 h-14 rounded-sm ${
-            !activeCall.isMuted 
-              ? 'bg-secondary border border-accent' 
-              : 'bg-destructive text-destructive-foreground'
+          className={`w-16 h-16 rounded-sm ${
+            activeCall.videoEnabled 
+              ? 'bg-[#333333] border-[#a6c455] text-[#a6c455]' 
+              : 'bg-red-600 text-white border-red-600'
           }`}
+          onClick={toggleCallVideo}
+        >
+          {activeCall.videoEnabled ? <Video className="h-7 w-7" /> : <VideoOff className="h-7 w-7" />}
+        </Button>
+      </div>
+      
+      {/* Bottom Actions */}
+      <div className="bg-[#171717] px-4 py-3 flex justify-center space-x-4">
+        <Button 
+          variant="outline" 
+          size="icon" 
+          className="text-[#a6c455] border-[#a6c455] hover:bg-[#333333]"
+          onClick={switchCallCamera}
+        >
+          <SwitchCamera className="h-5 w-5" />
+        </Button>
+        <Button 
+          variant="outline" 
+          size="icon" 
+          className={`${
+            !activeCall.isMuted 
+              ? 'text-[#a6c455] border-[#a6c455]' 
+              : 'text-red-500 border-red-500'
+          } hover:bg-[#333333]`}
           onClick={toggleMute}
         >
-          {!activeCall.isMuted ? <Volume2 className="h-6 w-6" /> : <Volume className="h-6 w-6" />}
-        </Button>
-        
-        <Button 
-          variant="outline" 
-          size="icon" 
-          className="w-14 h-14 rounded-sm bg-secondary text-foreground border border-accent"
-          onClick={() => window.history.back()}
-        >
-          <MessageSquare className="h-6 w-6" />
+          {!activeCall.isMuted ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
         </Button>
       </div>
     </div>
