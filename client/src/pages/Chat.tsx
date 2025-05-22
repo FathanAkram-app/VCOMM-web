@@ -711,11 +711,19 @@ export default function Chat() {
                         console.log('[Test] Testing microphone permission...');
                         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                         console.log('[Test] ✅ Microphone permission granted');
-                        alert('✅ Microphone berhasil diakses!');
+                        
+                        // Stop the stream immediately
                         stream.getTracks().forEach(track => track.stop());
+                        
+                        // Show success message
+                        const result = confirm('✅ MICROPHONE BERHASIL!\n\nMicrophone sudah bisa diakses. Audio call seharusnya berfungsi normal.\n\nKlik OK untuk melanjutkan atau Cancel untuk test ulang.');
+                        if (result) {
+                          console.log('[Test] User confirmed microphone working');
+                        }
                       } catch (error: any) {
                         console.error('[Test] ❌ Microphone permission failed:', error);
-                        alert(`❌ Microphone gagal: ${error.name} - ${error.message}`);
+                        const errorMsg = `❌ MICROPHONE GAGAL!\n\nError: ${error.name}\nPesan: ${error.message}\n\nSolusi:\n- Refresh halaman\n- Izinkan akses microphone di browser\n- Pastikan menggunakan HTTPS`;
+                        alert(errorMsg);
                       }
                     }}
                   >
@@ -735,11 +743,19 @@ export default function Chat() {
                         console.log('[Test] Testing camera permission...');
                         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                         console.log('[Test] ✅ Camera permission granted');
-                        alert('✅ Camera berhasil diakses!');
+                        
+                        // Stop the stream immediately
                         stream.getTracks().forEach(track => track.stop());
+                        
+                        // Show success message
+                        const result = confirm('✅ CAMERA BERHASIL!\n\nCamera sudah bisa diakses. Video call seharusnya berfungsi normal.\n\nKlik OK untuk melanjutkan atau Cancel untuk test ulang.');
+                        if (result) {
+                          console.log('[Test] User confirmed camera working');
+                        }
                       } catch (error: any) {
                         console.error('[Test] ❌ Camera permission failed:', error);
-                        alert(`❌ Camera gagal: ${error.name} - ${error.message}`);
+                        const errorMsg = `❌ CAMERA GAGAL!\n\nError: ${error.name}\nPesan: ${error.message}\n\nSolusi:\n- Refresh halaman\n- Izinkan akses camera di Chrome\n- Pastikan tidak ada app lain yang pakai camera`;
+                        alert(errorMsg);
                       }
                     }}
                   >
@@ -759,11 +775,19 @@ export default function Chat() {
                         console.log('[Test] Testing both audio and video permission...');
                         const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
                         console.log('[Test] ✅ Both permissions granted');
-                        alert('✅ Audio dan Video berhasil diakses!');
+                        
+                        // Stop the stream immediately
                         stream.getTracks().forEach(track => track.stop());
+                        
+                        // Show success message
+                        const result = confirm('✅ AUDIO + VIDEO BERHASIL!\n\nMicrophone dan Camera sudah bisa diakses sekaligus. Video call dengan audio seharusnya berfungsi sempurna.\n\nKlik OK untuk melanjutkan atau Cancel untuk test ulang.');
+                        if (result) {
+                          console.log('[Test] User confirmed both audio and video working');
+                        }
                       } catch (error: any) {
                         console.error('[Test] ❌ Both permissions failed:', error);
-                        alert(`❌ Audio/Video gagal: ${error.name} - ${error.message}`);
+                        const errorMsg = `❌ AUDIO/VIDEO GAGAL!\n\nError: ${error.name}\nPesan: ${error.message}\n\nSolusi:\n- Test microphone dan camera satu per satu\n- Refresh halaman di Chrome\n- Izinkan kedua akses saat diminta\n- Pastikan HP tidak dalam mode hemat baterai`;
+                        alert(errorMsg);
                       }
                     }}
                   >
