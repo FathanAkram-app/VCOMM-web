@@ -101,82 +101,70 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const [incomingCall, setIncomingCall] = useState<CallState | null>(null);
   const [ws, setWs] = useState<WebSocket | null>(null);
 
-  // Use existing WebSocket connection from global window object
+  // Simple WebSocket connection for calls - just like in Chat.tsx
   useEffect(() => {
     if (!user) return;
 
-    // Check if global WebSocket exists (from chat)
-    const checkAndUseGlobalWebSocket = () => {
-      if (window.globalWebSocket && window.globalWebSocket.readyState === WebSocket.OPEN) {
-        console.log('[CallContext] Using existing global WebSocket for calls');
-        setWs(window.globalWebSocket);
-        
-        // Add call message listeners to existing WebSocket
-        const originalOnMessage = window.globalWebSocket.onmessage;
-        window.globalWebSocket.onmessage = (event) => {
-          // Call original handler first (for chat)
-          if (originalOnMessage) originalOnMessage(event);
-          
-          // Then handle call messages
-          try {
-            const message = JSON.parse(event.data);
-            
-            switch (message.type) {
-              case 'incoming_call':
-                handleIncomingCall(message);
-                break;
-              case 'call_accepted':
-                handleCallAccepted(message);
-                break;
-              case 'call_rejected':
-                handleCallRejected(message);
-                break;
-              case 'call_ended':
-                handleCallEnded(message);
-                break;
-              case 'webrtc_offer':
-                handleWebRTCOffer(message);
-                break;
-              case 'webrtc_answer':
-                handleWebRTCAnswer(message);
-                break;
-              case 'webrtc_ice_candidate':
-                handleWebRTCIceCandidate(message);
-                break;
-            }
-          } catch (error) {
-            // Ignore parsing errors from non-JSON messages
-          }
-        };
-        return true;
-      }
-      return false;
+    console.log('[CallContext] Initializing WebSocket for calls...');
+    
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const websocket = new WebSocket(wsUrl);
+
+    websocket.onopen = () => {
+      console.log('[CallContext] WebSocket connected successfully for calls');
+      setWs(websocket);
     };
 
-    // Try to use existing connection
-    if (!checkAndUseGlobalWebSocket()) {
-      // If no global WebSocket, wait a bit and try again
-      setTimeout(() => {
-        if (!checkAndUseGlobalWebSocket()) {
-          console.log('[CallContext] No global WebSocket found, creating new one');
-          // Create new WebSocket as fallback
-          const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-          const wsUrl = `${protocol}//${window.location.host}/ws`;
-          const websocket = new WebSocket(wsUrl);
-          
-          websocket.onopen = () => {
-            console.log('[CallContext] New WebSocket connected for calls');
-            setWs(websocket);
-            window.globalWebSocket = websocket;
-          };
-          
-          websocket.onclose = () => {
-            console.log('[CallContext] WebSocket disconnected');
-            setWs(null);
-          };
+    websocket.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        console.log('[CallContext] Received message:', message);
+        
+        // Handle call-specific messages
+        switch (message.type) {
+          case 'incoming_call':
+            handleIncomingCall(message);
+            break;
+          case 'call_accepted':
+            handleCallAccepted(message);
+            break;
+          case 'call_rejected':
+            handleCallRejected(message);
+            break;
+          case 'call_ended':
+            handleCallEnded(message);
+            break;
+          case 'webrtc_offer':
+            handleWebRTCOffer(message);
+            break;
+          case 'webrtc_answer':
+            handleWebRTCAnswer(message);
+            break;
+          case 'webrtc_ice_candidate':
+            handleWebRTCIceCandidate(message);
+            break;
         }
-      }, 1000);
-    }
+      } catch (error) {
+        // Ignore non-JSON messages (they might be for chat)
+      }
+    };
+
+    websocket.onclose = () => {
+      console.log('[CallContext] WebSocket disconnected');
+      setWs(null);
+    };
+
+    websocket.onerror = (error) => {
+      console.error('[CallContext] WebSocket error:', error);
+      setWs(null);
+    };
+
+    return () => {
+      if (websocket.readyState === WebSocket.OPEN || websocket.readyState === WebSocket.CONNECTING) {
+        websocket.close();
+      }
+    };
   }, [user]);
 
   const handleIncomingCall = (message: any) => {
