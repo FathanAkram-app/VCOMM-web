@@ -11,6 +11,7 @@ import NotFound from "@/pages/not-found";
 import AudioCall from "@/components/AudioCall";
 import VideoCall from "@/components/VideoCall";
 import { CallProvider } from "@/context/CallContext";
+import { usePWA } from "@/hooks/usePWA";
 
 // Komponen sederhana untuk mengecek login
 function AuthCheck({ children }: { children: React.ReactNode }) {
@@ -85,11 +86,38 @@ function Router() {
 }
 
 export default function App() {
+  // Initialize PWA functionality
+  const { isInstallable, installPWA } = usePWA();
+
   return (
     <QueryClientProvider client={queryClient}>
       <CallProvider>
         <Toaster />
         <Router />
+        
+        {/* PWA Install Prompt */}
+        {isInstallable && (
+          <div className="fixed bottom-4 right-4 z-50">
+            <div className="bg-green-600 text-white p-4 rounded-lg shadow-lg max-w-sm">
+              <h3 className="font-bold text-sm mb-2">Install NXZZ-VComm</h3>
+              <p className="text-xs mb-3">Install aplikasi untuk akses lebih cepat dan fitur offline!</p>
+              <div className="flex gap-2">
+                <button 
+                  onClick={installPWA}
+                  className="bg-white text-green-600 px-3 py-1 rounded text-xs font-medium hover:bg-gray-100"
+                >
+                  Install
+                </button>
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="bg-green-700 text-white px-3 py-1 rounded text-xs hover:bg-green-800"
+                >
+                  Nanti
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </CallProvider>
     </QueryClientProvider>
   );
