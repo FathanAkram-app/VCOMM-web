@@ -284,8 +284,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
         fromUserName: user.callsign,
       }));
 
-      // Navigate to call interface
-      setLocation(callType === 'video' ? '/video-call' : '/audio-call');
+      // Navigate to call interface with a small delay to ensure state is set
+      setTimeout(() => {
+        setLocation(callType === 'video' ? '/video-call' : '/audio-call');
+      }, 100);
 
     } catch (error: any) {
       console.error('[CallContext] Error starting call:', error);
@@ -346,8 +348,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
         fromUserId: user.id,
       }));
 
-      // Navigate to call interface
-      setLocation(incomingCall.callType === 'video' ? '/video-call' : '/audio-call');
+      // Navigate to call interface with a small delay to ensure state is set
+      setTimeout(() => {
+        setLocation(incomingCall.callType === 'video' ? '/video-call' : '/audio-call');
+      }, 100);
 
     } catch (error: any) {
       console.error('[CallContext] Error accepting call:', error);
