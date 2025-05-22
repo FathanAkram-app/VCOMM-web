@@ -227,23 +227,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Enhanced WebSocket check with auto-reconnection
+    // Enhanced WebSocket check with simple retry
     if (!ws || ws.readyState !== WebSocket.OPEN) {
-      console.log('[CallContext] WebSocket not connected, attempting reconnection...');
-      
-      // Try to reconnect immediately
-      connectWebSocket();
-      
-      // Wait a moment for connection to establish
-      setTimeout(() => {
-        if (!ws || ws.readyState !== WebSocket.OPEN) {
-          console.error('[CallContext] WebSocket reconnection failed');
-          alert('Koneksi gagal. Pastikan server berjalan dan coba lagi.');
-          return;
-        }
-        // Retry the call after successful reconnection
-        startCall(peerId, peerName, callType);
-      }, 1000);
+      console.log('[CallContext] WebSocket not connected, please refresh page');
+      alert('Koneksi terputus. Refresh halaman (F5) dan coba lagi.');
       return;
     }
 
