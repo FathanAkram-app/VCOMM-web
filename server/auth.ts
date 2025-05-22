@@ -2,7 +2,6 @@ import express, { Request, Response, NextFunction } from 'express';
 import session from 'express-session';
 import bcrypt from 'bcryptjs';
 import connectPg from 'connect-pg-simple';
-import { v4 as uuidv4 } from 'uuid';
 import { storage } from './storage';
 import { loginSchema, registerUserSchema } from '@shared/schema';
 
@@ -68,30 +67,22 @@ export async function setupAuth(app: express.Express) {
         return res.status(400).json({ message: "Call sign already taken" });
       }
       
-      // Check if NRP already exists (jika disediakan)
-      if (parseResult.data.nrp) {
-        const existingUserByNrp = await storage.getUserByNrp(parseResult.data.nrp);
-        if (existingUserByNrp) {
-          return res.status(400).json({ message: "NRP/ID already registered" });
-        }
+      // Check if NRP already exists
+      const existingUserByNrp = await storage.getUserByNrp(parseResult.data.nrp);
+      if (existingUserByNrp) {
+        return res.status(400).json({ message: "NRP/ID already registered" });
       }
       
       // Hash password
       const hashedPassword = await bcrypt.hash(parseResult.data.password, 10);
       
-      // Siapkan data user yang valid dengan mengambil hanya field yang dibutuhkan
+      // Create user
       const userData = {
-        id: uuidv4(), // Generate UUID for user ID
-        callsign: parseResult.data.callsign,
-        nrp: parseResult.data.nrp || null,
-        fullName: parseResult.data.fullName || null,
-        rank: parseResult.data.rank || null,
-        branch: parseResult.data.branch || "ARM",
+        ...parseResult.data,
         password: hashedPassword,
         status: 'offline'
       };
       
-      console.log("Creating user with UUID:", userData.id);
       const user = await storage.createUser(userData);
       
       // Store user in session (auto login)

@@ -1,279 +1,262 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from "react";
+import { useCall } from "../hooks/useCall";
+import { Button } from "./ui/button";
+import { ChevronDown, Mic, MicOff, Camera, CameraOff, Phone, Volume2, Volume, MessageSquare, SwitchCamera } from "lucide-react";
 
-interface VideoCallProps {
-  callerId?: number;
-  callerName?: string;
-  onEndCall: () => void;
-}
-
-/**
- * Komponen panggilan video
- * 
- * Menangani komunikasi video dan audio secara real-time menggunakan WebRTC
- */
-export default function VideoCall({ callerId, callerName, onEndCall }: VideoCallProps) {
-  const [muted, setMuted] = useState(false);
-  const [cameraOff, setCameraOff] = useState(false);
-  const [callDuration, setCallDuration] = useState(0);
-  const [connected, setConnected] = useState(false);
-  const [connecting, setConnecting] = useState(true);
-  
+export default function VideoCall() {
+  const { activeCall, hangupCall, toggleCallAudio, toggleCallVideo, toggleMute, switchCallCamera } = useCall();
   const localVideoRef = useRef<HTMLVideoElement>(null);
-  const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRefs = useRef<Map<number, HTMLVideoElement | null>>(new Map());
+  const [callDuration, setCallDuration] = useState("00:00:00");
+  const [isPortraitMode, setIsPortraitMode] = useState(true); // Default to portrait mode (9:16)
   
-  // Efek untuk menangani koneksi video
+  console.log("[VideoCall] Component rendering with activeCall:", activeCall);
+  
+  // Attach local stream to video element
   useEffect(() => {
-    // Simulasi waktu koneksi
-    const connectTimeout = setTimeout(() => {
-      setConnecting(false);
-      setConnected(true);
-      
-      // Inisialisasi local video stream (webcam kita sendiri)
-      navigator.mediaDevices.getUserMedia({ 
-        video: true,
-        audio: !muted 
-      })
-      .then(stream => {
-        // Tampilkan video kita sendiri
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = stream;
+    console.log("[VideoCall] Local stream changed:", activeCall?.localStream);
+    if (activeCall?.localStream && localVideoRef.current) {
+      localVideoRef.current.srcObject = activeCall.localStream;
+      console.log("[VideoCall] Local stream attached to video element");
+    }
+  }, [activeCall?.localStream]);
+  
+  // Attach remote streams to video elements
+  useEffect(() => {
+    console.log("[VideoCall] Remote streams changed:", activeCall?.remoteStreams);
+    if (activeCall) {
+      activeCall.remoteStreams.forEach((stream, peerId) => {
+        const videoElement = remoteVideoRefs.current.get(peerId);
+        if (videoElement && videoElement.srcObject !== stream) {
+          videoElement.srcObject = stream;
+          console.log(`[VideoCall] Remote stream attached for peer ${peerId}`);
         }
-        
-        // Mainkan efek suara koneksi berhasil
-        const connectSound = new Audio('/sounds/call_connected.mp3');
-        connectSound.volume = 0.3;
-        connectSound.play().catch(err => console.log('Audio play failed:', err));
-        
-        // Di implementasi WebRTC sesungguhnya, kita akan mengirimkan stream ini ke lawan bicara
-      })
-      .catch(err => {
-        console.error('Media stream error:', err);
-        setCameraOff(true);
       });
-    }, 2000);
-    
-    return () => {
-      clearTimeout(connectTimeout);
-      
-      // Bersihkan stream saat unmount
-      if (localVideoRef.current && localVideoRef.current.srcObject) {
-        const stream = localVideoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [muted]);
+    }
+  }, [activeCall?.remoteStreams]);
   
-  // Efek untuk menghitung durasi panggilan
+  // Update call duration timer
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    if (!activeCall) return;
     
-    if (connected) {
-      timer = setInterval(() => {
-        setCallDuration(prev => prev + 1);
-      }, 1000);
-    }
+    console.log("[VideoCall] Setting up call duration timer");
+    const interval = setInterval(() => {
+      const duration = new Date().getTime() - activeCall.startTime.getTime();
+      const hours = Math.floor(duration / 3600000).toString().padStart(2, '0');
+      const minutes = Math.floor((duration % 3600000) / 60000).toString().padStart(2, '0');
+      const seconds = Math.floor((duration % 60000) / 1000).toString().padStart(2, '0');
+      setCallDuration(`${hours}:${minutes}:${seconds}`);
+    }, 1000);
     
     return () => {
-      if (timer) clearInterval(timer);
+      console.log("[VideoCall] Cleaning up call duration timer");
+      clearInterval(interval);
     };
-  }, [connected]);
+  }, [activeCall]);
   
-  // Format durasi panggilan
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-  
-  // Toggle mute audio
-  const toggleMute = () => {
-    setMuted(!muted);
-    
-    // Dalam implementasi WebRTC lengkap, kita akan mematikan track audio di sini
-    if (localVideoRef.current && localVideoRef.current.srcObject) {
-      const stream = localVideoRef.current.srcObject as MediaStream;
-      stream.getAudioTracks().forEach(track => {
-        track.enabled = muted; // Toggle track enabled (mute/unmute)
-      });
-    }
-  };
-  
-  // Toggle kamera
-  const toggleCamera = () => {
-    setCameraOff(!cameraOff);
-    
-    // Dalam implementasi WebRTC lengkap, kita akan mematikan track video di sini
-    if (localVideoRef.current && localVideoRef.current.srcObject) {
-      const stream = localVideoRef.current.srcObject as MediaStream;
-      stream.getVideoTracks().forEach(track => {
-        track.enabled = cameraOff; // Toggle track enabled (on/off)
-      });
-    }
-  };
-  
-  // Akhiri panggilan
-  const handleEndCall = () => {
-    // Mainkan efek suara akhir panggilan
-    const disconnectSound = new Audio('/sounds/call_ended.mp3');
-    disconnectSound.volume = 0.3;
-    disconnectSound.play().catch(err => console.log('Audio play failed:', err));
-    
-    // Tunda sedikit untuk memungkinkan efek suara diputar
-    setTimeout(() => {
-      onEndCall();
-    }, 500);
-  };
-  
-  return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col">
-      {/* Header */}
-      <div className="bg-zinc-900 border-b border-zinc-800 p-4 flex items-center justify-between">
-        <div className="flex items-center">
-          <div className="bg-green-900/20 text-green-500 p-2 rounded-full mr-3">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-          </div>
-          <div>
-            <h3 className="text-white font-bold">
-              SECURE VIDEO CHANNEL
-            </h3>
-            <div className="flex items-center text-green-500 text-xs">
-              <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-              ENCRYPTED CONNECTION
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex items-center space-x-3">
-          <span className="text-zinc-400 text-sm font-mono">{formatDuration(callDuration)}</span>
-          <div className="bg-green-900/20 text-green-500 px-3 py-1 rounded text-sm">
-            LIVE
-          </div>
+  // Safety check - if no activeCall, show a fallback UI
+  if (!activeCall) {
+    console.log("[VideoCall] No active call, showing fallback UI");
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">
+        <div className="text-center p-8">
+          <h2 className="text-xl font-bold uppercase mb-4">CONNECTION INTERRUPTED</h2>
+          <p className="mb-6">Call data not available. Please try again.</p>
+          <Button 
+            onClick={() => window.history.back()}
+            className="military-button"
+          >
+            RETURN TO COMMS
+          </Button>
         </div>
       </div>
-      
-      {/* Main Video Area */}
-      <div className="flex-1 flex relative bg-zinc-900">
-        {/* Remote Video (fullscreen) */}
-        {connecting ? (
-          <div className="w-full h-full flex flex-col items-center justify-center">
-            <div className="w-24 h-24 rounded-full bg-zinc-800 flex items-center justify-center animate-pulse mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
+    );
+  }
+  
+  // Get the main remote stream for display
+  const mainRemoteStream = activeCall.remoteStreams.size > 0 
+    ? activeCall.remoteStreams.values().next().value 
+    : null;
+  
+  // Create elements for additional remote streams
+  const additionalRemoteStreams = Array.from(activeCall.remoteStreams.entries())
+    .slice(1);
+  
+  return (
+    <div className="h-full w-full flex flex-col bg-background">
+      {/* Video Call UI */}
+      <div className="relative flex-1">
+        {/* Call Info Banner */}
+        <div className="absolute top-0 inset-x-0 z-20 military-header px-4 py-3 text-white flex items-center justify-between">
+          <div className="flex items-center">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="mr-2 text-foreground hover:bg-muted/50" 
+              onClick={() => window.history.back()}
+            >
+              <ChevronDown className="h-5 w-5" />
+            </Button>
+            <div>
+              <h3 className="font-bold uppercase tracking-wide">{activeCall.peerName}</h3>
+              <p className="text-xs font-medium">{callDuration} | {activeCall.callType.toUpperCase()} TRANSMISSION</p>
             </div>
-            <p className="text-white text-lg font-bold">ESTABLISHING SECURE CONNECTION...</p>
-            <p className="text-zinc-400 text-sm mt-2">ENCRYPTING VIDEO CHANNEL</p>
           </div>
-        ) : (
-          <>
-            <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
-              {/* Remote Video */}
-              <div className="bg-zinc-800 w-full h-full relative">
-                {/* Placeholder untuk remote video */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="w-24 h-24 rounded-full bg-green-900/20 border border-green-900/30 mx-auto flex items-center justify-center mb-4">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 016 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-xl font-bold text-white">{callerName || "COMMAND"}</h3>
-                  </div>
-                </div>
-                <video 
-                  ref={remoteVideoRef} 
-                  autoPlay 
-                  playsInline 
-                  className="w-full h-full object-cover"
-                  style={{ display: 'none' }} // Hidden until we get a real stream
-                />
+          <div>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="text-foreground hover:bg-muted/50 border border-accent" 
+              onClick={switchCallCamera}
+            >
+              <SwitchCamera className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+        
+        {/* Main Video Area - Portrait Optimized */}
+        <div className="absolute inset-0 bg-accent/10 flex items-center justify-center border-b-2 border-accent">
+          {/* Remote Video (Full Screen) - optimized for portrait mode (9:16) */}
+          {mainRemoteStream ? (
+            <div className={`w-full h-full ${isPortraitMode ? 'flex items-center justify-center' : ''}`}>
+              <video
+                ref={(element) => {
+                  if (element && activeCall.remoteStreams.size > 0) {
+                    const peerId = Array.from(activeCall.remoteStreams.keys())[0];
+                    remoteVideoRefs.current.set(peerId, element);
+                  }
+                }}
+                autoPlay
+                playsInline
+                muted={activeCall.isMuted}
+                className={`${isPortraitMode ? 'h-full max-w-full object-contain' : 'w-full h-full object-cover'}`}
+              />
+            </div>
+          ) : (
+            <div className="text-foreground flex flex-col items-center justify-center">
+              <div className="w-28 h-28 rounded-none bg-secondary border-2 border-accent flex items-center justify-center mb-4">
+                <span className="text-4xl font-bold text-secondary-foreground">
+                  {activeCall.peerName.substring(0, 2).toUpperCase()}
+                </span>
               </div>
-              
-              {/* Local Video (picture-in-picture) */}
-              <div className="absolute bottom-4 right-4 w-48 h-36 bg-zinc-800 rounded-lg overflow-hidden border border-zinc-700 shadow-lg">
-                {cameraOff ? (
-                  <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-900">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
-                    </svg>
-                    <p className="text-zinc-600 text-xs mt-2">CAMERA OFF</p>
-                  </div>
-                ) : (
-                  <video 
-                    ref={localVideoRef} 
-                    autoPlay 
-                    playsInline 
-                    muted 
-                    className="w-full h-full object-cover"
-                  />
-                )}
-                <div className="absolute top-2 left-2 bg-black/50 px-2 py-1 rounded text-white text-xs">
-                  YOU
-                </div>
+              <div className="bg-muted px-4 py-2 border border-accent">
+                <p className="text-accent uppercase font-bold">
+                  {activeCall.status === 'connecting' 
+                    ? 'ESTABLISHING CONNECTION...' 
+                    : activeCall.status === 'reconnecting'
+                    ? 'RE-ESTABLISHING CONNECTION...'
+                    : ''}
+                </p>
               </div>
             </div>
-            
-            {/* Encryption indicator */}
-            <div className="absolute bottom-4 left-4 bg-zinc-900/90 p-2 rounded-lg border border-zinc-800">
-              <div className="flex items-center text-xs text-zinc-500">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-                AES-256 ENCRYPTION
+          )}
+        </div>
+        
+        {/* Additional remote videos (for group calls) */}
+        <div className="absolute top-20 right-4 z-10 flex flex-col space-y-2">
+          {additionalRemoteStreams.map(([peerId, stream]) => (
+            <div 
+              key={peerId} 
+              className="w-28 h-36 bg-secondary border-2 border-accent overflow-hidden"
+            >
+              <video
+                ref={(element) => {
+                  if (element) {
+                    remoteVideoRefs.current.set(peerId, element);
+                  }
+                }}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+              />
+            </div>
+          ))}
+        </div>
+        
+        {/* Local Video (Picture-in-Picture) - Positioned for mobile portrait view */}
+        <div className={`absolute z-10 ${
+          isPortraitMode 
+            ? 'bottom-24 right-4 w-1/3 rounded-md aspect-[9/16]' // Portrait (9:16) format
+            : 'bottom-24 right-4 w-1/3 aspect-video' // Standard (16:9) format
+        } bg-secondary border-2 border-accent overflow-hidden`}>
+          {activeCall.videoEnabled ? (
+            <video
+              ref={localVideoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-muted">
+              <div className="flex flex-col items-center">
+                <CameraOff className="text-accent h-8 w-8 mb-2" />
+                <p className="text-xs font-bold uppercase text-accent">Camera Off</p>
               </div>
             </div>
-          </>
-        )}
+          )}
+        </div>
       </div>
       
       {/* Call Controls */}
-      <div className="bg-zinc-900 border-t border-zinc-800 p-4 flex justify-center space-x-6">
-        <button 
+      <div className="bg-background px-4 py-5 flex justify-around items-center border-t-2 border-accent">
+        <Button 
+          variant="outline" 
+          size="icon" 
+          className={`w-14 h-14 rounded-sm ${
+            activeCall.audioEnabled 
+              ? 'bg-secondary border border-accent' 
+              : 'bg-destructive text-destructive-foreground'
+          }`}
+          onClick={toggleCallAudio}
+        >
+          {activeCall.audioEnabled ? <Mic className="h-6 w-6" /> : <MicOff className="h-6 w-6" />}
+        </Button>
+        
+        <Button 
+          variant="outline" 
+          size="icon" 
+          className={`w-14 h-14 rounded-sm ${
+            activeCall.videoEnabled 
+              ? 'bg-secondary border border-accent' 
+              : 'bg-destructive text-destructive-foreground'
+          }`}
+          onClick={toggleCallVideo}
+        >
+          {activeCall.videoEnabled ? <Camera className="h-6 w-6" /> : <CameraOff className="h-6 w-6" />}
+        </Button>
+        
+        <Button 
+          variant="destructive" 
+          size="icon" 
+          className="w-16 h-16 rounded-sm font-bold uppercase"
+          onClick={hangupCall}
+        >
+          <Phone className="h-7 w-7 rotate-135" />
+        </Button>
+        
+        <Button 
+          variant="outline" 
+          size="icon" 
+          className={`w-14 h-14 rounded-sm ${
+            !activeCall.isMuted 
+              ? 'bg-secondary border border-accent' 
+              : 'bg-destructive text-destructive-foreground'
+          }`}
           onClick={toggleMute}
-          className={`p-4 rounded-full ${muted ? 'bg-red-700' : 'bg-zinc-700'}`} 
-          title={muted ? 'Unmute' : 'Mute'}
         >
-          {muted ? (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
-            </svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-            </svg>
-          )}
-        </button>
+          {!activeCall.isMuted ? <Volume2 className="h-6 w-6" /> : <Volume className="h-6 w-6" />}
+        </Button>
         
-        <button 
-          onClick={handleEndCall}
-          className="p-4 bg-red-700 hover:bg-red-600 rounded-full" 
-          title="End call"
+        <Button 
+          variant="outline" 
+          size="icon" 
+          className="w-14 h-14 rounded-sm bg-secondary text-foreground border border-accent"
+          onClick={() => window.history.back()}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M5 3a2 2 0 00-2 2v1c0 8.284 6.716 15 15 15h1a2 2 0 002-2v-3.28a1 1 0 00-.684-.948l-4.493-1.498a1 1 0 00-1.21.502l-1.13 2.257a11.042 11.042 0 01-5.516-5.517l2.257-1.128a1 1 0 00.502-1.21L9.228 3.683A1 1 0 008.279 3H5z" />
-          </svg>
-        </button>
-        
-        <button 
-          onClick={toggleCamera}
-          className={`p-4 rounded-full ${cameraOff ? 'bg-red-700' : 'bg-zinc-700'}`} 
-          title={cameraOff ? 'Turn on camera' : 'Turn off camera'}
-        >
-          {cameraOff ? (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
-            </svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-          )}
-        </button>
+          <MessageSquare className="h-6 w-6" />
+        </Button>
       </div>
     </div>
   );

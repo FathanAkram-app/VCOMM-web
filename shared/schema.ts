@@ -2,19 +2,18 @@ import {
   pgTable,
   text,
   varchar,
-  integer,
-  timestamp,
-  boolean,
   serial,
+  integer,
+  boolean,
+  timestamp,
   jsonb,
   index,
-  primaryKey,
-  uuid,
+  unique,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Sessions table for authentication
+// Session storage table
 export const sessions = pgTable(
   "sessions",
   {
@@ -27,262 +26,138 @@ export const sessions = pgTable(
 
 // Users table
 export const users = pgTable("users", {
-  id: text("id").primaryKey().notNull(),
-  callsign: varchar("callsign", { length: 50 }).notNull().unique(),
-  nrp: varchar("nrp", { length: 50 }),
-  fullName: varchar("full_name", { length: 255 }),
-  rank: varchar("rank", { length: 50 }),
-  branch: varchar("branch", { length: 100 }).default("ARM"),
-  password: varchar("password", { length: 255 }).notNull(),
-  profileImageUrl: varchar("profile_image_url", { length: 255 }),
-  role: varchar("role", { length: 50 }).default("user"),
-  status: varchar("status", { length: 50 }).default("offline"),
-  lastOnline: timestamp("last_online").defaultNow(),
+  id: serial("id").primaryKey(),
+  callsign: text("callsign").notNull().unique(),
+  password: text("password").notNull(), 
+  nrp: text("nrp"),                         // ID Personel/NRP
+  fullName: varchar("full_name"),           // Nama lengkap
+  rank: varchar("rank"),                    // Pangkat
+  branch: varchar("branch"),                // Cabang/Unit
+  status: varchar("status").default("offline"),
+  profileImageUrl: varchar("profile_image_url"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Rooms (Group Chats) table
-export const rooms = pgTable("rooms", {
+// Conversations table (both group chats and direct chats)
+export const conversations = pgTable("conversations", {
   id: serial("id").primaryKey(),
-  name: varchar("name", { length: 100 }).notNull(),
+  createdById: integer("created_by_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  isGroup: boolean("is_group").default(false),
+  name: varchar("name"),
   description: text("description"),
-  isPublic: boolean("is_public").default(true),
-  creatorId: text("creator_id").references(() => users.id),
-  avatarUrl: varchar("avatar_url", { length: 255 }),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  classification: varchar("classification"),
+  lastMessage: text("last_message"),
+  lastMessageTime: timestamp("last_message_time"),
 });
 
-// Room Members table
-export const roomMembers = pgTable("room_members", {
+// Conversation members table
+export const conversationMembers = pgTable("conversation_members", {
   id: serial("id").primaryKey(),
-  roomId: integer("room_id").references(() => rooms.id).notNull(),
-  userId: text("user_id").references(() => users.id).notNull(),
-  role: varchar("role", { length: 50 }).default("member"),
+  conversationId: integer("conversation_id").references(() => conversations.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
   joinedAt: timestamp("joined_at").defaultNow(),
-  leftAt: timestamp("left_at"),
-}, (table) => ({
-  uniqueUserPerRoom: primaryKey(table.roomId, table.userId),
-}));
-
-// Direct Chats table
-export const directChats = pgTable("direct_chats", {
-  id: serial("id").primaryKey(),
-  user1Id: text("user1_id").references(() => users.id).notNull(),
-  user2Id: text("user2_id").references(() => users.id).notNull(),
-  lastActivityAt: timestamp("last_activity_at").defaultNow(),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => {
-  return {
-    user1IdIndex: index("direct_chat_user1_idx").on(table.user1Id),
-    user2IdIndex: index("direct_chat_user2_idx").on(table.user2Id),
-  };
 });
 
 // Messages table
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
   content: text("content").notNull(),
-  senderId: text("sender_id").references(() => users.id).notNull(),
-  roomId: integer("room_id").references(() => rooms.id),
-  directChatId: integer("direct_chat_id").references(() => directChats.id),
-  replyToId: integer("reply_to_id").references((): any => messages.id),
-  forwardedFromId: integer("forwarded_from_id").references((): any => messages.id),
-  type: varchar("type", { length: 50 }).default("text"),
-  attachment: jsonb("attachment"),
-  status: varchar("status", { length: 50 }).default("sent"),
-  sentAt: timestamp("sent_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => {
-  return {
-    roomIdIndex: index("message_room_idx").on(table.roomId),
-    directChatIdIndex: index("message_direct_chat_idx").on(table.directChatId),
-    senderIdIndex: index("message_sender_idx").on(table.senderId),
-  };
-});
-
-// Message Reads table
-export const messageReads = pgTable("message_reads", {
-  id: serial("id").primaryKey(),
-  messageId: integer("message_id").references(() => messages.id).notNull(),
-  userId: text("user_id").references(() => users.id).notNull(),
-  readAt: timestamp("read_at").defaultNow(),
-}, (table) => ({
-  uniqueReadPerUser: primaryKey(table.messageId, table.userId),
-}));
-
-// Calls table
-export const calls = pgTable("calls", {
-  id: serial("id").primaryKey(),
-  callerId: text("caller_id").references(() => users.id).notNull(),
-  receiverId: text("receiver_id").references(() => users.id).notNull(),
-  type: varchar("type", { length: 50 }).default("audio"),
-  status: varchar("status", { length: 50 }).default("initiated"),
-  startTime: timestamp("start_time").defaultNow(),
-  endTime: timestamp("end_time"),
-  metadata: jsonb("metadata"),
-}, (table) => {
-  return {
-    callerIdIndex: index("call_caller_idx").on(table.callerId),
-    receiverIdIndex: index("call_receiver_idx").on(table.receiverId),
-  };
-});
-
-// Group Calls table
-export const groupCalls = pgTable("group_calls", {
-  id: serial("id").primaryKey(),
-  roomId: integer("room_id").references(() => rooms.id).notNull(),
-  initiatorId: text("initiator_id").references(() => users.id).notNull(),
-  type: varchar("type", { length: 50 }).default("audio"),
-  name: varchar("name", { length: 100 }),
-  startTime: timestamp("start_time").defaultNow(),
-  endTime: timestamp("end_time"),
-  active: boolean("active").default(true),
-  metadata: jsonb("metadata"),
-}, (table) => {
-  return {
-    roomIdIndex: index("group_call_room_idx").on(table.roomId),
-    initiatorIdIndex: index("group_call_initiator_idx").on(table.initiatorId),
-  };
-});
-
-// Group Call Participants table
-export const groupCallParticipants = pgTable("group_call_participants", {
-  id: serial("id").primaryKey(),
-  groupCallId: integer("group_call_id").references(() => groupCalls.id).notNull(),
-  userId: text("user_id").references(() => users.id).notNull(),
-  joinedAt: timestamp("joined_at").defaultNow(),
-  leftAt: timestamp("left_at"),
-  role: varchar("role", { length: 50 }).default("participant"),
-}, (table) => {
-  return {
-    groupCallIdIndex: index("participant_group_call_idx").on(table.groupCallId),
-    userIdIndex: index("participant_user_idx").on(table.userId),
-  };
-});
-
-// Notifications table
-export const notifications = pgTable("notifications", {
-  id: serial("id").primaryKey(),
-  userId: text("user_id").references(() => users.id).notNull(),
-  title: varchar("title", { length: 255 }).notNull(),
-  body: text("body").notNull(),
-  type: varchar("type", { length: 50 }).default("message"),
-  relatedId: integer("related_id"),
-  isRead: boolean("is_read").default(false),
+  senderId: integer("sender_id").notNull().references(() => users.id),
+  conversationId: integer("conversation_id").references(() => conversations.id),
   createdAt: timestamp("created_at").defaultNow(),
-}, (table) => {
-  return {
-    userIdIndex: index("notification_user_idx").on(table.userId),
-  };
+  updatedAt: timestamp("updated_at").defaultNow(),
+  classification: varchar("classification"),
+  // Attachment fields
+  hasAttachment: boolean("has_attachment").default(false),
+  attachmentType: varchar("attachment_type"), // 'image', 'document', 'audio', 'video'
+  attachmentUrl: varchar("attachment_url"),
+  attachmentName: varchar("attachment_name"),
+  attachmentSize: integer("attachment_size"), // in bytes
+  // Reply, Forward, Delete features
+  replyToId: integer("reply_to_id").references(() => messages.id),
+  forwardedFromId: integer("forwarded_from_id").references(() => messages.id),
+  isDeleted: boolean("is_deleted").default(false),
 });
 
-// Schemas for data insertion
-export const insertUserSchema = createInsertSchema(users).omit({ 
-  createdAt: true, 
-  updatedAt: true, 
-  lastOnline: true 
-});
-
-export const insertRoomSchema = createInsertSchema(rooms).omit({ 
-  id: true, 
-  createdAt: true, 
-  updatedAt: true 
-});
-
-export const insertRoomMemberSchema = createInsertSchema(roomMembers).omit({ 
-  id: true, 
-  joinedAt: true, 
-  leftAt: true 
-});
-
-export const insertDirectChatSchema = createInsertSchema(directChats).omit({ 
-  id: true, 
-  createdAt: true,
-  lastActivityAt: true
-});
-
-export const insertMessageSchema = createInsertSchema(messages).omit({ 
-  id: true, 
-  sentAt: true, 
-  updatedAt: true, 
-  status: true, 
-  forwardedFromId: true 
-});
-
-export const insertCallSchema = createInsertSchema(calls).omit({ 
-  id: true, 
-  startTime: true, 
-  endTime: true, 
-  status: true 
-});
-
-export const insertGroupCallSchema = createInsertSchema(groupCalls).omit({ 
-  id: true, 
-  startTime: true, 
-  endTime: true, 
-  active: true 
-});
-
-export const insertGroupCallParticipantSchema = createInsertSchema(groupCallParticipants).omit({ 
-  id: true, 
-  joinedAt: true, 
-  leftAt: true 
-});
-
-// Login and Register Schemas
-export const loginSchema = z.object({
-  callsign: z.string().min(1, "Call sign diperlukan"),
-  password: z.string().min(1, "Password diperlukan"),
-});
-
-export const registerUserSchema = z.object({
-  callsign: z.string().min(1, "Call sign diperlukan"),
-  password: z.string().min(6, "Password minimal 6 karakter"),
-  passwordConfirm: z.string().min(6, "Konfirmasi password diperlukan"),
-  nrp: z.string().optional(),
-  fullName: z.string().optional(),
-  rank: z.string().optional(),
-  branch: z.string().default("ARM"),
-}).refine((data) => data.password === data.passwordConfirm, {
-  message: "Password dan konfirmasi password tidak sama",
-  path: ["passwordConfirm"],
-});
-
-// Types for database entities
+// Schema types
 export type User = typeof users.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpsertUser = typeof users.$inferInsert;
 
-export type Room = typeof rooms.$inferSelect;
-export type InsertRoom = z.infer<typeof insertRoomSchema>;
+// Create schema for user registration
+export const registerUserSchema = createInsertSchema(users).pick({
+  callsign: true,
+  password: true,
+  nrp: true,
+  fullName: true,
+  rank: true,
+  branch: true,
+});
+export type RegisterUser = z.infer<typeof registerUserSchema>;
 
-export type RoomMember = typeof roomMembers.$inferSelect;
-export type InsertRoomMember = z.infer<typeof insertRoomMemberSchema>;
+// Login schema
+export const loginSchema = z.object({
+  callsign: z.string().min(1, "Call sign is required"),
+  password: z.string().min(1, "Password is required"),
+});
+export type LoginCredentials = z.infer<typeof loginSchema>;
 
-export type DirectChat = typeof directChats.$inferSelect;
-export type InsertDirectChat = z.infer<typeof insertDirectChatSchema>;
-
+// Message types
 export type Message = typeof messages.$inferSelect;
+export const insertMessageSchema = createInsertSchema(messages).pick({
+  content: true,
+  senderId: true,
+  conversationId: true,
+  classification: true,
+  hasAttachment: true,
+  attachmentType: true,
+  attachmentUrl: true,
+  attachmentName: true,
+  attachmentSize: true,
+  replyToId: true,
+  forwardedFromId: true,
+  isDeleted: true,
+});
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 
-export type MessageRead = typeof messageReads.$inferSelect;
-export type InsertMessageRead = typeof messageReads.$inferInsert;
+// Create schema for conversations
+export type Conversation = typeof conversations.$inferSelect;
+export const insertConversationSchema = createInsertSchema(conversations).pick({
+  name: true,
+  isGroup: true,
+  description: true,
+  classification: true,
+});
+export type InsertConversation = z.infer<typeof insertConversationSchema>;
 
-export type Call = typeof calls.$inferSelect;
-export type InsertCall = z.infer<typeof insertCallSchema>;
+// Conversation members types
+export type ConversationMember = typeof conversationMembers.$inferSelect;
+export const insertConversationMemberSchema = createInsertSchema(conversationMembers).pick({
+  conversationId: true,
+  userId: true,
+});
+export type InsertConversationMember = z.infer<typeof insertConversationMemberSchema>;
 
-export type GroupCall = typeof groupCalls.$inferSelect;
-export type InsertGroupCall = z.infer<typeof insertGroupCallSchema>;
-
-export type GroupCallParticipant = typeof groupCallParticipants.$inferSelect;
-export type InsertGroupCallParticipant = z.infer<typeof insertGroupCallParticipantSchema>;
-
-export type Notification = typeof notifications.$inferSelect;
-export type InsertNotification = typeof notifications.$inferInsert;
-
-// Helper type for messages with sender info
-export type MessageWithSender = Message & {
-  sender: User;
-  repliedTo?: MessageWithSender;
+// WebSocket message types
+export type WebSocketMessage = {
+  type: 'new_message' | 'user_status' | 'typing' | 'read_receipt';
+  payload: any;
 };
+
+// Military ranks for dropdown select
+export const RANKS = [
+  "PVT", "PFC", "SPC", "CPL", "SGT", "SSG", "SFC", "MSG", "1SG", "SGM", "CSM",
+  "2LT", "1LT", "CPT", "MAJ", "LTC", "COL", "BG", "MG", "LTG", "GEN"
+] as const;
+
+// Military branches for dropdown select
+export const BRANCHES = [
+  "ARMY", "NAVY", "AIR FORCE", "MARINES", "SPECIAL FORCES", "INTELLIGENCE", "CYBER"
+] as const;
+
+// Classification levels for messages and conversations
+export const CLASSIFICATION_LEVELS = [
+  "UNCLASSIFIED", "CONFIDENTIAL", "SECRET", "TOP SECRET"
+] as const;

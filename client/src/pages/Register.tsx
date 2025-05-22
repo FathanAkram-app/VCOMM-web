@@ -1,23 +1,28 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
-import { Shield, Lock, AlertTriangle, Loader2, FileText, User, Award } from "lucide-react";
+import { Shield, Lock, AlertTriangle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RANKS, BRANCHES } from "@shared/schema";
 
-// Register validation schema
+// Registration validation schema
 const registerSchema = z.object({
-  callsign: z.string().min(3, "Callsign minimal 3 karakter"),
-  nrp: z.string().min(6, "NRP minimal 6 karakter"),
+  callsign: z.string().min(3, "Callsign minimal 3 karakter").max(30, "Callsign maksimal 30 karakter"),
+  nrp: z.string().min(5, "NRP minimal 5 karakter").max(20, "NRP maksimal 20 karakter"),
+  fullName: z.string().min(3, "Nama lengkap minimal 3 karakter").max(100, "Nama lengkap maksimal 100 karakter"),
+  rank: z.string().min(1, "Pangkat diperlukan"),
+  branch: z.string().min(1, "Satuan diperlukan"),
   password: z.string().min(6, "Password minimal 6 karakter"),
-  fullName: z.string().min(3, "Nama lengkap minimal 3 karakter"),
-  rank: z.string().min(2, "Pangkat harus diisi"),
-  branch: z.string().min(2, "Cabang angkatan harus diisi"),
+  confirmPassword: z.string().min(6, "Konfirmasi password diperlukan"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Password dan konfirmasi password tidak cocok",
+  path: ["confirmPassword"],
 });
 
 type RegisterValues = z.infer<typeof registerSchema>;
@@ -32,37 +37,67 @@ export default function Register() {
     defaultValues: {
       callsign: "",
       nrp: "",
-      password: "",
       fullName: "",
       rank: "",
       branch: "",
+      password: "",
+      confirmPassword: "",
     },
   });
 
-  const { register } = useAuth();
-  
   const onSubmit = async (values: RegisterValues) => {
     setIsLoading(true);
     try {
-      // Gunakan fungsi register dari useAuth
-      await register(values);
-
-      // Tampilkan notifikasi berhasil
-      toast({
-        title: "Registrasi Berhasil",
-        description: "Anda dapat login menggunakan akun yang telah dibuat.",
-      });
-
-      // Redirect to login page after successful registration
-      console.log("Registrasi berhasil, mengarahkan ke halaman login...");
-      setLocation("/login");
+      // Remove confirmPassword as it's not in the API schema
+      const { confirmPassword, ...registerData } = values;
+      
+      // Tambahkan penanganan error untuk mencegah error WebSocket
+      try {
+        const response = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(registerData),
+          credentials: "include"
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Registrasi gagal");
+        }
+        
+        toast({
+          title: "Registrasi berhasil",
+          description: "Anda akan dialihkan ke halaman login",
+        });
+        
+        // Redirect to login after successful registration
+        setLocation("/login");
+      } catch (fetchError: any) {
+        if (fetchError.name === "TypeError" && fetchError.message.includes("NetworkError")) {
+          console.error("Network error during registration:", fetchError);
+          throw new Error("Koneksi jaringan gagal. Pastikan server berjalan.");
+        } else {
+          throw fetchError;
+        }
+      }
     } catch (error: any) {
       console.error("Registration error:", error);
-      toast({
-        variant: "destructive",
-        title: "Registrasi Gagal",
-        description: error.message || "Terjadi kesalahan saat mendaftar.",
-      });
+      // Tangani error WebSocket secara khusus
+      if (error.name === "AggregateError" || error.code === "ECONNREFUSED") {
+        toast({
+          variant: "destructive",
+          title: "Registrasi gagal",
+          description: "Koneksi WebSocket gagal. Aplikasi masih berfungsi, silakan coba lagi."
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Registrasi gagal",
+          description: error.message || "Terjadi kesalahan saat registrasi",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -82,7 +117,7 @@ export default function Register() {
             </div>
           </div>
           <h1 className="text-[#a6c455] text-xl font-bold tracking-wide">SECURE COMMS</h1>
-          <p className="text-gray-400 text-xs uppercase tracking-wide mt-1">MILITARY PERSONNEL REGISTRATION</p>
+          <p className="text-gray-400 text-xs uppercase tracking-wide mt-1">MILITARY PERSONNEL AUTHENTICATION REQUIRED</p>
         </div>
         
         <div className="grid grid-cols-2 mb-6">
@@ -133,7 +168,7 @@ export default function Register() {
                 </FormItem>
               )}
             />
-
+            
             <FormField
               control={form.control}
               name="fullName"
@@ -152,7 +187,7 @@ export default function Register() {
                 </FormItem>
               )}
             />
-
+            
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -160,14 +195,23 @@ export default function Register() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-gray-400 uppercase text-sm font-medium">RANK</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="text" 
-                        placeholder="ENTER RANK" 
-                        className="w-full bg-[#222222] border border-[#444444] p-3 text-white placeholder:text-[#555555]" 
-                        {...field} 
-                      />
-                    </FormControl>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full bg-[#222222] border border-[#444444] p-3 text-white placeholder:text-[#555555] h-12">
+                          <SelectValue placeholder="SELECT RANK" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-[#222222] border border-[#444444] text-white">
+                        {RANKS.map((rank) => (
+                          <SelectItem key={rank} value={rank} className="focus:bg-[#4d5d30] focus:text-white">
+                            {rank}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage className="text-red-500 text-xs" />
                   </FormItem>
                 )}
@@ -179,14 +223,23 @@ export default function Register() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-gray-400 uppercase text-sm font-medium">BRANCH</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="text" 
-                        placeholder="ENTER BRANCH" 
-                        className="w-full bg-[#222222] border border-[#444444] p-3 text-white placeholder:text-[#555555]" 
-                        {...field} 
-                      />
-                    </FormControl>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full bg-[#222222] border border-[#444444] p-3 text-white placeholder:text-[#555555] h-12">
+                          <SelectValue placeholder="SELECT BRANCH" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-[#222222] border border-[#444444] text-white">
+                        {BRANCHES.map((branch) => (
+                          <SelectItem key={branch} value={branch} className="focus:bg-[#4d5d30] focus:text-white">
+                            {branch}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage className="text-red-500 text-xs" />
                   </FormItem>
                 )}
@@ -198,13 +251,7 @@ export default function Register() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex items-center justify-between">
-                    <FormLabel className="text-gray-400 uppercase text-sm font-medium">SECURITY CODE / PASSWORD</FormLabel>
-                    <div className="flex items-center space-x-1 text-[10px] bg-[#333333] px-2 py-1 rounded text-gray-400">
-                      <Lock className="w-3 h-3" />
-                      <span>ENCRYPTED</span>
-                    </div>
-                  </div>
+                  <FormLabel className="text-gray-400 uppercase text-sm font-medium">SECURITY CODE / PASSWORD</FormLabel>
                   <FormControl>
                     <Input 
                       type="password" 
@@ -218,28 +265,47 @@ export default function Register() {
               )}
             />
             
-            <div className="pt-2">
-              <p className="uppercase text-center text-xs text-gray-500 mb-4">REGISTRATION REQUIRES CLEARANCE VERIFICATION.</p>
-              
-              <Button type="submit" disabled={isLoading} className="w-full bg-[#4d5d30] hover:bg-[#5a6b38] text-white py-3 font-bold uppercase tracking-wider">
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    <span>PROCESSING REGISTRATION...</span>
-                  </>
-                ) : (
-                  <>
-                    <FileText className="mr-2 h-4 w-4" />
-                    <span>SUBMIT CREDENTIALS</span>
-                  </>
-                )}
-              </Button>
-            </div>
+            <FormField
+              control={form.control}
+              name="confirmPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-gray-400 uppercase text-sm font-medium">CONFIRM SECURITY CODE</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="password" 
+                      placeholder="CONFIRM SECURITY CODE" 
+                      className="w-full bg-[#222222] border border-[#444444] p-3 text-white placeholder:text-[#555555]" 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage className="text-red-500 text-xs" />
+                </FormItem>
+              )}
+            />
+            
+            <p className="text-[#7a7a7a] text-xs uppercase text-center mt-4">
+              BY REGISTERING, YOU ACCEPT ALL MILITARY COMMUNICATION PROTOCOLS.
+            </p>
+            
+            <Button type="submit" disabled={isLoading} className="w-full bg-[#4d5d30] hover:bg-[#5a6b38] text-white py-3 font-bold uppercase tracking-wider mt-2">
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <span>PROCESSING...</span>
+                </>
+              ) : (
+                <>
+                  <Shield className="mr-2 h-4 w-4" />
+                  <span>REGISTER PERSONNEL</span>
+                </>
+              )}
+            </Button>
           </form>
         </Form>
         
-        <div className="mt-6 text-center">
-          <div className="flex items-center justify-center mb-1">
+        <div className="mt-8 text-center">
+          <div className="flex items-center justify-center">
             <AlertTriangle className="h-3 w-3 text-[#a6c455] mr-1" />
             <p className="text-[#a6c455] text-[10px] uppercase font-medium">INTRANET COMMUNICATIONS ONLY - CLASSIFIED</p>
           </div>

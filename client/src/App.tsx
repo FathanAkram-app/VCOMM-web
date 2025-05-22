@@ -1,36 +1,81 @@
-import { Route, Switch, Router } from "wouter";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { Switch, Route } from "wouter";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
-import MilitaryLoginPage from "./pages/MilitaryLoginPage";
-import Chat from "./pages/Chat";
+import React, { useState, useEffect } from "react";
 
-// Create a query client for tanstack/react-query
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 1,
-    },
-  },
-});
+import Login from "@/pages/Login";
+import Register from "@/pages/Register";
+import Chat from "@/pages/Chat";
+import NotFound from "@/pages/not-found";
+
+// Komponen sederhana untuk mengecek login
+function AuthCheck({ children }: { children: React.ReactNode }) {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    async function checkLogin() {
+      try {
+        const response = await fetch('/api/auth/user', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          setIsLoggedIn(true);
+        } else {
+          setIsLoggedIn(false);
+          // Redirect to login if needed
+          window.location.href = '/login';
+        }
+      } catch (error) {
+        console.error('Error checking login status:', error);
+        setIsLoggedIn(false);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    checkLogin();
+  }, []);
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#171717]">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-10 h-10 border-4 border-[#8d9c6b] border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-lg font-medium text-[#8d9c6b]">AUTHENTICATING...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  return isLoggedIn ? children : null;
+}
+
+function Router() {
+  return (
+    <Switch>
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
+      <Route path="/chat">
+        <AuthCheck>
+          <Chat />
+        </AuthCheck>
+      </Route>
+      <Route path="/">
+        <Login />
+      </Route>
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
 
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <div className="min-h-screen">
-          <Router>
-            <Switch>
-              <Route path="/" component={MilitaryLoginPage} />
-              <Route path="/login" component={MilitaryLoginPage} />
-              <Route path="/chat" component={Chat} />
-              {/* Add more routes as they are developed */}
-            </Switch>
-          </Router>
-        </div>
-        <Toaster />
-      </AuthProvider>
+      <Toaster />
+      <Router />
     </QueryClientProvider>
   );
 }

@@ -2,7 +2,6 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import * as dotenv from 'dotenv';
-import { setupAuth } from './auth';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -42,9 +41,6 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Setup auth terlebih dahulu
-  await setupAuth(app);
-  // Kemudian setup routes lainnya
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

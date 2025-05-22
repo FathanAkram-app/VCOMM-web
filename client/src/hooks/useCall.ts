@@ -1,12 +1,12 @@
-import { useContext } from 'react';
-import { CallContext } from '../context/CallContext';
+import { useContext } from "react";
+import { CallContext } from "../context/CallContext";
 
-export function useCall() {
+export const useCall = () => {
   const context = useContext(CallContext);
   
-  if (context === undefined) {
-    throw new Error('useCall must be used within a CallProvider');
+  if (!context) {
+    throw new Error("useCall must be used within a CallProvider");
   }
   
   return context;
-}
+};

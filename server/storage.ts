@@ -1,115 +1,59 @@
-import * as schema from "@shared/schema";
 import {
   users,
-  rooms,
-  roomMembers,
-  directChats,
+  conversations,
+  conversationMembers,
   messages,
-  calls,
-  groupCalls,
-  groupCallParticipants,
   type User,
-  type InsertUser,
+  type UpsertUser,
   type Message,
   type InsertMessage,
-  type Room,
-  type InsertRoom,
-  type RoomMember,
-  type InsertRoomMember,
-  type DirectChat,
-  type InsertDirectChat,
-  type Call,
-  type InsertCall,
-  type GroupCall,
-  type InsertGroupCall,
-  type GroupCallParticipant,
-  type InsertGroupCallParticipant,
+  type RegisterUser,
+  type Conversation,
+  type InsertConversation,
+  type ConversationMember,
+  type InsertConversationMember,
 } from "@shared/schema";
-import { db, pool } from "./db";
-import { sql, eq, and, or, inArray, desc, isNull, asc } from "drizzle-orm";
-import bcrypt from "bcryptjs";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
+import { eq, and, or, inArray, desc } from "drizzle-orm";
 
 // Storage interface
 export interface IStorage {
   // User operations
-  getUser(id: string): Promise<User | undefined>;
+  getUser(id: number): Promise<User | undefined>;
   getUserByCallsign(callsign: string): Promise<User | undefined>;
   getUserByNrp(nrp: string): Promise<User | undefined>;
-  createUser(data: InsertUser): Promise<User>;
-  updateUserLastOnline(userId: string): Promise<User | undefined>;
-  updateUserStatus(userId: string, status: string): Promise<User | undefined>;
+  createUser(user: RegisterUser): Promise<User>;
+  updateUserStatus(userId: number, status: string): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
-  upsertUser(user: InsertUser): Promise<User>;
-  verifyPassword(hashedPassword: string, plainPassword: string): Promise<boolean>;
-  
-  // Chat list operations
-  getChatsForUser(userId: string): Promise<any[]>;
-  getMessagesForChat(chatId: number, isRoom: boolean): Promise<Message[]>;
-  markMessagesAsRead(chatId: number, isRoom: boolean, userId: string): Promise<void>;
 
-  // Room operations
-  getRoom(id: number): Promise<Room | undefined>;
-  createRoom(data: InsertRoom): Promise<Room>;
-  getUserRooms(userId: string): Promise<Room[]>;
-  deleteRoom(id: number): Promise<void>;
+  // Conversation operations (both groups and direct)
+  getConversation(id: number): Promise<Conversation | undefined>;
+  createConversation(data: InsertConversation): Promise<Conversation>;
+  getUserConversations(userId: number): Promise<Conversation[]>;
+  deleteConversation(id: number): Promise<void>;
   
-  // Room members operations
-  addMemberToRoom(data: InsertRoomMember): Promise<RoomMember>;
-  getRoomMembers(roomId: number): Promise<RoomMember[]>;
-  getUsersInRoom(roomId: number): Promise<User[]>;
-  isUserInRoom(userId: string, roomId: number): Promise<boolean>;
-  
-  // Direct chat operations
-  getDirectChat(id: number): Promise<DirectChat | undefined>;
-  getDirectChatBetweenUsers(userId1: string, userId2: string): Promise<DirectChat | undefined>;
-  createDirectChat(data: InsertDirectChat): Promise<DirectChat>;
-  getUserDirectChats(userId: string): Promise<DirectChat[]>;
-  
-  // Verifikasi akses ke chat
-  isUserInChat(userId: string, chatId: number, isRoom: boolean): Promise<boolean>;
+  // Conversation members operations
+  addMemberToConversation(data: InsertConversationMember): Promise<ConversationMember>;
+  getConversationMembers(conversationId: number): Promise<ConversationMember[]>;
   
   // Message operations
   createMessage(data: InsertMessage): Promise<Message>;
-  getMessagesByRoomId(roomId: number): Promise<Message[]>;
-  getMessagesByDirectChatId(directChatId: number): Promise<Message[]>;
-  clearChatHistory(roomId?: number, directChatId?: number): Promise<void>;
+  getMessagesByConversation(conversationId: number): Promise<Message[]>;
+  clearConversationMessages(conversationId: number): Promise<void>;
   
-  // Message actions (delete, reply, forward)
+  // Message operations for delete, reply, and forward
   deleteMessage(messageId: number): Promise<Message>;
   getMessage(messageId: number): Promise<Message | undefined>;
-  forwardMessage(originalMessageId: number, targetRoomId?: number, targetDirectChatId?: number, senderId?: string): Promise<Message>;
-  
-  // Call operations
-  createCall(data: InsertCall): Promise<Call>;
-  updateCallStatus(callId: number, status: string, endTime?: Date): Promise<Call | undefined>;
-  getActiveCallsByUser(userId: string): Promise<Call[]>;
-  
-  // Group call operations
-  createGroupCall(data: InsertGroupCall): Promise<GroupCall>;
-  getActiveGroupCallInRoom(roomId: number): Promise<GroupCall | undefined>;
-  endGroupCall(groupCallId: number): Promise<GroupCall | undefined>;
-  addParticipantToGroupCall(data: InsertGroupCallParticipant): Promise<GroupCallParticipant>;
-  removeParticipantFromGroupCall(groupCallId: number, userId: string): Promise<void>;
-  getGroupCallParticipants(groupCallId: number): Promise<GroupCallParticipant[]>;
-  getAllActiveGroupCalls(): Promise<GroupCall[]>;
+  forwardMessage(originalMessageId: number, newConversationId: number, senderId: number): Promise<Message>;
 }
 
 // Database storage implementation
 export class DatabaseStorage implements IStorage {
   // User operations
-  async getUser(id: string): Promise<User | undefined> {
+  async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
-  }
-  
-  async verifyPassword(hashedPassword: string, plainPassword: string): Promise<boolean> {
-    try {
-      const isValid = await bcrypt.compare(plainPassword, hashedPassword);
-      return isValid;
-    } catch (error) {
-      console.error('Error verifying password:', error);
-      return false;
-    }
   }
 
   async getUserByCallsign(callsign: string): Promise<User | undefined> {
@@ -122,42 +66,21 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUser(userData: InsertUser): Promise<User> {
-    // Gunakan password yang sudah di-hash dari userData
-    // ID harus ada dalam userData dari routes.ts (UUID)
-    
-    console.log("Creating user with data:", {
-      ...userData,
-      password: "*****" // Sembunyikan password untuk logging
-    });
-    
+  async createUser(userData: RegisterUser): Promise<User> {
     const [user] = await db
       .insert(users)
       .values({
         ...userData,
+        status: "offline",
+        profileImageUrl: null,
         createdAt: new Date(),
-        updatedAt: new Date(),
-        lastOnline: new Date()
+        updatedAt: new Date()
       })
       .returning();
-    
-    console.log("User created successfully with ID:", user.id);
     return user;
   }
 
-  async updateUserLastOnline(userId: string): Promise<User | undefined> {
-    const [user] = await db
-      .update(users)
-      .set({ 
-        lastOnline: new Date(),
-        updatedAt: new Date()
-      })
-      .where(eq(users.id, userId))
-      .returning();
-    return user;
-  }
-  
-  async updateUserStatus(userId: string, status: string): Promise<User | undefined> {
+  async updateUserStatus(userId: number, status: string): Promise<User | undefined> {
     const [user] = await db
       .update(users)
       .set({ 
@@ -169,94 +92,100 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async upsertUser(userData: InsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values({
-        ...userData,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        lastOnline: new Date()
-      })
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
-          ...userData,
-          updatedAt: new Date(),
-        },
-      })
-      .returning();
-    return user;
-  }
-
   async getAllUsers(): Promise<User[]> {
     return await db.select().from(users);
   }
   
-  // Room operations
-  async getRoom(id: number): Promise<Room | undefined> {
-    const [room] = await db
+  // Conversation operations
+  async getConversation(id: number): Promise<Conversation | undefined> {
+    const [conversation] = await db
       .select()
-      .from(rooms)
-      .where(eq(rooms.id, id));
-    return room;
+      .from(conversations)
+      .where(eq(conversations.id, id));
+    return conversation;
   }
   
-  async createRoom(data: InsertRoom): Promise<Room> {
-    const [room] = await db
-      .insert(rooms)
+  async createConversation(data: InsertConversation): Promise<Conversation> {
+    // Di schema, createdById diperlukan tetapi tidak ada di insertConversationSchema
+    // Gunakan placeholder userId = 1 untuk sementara
+    const [conversation] = await db
+      .insert(conversations)
       .values({
         ...data,
+        createdById: 1, // Default to admin user
         createdAt: new Date(),
         updatedAt: new Date()
       })
       .returning();
-    return room;
+    return conversation;
   }
   
-  async getUserRooms(userId: string): Promise<Room[]> {
-    // Get all roomIds where user is a member
-    const memberOf = await db
-      .select()
-      .from(roomMembers)
-      .where(eq(roomMembers.userId, userId));
+  async getUserConversations(userId: number): Promise<Conversation[]> {
+    console.log(`[Storage] Getting conversations for user ID: ${userId}`);
     
-    if (memberOf.length === 0) {
+    // Get all conversations where user is a member
+    const members = await db
+      .select()
+      .from(conversationMembers)
+      .where(eq(conversationMembers.userId, userId));
+
+    console.log(`[Storage] Found ${members.length} memberships for user ${userId}`);
+    
+    if (members.length === 0) {
+      console.log(`[Storage] No memberships found for user ${userId}`);
       return [];
     }
 
-    const roomIds = memberOf.map(m => m.roomId);
+    const conversationIds = members.map(member => member.conversationId);
+    console.log(`[Storage] Found conversation IDs for user ${userId}:`, conversationIds);
     
-    // Get all rooms for these roomIds
-    const userRooms = await db
+    const userConversations = await db
       .select()
-      .from(rooms)
-      .where(inArray(rooms.id, roomIds));
+      .from(conversations)
+      .where(inArray(conversations.id, conversationIds));
     
-    return userRooms;
+    console.log(`[Storage] Retrieved ${userConversations.length} conversations for user ${userId}`);
+    
+    return userConversations;
   }
   
-  async deleteRoom(id: number): Promise<void> {
-    // First delete all messages in this room
+  async deleteConversation(id: number): Promise<void> {
+    // First delete all messages in this conversation
     await db
       .delete(messages)
-      .where(eq(messages.roomId, id));
+      .where(eq(messages.conversationId, id));
     
     // Then delete all members
     await db
-      .delete(roomMembers)
-      .where(eq(roomMembers.roomId, id));
+      .delete(conversationMembers)
+      .where(eq(conversationMembers.conversationId, id));
     
-    // Finally delete the room itself
+    // Finally delete the conversation itself
     await db
-      .delete(rooms)
-      .where(eq(rooms.id, id));
+      .delete(conversations)
+      .where(eq(conversations.id, id));
   }
   
-  // Room members operations
-  async addMemberToRoom(data: InsertRoomMember): Promise<RoomMember> {
+  // Conversation members operations
+  async addMemberToConversation(data: InsertConversationMember): Promise<ConversationMember> {
+    // Check if member already exists
+    const [existingMember] = await db
+      .select()
+      .from(conversationMembers)
+      .where(
+        and(
+          eq(conversationMembers.conversationId, data.conversationId),
+          eq(conversationMembers.userId, data.userId)
+        )
+      );
+    
+    if (existingMember) {
+      return existingMember;
+    }
+    
+    // Add new member
     const [member] = await db
-      .insert(roomMembers)
+      .insert(conversationMembers)
       .values({
         ...data,
         joinedAt: new Date()
@@ -265,327 +194,68 @@ export class DatabaseStorage implements IStorage {
     return member;
   }
 
-  async getRoomMembers(roomId: number): Promise<RoomMember[]> {
+  async getConversationMembers(conversationId: number): Promise<ConversationMember[]> {
     return await db
       .select()
-      .from(roomMembers)
-      .where(eq(roomMembers.roomId, roomId));
-  }
-  
-  async getUsersInRoom(roomId: number): Promise<User[]> {
-    const roomMembersData = await db
-      .select({
-        userId: roomMembers.userId
-      })
-      .from(roomMembers)
-      .where(eq(roomMembers.roomId, roomId));
-    
-    if (roomMembersData.length === 0) {
-      return [];
-    }
-    
-    const userIds = roomMembersData.map(member => member.userId);
-    
-    return await db
-      .select()
-      .from(users)
-      .where(inArray(users.id, userIds));
-  }
-  
-  async isUserInRoom(userId: string, roomId: number): Promise<boolean> {
-    const [membership] = await db
-      .select()
-      .from(roomMembers)
-      .where(
-        and(
-          eq(roomMembers.roomId, roomId),
-          eq(roomMembers.userId, userId)
-        )
-      );
-    
-    return !!membership;
-  }
-  
-  // Direct chat operations
-  async getDirectChat(id: number): Promise<DirectChat | undefined> {
-    const [directChat] = await db
-      .select()
-      .from(directChats)
-      .where(eq(directChats.id, id));
-    return directChat;
-  }
-  
-  async getDirectChatBetweenUsers(userId1: string, userId2: string): Promise<DirectChat | undefined> {
-    // Check both combinations of user1 and user2
-    const [chat] = await db
-      .select()
-      .from(directChats)
-      .where(
-        or(
-          and(
-            eq(directChats.user1Id, userId1),
-            eq(directChats.user2Id, userId2)
-          ),
-          and(
-            eq(directChats.user1Id, userId2),
-            eq(directChats.user2Id, userId1)
-          )
-        )
-      );
-    
-    return chat;
-  }
-  
-  async createDirectChat(data: InsertDirectChat): Promise<DirectChat> {
-    const [directChat] = await db
-      .insert(directChats)
-      .values({
-        ...data,
-        createdAt: new Date()
-      })
-      .returning();
-    return directChat;
-  }
-  
-  async getUserDirectChats(userId: string): Promise<DirectChat[]> {
-    return await db
-      .select()
-      .from(directChats)
-      .where(
-        or(
-          eq(directChats.user1Id, userId),
-          eq(directChats.user2Id, userId)
-        )
-      );
-  }
-  
-  // Verifikasi akses ke chat
-  async isUserInChat(userId: string, chatId: number, isRoom: boolean): Promise<boolean> {
-    console.log(`[isUserInChat] Checking access for user ${userId} to chat ${chatId} (isRoom: ${isRoom})`);
-    
-    try {
-      if (isRoom) {
-        // Verifikasi apakah user adalah anggota room
-        const isInRoom = await this.isUserInRoom(userId, chatId);
-        console.log(`[isUserInChat] Room check result: ${isInRoom}`);
-        return isInRoom;
-      } else {
-        // Verifikasi apakah chat direct ini milik user
-        const [directChat] = await db
-          .select()
-          .from(directChats)
-          .where(
-            and(
-              eq(directChats.id, chatId),
-              or(
-                eq(directChats.user1Id, userId),
-                eq(directChats.user2Id, userId)
-              )
-            )
-          );
-        
-        const hasAccess = !!directChat;
-        console.log(`[isUserInChat] Direct chat check result: ${hasAccess}`);
-        
-        if (!hasAccess) {
-          // Debug: Cari chat dengan ID ini
-          const [checkChat] = await db.select().from(directChats).where(eq(directChats.id, chatId));
-          console.log(`[isUserInChat] Direct chat exists: ${!!checkChat}`, checkChat || 'Not found');
-          
-          // Debug: Periksa semua direct chat milik user ini
-          const userChats = await db
-            .select()
-            .from(directChats)
-            .where(
-              or(
-                eq(directChats.user1Id, userId),
-                eq(directChats.user2Id, userId)
-              )
-            );
-          console.log(`[isUserInChat] User ${userId} has ${userChats.length} direct chats:`, 
-            userChats.map(c => `ID: ${c.id}, user1: ${c.user1Id}, user2: ${c.user2Id}`));
-        }
-        
-        return hasAccess;
-      }
-    } catch (error) {
-      console.error(`[isUserInChat] Error checking access:`, error);
-      return false;
-    }
+      .from(conversationMembers)
+      .where(eq(conversationMembers.conversationId, conversationId));
   }
   
   // Message operations
-  async createMessage(data: any): Promise<any> {
-    console.log("[DEBUG] createMessage called with data:", data);
-    
-    try {
-      // Jika ini direct chat, perlu pastikan kita gunakan directChatId, bukan roomId
-      if (data.roomId && !data.isRoom) {
-        console.log(`[DEBUG] Ini direct chat (ID: ${data.roomId}), memeriksa apakah perlu penyesuaian...`);
-        
-        // Periksa apakah ID ada di tabel direct_chats
-        const directChatResult = await pool.query(
-          `SELECT * FROM direct_chats WHERE id = $1`,
-          [data.roomId]
-        );
-        
-        if (directChatResult.rows.length > 0) {
-          console.log(`[DEBUG] ID ${data.roomId} ditemukan di tabel direct_chats, mengubah ke directChatId`);
-          // Ini adalah direct chat, gunakan directChatId dan hapus roomId
-          data.directChatId = data.roomId;
-          delete data.roomId;
-        } else {
-          console.log(`[DEBUG] ID ${data.roomId} tidak ditemukan di tabel direct_chats, mencari di tabel rooms...`);
-          // Cek apakah ID ada di tabel rooms
-          const roomResult = await pool.query(
-            `SELECT * FROM rooms WHERE id = $1`,
-            [data.roomId]
-          );
-          
-          if (roomResult.rows.length === 0) {
-            console.log(`[DEBUG] ID ${data.roomId} juga tidak ditemukan di tabel rooms, mencari di conversations...`);
-            
-            // Coba cari direct_chat dengan kedua user
-            if (data.senderId) {
-              // Coba temukan direct_chat yang sesuai dari senderId
-              const matchResult = await pool.query(
-                `SELECT * FROM direct_chats WHERE 
-                 (user1_id = $1 OR user2_id = $1)`,
-                [data.senderId]
-              );
-              
-              if (matchResult.rows.length > 0) {
-                const directChat = matchResult.rows[0];
-                console.log(`[DEBUG] Menemukan direct_chat yang cocok: ${directChat.id}`);
-                data.directChatId = directChat.id;
-                delete data.roomId;
-              }
-            }
-          }
-        }
-      }
-      
-      // Jika ada conversationId, ini adalah pesan ke conversation lama
-      if (data.conversationId) {
-        // Pastikan conversation ada
-        const conversationId = data.conversationId;
-        delete data.conversationId; // Hapus dari object karena schema tidak mengenalnya
-        
-        console.log(`[DEBUG] Mencoba mencari conversation dengan ID: ${conversationId}`);
-        // Gunakan nama table literal karena kita tahu bahwa tabel 'conversations' ada di database
-        // tapi mungkin tidak didefinisikan dalam model
-        // Gunakan pool yang sudah diimpor dari db.ts
-        const result = await pool.query(
-          `SELECT * FROM conversations WHERE id = $1`,
-          [conversationId]
-        );
-        
-        const conversations = result.rows;
-        console.log(`[DEBUG] Query conversation result:`, conversations);
-        
-        if (!conversations || conversations.length === 0) {
-          console.log(`[DEBUG] Conversation dengan ID ${conversationId} tidak ditemukan`);
-          throw new Error(`Conversation dengan ID ${conversationId} tidak ditemukan`);
-        }
-        
-        // Cek apakah ini direct chat
-        if (conversations[0].name && conversations[0].name.startsWith('Direct Chat')) {
-          console.log(`[DEBUG] Conversation ini mungkin direct chat, cek tabel direct_chats`);
-          
-          // Cari apakah ada direct chat dengan ID ini
-          const directChatResult = await pool.query(
-            `SELECT * FROM direct_chats WHERE id = $1`,
-            [conversationId]
-          );
-          
-          if (directChatResult.rows.length > 0) {
-            console.log(`[DEBUG] Menemukan direct chat dengan ID ${conversationId}`);
-            data.directChatId = conversationId;
-          } else {
-            data.roomId = conversationId;
-          }
-        } else {
-          // Gunakan roomId untuk room biasa
-          data.roomId = conversationId;
-        }
-      }
-      
-      console.log(`[DEBUG] Nilai akhir yang akan disimpan:`, data);
-      
-      // Insert pesan ke database
-      const messageData = { 
+  async createMessage(data: InsertMessage): Promise<Message> {
+    // Insert the new message
+    const [message] = await db
+      .insert(messages)
+      .values({
         ...data,
-        sentAt: new Date(),
+        createdAt: new Date(),
         updatedAt: new Date()
-      };
-      
-      // Hapus isRoom karena tidak termasuk dalam skema database
-      if (messageData.isRoom !== undefined) {
-        delete messageData.isRoom;
+      })
+      .returning();
+    
+    // Tentukan teks yang akan ditampilkan di preview pesan
+    let lastMessagePreview = message.content;
+    
+    // Jika pesan berisi attachment, tambahkan informasi itu ke preview
+    if (message.hasAttachment) {
+      const attachmentType = message.attachmentType || 'file';
+      // Jika pesan kosong, gunakan teks indikator file saja
+      if (!lastMessagePreview || lastMessagePreview.trim() === '') {
+        lastMessagePreview = `[${attachmentType.charAt(0).toUpperCase() + attachmentType.slice(1)}]`;
+      } 
+      // Jika ada teks, gabungkan dengan indikator file
+      else {
+        lastMessagePreview = `${lastMessagePreview} [${attachmentType}]`;
       }
-      
-      const [message] = await db
-        .insert(messages)
-        .values(messageData)
-        .returning();
-      
-      console.log(`[DEBUG] Pesan berhasil dibuat dengan ID: ${message.id}`);
-      
-      // Update conversation dengan pesan terakhir
-      if (message.roomId) {
-        try {
-          // Gunakan pool untuk update conversation
-          await pool.query(
-            `UPDATE conversations 
-             SET last_message = $1, 
-                 last_message_time = $2, 
-                 updated_at = $3 
-             WHERE id = $4`,
-            [data.content, new Date(), new Date(), message.roomId]
-          );
-          
-          console.log(`[DEBUG] Conversation ${message.roomId} diupdate dengan pesan terakhir`);
-        } catch (updateError) {
-          console.error(`[DEBUG] Gagal update conversation:`, updateError);
-        }
-      }
-      
-      return message;
-    } catch (error) {
-      console.error(`[DEBUG] Error dalam createMessage:`, error);
-      throw error;
     }
+    
+    // Now update the conversation with the latest message
+    await db.execute(
+      sql`UPDATE conversations 
+          SET updated_at = NOW(), 
+              last_message = ${lastMessagePreview}, 
+              last_message_time = NOW() 
+          WHERE id = ${message.conversationId}`
+    );
+    
+    return message;
   }
 
-  async getMessagesByRoomId(roomId: number): Promise<Message[]> {
+  async getMessagesByConversation(conversationId: number): Promise<Message[]> {
     return await db
       .select()
       .from(messages)
-      .where(eq(messages.roomId, roomId))
-      .orderBy(asc(messages.sentAt));
+      .where(eq(messages.conversationId, conversationId))
+      .orderBy(messages.createdAt);
   }
   
-  async getMessagesByDirectChatId(directChatId: number): Promise<Message[]> {
-    return await db
-      .select()
-      .from(messages)
-      .where(eq(messages.directChatId, directChatId))
-      .orderBy(asc(messages.sentAt));
+  async clearConversationMessages(conversationId: number): Promise<void> {
+    await db
+      .delete(messages)
+      .where(eq(messages.conversationId, conversationId));
   }
   
-  async clearChatHistory(roomId?: number, directChatId?: number): Promise<void> {
-    if (roomId) {
-      await db
-        .delete(messages)
-        .where(eq(messages.roomId, roomId));
-    } else if (directChatId) {
-      await db
-        .delete(messages)
-        .where(eq(messages.directChatId, directChatId));
-    }
-  }
-  
-  // Message actions (delete, reply, forward)
+  // Message operations for delete, reply, and forward
   async getMessage(messageId: number): Promise<Message | undefined> {
     const [message] = await db
       .select()
@@ -596,11 +266,28 @@ export class DatabaseStorage implements IStorage {
   }
   
   async deleteMessage(messageId: number): Promise<Message> {
-    // Update message status to deleted
+    // Get the message first to check if it has attachments
+    const [message] = await db
+      .select()
+      .from(messages)
+      .where(eq(messages.id, messageId));
+    
+    if (!message) {
+      throw new Error(`Message with ID ${messageId} not found`);
+    }
+    
+    // Soft delete message by setting isDeleted flag to true
+    // Also clear attachment information if present
     const [updatedMessage] = await db
       .update(messages)
       .set({
-        status: "deleted",
+        isDeleted: true,
+        content: "[Pesan ini telah dihapus]",
+        hasAttachment: false,
+        attachmentUrl: null,
+        attachmentType: null,
+        attachmentName: null,
+        attachmentSize: null,
         updatedAt: new Date(),
       })
       .where(eq(messages.id, messageId))
@@ -609,7 +296,7 @@ export class DatabaseStorage implements IStorage {
     return updatedMessage;
   }
   
-  async forwardMessage(originalMessageId: number, targetRoomId?: number, targetDirectChatId?: number, senderId?: string): Promise<Message> {
+  async forwardMessage(originalMessageId: number, newConversationId: number, senderId: number): Promise<Message> {
     // Get the original message
     const originalMessage = await this.getMessage(originalMessageId);
     
@@ -617,273 +304,24 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Pesan asli tidak ditemukan");
     }
     
-    // Create a new message with the same content and attachments
+    // Create a new message with the same content and attachments but in the new conversation
     const forwardData: InsertMessage = {
+      // Tambahkan indikator "Diteruskan" di awal pesan
       content: `[Diteruskan] ${originalMessage.content}`,
-      senderId: senderId || originalMessage.senderId,
-      // Exactly one of roomId or directChatId must be set
-      roomId: targetRoomId,
-      directChatId: targetDirectChatId,
-      type: originalMessage.type,
-      attachment: originalMessage.attachment,
+      senderId: senderId,
+      conversationId: newConversationId,
+      classification: originalMessage.classification,
+      hasAttachment: originalMessage.hasAttachment,
+      attachmentType: originalMessage.attachmentType,
+      attachmentUrl: originalMessage.attachmentUrl,
+      attachmentName: originalMessage.attachmentName,
+      attachmentSize: originalMessage.attachmentSize,
       forwardedFromId: originalMessageId,
     };
     
     // Insert the new message
     const newMessage = await this.createMessage(forwardData);
     return newMessage;
-  }
-  
-  // Call operations
-  async createCall(data: InsertCall): Promise<Call> {
-    const [call] = await db
-      .insert(calls)
-      .values({
-        ...data,
-        startTime: new Date(),
-      })
-      .returning();
-    return call;
-  }
-  
-  async updateCallStatus(callId: number, status: string, endTime?: Date): Promise<Call | undefined> {
-    const updateData: Partial<Call> = { status };
-    
-    if (endTime || status === "ended" || status === "missed" || status === "rejected") {
-      updateData.endTime = endTime || new Date();
-    }
-    
-    const [call] = await db
-      .update(calls)
-      .set(updateData)
-      .where(eq(calls.id, callId))
-      .returning();
-    
-    return call;
-  }
-  
-  async getActiveCallsByUser(userId: string): Promise<Call[]> {
-    return await db
-      .select()
-      .from(calls)
-      .where(
-        and(
-          or(
-            eq(calls.callerId, userId),
-            eq(calls.receiverId, userId)
-          ),
-          isNull(calls.endTime),
-          or(
-            eq(calls.status, "initiated"),
-            eq(calls.status, "connected")
-          )
-        )
-      );
-  }
-  
-  // Group call operations
-  async createGroupCall(data: InsertGroupCall): Promise<GroupCall> {
-    const [groupCall] = await db
-      .insert(groupCalls)
-      .values({
-        ...data,
-        startTime: new Date(),
-        active: true
-      })
-      .returning();
-    
-    return groupCall;
-  }
-  
-  async getActiveGroupCallInRoom(roomId: number): Promise<GroupCall | undefined> {
-    const [groupCall] = await db
-      .select()
-      .from(groupCalls)
-      .where(
-        and(
-          eq(groupCalls.roomId, roomId),
-          eq(groupCalls.active, true)
-        )
-      );
-    
-    return groupCall;
-  }
-  
-  async endGroupCall(groupCallId: number): Promise<GroupCall | undefined> {
-    const [groupCall] = await db
-      .update(groupCalls)
-      .set({
-        active: false,
-        endTime: new Date()
-      })
-      .where(eq(groupCalls.id, groupCallId))
-      .returning();
-    
-    return groupCall;
-  }
-  
-  async addParticipantToGroupCall(data: InsertGroupCallParticipant): Promise<GroupCallParticipant> {
-    const [participant] = await db
-      .insert(groupCallParticipants)
-      .values({
-        ...data,
-        joinedAt: new Date()
-      })
-      .returning();
-    
-    return participant;
-  }
-  
-  async removeParticipantFromGroupCall(groupCallId: number, userId: string): Promise<void> {
-    await db
-      .update(groupCallParticipants)
-      .set({
-        leftAt: new Date()
-      })
-      .where(
-        and(
-          eq(groupCallParticipants.groupCallId, groupCallId),
-          eq(groupCallParticipants.userId, userId)
-        )
-      );
-  }
-  
-  async getGroupCallParticipants(groupCallId: number): Promise<GroupCallParticipant[]> {
-    return await db
-      .select()
-      .from(groupCallParticipants)
-      .where(
-        and(
-          eq(groupCallParticipants.groupCallId, groupCallId),
-          isNull(groupCallParticipants.leftAt)
-        )
-      );
-  }
-  
-  async getAllActiveGroupCalls(): Promise<GroupCall[]> {
-    return await db
-      .select()
-      .from(groupCalls)
-      .where(eq(groupCalls.active, true));
-  }
-  
-  // Implementasi fungsi untuk mendapatkan daftar chat pengguna
-  async getChatsForUser(userId: string): Promise<any[]> {
-    try {
-      // 1. Ambil direct chats user
-      const userDirectChats = await this.getUserDirectChats(userId);
-      
-      // 2. Ambil rooms user
-      const userRooms = await this.getUserRooms(userId);
-      
-      // 3. Buat array gabungan
-      const result: any[] = [];
-      
-      // Tambahkan direct chats ke array result
-      if (userDirectChats && userDirectChats.length > 0) {
-        result.push(...userDirectChats);
-      }
-      
-      // Tambahkan rooms ke array result
-      if (userRooms && userRooms.length > 0) {
-        result.push(...userRooms);
-      }
-      
-      return result;
-    } catch (error) {
-      console.error('Error getting chats for user:', error);
-      return [];
-    }
-  }
-  
-  // Implementasi fungsi untuk mendapatkan pesan dalam suatu chat
-  async getMessagesForChat(chatId: number, isRoom: boolean): Promise<Message[]> {
-    try {
-      console.log(`[DEBUG] Mengambil pesan untuk ${isRoom ? 'room' : 'direct chat'} ID: ${chatId}`);
-      
-      if (isRoom) {
-        console.log(`[DEBUG] Mengambil pesan untuk room ID: ${chatId}`);
-        const roomMessages = await this.getMessagesByRoomId(chatId);
-        console.log(`[DEBUG] Ditemukan ${roomMessages.length} pesan untuk room ID: ${chatId}`);
-        return roomMessages;
-      } else {
-        console.log(`[DEBUG] Mengambil pesan untuk direct chat ID: ${chatId}`);
-        
-        // Coba ambil direct chat terlebih dahulu
-        const [directChat] = await db
-          .select()
-          .from(directChats)
-          .where(eq(directChats.id, chatId));
-          
-        if (!directChat) {
-          console.log(`[DEBUG] Direct chat dengan ID ${chatId} tidak ditemukan`);
-          return [];
-        }
-        
-        console.log(`[DEBUG] Direct chat ditemukan:`, directChat);
-        
-        // Ambil semua pesan yang terkait dengan direct chat ini
-        const directMessages = await db
-          .select()
-          .from(schema.messages)
-          .where(eq(schema.messages.directChatId, chatId))
-          .orderBy(asc(schema.messages.sentAt));
-        
-        console.log(`[DEBUG] Ditemukan ${directMessages.length} pesan untuk direct chat ID: ${chatId}`);
-        
-        // Jika tidak ada pesan, coba cek apakah ada pesan dengan roomId yang sama
-        if (directMessages.length === 0) {
-          console.log(`[DEBUG] Mencoba mencari pesan dengan roomId = ${chatId}`);
-          const altMessages = await db
-            .select()
-            .from(schema.messages)
-            .where(eq(schema.messages.roomId, chatId))
-            .orderBy(asc(schema.messages.sentAt));
-            
-          console.log(`[DEBUG] Ditemukan ${altMessages.length} pesan alternative untuk direct chat ID: ${chatId}`);
-          
-          // Jika ada, update messages tersebut agar directChatId-nya benar
-          if (altMessages.length > 0) {
-            console.log(`[DEBUG] Memperbaiki pesan-pesan dengan roomId = ${chatId}`);
-            for (const msg of altMessages) {
-              await db
-                .update(schema.messages)
-                .set({
-                  directChatId: chatId,
-                  roomId: null
-                })
-                .where(eq(schema.messages.id, msg.id));
-            }
-            
-            // Ambil pesan-pesan yang sudah diperbaiki
-            const fixedMessages = await db
-              .select()
-              .from(schema.messages)
-              .where(eq(schema.messages.directChatId, chatId))
-              .orderBy(asc(schema.messages.sentAt));
-            
-            return fixedMessages;
-          }
-        }
-        
-        return directMessages;
-      }
-    } catch (error) {
-      console.error('Error getting messages for chat:', error);
-      return [];
-    }
-  }
-  
-  // Implementasi fungsi untuk menandai pesan sebagai sudah dibaca
-  async markMessagesAsRead(chatId: number, isRoom: boolean, userId: string): Promise<void> {
-    try {
-      // Logika untuk menandai pesan sebagai sudah dibaca
-      // Untuk saat ini, kita bisa mengimplementasikan versi sederhana
-      console.log(`Marking messages as read for chatId=${chatId}, isRoom=${isRoom}, userId=${userId}`);
-      // Implementasi sebenarnya akan melibatkan update message status di database
-    } catch (error) {
-      console.error('Error marking messages as read:', error);
-    }
   }
 }
 

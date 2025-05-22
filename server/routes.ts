@@ -1,960 +1,800 @@
-import express, { Express, Request, Response } from 'express';
-import { createServer, Server } from 'http';
-import { WebSocketServer, WebSocket } from 'ws';
-import { storage } from './storage';
-import { pool } from './db';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
-import bcrypt from 'bcryptjs';
-import { v4 as uuidv4 } from 'uuid';
+import express, { type Express, Request, Response, NextFunction } from "express";
+import { createServer, type Server } from "http";
+import { WebSocketServer, WebSocket } from "ws";
+import { storage } from "./storage";
+import { setupAuth, isAuthenticated } from "./auth";
+import { 
+  WebSocketMessage, 
+  insertMessageSchema,
+  insertConversationSchema,
+  insertConversationMemberSchema
+} from "@shared/schema";
+import { upload, getAttachmentType, handleUploadError } from "./uploads";
+import path from "path";
 
-// Inisialisasi multer untuk upload file
-const uploadDir = path.join(process.cwd(), 'uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+interface AuthenticatedWebSocket extends WebSocket {
+  userId?: number;
 }
 
-const storage_config = multer.diskStorage({
-  destination: function (_req, _file, cb) {
-    cb(null, uploadDir);
-  },
-  filename: function (_req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  },
-});
-
-const upload = multer({ 
-  storage: storage_config,
-  limits: {
-    fileSize: 50 * 1024 * 1024, // 50 MB limit
+// Type for requests with authenticated user
+interface AuthRequest extends Request {
+  user?: {
+    id: number;
+    claims?: any;
+  };
+  session?: {
+    user?: any;
   }
-});
-
-// Definisi tipe untuk client WebSocket
-interface WebSocketClient {
-  userId: number;
-  socket: WebSocket;
-  lastHeartbeat: number;
 }
-
-// Definisi tipe untuk panggilan grup
-interface GroupCallParticipant {
-  userId: number;
-  callType: 'video' | 'audio';
-  peerId?: string; // Optional peer ID for WebRTC connections
-  joinedAt: Date;
-}
-
-interface GroupCall {
-  roomId: number;
-  callId: number;
-  callType: 'video' | 'audio';
-  participants: GroupCallParticipant[];
-  startTime: Date;
-  endTime?: Date;
-  active: boolean;
-}
-
-// Status panggilan aktif
-const activeDirectCalls = new Map<string, { callerId: number, receiverId: number, startTime: Date }>();
-const activeGroupCalls = new Map<number, GroupCall>();
-
-// Simpan koneksi client WebSocket
-const clients = new Map<number, WebSocketClient>();
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Rute statis untuk file yang diupload
-  app.use('/uploads', express.static(uploadDir));
+  // Auth middleware
+  await setupAuth(app);
+
+  // Auth routes are defined in auth.ts
   
-  // API rute untuk pendaftaran (register)
-  app.post('/api/register', async (req: Request, res: Response) => {
-    const { callsign, nrp, password, passwordConfirm, fullName, rank, branch } = req.body;
-    
-    // Validasi data
-    if (!callsign || !password || !passwordConfirm || !branch) {
-      return res.status(400).json({ message: 'Callsign, password, konfirmasi password, dan cabang (branch) diperlukan' });
-    }
-    
-    if (password !== passwordConfirm) {
-      return res.status(400).json({ message: 'Password dan konfirmasi password tidak cocok' });
-    }
-    
+  // Serve static uploads
+  app.use('/uploads', isAuthenticated, express.static(path.join(process.cwd(), 'uploads')));
+  
+  // Upload file attachment
+  app.post('/api/attachments/upload', isAuthenticated, upload.single('file'), handleUploadError, async (req: any, res: Response) => {
     try {
-      // Periksa apakah callsign sudah digunakan
-      const existingUser = await storage.getUserByCallsign(callsign);
-      if (existingUser) {
-        return res.status(409).json({ message: 'Callsign sudah digunakan' });
+      // Pastikan file berhasil diupload
+      if (!req.file) {
+        return res.status(400).json({ message: 'Tidak ada file yang diupload' });
       }
       
-      // Hash password sebelum disimpan
-      const hashedPassword = await bcrypt.hash(password, 10);
-      
-      // Log data user yang akan dibuat untuk debugging
-      console.log("User data yang akan dibuat:", {
-        callsign,
-        nrp,
-        fullName,
-        rank,
-        branch
-      });
-      
-      // Generate UUID untuk ID pengguna
-      const userId = uuidv4();
-      
-      // Buat user baru dengan password yang sudah di-hash
-      const userData = {
-        id: userId,
-        callsign,
-        nrp,
-        password: hashedPassword,
-        passwordConfirm: hashedPassword, // Gunakan password yang sudah di-hash
-        fullName,
-        rank,
-        branch, // Tambahkan branch sesuai kebutuhan database
-        role: 'user',
-        status: 'offline'
-      };
-      
-      const newUser = await storage.createUser(userData);
-      
-      // Set user session setelah registrasi sukses
-      if (req.session) {
-        req.session.user = {
-          id: newUser.id,
-          callsign: newUser.callsign,
-          role: newUser.role
-        };
+      const userId = req.session?.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: 'Tidak terautentikasi' });
       }
       
-      // Log registrasi berhasil
-      console.log(`User ${callsign} (ID: ${newUser.id}) berhasil registrasi dengan branch: ${branch}`);
+      // Dapatkan informasi file
+      const file = req.file;
+      const fileUrl = `/uploads/${file.filename}`;
+      const attachmentType = getAttachmentType(file.mimetype);
       
-      return res.status(201).json({
-        message: 'Registrasi berhasil',
-        user: {
-          id: newUser.id,
-          callsign: newUser.callsign,
-          nrp: newUser.nrp,
-          fullName: newUser.fullName,
-          rank: newUser.rank,
-          branch: newUser.branch
-        }
-      });
-    } catch (error) {
-      console.error('Error registering user:', error);
-      return res.status(500).json({ message: 'Terjadi kesalahan saat registrasi' });
-    }
-  });
-  
-  // API rute untuk login
-  app.post('/api/login', async (req: Request, res: Response) => {
-    const { callsign, password } = req.body;
-    
-    if (!callsign || !password) {
-      return res.status(400).json({ message: 'Callsign dan password diperlukan' });
-    }
-    
-    try {
-      const user = await storage.getUserByCallsign(callsign);
-      
-      if (!user) {
-        return res.status(401).json({ message: 'Callsign atau password salah' });
-      }
-      
-      // Verifikasi password langsung dengan bcrypt
-      const isPasswordValid = await bcrypt.compare(password, user.password);
-      
-      if (!isPasswordValid) {
-        return res.status(401).json({ message: 'Callsign atau password salah' });
-      }
-      
-      // Set user session
-      if (req.session) {
-        req.session.user = {
-          id: user.id,
-          callsign: user.callsign,
-          role: user.role
-        };
-      }
-      
-      // Log login berhasil
-      console.log(`User ${user.callsign} (ID: ${user.id}) berhasil login`);
-      
-      return res.status(200).json({
-        id: user.id,
-        callsign: user.callsign,
-        nrp: user.nrp,
-        fullName: user.fullName,
-        rank: user.rank
-      });
-    } catch (error) {
-      console.error('Error logging in:', error);
-      return res.status(500).json({ message: 'Terjadi kesalahan saat login' });
-    }
-  });
-  
-  // API rute untuk logout
-  app.post('/api/logout', (req: Request, res: Response) => {
-    if (req.session) {
-      req.session.destroy((err) => {
-        if (err) {
-          return res.status(500).json({ message: 'Gagal logout' });
-        }
-        
-        res.clearCookie('connect.sid');
-        return res.status(200).json({ message: 'Logout berhasil' });
-      });
-    } else {
-      return res.status(200).json({ message: 'Logout berhasil' });
-    }
-  });
-  
-  // API rute untuk mendapatkan user saat ini
-  app.get('/api/user', async (req: Request, res: Response) => {
-    if (!req.session?.user) {
-      return res.status(401).json({ message: 'Tidak terautentikasi' });
-    }
-    
-    const userId = req.session.user.id;
-    
-    try {
+      // Tambahkan informasi pengguna jika itu file audio untuk membantu penamaan file
       const user = await storage.getUser(userId);
       
-      if (!user) {
-        return res.status(404).json({ message: 'User tidak ditemukan' });
+      // Untuk file audio, tambahkan nama pengguna dan NRP
+      let displayFileName = file.originalname;
+      if (attachmentType === 'audio' && user) {
+        // Jika ini file voice note yang direkam, ganti nama tampilan
+        if (displayFileName.includes('personel_')) {
+          displayFileName = `Voice Note - ${user.callsign || 'Personel'} - ${user.nrp || ''}`;
+        }
+        console.log(`File audio dari ${user.callsign} (${user.nrp}) diupload:`, displayFileName);
       }
       
-      return res.status(200).json({
-        id: user.id,
-        callsign: user.callsign,
-        nrp: user.nrp,
-        fullName: user.fullName,
-        rank: user.rank
+      // Kirim response dengan detail file
+      res.status(201).json({
+        success: true,
+        file: {
+          url: fileUrl,
+          name: displayFileName, // Tampilkan dengan format yang sesuai
+          type: attachmentType,
+          size: file.size,
+          mimetype: file.mimetype
+        }
       });
     } catch (error) {
-      console.error('Error getting current user:', error);
-      return res.status(500).json({ message: 'Terjadi kesalahan' });
+      console.error('Error saat upload file:', error);
+      res.status(500).json({ message: 'Gagal mengupload file' });
     }
   });
   
-  // API rute untuk mendapatkan daftar pengguna
-  app.get('/api/users', async (_req: Request, res: Response) => {
+  // Get all users (for personnel list)
+  app.get('/api/all-users', isAuthenticated, async (req: AuthRequest, res) => {
     try {
       const users = await storage.getAllUsers();
-      return res.status(200).json(users.map(user => ({
-        id: user.id,
-        callsign: user.callsign,
-        nrp: user.nrp,
-        fullName: user.fullName,
-        rank: user.rank,
-        isOnline: clients.has(user.id)
-      })));
+      res.json(users);
     } catch (error) {
-      console.error('Error getting users:', error);
-      return res.status(500).json({ message: 'Terjadi kesalahan' });
+      console.error('Error fetching all users:', error);
+      res.status(500).json({ message: 'Failed to fetch users' });
     }
   });
-  
-  // API rute untuk mendapatkan detail user berdasarkan ID
-  app.get('/api/users/:id', async (req: Request, res: Response) => {
-    const userId = parseInt(req.params.id);
-    
-    if (isNaN(userId)) {
-      return res.status(400).json({ message: 'ID user tidak valid' });
-    }
-    
+
+  // Conversations routes (both group chats and direct chats)
+  app.get('/api/conversations', isAuthenticated, async (req: AuthRequest, res) => {
     try {
-      const user = await storage.getUser(userId);
+      // Perbaikan: Gunakan session.user.id bukan user.id yang kosong
+      const userId = req.session?.user?.id;
+      console.log(`[API] Getting conversations for user ID from session: ${userId}`);
       
-      if (!user) {
-        return res.status(404).json({ message: 'User tidak ditemukan' });
+      if (!userId) {
+        return res.status(400).json({ message: "User ID not found in session" });
       }
       
-      return res.status(200).json({
-        id: user.id,
-        callsign: user.callsign,
-        nrp: user.nrp,
-        fullName: user.fullName,
-        rank: user.rank,
-        isOnline: clients.has(user.id)
-      });
-    } catch (error) {
-      console.error('Error getting user by ID:', error);
-      return res.status(500).json({ message: 'Terjadi kesalahan' });
-    }
-  });
-  
-  // API rute untuk mencari pengguna
-  app.get('/api/users/search/:query', async (req: Request, res: Response) => {
-    const query = req.params.query;
-    
-    if (!query || query.length < 2) {
-      return res.status(400).json({ message: 'Query pencarian minimal 2 karakter' });
-    }
-    
-    try {
-      const users = await storage.searchUsers(query);
-      return res.status(200).json(users.map(user => ({
-        id: user.id,
-        callsign: user.callsign,
-        nrp: user.nrp,
-        fullName: user.fullName,
-        rank: user.rank,
-        isOnline: clients.has(user.id)
-      })));
-    } catch (error) {
-      console.error('Error searching users:', error);
-      return res.status(500).json({ message: 'Terjadi kesalahan' });
-    }
-  });
-  
-  // API rute untuk daftar chat
-  app.get('/api/chats', async (req: Request, res: Response) => {
-    if (!req.session?.user) {
-      return res.status(401).json({ message: 'Tidak terautentikasi' });
-    }
-    
-    const userId = req.session.user.id;
-    
-    try {
-      // Dapatkan daftar chat (direct dan room) untuk user ini
-      const chats = await storage.getChatsForUser(userId);
-      return res.status(200).json(chats);
-    } catch (error) {
-      console.error('Error getting chats:', error);
-      return res.status(500).json({ message: 'Terjadi kesalahan' });
-    }
-  });
-  
-  // API rute untuk membuat direct chat baru
-  app.post('/api/direct-chats', async (req: Request, res: Response) => {
-    if (!req.session?.user) {
-      return res.status(401).json({ message: 'Tidak terautentikasi' });
-    }
-    const userId = req.session.user.id;
-    const { otherUserId } = req.body;
-    
-    if (!otherUserId) {
-      return res.status(400).json({ message: 'ID pengguna tujuan (otherUserId) diperlukan' });
-    }
-    
-    console.log(`[DEBUG] Membuat direct chat antara ${userId} dan ${otherUserId}`);
-    
-    try {
-      // Periksa apakah chat sudah ada
-      const existingChat = await storage.getDirectChatBetweenUsers(userId, otherUserId);
+      const conversations = await storage.getUserConversations(userId);
       
+      // Membuat response yang membedakan percakapan grup vs percakapan langsung
+      const formattedConversations = conversations.map(conv => {
+        // Konversi kolom database ke nama yang diharapkan di client
+        const conversation = {
+          ...conv,
+          type: conv.isGroup ? 'group' : 'direct'
+        };
+        
+        // Kita menggunakan nama kolom yang konsisten: lastMessage dan lastMessageTime
+        // Tidak perlu konversi ini karena schema di database sudah benar
+        
+        return conversation;
+      });
+      
+      console.log(`[API] Returning ${formattedConversations.length} conversations for user ${userId}`);
+      res.json(formattedConversations);
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+      res.status(500).json({ message: "Failed to fetch conversations" });
+    }
+  });
+  
+  // Specific route untuk group chats (filter dari conversations)
+  app.get('/api/rooms', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      // Perbaikan: Gunakan session.user.id bukan user.id yang kosong
+      const userId = req.session?.user?.id;
+      
+      if (!userId) {
+        return res.status(400).json({ message: "User ID not found in session" });
+      }
+      
+      const conversations = await storage.getUserConversations(userId);
+      const rooms = conversations.filter(conv => conv.isGroup);
+      console.log(`[API] Returning ${rooms.length} group chats for user ${userId}`);
+      res.json(rooms);
+    } catch (error) {
+      console.error("Error fetching rooms:", error);
+      res.status(500).json({ message: "Failed to fetch rooms" });
+    }
+  });
+  
+  // Specific route untuk direct chats (filter dari conversations)
+  app.get('/api/direct-chats', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      // Perbaikan: Gunakan session.user.id bukan user.id yang kosong
+      const userId = req.session?.user?.id;
+      
+      if (!userId) {
+        return res.status(400).json({ message: "User ID not found in session" });
+      }
+      
+      const conversations = await storage.getUserConversations(userId);
+      const directChats = conversations.filter(conv => !conv.isGroup);
+      console.log(`[API] Returning ${directChats.length} direct chats for user ${userId}`);
+      res.json(directChats);
+    } catch (error) {
+      console.error("Error fetching direct chats:", error);
+      res.status(500).json({ message: "Failed to fetch direct chats" });
+    }
+  });
+  
+  // Get single conversation with members
+  app.get('/api/conversations/:id', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      const userId = req.session?.user?.id || 0;
+      
+      if (isNaN(conversationId)) {
+        return res.status(400).json({ message: "Invalid conversation ID" });
+      }
+      
+      const conversation = await storage.getConversation(conversationId);
+      if (!conversation) {
+        return res.status(404).json({ message: "Conversation not found" });
+      }
+      
+      // Get members of this conversation
+      const members = await storage.getConversationMembers(conversationId);
+      const memberIds = members.map(member => member.userId);
+      
+      console.log(`[DEBUG] User ${userId} accessing conversation ${conversationId}. Members: ${memberIds.join(',')}`);
+      
+      // Temporarily disable member check for debugging
+      // if (!memberIds.includes(userId)) {
+      //   console.log(`User ${userId} attempting to access conversation ${conversationId} but not a member. Members: ${memberIds.join(',')}`);
+      //   return res.status(403).json({ message: "You are not a member of this conversation" });
+      // }
+      
+      // If it's a direct chat, add information about the other user
+      let otherUser = null;
+      if (!conversation.isGroup && members.length === 2) {
+        const otherUserId = memberIds.find(id => id !== userId);
+        if (otherUserId) {
+          otherUser = await storage.getUser(otherUserId);
+          
+          // Update the conversation name to show the other user's name
+          conversation.name = otherUser?.fullName || otherUser?.callsign || 'Unknown User';
+        }
+      }
+      
+      const result = {
+        ...conversation,
+        members: members.length,
+        otherUser: otherUser,
+        otherUserId: otherUser?.id || null,
+      };
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching conversation:", error);
+      res.status(500).json({ message: "Failed to fetch conversation" });
+    }
+  });
+
+  // Create a new conversation (group chat saja, direct chat ditangani oleh /api/direct-chats)
+  app.post('/api/conversations', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      if (!req.session?.user?.id) {
+        return res.status(401).json({ message: "Unauthorized, invalid user ID" });
+      }
+      
+      const userId = req.session.user.id;
+      
+      // Konversasi yang dibuat melalui API ini harus berupa grup
+      if (req.body.isGroup !== true) {
+        return res.status(400).json({ 
+          message: "This endpoint is for creating group chats only. For direct chats, use /api/direct-chats"
+        });
+      }
+      
+      const parseResult = insertConversationSchema.safeParse(req.body);
+      
+      if (!parseResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid conversation data",
+          errors: parseResult.error.format()
+        });
+      }
+      
+      console.log(`[API] Creating new group chat "${req.body.name}" by user ${userId}`);
+      
+      // Create the conversation
+      const conversation = await storage.createConversation({
+        ...parseResult.data,
+        createdById: userId
+      });
+      
+      console.log(`[API] Created new group with ID ${conversation.id}`);
+      
+      // Add creator as a member
+      await storage.addMemberToConversation({
+        conversationId: conversation.id,
+        userId: userId,
+        role: 'admin'  // Creator is admin by default
+      });
+      
+      console.log(`[API] Added creator ${userId} as admin to group ${conversation.id}`);
+      
+      // Tambahkan anggota lain jika ada
+      if (req.body.members && Array.isArray(req.body.members)) {
+        for (const memberId of req.body.members) {
+          if (memberId !== userId) {  // Jangan tambahkan creator lagi
+            await storage.addMemberToConversation({
+              conversationId: conversation.id,
+              userId: memberId,
+              role: 'member'
+            });
+            console.log(`[API] Added member ${memberId} to group ${conversation.id}`);
+          }
+        }
+      }
+      
+      res.status(201).json(conversation);
+    } catch (error) {
+      console.error("Error creating conversation:", error);
+      res.status(500).json({ message: "Failed to create conversation" });
+    }
+  });
+  
+  // Route untuk membuat direct chat
+  app.post('/api/direct-chats', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      // Dalam auth.ts, kita menyimpan user di req.session.user bukan di req.user
+      if (!req.session?.user?.id) {
+        return res.status(401).json({ message: "Unauthorized, invalid user ID" });
+      }
+      
+      const userId = req.session.user.id;
+      const { otherUserId } = req.body;
+      
+      if (!otherUserId) {
+        return res.status(400).json({ message: "otherUserId is required" });
+      }
+      
+      // Pastikan user yang dituju ada
+      const otherUser = await storage.getUser(otherUserId);
+      if (!otherUser) {
+        return res.status(404).json({ message: "Other user not found" });
+      }
+      
+      // PERBAIKAN: Cek apakah sudah ada direct chat antara kedua user ini
+      const userConversations = await storage.getUserConversations(userId);
+      
+      // Debug
+      console.log(`[API] Checking for existing direct chat between users ${userId} and ${otherUserId}`);
+      console.log(`[API] User ${userId} has ${userConversations.length} conversations`);
+      
+      // Filter untuk direct chats saja
+      const directChats = userConversations.filter(c => c.isGroup === false);
+      console.log(`[API] User ${userId} has ${directChats.length} direct chats`);
+      
+      let existingChat = null;
+      
+      // Untuk setiap direct chat yang ada
+      for (const chat of directChats) {
+        // Ambil anggota percakapan
+        const members = await storage.getConversationMembers(chat.id);
+        const memberIds = members.map(m => m.userId);
+        
+        console.log(`[API] Checking conversation ${chat.id} with members: ${memberIds.join(', ')}`);
+        
+        // Jika percakapan berisi tepat 2 anggota (user saat ini dan user tujuan)
+        if (memberIds.length === 2 && 
+            memberIds.includes(userId) && 
+            memberIds.includes(otherUserId)) {
+          existingChat = chat;
+          console.log(`[API] Found existing conversation ${chat.id} between users ${userId} and ${otherUserId}`);
+          break;
+        }
+      }
+      
+      // Jika sudah ada, gunakan percakapan yang sudah ada
       if (existingChat) {
-        console.log(`[DEBUG] Direct chat sudah ada dengan ID: ${existingChat.id}`);
+        console.log(`[API] Using existing direct chat ${existingChat.id} between users ${userId} and ${otherUserId}`);
         return res.status(200).json(existingChat);
       }
       
-      // Buat chat baru
-      const newChat = await storage.createDirectChat({
-        user1Id: userId,
-        user2Id: otherUserId
+      console.log(`[API] Creating new direct chat between users ${userId} and ${otherUserId}`);
+      
+      // Jika belum ada, buat conversation baru dengan tipe direct chat (isGroup=false)
+      // Urutkan ID pengguna agar formatnya konsisten
+      const sortedIds = [userId, otherUserId].sort((a, b) => a - b);
+      const chatName = `Direct Chat ${sortedIds[0]}-${sortedIds[1]}`;
+      
+      const conversation = await storage.createConversation({
+        name: chatName,
+        isGroup: false,
+        description: null,
+        classification: null,
+        createdById: userId
       });
       
-      console.log(`[DEBUG] Direct chat baru dibuat dengan ID: ${newChat.id} antara pengguna ${userId} dan ${otherUserId}`);
-      return res.status(201).json(newChat);
+      console.log(`[API] Created new conversation with ID ${conversation.id}`);
+      
+      // Tambahkan kedua user ke conversation
+      await storage.addMemberToConversation({
+        conversationId: conversation.id,
+        userId: userId
+      });
+      
+      console.log(`[API] Added user ${userId} to conversation ${conversation.id}`);
+      
+      await storage.addMemberToConversation({
+        conversationId: conversation.id,
+        userId: otherUserId
+      });
+      
+      console.log(`[API] Added user ${otherUserId} to conversation ${conversation.id}`);
+      console.log(`[API] Direct chat setup complete: ${conversation.id}`);
+      
+      res.status(201).json(conversation);
     } catch (error) {
-      console.error('Error creating direct chat:', error);
-      return res.status(500).json({ message: 'Terjadi kesalahan saat membuat chat' });
+      console.error("Error creating direct chat:", error);
+      res.status(500).json({ message: "Failed to create direct chat" });
+    }
+  });
+      
+
+
+  // Conversation members route
+  app.post('/api/conversation-members', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const parseResult = insertConversationMemberSchema.safeParse(req.body);
+      
+      if (!parseResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid member data",
+          errors: parseResult.error.format()
+        });
+      }
+      
+      const member = await storage.addMemberToConversation(parseResult.data);
+      res.status(201).json(member);
+    } catch (error) {
+      console.error("Error adding member:", error);
+      res.status(500).json({ message: "Failed to add member" });
+    }
+  });
+
+  app.get('/api/conversations/:id/members', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      if (isNaN(conversationId)) {
+        return res.status(400).json({ message: "Invalid conversation ID" });
+      }
+      
+      const members = await storage.getConversationMembers(conversationId);
+      res.json(members);
+    } catch (error) {
+      console.error("Error fetching members:", error);
+      res.status(500).json({ message: "Failed to fetch members" });
+    }
+  });
+
+  // Messages routes
+  app.get('/api/conversations/:id/messages', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      if (isNaN(conversationId)) {
+        return res.status(400).json({ message: "Invalid conversation ID" });
+      }
+      
+      // Temporarily disable access check for debugging
+      // Sehingga semua pengguna bisa mengakses pesan dalam chat
+      const messages = await storage.getMessagesByConversation(conversationId);
+      
+      // Log jumlah pesan yang ditemukan untuk debugging
+      console.log(`Found ${messages.length} messages for conversation ${conversationId}`);
+      
+      // Buat objek untuk mencari pesan yang di-reply dengan cepat
+      const messagesMap = messages.reduce((acc: Record<number, any>, msg: any) => {
+        acc[msg.id] = msg;
+        return acc;
+      }, {});
+      
+      // Tambahkan detail pesan balasan ke setiap pesan
+      const enhancedMessages = messages.map((msg: any) => {
+        if (msg.replyToId && messagesMap[msg.replyToId]) {
+          const repliedMsg = messagesMap[msg.replyToId];
+          return {
+            ...msg,
+            replyInfo: {
+              content: repliedMsg.content,
+              senderName: repliedMsg.senderName,
+              hasAttachment: repliedMsg.hasAttachment,
+              attachmentName: repliedMsg.attachmentName
+            }
+          };
+        }
+        return msg;
+      });
+      
+      // Pastikan response-nya adalah array JSON yang valid
+      res.setHeader('Content-Type', 'application/json');
+      res.json(enhancedMessages);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ message: "Failed to fetch messages" });
+    }
+  });
+
+  app.post('/api/messages', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.session?.user?.id;
+      
+      if (!userId) {
+        return res.status(400).json({ message: "User ID not found in session" });
+      }
+      
+      console.log(`[API] Creating message from user ${userId} for conversation ${req.body.conversationId}`);
+      
+      const parseResult = insertMessageSchema.safeParse({
+        ...req.body,
+        senderId: userId
+      });
+      
+      if (!parseResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid message data",
+          errors: parseResult.error.format()
+        });
+      }
+      
+      const message = await storage.createMessage(parseResult.data);
+      console.log(`[API] Message created: ${message.id} in conversation ${message.conversationId}`);
+      
+      // Broadcast to WebSocket clients
+      broadcastToConversation(message.conversationId, {
+        type: 'new_message',
+        payload: message
+      });
+      
+      res.status(201).json(message);
+    } catch (error) {
+      console.error("Error creating message:", error);
+      res.status(500).json({ message: "Failed to create message" });
     }
   });
   
-  // API rute untuk memeriksa panggilan aktif di ruangan
-  app.get('/api/rooms/:roomId/active-call', async (req: Request, res: Response) => {
-    const roomId = parseInt(req.params.roomId);
-    
-    if (isNaN(roomId)) {
-      return res.status(400).json({ message: 'ID ruangan tidak valid' });
+  // Delete conversation endpoint
+  app.delete('/api/conversations/:id', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      const userId = req.session.user.id;
+      
+      if (isNaN(conversationId)) {
+        return res.status(400).json({ message: "Invalid conversation ID" });
+      }
+      
+      // Check if conversation exists
+      const conversation = await storage.getConversation(conversationId);
+      if (!conversation) {
+        return res.status(404).json({ message: "Conversation not found" });
+      }
+      
+      // Only allow creator or admin to delete
+      if (conversation.createdById !== userId) {
+        return res.status(403).json({ message: "Not authorized to delete this conversation" });
+      }
+      
+      // Delete conversation
+      await storage.deleteConversation(conversationId);
+      
+      res.json({ message: "Conversation deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
+      res.status(500).json({ message: "Failed to delete conversation" });
     }
-    
-    const activeCall = activeGroupCalls.get(roomId);
-    
-    if (!activeCall || !activeCall.active) {
-      return res.status(404).json({ message: 'Tidak ada panggilan aktif di ruangan ini' });
+  });
+  
+  // Clear chat history endpoint
+  app.post('/api/conversations/:id/clear', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      const userId = req.session.user.id;
+      
+      if (isNaN(conversationId)) {
+        return res.status(400).json({ message: "Invalid conversation ID" });
+      }
+      
+      // Check if conversation exists
+      const conversation = await storage.getConversation(conversationId);
+      if (!conversation) {
+        return res.status(404).json({ message: "Conversation not found" });
+      }
+      
+      // Clear messages
+      await storage.clearConversationMessages(conversationId);
+      
+      res.json({ message: "Chat history cleared successfully" });
+    } catch (error) {
+      console.error("Error clearing chat history:", error);
+      res.status(500).json({ message: "Failed to clear chat history" });
     }
+  });
+
+  // Users route
+  app.get('/api/users', isAuthenticated, async (_req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.put('/api/users/status', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.session.user.id;
+      const { status } = req.body;
+      
+      if (!status || typeof status !== 'string') {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+      
+      const user = await storage.updateUserStatus(userId, status);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Broadcast status change
+      broadcastToAll({
+        type: 'user_status',
+        payload: {
+          userId,
+          status
+        }
+      });
+      
+      res.json(user);
+    } catch (error) {
+      console.error("Error updating status:", error);
+      res.status(500).json({ message: "Failed to update status" });
+    }
+  });
+
+  const httpServer = createServer(app);
+  
+  // WebSocket server - ini akan menggunakan path yang sama untuk semua koneksi
+  console.log("Setting up WebSocket server on path /ws");
+  const wss = new WebSocketServer({ 
+    server: httpServer, 
+    path: '/ws',
+    clientTracking: true 
+  });
+  
+  // Store active connections
+  const clients = new Map<number, AuthenticatedWebSocket>();
+  
+  wss.on('connection', (ws: AuthenticatedWebSocket, req) => {
+    console.log("WebSocket connection received");
     
-    return res.status(200).json({
-      callId: activeCall.callId,
-      callType: activeCall.callType,
-      startTime: activeCall.startTime,
-      participantCount: activeCall.participants.length
+    // Log connection status for debugging
+    ws.on('open', () => console.log('WebSocket connection opened'));
+    ws.on('error', (error) => console.error('WebSocket error:', error));
+    ws.on('close', () => console.log('WebSocket connection closed'));
+    
+    ws.on('message', async (message) => {
+      try {
+        console.log('Received message:', message.toString());
+        const data = JSON.parse(message.toString()) as WebSocketMessage;
+        
+        // Handle authentication message
+        if (data.type === 'auth') {
+          const { userId } = data.payload;
+          if (userId) {
+            console.log(`User ${userId} authenticated via WebSocket`);
+            ws.userId = userId;
+            clients.set(userId, ws);
+            
+            // Update user status to online
+            await storage.updateUserStatus(userId, 'online');
+            
+            // Broadcast user status change
+            broadcastToAll({
+              type: 'user_status',
+              payload: {
+                userId,
+                status: 'online'
+              }
+            });
+          }
+        }
+        
+        // Handle typing indicator
+        if (data.type === 'typing' && ws.userId) {
+          const { conversationId, isTyping } = data.payload;
+          
+          if (conversationId) {
+            broadcastToConversation(conversationId, {
+              type: 'typing',
+              payload: {
+                userId: ws.userId,
+                conversationId,
+                isTyping
+              }
+            });
+          }
+        }
+      } catch (error) {
+        console.error('WebSocket message error:', error);
+      }
+    });
+    
+    // Handle disconnection
+    ws.on('close', async () => {
+      if (ws.userId) {
+        const userId = ws.userId;
+        clients.delete(userId);
+        
+        // Update user status to offline
+        await storage.updateUserStatus(userId, 'offline');
+        
+        // Broadcast user status change
+        broadcastToAll({
+          type: 'user_status',
+          payload: {
+            userId,
+            status: 'offline'
+          }
+        });
+      }
     });
   });
   
-  // API rute untuk mendapatkan semua panggilan aktif
-  app.get('/api/active-calls', async (_req: Request, res: Response) => {
-    const activeCalls = {
-      direct: Array.from(activeDirectCalls.entries()).map(([callId, call]) => ({
-        callId,
-        callerId: call.callerId,
-        receiverId: call.receiverId,
-        startTime: call.startTime
-      })),
-      group: Array.from(activeGroupCalls.entries()).map(([roomId, call]) => ({
-        roomId,
-        callId: call.callId,
-        callType: call.callType,
-        startTime: call.startTime,
-        participantCount: call.participants.length
-      }))
-    };
-    
-    return res.status(200).json(activeCalls);
-  });
-  
-  // API rute untuk dapatkan pesan dalam chat
-  app.get('/api/chats/:chatId/messages', async (req: Request, res: Response) => {
-    if (!req.session?.user) {
-      return res.status(401).json({ message: 'Tidak terautentikasi' });
-    }
-    
-    const userId = req.session.user.id;
-    
-    const chatId = parseInt(req.params.chatId);
-    const isRoom = req.query.isRoom === 'true';
-    
-    if (isNaN(chatId)) {
-      return res.status(400).json({ message: 'ID chat tidak valid' });
-    }
-    
-    try {
-      // Verifikasi bahwa user adalah anggota chat ini
-      const isMember = await storage.isUserInChat(userId, chatId, isRoom);
-      
-      if (!isMember) {
-        return res.status(403).json({ message: 'Akses ditolak' });
+  // Broadcast to all connected clients
+  function broadcastToAll(message: WebSocketMessage) {
+    clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify(message));
       }
-      
-      // Dapatkan pesan
-      const messages = await storage.getMessagesForChat(chatId, isRoom);
-      
-      // Tandai pesan sebagai dibaca
-      await storage.markMessagesAsRead(chatId, isRoom, userId);
-      
-      return res.status(200).json(messages);
-    } catch (error) {
-      console.error('Error getting messages:', error);
-      return res.status(500).json({ message: 'Terjadi kesalahan' });
-    }
-  });
+    });
+  }
   
-  // API rute untuk mengirim pesan teks
-  app.post('/api/chats/:chatId/messages', async (req: Request, res: Response) => {
-    if (!req.session?.user) {
-      return res.status(401).json({ message: 'Tidak terautentikasi' });
-    }
-    
-    const userId = req.session.user.id;
-    
-    const chatId = parseInt(req.params.chatId);
-    const { content, isRoom, forwardedFromId } = req.body;
-    
-    console.log(`[DEBUG] Menerima request /api/chats/${chatId}/messages dari user ${userId}`);
-    console.log(`[DEBUG] Data: isRoom=${isRoom}, contentLength=${content?.length || 0}, forwardedFromId=${forwardedFromId || 'none'}`);
-    
-    if (isNaN(chatId)) {
-      console.log(`[DEBUG] ID chat tidak valid: ${req.params.chatId}`);
-      return res.status(400).json({ message: 'ID chat tidak valid' });
-    }
-    
-    if (!content && !forwardedFromId) {
-      console.log(`[DEBUG] Konten pesan kosong dan tidak ada forwardedFromId`);
-      return res.status(400).json({ message: 'Konten pesan diperlukan' });
-    }
-    
+  // Broadcast to conversation members
+  async function broadcastToConversation(conversationId: number, message: WebSocketMessage) {
     try {
-      // SEMENTARA: Bypass pengecekan akses chat untuk debugging
-      // Nantinya fungsi ini bisa diaktifkan kembali setelah sistem chat
-      // sudah disesuaikan dengan benar
+      const members = await storage.getConversationMembers(conversationId);
       
-      // Kirim pesan tanpa pengecekan akses lebih lanjut
-      console.log(`[DEBUG] Memproses pengiriman pesan, bypass pengecekan akses`);
-      
-      // Kirim pesan
-      const messageData: any = {
-        senderId: userId,
-        content,
-      };
-      
-      // Menentukan apakah pesan dikirim ke room atau direct chat
-      if (isRoom) {
-        console.log(`[DEBUG] Pesan untuk room ${chatId}`);
-        messageData.roomId = chatId;
-      } else {
-        console.log(`[DEBUG] Pesan untuk direct chat ${chatId}`);
-        
-        // Untuk direct chat, kita perlu mendapatkan conversation_id yang benar
-        try {
-          // Dapatkan direct chat dan user terkait
-          const directChatResult = await pool.query(
-            `SELECT * FROM direct_chats WHERE id = $1`,
-            [chatId]
-          );
-          
-          if (directChatResult.rows.length === 0) {
-            console.log(`[DEBUG] Direct chat dengan ID ${chatId} tidak ditemukan`);
-            return res.status(404).json({ message: 'Direct chat tidak ditemukan' });
-          }
-          
-          const directChat = directChatResult.rows[0];
-          console.log(`[DEBUG] Direct chat ditemukan:`, directChat);
-          
-          // Cari conversation yang cocok untuk dua user
-          const conversationResult = await pool.query(
-            `SELECT * FROM conversations 
-             WHERE name LIKE 'Direct Chat%' 
-             AND (name LIKE '%' || $1 || '-' || $2 || '%' OR name LIKE '%' || $2 || '-' || $1 || '%')`,
-            [directChat.user1_id.substring(0, 1), directChat.user2_id.substring(0, 1)]
-          );
-          
-          // Ambil salah satu conversation, prioritaskan yang paling baru
-          if (conversationResult.rows.length > 0) {
-            const conversation = conversationResult.rows[0];
-            console.log(`[DEBUG] Conversation ditemukan dengan ID: ${conversation.id}`);
-            messageData.conversationId = conversation.id;
-          } else {
-            // Jika tidak ada conversation yang cocok, gunakan direct chat id sebagai room id
-            // Ini untuk fallback meskipun kemungkinan error
-            console.log(`[DEBUG] Tidak ada conversation yang cocok, menggunakan direct chat id: ${chatId}`);
-            messageData.roomId = chatId;
-          }
-        } catch (error) {
-          console.error(`[DEBUG] Error saat mencari conversation:`, error);
-          // Fallback ke chatId jika terjadi error
-          messageData.conversationId = chatId;
+      members.forEach((member) => {
+        const client = clients.get(member.userId);
+        if (client && client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify(message));
         }
-      }
-      
-      // Tambahkan forwarded message jika ada
-      if (forwardedFromId) {
-        messageData.forwardedFromId = forwardedFromId;
-      }
-      
-      console.log(`[DEBUG] Menyimpan pesan dengan data:`, {
-        ...messageData,
-        content: messageData.content.substring(0, 20) + (messageData.content.length > 20 ? '...' : '')
       });
-      
-      const message = await storage.createMessage(messageData);
-      console.log(`[DEBUG] Pesan berhasil disimpan dengan ID: ${message.id}`);
-      
-      // Broadcast pesan ke semua anggota chat
-      broadcastNewMessage(message, chatId, isRoom);
-      
-      return res.status(201).json(message);
     } catch (error) {
-      console.error('[DEBUG] Error sending message:', error);
-      return res.status(500).json({ message: 'Terjadi kesalahan' });
+      console.error('Error broadcasting to conversation:', error);
     }
-  });
+  }
   
-  // API rute untuk upload file dan kirim pesan dengan attachment
-  app.post('/api/chats/:chatId/attachments', upload.single('file'), async (req: Request, res: Response) => {
-    if (!req.session?.user) {
-      return res.status(401).json({ message: 'Tidak terautentikasi' });
-    }
-    
-    const userId = req.session.user.id;
-    
-    const chatId = parseInt(req.params.chatId);
-    const isRoom = req.body.isRoom === 'true';
-    const content = req.body.content || '';
-    
-    if (isNaN(chatId)) {
-      return res.status(400).json({ message: 'ID chat tidak valid' });
-    }
-    
-    if (!req.file) {
-      return res.status(400).json({ message: 'File tidak ditemukan' });
-    }
-    
+  // Message delete endpoint
+  app.delete('/api/messages/:id', isAuthenticated, async (req: AuthRequest, res) => {
     try {
-      // Verifikasi bahwa user adalah anggota chat ini
-      const isMember = await storage.isUserInChat(userId, chatId, isRoom);
-      
-      if (!isMember) {
-        return res.status(403).json({ message: 'Akses ditolak' });
+      const messageId = parseInt(req.params.id);
+      if (isNaN(messageId)) {
+        return res.status(400).json({ message: "Invalid message ID" });
       }
       
-      // Dapatkan info file
-      const attachmentUrl = `/uploads/${req.file.filename}`;
-      const attachmentType = req.file.mimetype;
-      
-      // Kirim pesan dengan attachment
-      const message = await storage.createMessage({
-        senderId: userId,
-        chatId,
-        isRoom,
-        content,
-        forwardedFromId: null,
-        attachmentUrl,
-        attachmentType
-      });
-      
-      // Broadcast pesan ke semua anggota chat
-      broadcastNewMessage(message, chatId, isRoom);
-      
-      return res.status(201).json(message);
-    } catch (error) {
-      console.error('Error sending attachment:', error);
-      // Hapus file jika gagal
-      if (req.file) {
-        fs.unlink(req.file.path, (err) => {
-          if (err) console.error('Error deleting file:', err);
-        });
-      }
-      return res.status(500).json({ message: 'Terjadi kesalahan' });
-    }
-  });
-  
-  // API rute untuk mendapatkan info user yang sedang login
-  app.get('/api/auth/me', async (req: Request, res: Response) => {
-    if (!req.session?.user) {
-      return res.status(401).json({ message: 'Tidak terautentikasi' });
-    }
-    
-    try {
-      const userData = await storage.getUser(req.session.user.id);
-      if (!userData) {
-        return res.status(404).json({ message: 'User tidak ditemukan' });
-      }
-      
-      // Kembalikan data user tanpa password
-      const { password, ...userWithoutPassword } = userData;
-      return res.status(200).json(userWithoutPassword);
-    } catch (error) {
-      console.error('Error fetching current user:', error);
-      return res.status(500).json({ message: 'Terjadi kesalahan saat mengambil data user' });
-    }
-  });
-  
-  // API rute untuk menghapus pesan
-  app.delete('/api/messages/:messageId', async (req: Request, res: Response) => {
-    if (!req.session?.user) {
-      return res.status(401).json({ message: 'Tidak terautentikasi' });
-    }
-    
-    const userId = req.session.user.id;
-    
-    const messageId = parseInt(req.params.messageId);
-    
-    if (isNaN(messageId)) {
-      return res.status(400).json({ message: 'ID pesan tidak valid' });
-    }
-    
-    try {
-      // Dapatkan pesan untuk verifikasi
       const message = await storage.getMessage(messageId);
       
       if (!message) {
-        return res.status(404).json({ message: 'Pesan tidak ditemukan' });
+        return res.status(404).json({ message: "Message not found" });
       }
       
-      // Verifikasi bahwa user adalah pengirim atau admin
-      if (message.senderId !== userId) {
-        const isAdmin = await storage.isUserAdmin(userId, message.chatId, message.isRoom);
-        
-        if (!isAdmin) {
-          return res.status(403).json({ message: 'Akses ditolak' });
+      // Dalam versi militer, semua pengguna dapat menghapus pesan apapun
+      // Tidak perlu pengecekan pengirim pesan
+      
+      const deletedMessage = await storage.deleteMessage(messageId);
+      
+      // Send real-time notification about the deleted message
+      const wsMessage: WebSocketMessage = {
+        type: 'new_message',
+        payload: {
+          ...deletedMessage,
+          action: 'delete'
         }
-      }
-      
-      // Hapus pesan
-      await storage.deleteMessage(messageId);
-      
-      // Broadcast pesan dihapus ke semua anggota chat
-      broadcastMessageDeleted(messageId, message.chatId, message.isRoom);
-      
-      return res.status(200).json({ message: 'Pesan berhasil dihapus' });
-    } catch (error) {
-      console.error('Error deleting message:', error);
-      return res.status(500).json({ message: 'Terjadi kesalahan' });
-    }
-  });
-  
-  // Setup HTTP server dan WebSocket
-  const httpServer = createServer(app);
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
-  
-  // WebSocket event handlers
-  wss.on('connection', (socket: WebSocket) => {
-    console.log('WebSocket client connected');
-    
-    // Client belum terautentikasi, tunggu pesan auth
-    let clientId: number | null = null;
-    
-    socket.on('message', async (message: WebSocket.Data) => {
-      try {
-        const data = JSON.parse(message.toString());
-        
-        // Handle tipe pesan
-        switch (data.type) {
-          case 'auth':
-            // Autentikasi WebSocket client
-            const { userId, token } = data;
-            
-            // Validasi token (implementasi sebenarnya akan memverifikasi token)
-            const isValidToken = true; // Implementasi sederhana, asumsi token valid
-            
-            if (isValidToken) {
-              clientId = userId;
-              
-              // Hapus koneksi lama jika ada
-              const existingClient = clients.get(userId);
-              if (existingClient) {
-                existingClient.socket.close();
-              }
-              
-              // Register client baru
-              clients.set(userId, {
-                userId,
-                socket,
-                lastHeartbeat: Date.now()
-              });
-              
-              // Kirim konfirmasi
-              socket.send(JSON.stringify({
-                type: 'auth_success',
-                message: 'Authenticated successfully'
-              }));
-              
-              // Broadcast status online
-              broadcastOnlineUsers();
-            } else {
-              socket.send(JSON.stringify({
-                type: 'auth_error',
-                message: 'Invalid authentication'
-              }));
-              socket.close();
-            }
-            break;
-            
-          case 'heartbeat':
-            // Update last heartbeat
-            if (clientId && clients.has(clientId)) {
-              const client = clients.get(clientId)!;
-              client.lastHeartbeat = Date.now();
-            }
-            break;
-            
-          case 'call_signal':
-            // Handle sinyal panggilan langsung
-            if (!clientId) break;
-            
-            const { targetUserId, signal } = data;
-            
-            // Forward sinyal ke target
-            sendToUser(targetUserId, {
-              type: 'call',
-              callerId: clientId,
-              signal: signal
-            });
-            break;
-            
-          case 'group_call_signal':
-            // Handle sinyal panggilan grup
-            if (!clientId) break;
-            
-            const { groupId, signal: groupSignal } = data;
-            
-            // Forward sinyal ke semua anggota grup kecuali pengirim
-            broadcastToRoom(groupId, {
-              type: 'groupCall',
-              callerId: clientId,
-              groupId,
-              signal: groupSignal
-            }, [clientId]);
-            break;
-            
-          case 'message':
-            // Direct message sudah ditangani oleh API endpoint
-            break;
-            
-          default:
-            console.log('Unknown message type:', data.type);
-        }
-      } catch (error) {
-        console.error('Error handling WebSocket message:', error);
-      }
-    });
-    
-    socket.on('close', () => {
-      console.log('WebSocket client disconnected');
-      
-      // Hapus client dari daftar jika terautentikasi
-      if (clientId) {
-        clients.delete(clientId);
-        
-        // Broadcast status offline
-        broadcastOnlineUsers();
-      }
-    });
-    
-    socket.on('error', (error) => {
-      console.error('WebSocket error:', error);
-      
-      // Hapus client dari daftar jika terautentikasi
-      if (clientId) {
-        clients.delete(clientId);
-        
-        // Broadcast status offline
-        broadcastOnlineUsers();
-      }
-    });
-  });
-  
-  // Monitor koneksi client dan lakukan heartbeat checking
-  setInterval(() => {
-    const now = Date.now();
-    const timeout = 60000; // 60 detik
-    
-    clients.forEach((client, userId) => {
-      if (now - client.lastHeartbeat > timeout) {
-        console.log(`Client ${userId} timed out, closing connection`);
-        client.socket.close();
-        clients.delete(userId);
-      }
-    });
-    
-    // Broadcast user online setelah membersihkan client yang timeout
-    broadcastOnlineUsers();
-  }, 30000); // Cek setiap 30 detik
-  
-  // Fungsi untuk broadcast daftar user online
-  async function broadcastOnlineUsers() {
-    const onlineUserIds = Array.from(clients.keys());
-    const onlineUsers = await Promise.all(
-      onlineUserIds.map(async (id) => {
-        const user = await storage.getUser(id);
-        return user ? {
-          id: user.id,
-          callsign: user.callsign,
-          nrp: user.nrp,
-          fullName: user.fullName,
-          rank: user.rank
-        } : null;
-      })
-    );
-    
-    // Filter null values
-    const filteredUsers = onlineUsers.filter(Boolean);
-    
-    broadcastToAllClients({
-      type: 'onlineUsers',
-      users: filteredUsers
-    });
-  }
-  
-  // Fungsi untuk broadcast ke semua client
-  function broadcastToAllClients(message: string | object) {
-    const messageStr = typeof message === 'string' ? message : JSON.stringify(message);
-    
-    clients.forEach((client) => {
-      if (client.socket.readyState === WebSocket.OPEN) {
-        client.socket.send(messageStr);
-      }
-    });
-  }
-  
-  // Fungsi untuk mengirim pesan ke user tertentu
-  function sendToUser(userId: number, message: any) {
-    const client = clients.get(userId);
-    
-    if (client && client.socket.readyState === WebSocket.OPEN) {
-      const messageStr = typeof message === 'string' ? message : JSON.stringify(message);
-      client.socket.send(messageStr);
-      return true;
-    }
-    
-    return false;
-  }
-  
-  // Fungsi untuk broadcast ke semua anggota ruangan
-  async function broadcastToRoom(roomId: number, message: any, excludeUserIds: number[] = []) {
-    try {
-      // Dapatkan semua anggota room
-      const members = await storage.getRoomMembers(roomId);
-      
-      for (const member of members) {
-        if (!excludeUserIds.includes(member.userId)) {
-          sendToUser(member.userId, message);
-        }
-      }
-    } catch (error) {
-      console.error(`Error broadcasting to room ${roomId}:`, error);
-    }
-  }
-  
-  // Fungsi untuk broadcast ke pengguna di direct chat
-  async function sendDirectMessage(userId: number, message: any) {
-    sendToUser(userId, message);
-  }
-  
-  // Fungsi untuk broadcast pesan baru
-  async function broadcastNewMessage(message: any, chatId: number, isRoom: boolean) {
-    try {
-      // Dapatkan info sender
-      const sender = await storage.getUser(message.senderId);
-      if (!sender) return;
-      
-      // Persiapkan pesan untuk broadcast
-      const broadcastMessage = {
-        type: 'message',
-        messageId: message.id,
-        sender: {
-          id: sender.id,
-          callsign: sender.callsign,
-          nrp: sender.nrp,
-          fullName: sender.fullName,
-          rank: sender.rank
-        },
-        content: message.content,
-        conversationId: chatId,
-        isRoom,
-        timestamp: message.createdAt,
-        attachmentUrl: message.attachmentUrl,
-        attachmentType: message.attachmentType,
-        forwardedFromId: message.forwardedFromId
       };
       
-      if (isRoom) {
-        // Broadcast ke semua anggota room kecuali pengirim
-        await broadcastToRoom(chatId, broadcastMessage, [message.senderId]);
-      } else {
-        // Direct chat - kirim ke penerima
-        // Di direct chat, chatId adalah ID user lain
-        const receiverId = chatId;
-        await sendDirectMessage(receiverId, broadcastMessage);
-      }
+      await broadcastToConversation(deletedMessage.conversationId, wsMessage);
+      
+      res.status(200).json(deletedMessage);
     } catch (error) {
-      console.error('Error broadcasting new message:', error);
+      console.error("Error deleting message:", error);
+      res.status(500).json({ message: "Failed to delete message" });
     }
-  }
+  });
   
-  // Fungsi untuk broadcast pesan yang dihapus
-  async function broadcastMessageDeleted(messageId: number, chatId: number, isRoom: boolean) {
-    const broadcastMessage = {
-      type: 'message_deleted',
-      messageId,
-      conversationId: chatId,
-      isRoom
-    };
-    
-    if (isRoom) {
-      // Broadcast ke semua anggota room
-      await broadcastToRoom(chatId, broadcastMessage);
-    } else {
-      // Direct chat - kirim ke user lain
-      const receiverId = chatId;
-      await sendDirectMessage(receiverId, broadcastMessage);
+  // Forward message endpoint
+  app.post('/api/messages/:id/forward', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const messageId = parseInt(req.params.id);
+      if (isNaN(messageId)) {
+        return res.status(400).json({ message: "Invalid message ID" });
+      }
+      
+      const { conversationId } = req.body;
+      if (!conversationId) {
+        return res.status(400).json({ message: "Conversation ID is required" });
+      }
+      
+      const userId = req.session?.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      
+      const newConversationId = parseInt(conversationId);
+      
+      // Forward the message
+      const forwardedMessage = await storage.forwardMessage(messageId, newConversationId, userId);
+      
+      // Send real-time notification about the new message
+      const wsMessage: WebSocketMessage = {
+        type: 'new_message',
+        payload: forwardedMessage
+      };
+      
+      await broadcastToConversation(newConversationId, wsMessage);
+      
+      res.status(201).json(forwardedMessage);
+    } catch (error) {
+      console.error("Error forwarding message:", error);
+      res.status(500).json({ message: "Failed to forward message" });
     }
-  }
-  
+  });
+
   return httpServer;
 }

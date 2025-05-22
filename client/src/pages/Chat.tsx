@@ -3,14 +3,16 @@ import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { 
   MessageSquare, PhoneIcon, Settings, Plus, User, 
-  ArrowLeft, Paperclip, Send, Users, Search, Info, X
+  ArrowLeft, PaperclipIcon, SendIcon, Users, Search, Info
 } from 'lucide-react';
-import WhatsAppStyleChatList from '@/components/WhatsAppStyleChatList';
-import ChatRoom from '@/components/ChatRoom';
+import ChatList from '../components/ChatList';
+import chatIcon from '@assets/Icon Chat NXXZ.png';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useAuth } from '../hooks/useAuth';
+import ChatRoom from '../components/ChatRoom';
 import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -36,7 +38,6 @@ export default function Chat() {
   
   // State untuk loading status
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   
   // State untuk WebSocket
   const [wsConnected, setWsConnected] = useState(false);
@@ -63,122 +64,159 @@ export default function Chat() {
   // State untuk melacak ID pesan terakhir
   const lastMessageIdRef = useRef<number | null>(null);
   const [userScrolled, setUserScrolled] = useState(false);
-
+  
   // Authentication check
   useEffect(() => {
     async function checkAuth() {
       try {
-        setIsLoading(true);
-        // Mengambil data user dari session server melalui API
-        const response = await fetch('/api/user', {
-          credentials: 'include' // Penting untuk mengirimkan cookies
+        const response = await fetch('/api/auth/user', {
+          credentials: 'include'
         });
         
-        if (!response.ok) {
-          throw new Error('Tidak terautentikasi');
+        if (response.ok) {
+          const userData = await response.json();
+          console.log("User data from session:", userData);
+          setUser(userData);
+          
+          // Load chats data
+          fetchUserChats(userData.id);
+          fetchAllUsers();
+        } else {
+          console.error('Failed to get user session, redirecting to login');
+          window.location.href = '/login';
         }
-        
-        const userObj = await response.json();
-        console.log("User data dari session:", userObj);
-        setUser(userObj);
-        
-        // Load chats data
-        fetchUserChats(userObj.id);
-        fetchAllUsers();
       } catch (error) {
         console.error('Error checking authentication:', error);
-        // Redirect ke halaman login jika tidak terautentikasi
         window.location.href = '/login';
-      } finally {
-        setIsLoading(false);
       }
     }
     
     checkAuth();
   }, []);
   
-  // Fungsi untuk mengambil daftar chat user dari database
-  const fetchUserChats = async (userId: string) => {
+  // Fetch user chats
+  const fetchUserChats = async (userId: number) => {
     try {
-      console.log("Mengambil daftar chat untuk user ID:", userId);
+      setChats([]);
       
-      // Fetch direct chats dari API
-      const directChatsResponse = await fetch('/api/direct-chats', {
-        credentials: 'include'
-      });
+      let allChats: any[] = [];
       
-      if (!directChatsResponse.ok) {
-        console.error("Error mengambil direct chats:", await directChatsResponse.text());
-        setChats([]);
-        return;
-      }
-      
-      const directChats = await directChatsResponse.json();
-      console.log("Direct chats dari API:", directChats);
-      
-      // Fetch rooms dari API
-      const roomsResponse = await fetch('/api/rooms', {
-        credentials: 'include'
-      });
-      
-      let rooms: any[] = [];
-      if (roomsResponse.ok) {
-        rooms = await roomsResponse.json();
-        console.log("Rooms dari API:", rooms);
-      } else {
-        console.error("Error mengambil rooms:", await roomsResponse.text());
-      }
-      
-      // Format data untuk tampilan
-      const formattedChats = [
-        // Format direct chats
-        ...directChats.map((chat: any) => {
-          const otherUserId = chat.user1Id === userId ? chat.user2Id : chat.user1Id;
-          const otherUser = allUsers.find(u => u.id === otherUserId);
-          
-          return {
-            id: chat.id,
-            name: otherUser?.callsign || 'User',
-            isGroup: false,
-            isOnline: otherUser?.status === 'online',
-            unread: 0, // Untuk saat ini, kita asumsikan tidak ada pesan yang belum dibaca
-            lastMessage: chat.lastMessage || "Mulai chat baru",
-            lastMessageTime: chat.lastActivityAt ? new Date(chat.lastActivityAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '',
-            otherUserId
-          };
-        }),
+      // 1. Fetch all conversations (direct and group chats)
+      try {
+        console.log('Fetching all conversations for user ID:', userId);
+        const conversationsUrl = `/api/conversations`;
         
-        // Format rooms
-        ...rooms.map((room: any) => ({
-          id: room.id,
-          name: room.name,
-          isGroup: true,
-          members: room.memberCount || 0,
-          unread: 0, // Untuk saat ini, kita asumsikan tidak ada pesan yang belum dibaca
-          lastMessage: room.lastMessage || "Group created",
-          lastMessageTime: room.lastActivityAt ? new Date(room.lastActivityAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '',
-        }))
-      ];
+        const conversationsResponse = await fetch(conversationsUrl, {
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json'
+          },
+          cache: 'no-cache'
+        });
+        
+        if (conversationsResponse.ok) {
+          const conversations = await conversationsResponse.json();
+          console.log('All conversations from server:', conversations);
+          
+          if (conversations && Array.isArray(conversations)) {
+            // Save all conversations for processing
+            allChats = [...allChats, ...conversations];
+          }
+        }
+      } catch (conversationsError) {
+        console.error('Error fetching conversations:', conversationsError);
+      }
       
-      setChats(formattedChats);
-      console.log("Daftar chat diperbarui:", formattedChats);
+      // 2. Fetch direct chats (as backup if conversations API doesn't return all chats)
+      try {
+        console.log('Fetching direct chats from server for user ID:', userId);
+        const directChatUrl = `/api/direct-chats`;
+        
+        const directChatsResponse = await fetch(directChatUrl, {
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json'
+          },
+          cache: 'no-cache'
+        });
+        
+        if (directChatsResponse.ok) {
+          const directChats = await directChatsResponse.json();
+          if (directChats && Array.isArray(directChats)) {
+            console.log(`Fetched ${directChats.length} direct chats from server`);
+            
+            // Transform direct chats to match ChatList component format
+            const formattedDirectChats = directChats.map(chat => ({
+              id: chat.id,
+              name: chat.name || `Chat ${chat.id}`,
+              isGroup: false,
+              lastMessage: chat.lastMessage || "",
+              lastMessageTime: chat.lastMessageTime || chat.createdAt,
+              unread: chat.unread || 0,
+              otherUserId: chat.otherUserId
+            }));
+            
+            // Add direct chats that aren't already in the allChats array
+            formattedDirectChats.forEach(directChat => {
+              if (!allChats.some(chat => chat.id === directChat.id)) {
+                allChats.push(directChat);
+              }
+            });
+          }
+        }
+      } catch (directChatError) {
+        console.error('Error fetching direct chats:', directChatError);
+      }
       
-      // Jangan pernah auto-select chat, biarkan user memilih sendiri
-      // Hapus semua auto-selection yang menggunakan hardcode
+      // 2. Fetch group chats/rooms
+      try {
+        console.log('Fetching group chats/rooms for user ID:', userId);
+        const roomsUrl = `/api/rooms`;
+        
+        const roomsResponse = await fetch(roomsUrl, {
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json'
+          },
+          cache: 'no-cache'
+        });
+        
+        if (roomsResponse.ok) {
+          const rooms = await roomsResponse.json();
+          if (rooms && Array.isArray(rooms)) {
+            console.log(`Fetched ${rooms.length} group chats/rooms`);
+            
+            // Format rooms to match chat format
+            const formattedRooms = rooms.map(room => ({
+              id: room.id,
+              name: room.name || 'Group Chat',
+              isGroup: true,
+              lastMessage: room.lastMessage || "Room created",
+              lastMessageTime: room.lastMessageTime || room.createdAt,
+              unread: room.unread || 0,
+              memberCount: room.memberCount || 0
+            }));
+            
+            allChats = [...allChats, ...formattedRooms];
+          }
+        }
+      } catch (roomsError) {
+        console.error('Error fetching rooms:', roomsError);
+      }
+      
+      // Update state with fetched chats
+      setChats(allChats);
       
     } catch (error) {
-      console.error('Error mengambil daftar chat:', error);
+      console.error('Error fetching chats:', error);
     }
   };
   
-  // Fetch all users for personnel list from database
+  // Fetch all users for personnel list
   const fetchAllUsers = async () => {
     try {
       setIsLoadingPersonnel(true);
-      
-      // Mengambil data user dari API
-      const response = await fetch('/api/users', {
-        method: 'GET',
+      const response = await fetch('/api/all-users', {
         headers: {
           'Accept': 'application/json',
           'Cache-Control': 'no-cache'
@@ -186,32 +224,15 @@ export default function Chat() {
         credentials: 'include'
       });
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch users: ${response.status} ${response.statusText}`);
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`Fetched ${data.length} users for personnel list`);
+        setAllUsers(data);
+      } else {
+        console.error(`Failed to fetch users: ${response.status} ${response.statusText}`);
       }
-      
-      // Parse data dari respons API
-      const userData = await response.json();
-      
-      // Map respons API ke format yang dibutuhkan di UI
-      const formattedUsers = userData.map((user: any) => ({
-        id: user.id,
-        callsign: user.callsign || user.username || 'Unknown',
-        rank: user.rank || 'N/A',
-        branch: user.branch || 'N/A',
-        status: user.isOnline ? 'online' : 'offline',
-        fullName: user.fullName || '',
-        profileImageUrl: user.profileImageUrl || ''
-      }));
-      
-      setAllUsers(formattedUsers);
-      console.log(`Loaded ${formattedUsers.length} users from database for personnel list`);
-      
     } catch (error) {
       console.error('Error fetching all users:', error);
-      
-      // Fallback to mock data only if API request fails (for development purposes)
-      console.warn('Using fallback user data');
     } finally {
       setIsLoadingPersonnel(false);
     }
@@ -246,26 +267,42 @@ export default function Chat() {
         return;
       }
       
-      // For demo, create a mock new chat
-      const newChat = {
-        id: chats.length + 1,
-        name: otherUser.callsign,
-        isGroup: false,
-        isOnline: otherUser.status === "online",
-        unread: 0,
-        lastMessage: "Chat started",
-        lastMessageTime: new Date().toLocaleTimeString(),
-        otherUserId: otherUser.id
-      };
+      // Create a new direct chat
+      console.log(`Creating new direct chat with user ${otherUserId}`);
+      const response = await fetch('/api/direct-chats', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          otherUserId: Number(otherUserId) // Pastikan ini adalah number
+        })
+      });
       
-      // Add new chat to list
-      setChats([...chats, newChat]);
+      if (!response.ok) {
+        console.error(`Failed to create direct chat: ${response.status}`);
+        const errorText = await response.text();
+        console.error('Server response:', errorText);
+        throw new Error(`Failed to create direct chat: ${errorText}`);
+      }
       
-      // Open the new chat
-      setActiveChat({ id: newChat.id, isGroup: false });
-      setShowChatRoom(true);
-      setActiveView('chats');
+      const newChat = await response.json();
+      console.log('Direct chat created successfully:', newChat);
       
+      // Refresh chat list
+      fetchUserChats(user.id);
+      setShowNewDirectChatDialog(false);
+      setSelectedUserId(null);
+      
+      // Buka chat baru yang dibuat
+      if (newChat && newChat.id) {
+        setActiveChat({ id: newChat.id, isGroup: false });
+        setShowChatRoom(true);
+        setActiveView('chats');
+        fetchMessagesForChat(newChat.id, false);
+      }
     } catch (error) {
       console.error('Error creating direct chat:', error);
       alert('Gagal membuat chat. Silakan coba lagi.');
@@ -282,29 +319,54 @@ export default function Chat() {
     try {
       setIsCreatingChat(true);
       
-      // For demo, create a mock new group
-      const newGroup = {
-        id: chats.length + 1,
-        name: newGroupName,
-        isGroup: true,
-        members: selectedUserIds.length + 1,
-        unread: 0,
-        lastMessage: "Group created",
-        lastMessageTime: new Date().toLocaleTimeString()
-      };
+      // Create the room
+      const response = await fetch('/api/conversations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: newGroupName,
+          isGroup: true,
+          members: [user.id, ...selectedUserIds]
+        })
+      });
       
-      // Add new group to list
-      setChats([...chats, newGroup]);
-      
-      // Open the new group
-      setActiveChat({ id: newGroup.id, isGroup: true });
-      setShowChatRoom(true);
-      setActiveView('chats');
-      
-      // Reset state
-      setNewGroupName("");
-      setSelectedUserIds([]);
-      
+      if (response.ok) {
+        const newGroup = await response.json();
+        
+        // Add this group to our list
+        const formattedGroup = {
+          id: newGroup.id,
+          name: newGroupName,
+          isGroup: true,
+          lastMessage: "Group created",
+          lastMessageTime: new Date().toISOString(),
+          unread: 0,
+          memberCount: selectedUserIds.length + 1
+        };
+        
+        // Update chats list
+        const updatedChats = [...chats, formattedGroup];
+        setChats(updatedChats);
+        
+        // Open the new group
+        setActiveChat({ id: newGroup.id, isGroup: true });
+        setShowChatRoom(true);
+        setActiveView('chats');
+        
+        // Refresh chat list to get the new group
+        fetchUserChats(user.id);
+        
+        // Reset state
+        setNewGroupName("");
+        setSelectedUserIds([]);
+      } else {
+        console.error(`Failed to create group: ${response.status} ${response.statusText}`);
+        alert("Failed to create group. Please try again.");
+      }
     } catch (error) {
       console.error('Error creating group:', error);
       alert("An error occurred. Please try again.");
@@ -316,44 +378,52 @@ export default function Chat() {
   
   // Handle selecting a chat
   const handleSelectChat = (id: number, isGroup: boolean) => {
-    console.log(`[DEBUG] handleSelectChat called with: id=${id}, isGroup=${isGroup}`);
-    
-    // Validasi: pastikan ID valid
-    if (!id) {
-      console.error(`[DEBUG] Invalid chat ID: ${id}. Skipping selection.`);
-      return;
-    }
-    
-    console.log(`[DEBUG] Setting activeChat to: {id: ${id}, isGroup: ${isGroup}}`);
+    console.log(`Selecting chat: id=${id}, isGroup=${isGroup}`);
     setActiveChat({ id, isGroup });
     setShowChatRoom(true);
     
-    // Memuat pesan-pesan untuk chat tersebut
-    fetchMessagesForChat(id, isGroup);
+    // Jika kita memiliki chat aktif, kita harus memuat pesan-pesan untuk chat tersebut
+    if (id) {
+      fetchMessagesForChat(id, isGroup);
+    }
   };
   
   // Fungsi untuk mengambil pesan-pesan untuk chat tertentu
   const fetchMessagesForChat = async (chatId: number, isGroup: boolean) => {
     try {
       setIsLoadingMessages(true);
-      console.log(`Fetching messages from /api/chats/${chatId}/messages`);
+      console.log(`Fetching messages for chat ID: ${chatId}, isGroup: ${isGroup}`);
       
-      // Fetch actual messages from database
-      const response = await fetch(`/api/chats/${chatId}/messages`, {
-        credentials: 'include'
+      // Buat endpoint sesuai tipe chat
+      const endpoint = `/api/conversations/${chatId}/messages`;
+      
+      const response = await fetch(endpoint, {
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json'
+        }
       });
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Failed to fetch messages: ${errorText}`);
+      if (response.ok) {
+        const messages = await response.json();
+        console.log(`Fetched ${messages.length} messages for chat ${chatId}`);
+        
+        // Format pesan-pesan untuk tampilan
+        const formattedMessages = messages.map((msg: any) => ({
+          id: msg.id,
+          chatId: chatId,
+          senderId: msg.senderId,
+          content: msg.content,
+          timestamp: msg.createdAt,
+          isRead: msg.isRead || false
+        }));
+        
+        // Update state pesan
+        setDatabaseMessages(formattedMessages);
+      } else {
+        console.error(`Failed to fetch messages: ${response.status}`);
         setDatabaseMessages([]);
-        return;
       }
-      
-      const messages = await response.json();
-      console.log(`Loaded ${messages.length} messages for chat ${chatId}`);
-      setDatabaseMessages(messages);
-      
     } catch (error) {
       console.error("Error fetching messages:", error);
       setDatabaseMessages([]);
@@ -402,8 +472,9 @@ export default function Chat() {
         chatId: activeChat.id,
         senderId: user.id,
         content: newMessage,
-        timestamp: new Date().toLocaleTimeString(),
-        isRead: false
+        timestamp: new Date().toISOString(),
+        isRead: false,
+        isSending: true // Flag untuk menandai bahwa pesan sedang dikirim
       };
       
       // Update tampilan dengan pesan baru
@@ -412,25 +483,44 @@ export default function Chat() {
       // Reset input
       setNewMessage('');
       
-      // Untuk demo, simulasikan pengiriman pesan yang berhasil
-      setTimeout(() => {
-        console.log('Pesan berhasil dikirim');
-        
-        // Update the chat list to show the latest message
-        const updatedChats = chats.map(chat => {
-          if (chat.id === activeChat.id && chat.isGroup === activeChat.isGroup) {
-            return {
-              ...chat,
-              lastMessage: newMessage,
-              lastMessageTime: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-            };
-          }
-          return chat;
-        });
-        
-        setChats(updatedChats);
-      }, 500);
+      // Kirim pesan ke server
+      const response = await fetch('/api/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          conversationId: activeChat.id,
+          content: tempMessage.content
+        })
+      });
       
+      if (response.ok) {
+        const sentMessage = await response.json();
+        console.log('Pesan berhasil dikirim:', sentMessage);
+        
+        // Update message list dengan mengganti pesan sementara dengan pesan yang benar dari server
+        setDatabaseMessages(prev => prev.map(msg => 
+          msg.id === tempId ? { 
+            ...msg, 
+            id: sentMessage.id,
+            timestamp: sentMessage.createdAt,
+            isSending: false
+          } : msg
+        ));
+        
+        // Refresh chat list untuk memperbarui pesan terakhir
+        fetchUserChats(user.id);
+      } else {
+        console.error(`Failed to send message: ${response.status}`);
+        
+        // Tandai pesan sebagai gagal kirim
+        setDatabaseMessages(prev => prev.map(msg => 
+          msg.id === tempId ? { ...msg, isSending: false, isError: true } : msg
+        ));
+      }
     } catch (error) {
       console.error('Error mengirim pesan:', error);
     }
@@ -439,35 +529,31 @@ export default function Chat() {
   // Handle logout
   const handleLogout = async () => {
     try {
-      localStorage.removeItem("currentUser");
+      await fetch('/api/auth/logout', { 
+        method: 'POST',
+        credentials: 'include' 
+      });
       window.location.href = '/login';
     } catch (error) {
       console.error('Error logging out:', error);
     }
   };
   
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-[#a2bd62] text-xl font-bold">LOADING SECURE COMMS...</div>
-      </div>
-    );
-  }
-  
   return (
     <div className="flex flex-col h-screen bg-black text-gray-100">
       {/* Header */}
       <div className="flex justify-between items-center p-3 bg-[#1a1a1a] border-b border-[#333] h-16">
         <div className="flex items-center">
+          <img src={chatIcon} alt="NXZZ" className="h-8 w-8 mr-2" />
           <h1 className="text-2xl font-bold text-[#8d9c6b]">NXZZ-VComm</h1>
         </div>
         
         <div className="flex space-x-2">
           {user && (
             <div className="flex items-center">
-              <span className="mr-2 text-sm hidden md:inline">{user.callsign || user.fullName}</span>
+              <span className="mr-2 text-sm hidden md:inline">{user.callsign || user.firstName}</span>
               <Avatar className="h-8 w-8 bg-[#2d3328] text-[#8d9c6b]">
-                <AvatarFallback>{user.callsign ? user.callsign[0].toUpperCase() : (user.fullName ? user.fullName[0].toUpperCase() : 'U')}</AvatarFallback>
+                <AvatarFallback>{user.callsign ? user.callsign[0].toUpperCase() : (user.firstName ? user.firstName[0].toUpperCase() : 'U')}</AvatarFallback>
               </Avatar>
             </div>
           )}
@@ -562,121 +648,137 @@ export default function Chat() {
                     <h2 className="text-xl font-semibold text-[#8d9c6b]">Chat</h2>
                     <Button 
                       variant="outline" 
-                      size="icon"
-                      className="rounded-full bg-[#2d3328] border-[#8d9c6b] text-[#8d9c6b]"
+                      className="bg-[#2d3328] text-[#8d9c6b] border-none hover:bg-[#3d4338]"
                       onClick={() => setShowNewChatMenu(true)}
                     >
-                      <Plus className="h-4 w-4" />
+                      <Plus className="h-5 w-5" />
                     </Button>
                   </div>
                   
-                  {/* Chat List */}
-                  <div className="flex-1 overflow-y-auto pb-16 md:pb-0">
-                    <WhatsAppStyleChatList 
-                      chats={chats.map(chat => ({
-                        id: chat.id,
-                        name: chat.name,
-                        isRoom: chat.isGroup,
-                        isOnline: chat.isOnline,
-                        members: chat.members,
-                        unread: chat.unread,
-                        lastMessage: chat.lastMessage,
-                        lastMessageTime: chat.lastMessageTime,
-                        otherUserId: chat.otherUserId
-                      }))}
-                      onSelectChat={(id, isRoom) => handleSelectChat(id, isRoom)}
+                  <div className="flex-1 overflow-y-auto">
+                    <ChatList 
+                      activeChat={activeChat}
+                      onSelectChat={handleSelectChat}
+                      onChatDeleted={(id, isGroup) => {
+                        // Handle chat deletion
+                        console.log(`Delete chat: ${id}, isGroup: ${isGroup}`);
+                        // Refresh chat list
+                        if (user) fetchUserChats(user.id);
+                      }}
+                      onClearChatHistory={(id, isGroup) => {
+                        // Handle clearing chat history
+                        console.log(`Clear chat history: ${id}, isGroup: ${isGroup}`);
+                        // Refresh chat list and messages if this is active chat
+                        if (user) fetchUserChats(user.id);
+                        if (activeChat?.id === id) {
+                          setDatabaseMessages([]);
+                        }
+                      }}
+                      onCreateGroup={() => setShowNewGroupDialog(true)}
                     />
                   </div>
                 </div>
               ) : (
-                <ChatRoom 
-                  chatId={activeChat?.id || 0}
-                  isRoom={activeChat?.isGroup || false}
-                  chatName={chats.find(c => c.id === activeChat?.id)?.name || "Chat"}
-                  onBack={handleBackToList}
-                />
+                <div className="flex flex-col h-full">
+                  {activeChat && (
+                    <ChatRoom 
+                      chatId={activeChat.id} 
+                      isGroup={activeChat.isGroup} 
+                      onBack={handleBackToList}
+                    />
+                  )}
+                </div>
               )}
             </>
           )}
           
-          {/* Calls View */}
+          {/* Call View */}
           {activeView === 'calls' && (
-            <div className="flex flex-col h-full">
-              <div className="flex justify-between items-center p-4 border-b border-[#333]">
-                <h2 className="text-xl font-semibold text-[#8d9c6b]">Calls</h2>
-              </div>
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center p-4">
-                  <PhoneIcon className="h-12 w-12 text-[#8d9c6b] mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold">No Recent Calls</h3>
-                  <p className="text-gray-400 mt-2">Start a call from any chat or personnel profile</p>
+            <div className="flex flex-col items-center justify-center h-full">
+              <div className="bg-[#1a1a1a] p-8 rounded-lg shadow-lg">
+                <h2 className="text-xl font-semibold text-[#8d9c6b] mb-4">Fitur Panggilan</h2>
+                <p className="text-gray-400 mb-4">Fitur panggilan sedang dalam pengembangan.</p>
+                <div className="flex justify-center">
+                  <PhoneIcon className="h-24 w-24 text-[#8d9c6b] opacity-50" />
                 </div>
               </div>
             </div>
           )}
           
-          {/* Personnel View */}
+          {/* Personnel/Users View */}
           {activeView === 'personnel' && (
             <div className="flex flex-col h-full">
               <div className="flex justify-between items-center p-4 border-b border-[#333]">
-                <h2 className="text-xl font-semibold text-[#8d9c6b]">Personnel</h2>
+                <h2 className="text-xl font-semibold text-[#8d9c6b]">Personel</h2>
                 <div className="relative">
-                  <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
                   <Input 
-                    className="pl-10 bg-[#1a1a1a] border-[#333] focus:border-[#8d9c6b] text-white"
-                    placeholder="Search personnel..."
+                    className="pl-8 bg-[#262626] border-[#333] text-gray-300 w-[200px]"
+                    placeholder="Cari personel..."
                     value={filterText}
                     onChange={(e) => setFilterText(e.target.value)}
                   />
                 </div>
               </div>
               
-              <div className="flex-1 overflow-y-auto pb-16 md:pb-0">
+              <div className="flex-1 overflow-y-auto p-2">
                 {isLoadingPersonnel ? (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#8d9c6b]"></div>
+                  <div className="flex justify-center items-center h-full">
+                    <p className="text-gray-400">Memuat daftar personel...</p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-[#333]">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {allUsers
-                      .filter(u => 
-                        u.callsign.toLowerCase().includes(filterText.toLowerCase()) ||
-                        u.rank.toLowerCase().includes(filterText.toLowerCase()) ||
-                        u.branch.toLowerCase().includes(filterText.toLowerCase())
-                      )
-                      .map(user => (
-                        <div 
-                          key={user.id}
-                          className="p-4 hover:bg-[#1a1a1a] cursor-pointer flex justify-between items-center"
-                          onClick={() => handleStartDirectChat(user.id)}
-                        >
-                          <div className="flex items-center">
-                            <Avatar className="h-10 w-10 bg-[#2d3328] text-[#8d9c6b]">
-                              <AvatarFallback>{user.callsign[0].toUpperCase()}</AvatarFallback>
+                      .filter(u => u.id !== user?.id) // Exclude current user
+                      .filter(personnel => {
+                        // Filter berdasarkan input pencarian
+                        if (!filterText) return true;
+                        return (
+                          (personnel.callsign && personnel.callsign.toLowerCase().includes(filterText.toLowerCase())) ||
+                          (personnel.firstName && personnel.firstName.toLowerCase().includes(filterText.toLowerCase())) ||
+                          (personnel.lastName && personnel.lastName.toLowerCase().includes(filterText.toLowerCase())) ||
+                          (personnel.rank && personnel.rank.toLowerCase().includes(filterText.toLowerCase())) ||
+                          (personnel.branch && personnel.branch.toLowerCase().includes(filterText.toLowerCase()))
+                        );
+                      })
+                      .map(personnel => (
+                        <div key={personnel.id} className="bg-[#1a1a1a] rounded-lg p-3 border border-[#333] hover:border-[#8d9c6b] transition-colors">
+                          <div className="flex items-start space-x-3">
+                            <Avatar className="h-12 w-12 bg-[#2d3328] text-[#8d9c6b]">
+                              <AvatarFallback>{personnel.callsign ? personnel.callsign[0].toUpperCase() : (personnel.firstName ? personnel.firstName[0].toUpperCase() : 'U')}</AvatarFallback>
                             </Avatar>
-                            <div className="ml-3">
-                              <div className="flex items-center">
-                                <span className="font-semibold">{user.callsign}</span>
-                                {user.status === "online" && (
-                                  <div className="ml-2 h-2 w-2 bg-green-500 rounded-full"></div>
-                                )}
+                            <div className="flex-1">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <h3 className="font-semibold text-[#8d9c6b]">{personnel.callsign || "Unnamed"}</h3>
+                                  <p className="text-xs text-gray-400">
+                                    {personnel.rank && <span className="mr-1">{personnel.rank}</span>}
+                                    {personnel.firstName} {personnel.lastName}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {personnel.branch && <span className="mr-1">{personnel.branch}</span>}
+                                    {personnel.nrp && <span>NRP: {personnel.nrp}</span>}
+                                  </p>
+                                </div>
+                                <Badge className="bg-[#2d3328] text-[#8d9c6b]">
+                                  {personnel.status || "Aktif"}
+                                </Badge>
                               </div>
-                              <div className="flex text-xs text-gray-400 mt-1">
-                                <span className="mr-2">{user.rank}</span>
-                                <span>{user.branch}</span>
+                              <div className="flex justify-end mt-2">
+                                <Button 
+                                  size="sm" 
+                                  className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338] mt-2 self-end"
+                                  onClick={() => handleStartDirectChat(personnel.id)}
+                                  disabled={isCreatingChat}
+                                >
+                                  <MessageSquare className="w-4 h-4 mr-1" />
+                                  Chat
+                                </Button>
                               </div>
                             </div>
                           </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            className="text-gray-400 hover:text-[#8d9c6b]"
-                          >
-                            <MessageSquare className="h-5 w-5" />
-                          </Button>
                         </div>
-                      ))
-                    }
+                      ))}
                   </div>
                 )}
               </div>
@@ -687,58 +789,96 @@ export default function Chat() {
           {activeView === 'config' && (
             <div className="flex flex-col h-full">
               <div className="flex justify-between items-center p-4 border-b border-[#333]">
-                <h2 className="text-xl font-semibold text-[#8d9c6b]">Configuration</h2>
+                <h2 className="text-xl font-semibold text-[#8d9c6b]">Pengaturan</h2>
               </div>
-              <div className="p-4">
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-2">Account</h3>
-                  <div className="bg-[#1a1a1a] p-4 rounded-md">
-                    <div className="flex items-center mb-4">
-                      <Avatar className="h-16 w-16 bg-[#2d3328] text-[#8d9c6b]">
-                        <AvatarFallback>{user?.callsign ? user.callsign[0].toUpperCase() : "U"}</AvatarFallback>
-                      </Avatar>
-                      <div className="ml-4">
-                        <h4 className="text-lg font-semibold">{user?.callsign || "Unknown"}</h4>
-                        <p className="text-sm text-gray-400">{user?.rank} • {user?.branch}</p>
+              
+              <div className="flex-1 overflow-y-auto p-4">
+                <div className="bg-[#1a1a1a] rounded-lg p-4 mb-4">
+                  <h3 className="text-lg font-medium text-[#8d9c6b] mb-2">Profil Pengguna</h3>
+                  {user && (
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-4">
+                        <Avatar className="h-16 w-16 bg-[#2d3328] text-[#8d9c6b]">
+                          <AvatarFallback>{user.callsign?.[0] || user.firstName?.[0] || 'U'}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <h4 className="font-semibold text-[#8d9c6b]">{user.callsign}</h4>
+                          <p className="text-sm text-gray-400">
+                            {user.rank} {user.firstName} {user.lastName}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {user.branch} • NRP: {user.nrp}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <Separator className="bg-[#333]" />
+                      
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-400 mb-2">Informasi Kontak</h4>
+                        <p className="text-sm">
+                          <span className="text-gray-500">Email:</span> {user.email || 'Tidak tersedia'}
+                        </p>
                       </div>
                     </div>
-                    <Button variant="outline" className="w-full bg-[#2d3328] text-[#8d9c6b] border-[#8d9c6b]">
-                      Edit Profile
-                    </Button>
+                  )}
+                </div>
+                
+                <div className="bg-[#1a1a1a] rounded-lg p-4 mb-4">
+                  <h3 className="text-lg font-medium text-[#8d9c6b] mb-2">Pengaturan Aplikasi</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm text-gray-400 block mb-1">Status</label>
+                      <Select defaultValue="active">
+                        <SelectTrigger className="bg-[#262626] border-[#333] text-gray-300">
+                          <SelectValue placeholder="Pilih status" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#262626] border-[#333] text-gray-300">
+                          <SelectItem value="active">Aktif</SelectItem>
+                          <SelectItem value="busy">Sibuk</SelectItem>
+                          <SelectItem value="away">Tidak di tempat</SelectItem>
+                          <SelectItem value="offline">Offline</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm text-gray-400 block mb-1">Tema</label>
+                      <Select defaultValue="dark">
+                        <SelectTrigger className="bg-[#262626] border-[#333] text-gray-300">
+                          <SelectValue placeholder="Pilih tema" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#262626] border-[#333] text-gray-300">
+                          <SelectItem value="dark">Gelap (Default)</SelectItem>
+                          <SelectItem value="high-contrast">Kontras Tinggi</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
                 
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-2">App Settings</h3>
-                  <div className="bg-[#1a1a1a] p-4 rounded-md space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span>Dark Mode</span>
-                      <div className="w-10 h-6 bg-[#8d9c6b] rounded-full px-1 flex items-center">
-                        <div className="bg-white w-4 h-4 rounded-full ml-auto"></div>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>Notifications</span>
-                      <div className="w-10 h-6 bg-[#8d9c6b] rounded-full px-1 flex items-center">
-                        <div className="bg-white w-4 h-4 rounded-full ml-auto"></div>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>Sound Effects</span>
-                      <div className="w-10 h-6 bg-[#333] rounded-full px-1 flex items-center">
-                        <div className="bg-white w-4 h-4 rounded-full"></div>
-                      </div>
-                    </div>
-                  </div>
+                <div className="bg-[#1a1a1a] rounded-lg p-4 mb-4">
+                  <h3 className="text-lg font-medium text-[#8d9c6b] mb-2">Keamanan</h3>
+                  <Button className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]">
+                    Ubah Kata Sandi
+                  </Button>
                 </div>
                 
-                <Button 
-                  variant="destructive" 
-                  className="w-full"
-                  onClick={handleLogout}
-                >
-                  Log Out
-                </Button>
+                <div className="bg-[#1a1a1a] rounded-lg p-4 mb-4">
+                  <h3 className="text-lg font-medium text-[#8d9c6b] mb-2">Sesi</h3>
+                  <Button 
+                    variant="destructive" 
+                    className="w-full bg-[#3b2828] text-red-400 hover:bg-[#4b3434]"
+                    onClick={handleLogout}
+                  >
+                    Keluar
+                  </Button>
+                </div>
+                
+                <div className="text-center text-xs text-gray-600 mt-6">
+                  <p>NXZZ-VComm v1.0</p>
+                  <p>© {new Date().getFullYear()} Restricted Military Use</p>
+                </div>
               </div>
             </div>
           )}
@@ -747,32 +887,32 @@ export default function Chat() {
       
       {/* New Chat Menu Dialog */}
       <Dialog open={showNewChatMenu} onOpenChange={setShowNewChatMenu}>
-        <DialogContent className="bg-[#1a1a1a] border-[#333] text-white max-w-xs mx-auto">
+        <DialogContent className="bg-[#1a1a1a] text-white border-[#333]">
           <DialogHeader>
-            <DialogTitle className="text-center text-[#8d9c6b]">New Communication</DialogTitle>
+            <DialogTitle className="text-[#8d9c6b]">Pesan Baru</DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col space-y-3 mt-2">
+          
+          <div className="flex flex-col space-y-3 mt-4">
             <Button 
-              variant="outline" 
-              className="bg-[#2d3328] text-[#8d9c6b] border-[#8d9c6b] flex items-center justify-start"
+              className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338] justify-start"
               onClick={() => {
                 setShowNewChatMenu(false);
                 setShowNewDirectChatDialog(true);
               }}
             >
-              <User className="h-5 w-5 mr-2" />
-              Direct Communication
+              <User className="mr-2 h-5 w-5" />
+              Chat Langsung dengan Personel
             </Button>
+            
             <Button 
-              variant="outline" 
-              className="bg-[#2d3328] text-[#8d9c6b] border-[#8d9c6b] flex items-center justify-start"
+              className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338] justify-start"
               onClick={() => {
                 setShowNewChatMenu(false);
                 setShowNewGroupDialog(true);
               }}
             >
-              <Users className="h-5 w-5 mr-2" />
-              Tactical Group
+              <Users className="mr-2 h-5 w-5" />
+              Buat Grup Baru
             </Button>
           </div>
         </DialogContent>
@@ -780,67 +920,51 @@ export default function Chat() {
       
       {/* New Direct Chat Dialog */}
       <Dialog open={showNewDirectChatDialog} onOpenChange={setShowNewDirectChatDialog}>
-        <DialogContent className="bg-[#1a1a1a] border-[#333] text-white">
+        <DialogContent className="bg-[#1a1a1a] text-white border-[#333]">
           <DialogHeader>
-            <DialogTitle className="text-[#8d9c6b]">Start Direct Communication</DialogTitle>
+            <DialogTitle className="text-[#8d9c6b]">Chat Langsung</DialogTitle>
           </DialogHeader>
-          <div className="mt-4">
-            <div className="relative mb-4">
-              <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <Input 
-                className="pl-10 bg-[#111] border-[#333] focus:border-[#8d9c6b] text-white"
-                placeholder="Search personnel..."
-                value={filterText}
-                onChange={(e) => setFilterText(e.target.value)}
-              />
-            </div>
-            <div className="max-h-60 overflow-y-auto">
-              {allUsers
-                .filter(u => 
-                  u.callsign.toLowerCase().includes(filterText.toLowerCase()) ||
-                  u.rank.toLowerCase().includes(filterText.toLowerCase()) ||
-                  u.branch.toLowerCase().includes(filterText.toLowerCase())
-                )
-                .map(user => (
-                  <div 
-                    key={user.id}
-                    className={`p-3 flex items-center hover:bg-[#2d3328] cursor-pointer rounded ${selectedUserId === user.id ? 'bg-[#2d3328]' : ''}`}
-                    onClick={() => setSelectedUserId(user.id)}
-                  >
-                    <Avatar className="h-8 w-8 bg-[#2d3328] text-[#8d9c6b]">
-                      <AvatarFallback>{user.callsign[0].toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div className="ml-3">
-                      <div className="flex items-center">
-                        <span className="font-semibold">{user.callsign}</span>
-                        {user.status === "online" && (
-                          <div className="ml-2 h-2 w-2 bg-green-500 rounded-full"></div>
-                        )}
-                      </div>
-                      <span className="text-xs text-gray-400">{user.rank} • {user.branch}</span>
-                    </div>
-                  </div>
-                ))
-              }
+          
+          <div className="mt-4 space-y-4">
+            <div>
+              <label className="text-sm mb-1 block">Pilih Personel</label>
+              <select 
+                className="w-full bg-[#262626] border border-[#333] rounded-md p-2 focus:border-[#8d9c6b] focus:ring-[#8d9c6b]"
+                value={selectedUserId || ""}
+                onChange={(e) => setSelectedUserId(Number(e.target.value))}
+              >
+                <option value="">Pilih personel...</option>
+                {allUsers
+                  .filter(u => u.id !== user?.id)
+                  .map(user => (
+                    <option key={user.id} value={user.id}>
+                      {user.callsign || user.firstName || `User ${user.id}`}
+                    </option>
+                  ))
+                }
+              </select>
             </div>
           </div>
+          
           <DialogFooter>
             <Button 
-              variant="secondary"
+              variant="outline" 
               onClick={() => setShowNewDirectChatDialog(false)}
+              className="border-[#333] text-gray-300 hover:bg-[#262626]"
             >
-              Cancel
+              Batal
             </Button>
+            
             <Button 
-              className="bg-[#8d9c6b] hover:bg-[#7b8a5b] text-black"
               onClick={() => {
                 if (selectedUserId) {
                   handleStartDirectChat(selectedUserId);
                 }
               }}
               disabled={!selectedUserId || isCreatingChat}
+              className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
             >
-              {isCreatingChat ? 'Starting...' : 'Start Chat'}
+              {isCreatingChat ? "Memproses..." : "Mulai Chat"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -848,103 +972,67 @@ export default function Chat() {
       
       {/* New Group Dialog */}
       <Dialog open={showNewGroupDialog} onOpenChange={setShowNewGroupDialog}>
-        <DialogContent className="bg-[#1a1a1a] border-[#333] text-white">
+        <DialogContent className="bg-[#1a1a1a] text-white border-[#333]">
           <DialogHeader>
-            <DialogTitle className="text-[#8d9c6b]">Create Tactical Group</DialogTitle>
+            <DialogTitle className="text-[#8d9c6b]">Buat Grup Baru</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 mt-2">
+          
+          <div className="mt-4 space-y-4">
             <div>
-              <label className="text-sm text-gray-400 mb-1 block">Group Name</label>
+              <label className="text-sm mb-1 block">Nama Grup</label>
               <Input 
-                className="bg-[#111] border-[#333] focus:border-[#8d9c6b] text-white"
-                placeholder="Enter group name"
+                className="bg-[#262626] border-[#333] text-gray-300"
+                placeholder="Masukkan nama grup"
                 value={newGroupName}
                 onChange={(e) => setNewGroupName(e.target.value)}
               />
             </div>
+            
             <div>
-              <label className="text-sm text-gray-400 mb-1 block">Select Members</label>
-              <div className="relative mb-4">
-                <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <Input 
-                  className="pl-10 bg-[#111] border-[#333] focus:border-[#8d9c6b] text-white"
-                  placeholder="Search personnel..."
-                  value={filterText}
-                  onChange={(e) => setFilterText(e.target.value)}
-                />
-              </div>
-              {/* Selected members */}
-              {selectedUserIds.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {selectedUserIds.map(id => {
-                    const user = allUsers.find(u => u.id === id);
-                    return user ? (
-                      <Badge 
-                        key={id} 
-                        className="bg-[#2d3328] text-[#8d9c6b] flex items-center gap-1"
-                        onClick={() => setSelectedUserIds(selectedUserIds.filter(uid => uid !== id))}
-                      >
-                        {user.callsign}
-                        <span className="cursor-pointer">×</span>
-                      </Badge>
-                    ) : null;
-                  })}
-                </div>
-              )}
-              <div className="max-h-40 overflow-y-auto">
+              <label className="text-sm mb-1 block">Pilih Anggota</label>
+              <div className="max-h-40 overflow-y-auto bg-[#262626] border border-[#333] rounded-md p-2">
                 {allUsers
-                  .filter(u => 
-                    u.callsign.toLowerCase().includes(filterText.toLowerCase()) ||
-                    u.rank.toLowerCase().includes(filterText.toLowerCase()) ||
-                    u.branch.toLowerCase().includes(filterText.toLowerCase())
-                  )
+                  .filter(u => u.id !== user?.id)
                   .map(user => (
-                    <div 
-                      key={user.id}
-                      className={`p-3 flex items-center justify-between hover:bg-[#2d3328] cursor-pointer rounded ${selectedUserIds.includes(user.id) ? 'bg-[#2d3328]' : ''}`}
-                      onClick={() => {
-                        if (selectedUserIds.includes(user.id)) {
-                          setSelectedUserIds(selectedUserIds.filter(id => id !== user.id));
-                        } else {
-                          setSelectedUserIds([...selectedUserIds, user.id]);
-                        }
-                      }}
-                    >
-                      <div className="flex items-center">
-                        <Avatar className="h-8 w-8 bg-[#2d3328] text-[#8d9c6b]">
-                          <AvatarFallback>{user.callsign[0].toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <div className="ml-3">
-                          <span className="font-semibold">{user.callsign}</span>
-                          <span className="text-xs text-gray-400 block">{user.rank} • {user.branch}</span>
-                        </div>
-                      </div>
-                      {selectedUserIds.includes(user.id) && (
-                        <div className="h-5 w-5 bg-[#8d9c6b] rounded-full flex items-center justify-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-black" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                      )}
+                    <div key={user.id} className="flex items-center p-1">
+                      <input 
+                        type="checkbox" 
+                        id={`user-${user.id}`}
+                        className="mr-2"
+                        checked={selectedUserIds.includes(user.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedUserIds(prev => [...prev, user.id]);
+                          } else {
+                            setSelectedUserIds(prev => prev.filter(id => id !== user.id));
+                          }
+                        }}
+                      />
+                      <label htmlFor={`user-${user.id}`}>
+                        {user.callsign || user.firstName || `User ${user.id}`}
+                      </label>
                     </div>
                   ))
                 }
               </div>
             </div>
           </div>
+          
           <DialogFooter>
             <Button 
-              variant="secondary"
+              variant="outline" 
               onClick={() => setShowNewGroupDialog(false)}
+              className="border-[#333] text-gray-300 hover:bg-[#262626]"
             >
-              Cancel
+              Batal
             </Button>
+            
             <Button 
-              className="bg-[#8d9c6b] hover:bg-[#7b8a5b] text-black"
               onClick={handleCreateGroupChat}
               disabled={!newGroupName || selectedUserIds.length === 0 || isCreatingChat}
+              className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
             >
-              {isCreatingChat ? 'Creating...' : 'Create Group'}
+              {isCreatingChat ? "Memproses..." : "Buat Grup"}
             </Button>
           </DialogFooter>
         </DialogContent>

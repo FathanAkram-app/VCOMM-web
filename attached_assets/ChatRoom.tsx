@@ -1,1056 +1,1154 @@
-import { useState, useEffect, useRef } from 'react';
-import { Send, MoreVertical, Shield, Trash, Reply, Forward, X, User, Users, ArrowLeft, Mic } from 'lucide-react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useAuth } from '@/hooks/useAuth';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { queryClient } from '@/lib/queryClient';
-import { formatDistanceToNow } from 'date-fns';
-import { id } from 'date-fns/locale';
-import { type Conversation, type Message } from '@shared/schema';
-import AttachmentUploader from './AttachmentUploader';
-import MessageAttachment from './MessageAttachment';
-import VoiceRecorder from './VoiceRecorder';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle 
-} from "@/components/ui/dialog";
-
-// Interface untuk data chat
-interface ChatData {
-  id: number;
-  name: string;
-  isGroup: boolean;
-}
-
-// Interface untuk pesan chat
-interface ChatMessage {
-  id: number;
-  senderId: number;
-  senderName: string;
-  content: string;
-  timestamp: string;
-  isRead: boolean;
-  classification?: string;
-  // Attachment fields
-  hasAttachment?: boolean;
-  attachmentType?: string;
-  attachmentUrl?: string;
-  attachmentName?: string;
-  attachmentSize?: number;
-  // Reply functionality
-  replyToId?: number;
-  // Reply info yang ditambahkan dari server
-  replyInfo?: {
-    content: string;
-    senderName: string;
-    hasAttachment?: boolean;
-    attachmentName?: string;
-  };
-}
+import { useState, useRef, useEffect } from "react";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { ArrowLeft, PaperclipIcon, SendIcon, Mic, StopCircle, Reply, Forward, Trash2, MoreVertical, X, CornerDownRight, PhoneIcon, VideoIcon, Users, User } from "lucide-react";
+import { useAuth } from "../hooks/use-auth";
+import { useCall } from "../hooks/useCall";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 
 interface ChatRoomProps {
   chatId: number;
-  isGroup: boolean;
+  isRoom: boolean;
+  chatName: string;
   onBack: () => void;
+  onNavigateToChat?: (targetId: number, isTargetRoom: boolean, forwardedMsg?: any) => void;
+  forwardedMessage?: any;
 }
 
-export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
+export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateToChat, forwardedMessage }: ChatRoomProps) {
   const { user } = useAuth();
-  const [message, setMessage] = useState('');
-  const [chatData, setChatData] = useState<ChatData | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [selectedMessage, setSelectedMessage] = useState<ChatMessage | null>(null);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isForwardDialogOpen, setIsForwardDialogOpen] = useState(false);
-  const [replyToMessage, setReplyToMessage] = useState<ChatMessage | null>(null);
-  const [conversations, setConversations] = useState<{id: number, name: string, isGroup?: boolean}[]>([]);
+  const { startCall } = useCall();
+  const [message, setMessage] = useState("");
+  const [showMembersDialog, setShowMembersDialog] = useState(false);
   
-  // State untuk voice recording
-  const [isVoiceRecording, setIsVoiceRecording] = useState(false);
-  const [voiceAttachment, setVoiceAttachment] = useState<{
-    blob: Blob;
-    url: string;
-    duration?: number;
-  } | null>(null);
-  
-  // Fetch chat data
-  const { data: chat } = useQuery({
-    queryKey: [`/api/conversations/${chatId}`],
-    enabled: !!chatId && !!user,
-  });
-  
-  // Fetch messages
-  const { data: messages = [], refetch: refetchMessages } = useQuery({
-    queryKey: [`/api/conversations/${chatId}/messages`],
-    enabled: !!chatId && !!user,
-    refetchInterval: 3000, // Polling every 3 seconds
-    retry: 3, // Coba lagi jika gagal
-    staleTime: 10 * 1000, // Data dianggap stale setelah 10 detik
-    // Tambahkan console log untuk membantu debugging
-    onSuccess: (data) => {
-      console.log("Messages loaded:", data);
-      // Cek apakah ada pesan dengan replyToId
-      const repliedMessages = data.filter((m: any) => m.replyToId);
-      if (repliedMessages.length > 0) {
-        console.log("Messages with replies:", repliedMessages);
-      }
-    }
-  });
-  
-  // Memastikan pesan dimuat ulang saat chat diubah
-  useEffect(() => {
-    if (chatId) {
-      refetchMessages();
-    }
-  }, [chatId, refetchMessages]);
-  
-  // Add console log to debug message data
-  useEffect(() => {
-    console.log("Messages data received:", messages);
-    if (Array.isArray(messages)) {
-      console.log(`Fetched ${messages.length} messages for chat ${chatId}`);
-    }
-  }, [messages, chatId]);
-  
-  // Fungsi untuk handle voice recording
-  const handleStartVoiceRecording = () => {
-    setIsVoiceRecording(true);
-  };
-  
-  const handleVoiceRecordingComplete = (audioBlob: Blob, audioUrl: string) => {
-    setVoiceAttachment({
-      blob: audioBlob,
-      url: audioUrl
-    });
-    setIsVoiceRecording(false);
-  };
-  
-  const handleCancelVoiceRecording = () => {
-    setIsVoiceRecording(false);
-    setVoiceAttachment(null);
-  };
-  
-  // Upload voice attachment
-  const uploadVoiceAttachment = async (blob: Blob): Promise<{ name: string; url: string; type: string; size: number } | null> => {
-    const formData = new FormData();
-    const audioFile = new File(
-      [blob], 
-      `voice_note_${Date.now()}.mp3`, 
-      { type: 'audio/mp3' }
-    );
-    
-    formData.append('file', audioFile);
-    
+  // Get room data from local storage or parent component props
+  const getRoomData = () => {
     try {
-      const response = await fetch('/api/attachments/upload', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to upload voice attachment');
+      // Try to get room data from local storage first
+      const storedRooms = localStorage.getItem('roomData');
+      if (storedRooms) {
+        const rooms = JSON.parse(storedRooms);
+        const room = rooms.find((r: any) => r.id === chatId);
+        if (room) return room;
       }
       
-      const data = await response.json();
+      // Fallback to mock data if necessary
       return {
-        name: data.filename,
-        url: data.path,
-        type: 'audio',
-        size: audioFile.size
+        id: chatId,
+        name: chatName,
+        members: Array.from({ length: Math.floor(Math.random() * 10) + 3 }, (_, i) => ({
+          id: i + 1,
+          username: `OPERATOR-${i+1}`
+        }))
       };
-      
     } catch (error) {
-      console.error('Error uploading voice attachment:', error);
-      return null;
+      console.error("Error getting room data:", error);
+      return {
+        id: chatId,
+        name: chatName,
+        members: []
+      };
     }
   };
-
-  // Send message mutation
-  const sendMessageMutation = useMutation({
-    mutationFn: async (content: string | Record<string, any>) => {
-      // Handle voice attachment first if present
-      let audioAttachment = null;
-      if (voiceAttachment?.blob) {
-        audioAttachment = await uploadVoiceAttachment(voiceAttachment.blob);
-      }
-      
-      let payload;
-      
-      if (audioAttachment) {
-        // Voice message
-        payload = {
-          conversationId: chatId,
-          content: "🔊 Pesan Suara",
-          classification: 'UNCLASSIFIED',
-          hasAttachment: true,
-          attachmentType: audioAttachment.type,
-          attachmentUrl: audioAttachment.url,
-          attachmentName: audioAttachment.name,
-          attachmentSize: audioAttachment.size,
-          replyToId: replyToMessage ? replyToMessage.id : undefined
-        };
-      } else if (typeof content === 'string') {
-        // Simple text message
-        payload = {
-          conversationId: chatId,
-          content,
-          classification: 'UNCLASSIFIED',
-          replyToId: replyToMessage ? replyToMessage.id : undefined
-        };
-      } else {
-        // Message with attachment
-        payload = {
-          conversationId: chatId,
-          content: content.content,
-          classification: 'UNCLASSIFIED',
-          hasAttachment: content.hasAttachment,
-          attachmentType: content.attachmentType,
-          attachmentUrl: content.attachmentUrl,
-          attachmentName: content.attachmentName,
-          attachmentSize: content.attachmentSize,
-          replyToId: replyToMessage ? replyToMessage.id : undefined
-        };
-      }
-      
-      return fetch('/api/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-        credentials: 'include'
-      }).then(res => {
-        if (!res.ok) throw new Error('Failed to send message');
-        return res.json();
-      });
-    },
-    onSuccess: () => {
-      // Invalidate and refetch messages
-      queryClient.invalidateQueries({ queryKey: [`/api/conversations/${chatId}/messages`] });
-      queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
-    }
-  });
   
-  // Fetch all users to find the other user in direct chats
-  const { data: allUsers } = useQuery({
-    queryKey: [`/api/all-users`],
-    enabled: !!user && !isGroup,
-  });
-
-  // Fetch conversation members
-  const { data: conversationMembers } = useQuery({
-    queryKey: [`/api/conversations/${chatId}/members`],
-    enabled: !!chatId && !!user,
-  });
-
-  // Update chat data when chat changes
-  useEffect(() => {
-    if (chat && typeof chat === 'object') {
-      const chatObj = chat as Conversation;
-      
-      // Default chat name
-      let chatName = chatObj.name || 'Chat';
-      
-      if (!isGroup && conversationMembers && Array.isArray(conversationMembers) && allUsers && Array.isArray(allUsers)) {
-        // Find the other member in the conversation (not the current user)
-        const otherMemberId = conversationMembers.find(member => member.userId !== user?.id)?.userId;
-        
-        if (otherMemberId) {
-          // Find the other user's data
-          const otherUser = allUsers.find(u => u.id === otherMemberId);
-          
-          if (otherUser) {
-            // Use the other user's callsign for the chat name
-            chatName = otherUser.callsign || chatName;
-            console.log("Setting chat name to other user's callsign:", chatName);
-          }
+  // Mock messages based on chat type
+  const getInitialMessages = () => {
+    if (isRoom) {
+      // Group chat messages
+      return [
+        {
+          id: 1,
+          content: "Awaiting further instructions for Operation Alpha.",
+          sender: { id: 2, username: "BRAVO2" },
+          timestamp: "10:45",
+          isRead: true
+        },
+        {
+          id: 2,
+          content: "Coordinates received. Moving to rendezvous point.",
+          sender: { id: 3, username: "CHARLIE3" },
+          timestamp: "10:46",
+          isRead: true
+        },
+        {
+          id: 3,
+          content: "Supplies will be at the designated location at 1200 hours.",
+          sender: { id: 1, username: "ALPHA1" },
+          timestamp: "10:50",
+          isRead: true
+        },
+        {
+          id: 4,
+          content: "Roger that. Will proceed with caution.",
+          sender: { id: 4, username: "DELTA4" },
+          timestamp: "10:52",
+          isRead: true
+        },
+        {
+          id: 5,
+          content: "UAV surveillance confirms area is clear. Proceed with mission.",
+          sender: { id: 1, username: "ALPHA1" },
+          timestamp: "10:55",
+          isRead: true
         }
-      }
+      ];
+    } else {
+      // Direct chat messages
+      // Determine the other user based on chatName
+      const otherUsername = chatName;
+      const otherUserId = chatId;
       
-      setChatData({
-        id: chatObj.id || chatId,
-        name: chatName,
-        isGroup: typeof chatObj.isGroup === 'boolean' ? chatObj.isGroup : isGroup
-      });
+      return [
+        {
+          id: 1,
+          content: `Secure direct communication established with ${otherUsername}.`,
+          sender: { id: 1, username: "ALPHA1" },
+          timestamp: "09:30",
+          isRead: true
+        },
+        {
+          id: 2,
+          content: "Status report requested for your current position.",
+          sender: { id: otherUserId, username: otherUsername },
+          timestamp: "09:32",
+          isRead: true
+        },
+        {
+          id: 3,
+          content: "All systems nominal. Maintaining position at grid reference Delta-7.",
+          sender: { id: 1, username: "ALPHA1" },
+          timestamp: "09:35",
+          isRead: true
+        },
+        {
+          id: 4,
+          content: "Acknowledged. Stand by for further instructions.",
+          sender: { id: otherUserId, username: otherUsername },
+          timestamp: "09:40",
+          isRead: true
+        }
+      ];
     }
-  }, [chat, isGroup, chatId, conversationMembers, allUsers, user?.id]);
+  };
+  
+  const [messages, setMessages] = useState(getInitialMessages());
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Enhanced attachment type to handle different file types
+  type Attachment = {
+    url: string;
+    name: string;
+    type: string;
+    size: number;
+    file: File;
+  };
+  
+  // Message action states
+  const [activeMessageId, setActiveMessageId] = useState<number | null>(null);
+  const [showMessageActions, setShowMessageActions] = useState(false);
+  const [showForwardDialog, setShowForwardDialog] = useState(false);
+  const [showReplyForm, setShowReplyForm] = useState(false);
+  const [replyingToMessage, setReplyingToMessage] = useState<any | null>(null);
+  const [forwardingMessage, setForwardingMessage] = useState<any | null>(null);
+  
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [audioURL, setAudioURL] = useState<string | null>(null);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const audioChunks = useRef<BlobPart[]>([]);
+  
+  // Voice recording timer
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    
+    if (isRecording) {
+      interval = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isRecording]);
   
   // Auto-scroll to bottom when messages change
-  const scrollToBottom = () => {
+  useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  };
-  
-  useEffect(() => {
-    scrollToBottom();
   }, [messages]);
   
-  // State for attachment
-  const [attachment, setAttachment] = useState<{
-    url: string;
-    name: string;
-    type: string;
-    size: number;
-    mimetype: string;
-  } | null>(null);
-
-  // Handle file upload complete
-  const handleFileUploaded = (fileData: {
-    url: string;
-    name: string;
-    type: string;
-    size: number;
-    mimetype: string;
-  }) => {
-    setAttachment(fileData);
-  };
-
-  // Delete message mutation
-  const deleteMessageMutation = useMutation({
-    mutationFn: async (messageId: number) => {
-      const response = await fetch(`/api/messages/${messageId}`, {
-        method: 'DELETE',
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to delete message');
-      }
-      
-      return response.json();
-    },
-    onSuccess: () => {
-      setIsDeleteDialogOpen(false);
-      setSelectedMessage(null);
-      queryClient.invalidateQueries({ queryKey: [`/api/conversations/${chatId}/messages`] });
-    },
-  });
-  
-  // Forward message mutation
-  const forwardMessageMutation = useMutation({
-    mutationFn: async ({ messageId, targetConversationId }: { messageId: number, targetConversationId: number }) => {
-      const response = await fetch(`/api/messages/${messageId}/forward`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ conversationId: targetConversationId }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to forward message');
-      }
-      
-      return response.json();
-    },
-    onSuccess: () => {
-      setIsForwardDialogOpen(false);
-      setSelectedMessage(null);
-    },
-  });
-  
-  // Load conversations for forward dialog
+  // Handle forwarded message if provided
   useEffect(() => {
-    if (isForwardDialogOpen) {
-      // Fetch all users first
-      fetch('/api/all-users')
-        .then(res => res.json())
-        .then(users => {
-          console.log("All users:", users);
-          
-          // Fetch direct chats
-          fetch('/api/direct-chats')
-            .then(res => res.json())
-            .then(directChats => {
-              console.log("Direct chats:", directChats);
-              
-              // Fetch group chats
-              fetch('/api/rooms')
-                .then(res => res.json())
-                .then(rooms => {
-                  console.log("Rooms:", rooms);
-                  
-                  // For each direct chat, load its members
-                  const memberPromises = directChats.map((chat: any) => 
-                    fetch(`/api/conversations/${chat.id}/members`)
-                      .then(res => res.json())
-                  );
-                  
-                  Promise.all(memberPromises)
-                    .then(memberResults => {
-                      console.log("All member results:", memberResults);
-                      
-                      // Cari nama personel yang benar untuk setiap chat
-                      const allConversations: { id: number; name: string; isGroup: boolean }[] = [];
-                      
-                      // Tambahkan direct chats dengan nama pengguna dari users yang diambil
-                      if (Array.isArray(directChats)) {
-                        directChats.forEach((chat: any, idx: number) => {
-                          // Get the members for this chat
-                          const members = memberResults[idx] || [];
-                          console.log(`Chat ${chat.id} members:`, members);
-                          
-                          // Find the other user in the conversation
-                          const otherMember = members.find((m: any) => m.userId !== user?.id);
-                          const otherUserId = otherMember?.userId;
-                          
-                          console.log(`For chat ${chat.id} - User ID: ${user?.id}, Other user ID: ${otherUserId}`);
-                          
-                          // Cari data pengguna lain dari daftar users
-                          let otherUserName = 'Chat Langsung';
-                          if (otherUserId && Array.isArray(users)) {
-                            const otherUser = users.find((u: any) => u.id === otherUserId);
-                            if (otherUser) {
-                              // Format: Callsign (Nama Lengkap)
-                              otherUserName = `${otherUser.callsign || 'Pengguna'} ${otherUser.fullName ? `(${otherUser.fullName})` : ''}`;
-                              console.log(`Found user for ID ${otherUserId}:`, otherUserName);
-                            }
-                          }
-                          
-                          console.log(`Adding direct chat: ${chat.id} with user: ${otherUserId}, name: ${otherUserName}`);
-                          
-                          // Jika kita tidak bisa mendapatkan nama yang valid, coba gunakan nama dari chat sendiri
-                          if (otherUserName === 'Chat Langsung' && chat.name && !chat.name.startsWith('Direct chat')) {
-                            otherUserName = chat.name;
-                          }
-                          
-                          allConversations.push({
-                            id: chat.id,
-                            name: otherUserName,
-                            isGroup: false
-                          });
-                        });
-                      }
-                      
-                      // Tambahkan grup chats
-                      if (Array.isArray(rooms)) {
-                        rooms.forEach((room: any) => {
-                          allConversations.push({
-                            id: room.id,
-                            name: room.name || 'Grup Chat',
-                            isGroup: true
-                          });
-                        });
-                      }
-                      
-                      console.log("Final conversations list for forward:", allConversations);
-                      setConversations(allConversations);
-                    })
-                    .catch(error => console.error('Error fetching conversation members:', error));
-                })
-                .catch(error => console.error('Error fetching rooms:', error));
-            })
-            .catch(error => console.error('Error fetching direct chats:', error));
-        })
-        .catch(error => console.error('Error fetching all users:', error));
+    if (forwardedMessage) {
+      // If this component was rendered with a forwarded message, add it to the messages
+      setMessages(prevMessages => [...prevMessages, forwardedMessage]);
     }
-  }, [isForwardDialogOpen, user?.id]);
+  }, [forwardedMessage]);
   
-  // Handle sending messages
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if ((!message.trim() && !attachment) || !user) return;
-    
-    // Log actual reply information
-    console.log("Current reply state:", replyToMessage);
-    
-    // If we have an attachment, include it in the message
-    if (attachment) {
-      const messageData = {
-        content: message.trim() || `[File: ${attachment.name}]`,
-        hasAttachment: true,
-        attachmentType: attachment.type,
-        attachmentUrl: attachment.url,
-        attachmentName: attachment.name,
-        attachmentSize: attachment.size,
-        replyToId: replyToMessage ? replyToMessage.id : undefined
-      };
-      
-      console.log("Sending message with attachment and reply data:", messageData);
-      sendMessageMutation.mutate(messageData);
-      setAttachment(null);
-    } else {
-      // Send normal text message with reply info if applicable
-      const messageData = {
-        content: message.trim(),
-        replyToId: replyToMessage ? replyToMessage.id : undefined,
-        conversationId: chatId
-      };
-      
-      console.log("Sending text message with reply data:", messageData);
-      sendMessageMutation.mutate(messageData);
-    }
-    
-    setMessage('');
-    setReplyToMessage(null); // Reset reply state after sending
+  // Function to format seconds into MM:SS
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const secs = (seconds % 60).toString().padStart(2, '0');
+    return `${mins}:${secs}`;
   };
   
-  // Format timestamp
-  const formatMessageTime = (timestamp: string) => {
-    try {
-      const date = new Date(timestamp);
-      return formatDistanceToNow(date, { addSuffix: true, locale: id });
-    } catch (e) {
-      return '';
-    }
+  // Get file icon based on file type
+  const getFileIcon = (type: string) => {
+    if (type.startsWith('image/')) return '🖼️';
+    if (type.startsWith('video/')) return '🎬';
+    if (type.startsWith('audio/')) return '🎵';
+    if (type.includes('pdf')) return '📄';
+    if (type.includes('word')) return '📝';
+    if (type.includes('excel') || type.includes('sheet')) return '📊';
+    if (type.includes('zip') || type.includes('compressed')) return '📦';
+    return '📎';
   };
   
-  // Group messages by date
-  const groupMessagesByDate = (messageData: any[]) => {
-    if (!Array.isArray(messageData)) {
-      console.log("messageData is not an array:", messageData);
-      return [];
-    }
+  // Format file size
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + ' B';
+    else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    else return (bytes / 1048576).toFixed(1) + ' MB';
+  };
+  
+  // Handle file attachment selection
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
     
-    console.log("Processing message data for grouping:", messageData);
-    console.log("Total messages to process:", messageData.length);
-    
-    // Debug: inspect all messages with replyToId to see if they exist
-    const repliesMessages = messageData.filter(m => m.replyToId);
-    if (repliesMessages.length > 0) {
-      console.log("Messages with replies:", repliesMessages);
-    }
-    
-    // Sortir pesan berdasarkan waktu (dari yang terlama ke yang terbaru)
-    const sortedMessages = [...messageData].sort((a, b) => {
-      const timeA = new Date(a.timestamp || a.createdAt).getTime();
-      const timeB = new Date(b.timestamp || b.createdAt).getTime();
-      return timeA - timeB;
-    });
-    
-    const groups: { [key: string]: ChatMessage[] } = {};
-    
-    sortedMessages.forEach((msg: any) => {
-      // For messages from the server, createdAt is used instead of timestamp
-      const timestamp = msg.timestamp || msg.createdAt;
-      
-      if (!msg || !timestamp) {
-        console.log("Skipping message without timestamp:", msg);
-        return;
-      }
-      
-      try {
-        const date = new Date(timestamp);
-        const dateStr = date.toDateString();
-        
-        if (!groups[dateStr]) {
-          groups[dateStr] = [];
-        }
-        
-        // Try to get the sender name from allUsers
-        let senderName = 'Unknown';
-        if (allUsers && Array.isArray(allUsers)) {
-          const sender = allUsers.find(u => u.id === msg.senderId);
-          if (sender) {
-            senderName = sender.callsign || sender.fullName || 'Unknown';
-          }
-        }
-        
-        groups[dateStr].push({
-          id: msg.id || Math.random(),
-          senderId: msg.senderId || 0,
-          senderName: senderName,
-          content: msg.content || '',
-          timestamp: timestamp,
-          isRead: msg.isRead || false,
-          classification: msg.classification || 'UNCLASSIFIED',
-          // Attachment fields
-          hasAttachment: msg.hasAttachment || false,
-          attachmentType: msg.attachmentType || '',
-          attachmentUrl: msg.attachmentUrl || '',
-          attachmentName: msg.attachmentName || '',
-          attachmentSize: msg.attachmentSize || 0,
-          // Reply, Forward fields
-          replyToId: msg.replyToId || undefined,
-          forwardedFromId: msg.forwardedFromId || undefined,
-          isDeleted: msg.isDeleted || false
-        });
-      } catch (e) {
-        console.error('Error processing message:', e, msg);
-      }
-    });
-    
-    const result = Object.entries(groups).map(([date, messages]) => ({
-      date,
-      messages
+    // Create attachment objects with all necessary data
+    const newAttachments = Array.from(files).map(file => ({
+      url: URL.createObjectURL(file),
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      file: file
     }));
     
-    console.log("Grouped messages:", result);
-    console.log("Total date groups:", result.length);
-    if (result.length > 0) {
-      console.log("Total messages in first group:", result[0].messages.length);
-    }
-    return result;
+    setAttachments([...attachments, ...newAttachments]);
+    
+    // Clear the input so the same file can be selected again
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
   
-  const messageGroups = groupMessagesByDate(Array.isArray(messages) ? messages : []);
+  // Handle voice recording
+  const handleVoiceRecording = async () => {
+    if (isRecording && mediaRecorder) {
+      // Stop recording
+      mediaRecorder.stop();
+      setIsRecording(false);
+      
+      // We don't reset timer immediately to show the final duration
+      setTimeout(() => {
+        setRecordingTime(0);
+      }, 1000);
+      
+    } else {
+      // Start recording
+      try {
+        audioChunks.current = [];
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const recorder = new MediaRecorder(stream);
+        
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            audioChunks.current.push(e.data);
+          }
+        };
+        
+        recorder.onstop = () => {
+          // Create audio blob and URL
+          const audioBlob = new Blob(audioChunks.current, { type: 'audio/webm' });
+          const url = URL.createObjectURL(audioBlob);
+          setAudioURL(url);
+          
+          // Create a File object from the Blob for easier handling
+          const audioFile = new File(
+            [audioBlob], 
+            `voice_recording_${new Date().getTime()}.webm`, 
+            { type: 'audio/webm' }
+          );
+          
+          // Process the audio recording as an attachment
+          const audioAttachment = {
+            id: Math.random().toString(36).substring(2, 9),
+            name: `Voice Note - ${formatTime(recordingTime)}`,
+            type: 'audio/webm',
+            size: audioBlob.size,
+            url: url,
+            icon: '🎤'
+          };
+          
+          // Send the audio message
+          const newMessage = {
+            id: messages.length + 1,
+            content: "🎤 Voice recording - " + formatTime(recordingTime),
+            sender: { id: user?.id || 1, username: user?.username || "ALPHA1" },
+            timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+            isRead: true,
+            audioUrl: url,
+            attachments: [audioAttachment]
+          };
+          
+          setMessages([...messages, newMessage]);
+          
+          // Stop all tracks
+          stream.getTracks().forEach(track => track.stop());
+        };
+        
+        setMediaRecorder(recorder);
+        recorder.start();
+        setIsRecording(true);
+      } catch (err) {
+        console.error("Error accessing microphone:", err);
+        alert("Could not access microphone. Please check permissions.");
+      }
+    }
+  };
   
-  // UI untuk reply message
-  const ReplyPreview = () => {
-    if (!replyToMessage) return null;
+  // Handle message actions
+  const handleMessageLongPress = (messageId: number) => {
+    setActiveMessageId(messageId);
+    setShowMessageActions(true);
+  };
+  
+  const handleReply = (msg: any) => {
+    setReplyingToMessage(msg);
+    setShowReplyForm(true);
+    setShowMessageActions(false);
+  };
+  
+  const handleForward = (msg: any) => {
+    setForwardingMessage(msg);
+    setShowForwardDialog(true);
+    setShowMessageActions(false);
+  };
+  
+  const handleDelete = (messageId: number) => {
+    setMessages(messages.filter(msg => msg.id !== messageId));
+    setShowMessageActions(false);
+  };
+  
 
-    return (
-      <div className="px-4 py-2 bg-[#2a2a2a] border-t border-[#333333] flex items-start">
-        <div className="flex-1">
-          <p className="text-xs text-[#a6c455] flex items-center">
-            <Reply className="h-3 w-3 mr-1" />
-            Membalas {replyToMessage.senderId === user?.id ? 'pesan Anda' : replyToMessage.senderName}
-          </p>
-          <p className="text-xs text-gray-400 truncate">{replyToMessage.content}</p>
-        </div>
+  
+  const handleSendForward = (targetId: number, isTargetRoom: boolean) => {
+    if (!forwardingMessage) return;
+    
+    // Create a forwarded version of the message
+    const forwardedContent = `FORWARDED MESSAGE FROM ${forwardingMessage.sender.username} (${forwardingMessage.timestamp})`;
+    
+    // Process attachments if any
+    let forwardedAttachments = [];
+    if ('attachments' in forwardingMessage && forwardingMessage.attachments && forwardingMessage.attachments.length > 0) {
+      forwardedAttachments = forwardingMessage.attachments.map((attachment: any) => ({
+        id: Math.random().toString(36).substring(2, 9),
+        name: attachment.name,
+        type: attachment.type,
+        size: attachment.size,
+        url: attachment.url,
+        icon: attachment.icon || getFileIcon(attachment.type)
+      }));
+    }
+    
+    // Forward any audio recording
+    let audioUrl = undefined;
+    if ('audioUrl' in forwardingMessage && forwardingMessage.audioUrl) {
+      audioUrl = forwardingMessage.audioUrl;
+    }
+    
+    // Create the forwarded message object that would go to the recipient
+    const newForwardedMessage = {
+      id: Date.now(), // Use timestamp for unique ID
+      content: forwardedContent,
+      sender: { id: user?.id || 1, username: user?.username || "ALPHA1" },
+      timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+      isRead: true,
+      forwardedMessage: {
+        content: forwardingMessage.content,
+        sender: forwardingMessage.sender,
+        timestamp: forwardingMessage.timestamp,
+        attachments: forwardedAttachments.length > 0 ? forwardedAttachments : undefined,
+        audioUrl: audioUrl
+      }
+    };
+    
+    // Get recipient info for display
+    let recipientName = "Unknown";
+    let recipientMessages = [];
+    
+    if (isTargetRoom) {
+      // Find room details from tactical channels list
+      const tacticalChannels = [
+        { 
+          id: 101, 
+          name: "ALPHA SQUAD", 
+          isRoom: true,
+          messages: [
+            {
+              id: 1,
+              content: "Status report, all units.",
+              sender: { id: 5, username: "COMMANDER" },
+              timestamp: "09:15",
+              isRead: true
+            },
+            {
+              id: 2,
+              content: "Sector 7 clear, proceeding to checkpoint Bravo.",
+              sender: { id: 2, username: "BRAVO2" },
+              timestamp: "09:18",
+              isRead: true
+            }
+          ]
+        },
+        { 
+          id: 102, 
+          name: "SUPPORT TEAM", 
+          isRoom: true,
+          messages: [
+            {
+              id: 1,
+              content: "Supply drop confirmed at coordinates 35.4, -12.8",
+              sender: { id: 6, username: "LOGISTICS" },
+              timestamp: "08:45",
+              isRead: true
+            }
+          ]
+        },
+        { 
+          id: 103, 
+          name: "COMMAND CENTER", 
+          isRoom: true,
+          messages: [
+            {
+              id: 1,
+              content: "Satellite imagery updated. Transmitting now.",
+              sender: { id: 7, username: "INTEL" },
+              timestamp: "10:02",
+              isRead: true
+            }
+          ]
+        }
+      ];
+      
+      const room = tacticalChannels.find(room => room.id === targetId);
+      if (room) {
+        recipientName = room.name;
+        recipientMessages = [...room.messages];
+      }
+    } else {
+      // Find user details from operators list
+      const operators = [
+        { 
+          id: 2, 
+          name: "BRAVO2", 
+          isRoom: false,
+          messages: [
+            {
+              id: 1,
+              content: "Patrol route confirmed for tonight.",
+              sender: { id: 2, username: "BRAVO2" },
+              timestamp: "11:30",
+              isRead: true
+            }
+          ]
+        },
+        { 
+          id: 3, 
+          name: "CHARLIE3", 
+          isRoom: false,
+          messages: [
+            {
+              id: 1,
+              content: "Equipment check completed, all systems nominal.",
+              sender: { id: 3, username: "CHARLIE3" },
+              timestamp: "10:15",
+              isRead: true
+            }
+          ]
+        },
+        { 
+          id: 4, 
+          name: "DELTA4", 
+          isRoom: false,
+          messages: [
+            {
+              id: 1,
+              content: "Perimeter secured, standing by for further instructions.",
+              sender: { id: 4, username: "DELTA4" },
+              timestamp: "09:45",
+              isRead: true
+            }
+          ]
+        }
+      ];
+      
+      const person = operators.find(person => person.id === targetId);
+      if (person) {
+        recipientName = person.name;
+        recipientMessages = [...person.messages];
+      }
+    }
+    
+    // For the demo, let's create a simulation of the target chat
+    // Get the existing messages of the target
+    const targetMessages = [...recipientMessages];
+    
+    // Add the forwarded message to the target's messages
+    targetMessages.push(newForwardedMessage);
+    
+    // Show confirmation message in current chat
+    const confirmationMessage = {
+      id: messages.length + 1,
+      content: `Message forwarded to ${isTargetRoom ? "TACTICAL CHANNEL" : "OPERATOR"}: ${recipientName}`,
+      sender: { id: 0, username: "SYSTEM" },
+      timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+      isRead: true,
+      isSystemMessage: true
+    };
+    
+    // Update current chat with confirmation
+    setMessages([...messages, confirmationMessage]);
+    
+    // Close dialog
+    setShowForwardDialog(false);
+    setForwardingMessage(null);
+    
+    // Display a brief confirmation toast
+    alert(`Message forwarded to ${recipientName}!`);
+    
+    // In a real app with proper state management, we'd navigate to the target chat,
+    // show it briefly, then return to the original chat using context or navigation
+    if (onNavigateToChat) {
+      // Use the provided callback from parent to handle navigation between chats
+      // Pass the forwarded message to display in the target chat
+      onNavigateToChat(targetId, isTargetRoom, newForwardedMessage);
+    }
+  };
+  
+  const handleCancelReply = () => {
+    setShowReplyForm(false);
+    setReplyingToMessage(null);
+  };
+  
+  const handleSendReply = () => {
+    if (message.trim() || attachments.length > 0) {
+      // Process attachments for reply
+      const fileAttachments = attachments.map(attachment => ({
+        id: Math.random().toString(36).substring(2, 9),
+        name: attachment.name,
+        type: attachment.type,
+        size: attachment.size,
+        url: attachment.url,
+        icon: getFileIcon(attachment.type)
+      }));
+      
+      // Create reply message
+      const newMessage = {
+        id: messages.length + 1,
+        content: message,
+        sender: { id: user?.id || 1, username: user?.username || "ALPHA1" },
+        timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+        isRead: true,
+        attachments: fileAttachments.length > 0 ? fileAttachments : undefined,
+        replyTo: replyingToMessage
+      };
+      
+      setMessages([...messages, newMessage]);
+      setMessage("");
+      setAttachments([]); 
+      setShowReplyForm(false);
+      setReplyingToMessage(null);
+    }
+  };
+  
+  const handleSendMessage = () => {
+    if (showReplyForm) {
+      handleSendReply();
+      return;
+    }
+    
+    if (message.trim() || attachments.length > 0) {
+      console.log(`Sending message: ${message}`);
+      
+      // Prepare content based on message and attachments
+      let content = message;
+      
+      if (attachments.length > 0) {
+        if (message.trim()) {
+          content += `\n[${attachments.length} attachment${attachments.length > 1 ? 's' : ''}]`;
+        } else {
+          content = `[${attachments.length} attachment${attachments.length > 1 ? 's' : ''}]`;
+        }
+      }
+      
+      // Process attachments for display
+      const fileAttachments = attachments.map(attachment => ({
+        id: Math.random().toString(36).substring(2, 9),
+        name: attachment.name,
+        type: attachment.type,
+        size: attachment.size,
+        url: attachment.url,
+        icon: getFileIcon(attachment.type)
+      }));
+      
+      // Add the message to the chat (simulated for demo)
+      const newMessage = {
+        id: messages.length + 1,
+        content: content,
+        sender: { id: user?.id || 1, username: user?.username || "ALPHA1" },
+        timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+        isRead: true,
+        attachments: fileAttachments.length > 0 ? fileAttachments : undefined
+      };
+      
+      setMessages([...messages, newMessage]);
+      setMessage("");
+      setAttachments([]); // Clear attachments after sending
+    }
+  };
+  
+  return (
+    <div className="h-full flex flex-col">
+      {/* Header */}
+      <header className="military-header px-4 py-3 flex items-center shadow-md">
         <Button 
           variant="ghost" 
           size="icon" 
-          className="h-5 w-5"
-          onClick={() => setReplyToMessage(null)}
+          className="mr-2 text-primary-foreground hover:bg-accent/30"
+          onClick={onBack}
         >
-          <X className="h-3 w-3" />
-        </Button>
-      </div>
-    );
-  };
-
-  return (
-    <div className="flex flex-col h-screen bg-[#171717] relative">
-      {/* Chat header */}
-      
-      {/* Delete Message Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="bg-[#1a1a1a] border-[#333333] text-white">
-          <DialogHeader>
-            <DialogTitle>Hapus Pesan</DialogTitle>
-            <DialogDescription className="text-gray-400">
-              Apakah Anda yakin ingin menghapus pesan ini? Tindakan ini tidak dapat dibatalkan.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="bg-[#2a2a2a] p-3 rounded-md max-h-[100px] overflow-auto my-2">
-            <p className="text-sm">{selectedMessage?.content}</p>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              onClick={() => setIsDeleteDialogOpen(false)}
-            >
-              Batal
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => selectedMessage && deleteMessageMutation.mutate(selectedMessage.id)}
-              disabled={deleteMessageMutation.isPending}
-            >
-              {deleteMessageMutation.isPending ? "Menghapus..." : "Hapus"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Forward Message Dialog */}
-      <Dialog open={isForwardDialogOpen} onOpenChange={setIsForwardDialogOpen}>
-        <DialogContent className="bg-[#1a1a1a] border-[#333333] text-white">
-          <DialogHeader>
-            <DialogTitle>Teruskan Pesan</DialogTitle>
-            <DialogDescription className="text-gray-400">
-              Pilih percakapan tujuan untuk meneruskan pesan ini.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="bg-[#2a2a2a] p-3 rounded-md max-h-[100px] overflow-auto my-2">
-            <p className="text-sm">{selectedMessage?.content}</p>
-            {selectedMessage?.hasAttachment && (
-              <p className="text-xs text-[#a6c455] mt-1">
-                📎 {selectedMessage.attachmentName}
-              </p>
-            )}
-          </div>
-          <div className="max-h-[200px] overflow-auto">
-            {conversations.length === 0 ? (
-              <p className="text-gray-400 text-center py-2">Memuat percakapan...</p>
-            ) : (
-              <div className="space-y-1">
-                {conversations
-                  .filter(conv => conv.id !== chatId) // Filter out current chat
-                  .map(conv => (
-                    <Button
-                      key={conv.id}
-                      variant="ghost"
-                      className="w-full justify-start text-left"
-                      onClick={() => selectedMessage && forwardMessageMutation.mutate({
-                        messageId: selectedMessage.id,
-                        targetConversationId: conv.id
-                      })}
-                      disabled={forwardMessageMutation.isPending}
-                    >
-                      {conv.isGroup ? (
-                        <Users className="h-4 w-4 mr-2 inline-block" />
-                      ) : (
-                        <User className="h-4 w-4 mr-2 inline-block" />
-                      )}
-                      {conv.name}
-                    </Button>
-                  ))
-                }
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              onClick={() => setIsForwardDialogOpen(false)}
-            >
-              Batal
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <div className="flex items-center px-4 py-3 border-b border-[#333333] bg-[#1a1a1a]">
-        <Button onClick={onBack} variant="ghost" size="icon" className="mr-2 text-[#a6c455]">
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        
-        <div className="relative flex-shrink-0">
-          <div className={`w-9 h-9 rounded-full flex items-center justify-center ${
-            isGroup ? "bg-[#4d5d30]" : "bg-[#5a6b38]"
-          }`}>
-            {isGroup ? (
-              <span className="text-white text-xs font-semibold">G</span>
-            ) : (
-              <span className="text-white text-xs font-semibold">
-                {chatData?.name?.charAt(0).toUpperCase() || 'U'}
-              </span>
-            )}
+        <div className="flex-1 flex items-center">
+          <div className="w-10 h-10 rounded-sm bg-secondary text-secondary-foreground flex items-center justify-center mr-3 border border-accent">
+            <span className="font-bold">OP</span>
+          </div>
+          <div>
+            <h1 className="text-base font-bold uppercase tracking-wider text-primary-foreground">{chatName}</h1>
+            <p className="text-xs text-primary-foreground/80">
+              {isRoom ? "TACTICAL CHANNEL" : "DIRECT COMMS"} • {isRoom ? `${getRoomData().members?.length || 0} OPERATORS` : "SECURE LINE"}
+            </p>
           </div>
         </div>
         
-        <div className="ml-3 flex-1">
-          <h3 className="text-[#9bb26b] font-medium truncate">{chatData?.name || 'Chat'}</h3>
-          <p className="text-gray-400 text-xs">
-            {isGroup ? 'Group chat' : 'Direct message'}
-          </p>
+        {/* Action Buttons */}
+        <div className="flex space-x-2">
+          {/* Room members button (only for rooms) */}
+          {isRoom && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-primary-foreground hover:bg-accent/30"
+              onClick={() => setShowMembersDialog(true)}
+            >
+              <Users className="h-5 w-5" />
+            </Button>
+          )}
+          
+          {/* Voice and Video Call Buttons (only for direct messages) */}
+          {!isRoom && (
+            <>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-primary-foreground hover:bg-accent/30"
+                onClick={() => {
+                  console.log("[ChatRoom] Starting audio call with chatId:", chatId);
+                  if (startCall) {
+                    try {
+                      startCall(chatId, 'audio');
+                    } catch (error) {
+                      console.error("[ChatRoom] Error starting audio call:", error);
+                    }
+                  } else {
+                    console.error("[ChatRoom] startCall function is not available");
+                  }
+                }}
+              >
+                <PhoneIcon className="h-5 w-5" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-primary-foreground hover:bg-accent/30"
+                onClick={() => {
+                  console.log("[ChatRoom] Starting video call with chatId:", chatId);
+                  if (startCall) {
+                    try {
+                      startCall(chatId, 'video');
+                    } catch (error) {
+                      console.error("[ChatRoom] Error starting video call:", error);
+                    }
+                  } else {
+                    console.error("[ChatRoom] startCall function is not available");
+                  }
+                }}
+              >
+                <VideoIcon className="h-5 w-5" />
+              </Button>
+            </>
+          )}
         </div>
-        
-        <Button variant="ghost" size="icon" className="text-[#a6c455]">
-          <MoreVertical className="h-5 w-5" />
-        </Button>
-      </div>
+      </header>
       
-      {/* Messages container with space for input at bottom */}
-      <div className="flex-1 overflow-y-auto p-4 pb-32 space-y-6">
-        {messageGroups.map(group => (
-          <div key={group.date} className="space-y-3">
-            <div className="flex justify-center">
-              <span className="text-xs bg-[#2a2a2a] text-gray-400 px-2 py-1 rounded-md">
-                {new Date(group.date).toLocaleDateString('id-ID', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}
-              </span>
-            </div>
-            
-            {group.messages.map(msg => {
-              const isOwnMessage = msg.senderId === user?.id;
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto bg-background p-4 space-y-4 pb-20">
+        {messages.map((msg, idx) => {
+          // System message (forwarding confirmation)
+          if ('isSystemMessage' in msg && msg.isSystemMessage) {
+            return (
+              <div key={idx} className="flex justify-center">
+                <div className="bg-accent/30 text-muted-foreground text-xs px-3 py-1 rounded-sm border border-accent">
+                  <span>{msg.content}</span>
+                </div>
+              </div>
+            );
+          }
+          
+          // Normal user message
+          return (
+            <div 
+              key={idx}
+              className={`flex ${msg.sender.id === user?.id ? 'justify-end' : 'justify-start'}`}
+            >
+              {msg.sender.id !== user?.id && (
+                <div className="w-8 h-8 rounded-sm bg-secondary text-secondary-foreground flex items-center justify-center mr-2 border border-accent self-end">
+                  <span className="text-xs font-bold">{msg.sender.username.substring(0, 2)}</span>
+                </div>
+              )}
               
-              return (
+              <div className="max-w-[75%] flex flex-col">
+                {msg.sender.id !== user?.id && (
+                  <span className="text-xs font-bold ml-1 mb-1">{msg.sender.username}</span>
+                )}
+                
                 <div 
-                  key={msg.id} 
-                  className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div 
-                    className={`max-w-[70%] rounded-lg px-4 py-2 ${
-                      isOwnMessage 
-                        ? 'bg-[#4d5d30] text-white rounded-br-none' 
-                        : 'bg-[#333333] text-white rounded-bl-none'
-                    }`}
-                  >
-                    {!isOwnMessage && (
-                      <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
-                    )}
+                  className={`group relative px-3 py-2 ${msg.sender.id === user?.id 
+                    ? 'chat-bubble-sent' 
+                    : 'chat-bubble-received'}`}
+                  onClick={() => handleMessageLongPress(msg.id)}
+              >
+                {/* Reply indicator */}
+                {'replyTo' in msg && msg.replyTo && (
+                  <div className="flex flex-col mb-2 p-1.5 bg-accent/20 rounded-sm border-l-2 border-accent text-xs">
+                    <div className="flex items-center mb-1 text-muted-foreground">
+                      <CornerDownRight className="h-3 w-3 mr-1" />
+                      <span className="font-bold uppercase">{msg.replyTo.sender.username}</span>
+                      <span className="ml-1 text-[10px]">{msg.replyTo.timestamp}</span>
+                    </div>
+                    <span className="truncate pl-4">{msg.replyTo.content.substring(0, 50)}{msg.replyTo.content.length > 50 ? '...' : ''}</span>
+                  </div>
+                )}
+                
+                {/* Forwarded message indicator */}
+                {'forwardedMessage' in msg && msg.forwardedMessage && (
+                  <div className="flex flex-col mb-2 p-2 bg-accent/10 rounded-sm border border-accent text-xs">
+                    <div className="flex items-center mb-1 text-muted-foreground">
+                      <Forward className="h-3 w-3 mr-1" />
+                      <span className="font-bold uppercase">FORWARDED FROM {msg.forwardedMessage.sender.username}</span>
+                      <span className="ml-1 text-[10px]">{msg.forwardedMessage.timestamp}</span>
+                    </div>
+                    <p className="pl-4 mb-2">{msg.forwardedMessage.content}</p>
                     
-                    {/* Format balasan pesan seperti WhatsApp style */}
-                    {msg.replyToId && (
-                      <div className="mb-2">
-                        <div className="flex items-center text-xs mb-1">
-                          <ArrowLeft className="h-3 w-3 mr-1 text-[#8ba742]" /> 
-                          {(() => {
-                            try {
-                              // Mencari pesan yang dibalas dari array pesan
-                              if (!Array.isArray(messages)) return <span className="text-gray-400">Membalas pesan</span>;
-                              
-                              for (let i = 0; i < messages.length; i++) {
-                                if (messages[i].id === msg.replyToId) {
-                                  // Pesan ditemukan
-                                  return (
-                                    <span className="text-gray-400">
-                                      {messages[i].senderName === msg.senderName ? 'Membalas diri sendiri' : `Membalas ${messages[i].senderName}`}
-                                    </span>
-                                  );
-                                }
-                              }
-                              return <span className="text-gray-400">Membalas pesan</span>;
-                            } catch (err) {
-                              console.error("Error rendering reply header:", err);
-                              return <span className="text-gray-400">Membalas pesan</span>;
-                            }
-                          })()}
-                        </div>
-                        
-                        {/* Preview pesan yang dibalas dengan kotak dan garis hijau di sisi kiri */}
-                        <div className="bg-[#2a2a2a] rounded-md p-1.5 border-l-4 border-[#8ba742] mb-1.5">
-                          {(() => {
-                            try {
-                              // Cari di messages dulu
-                              if (Array.isArray(messages)) {
-                                for (let i = 0; i < messages.length; i++) {
-                                  if (messages[i].id === msg.replyToId) {
-                                    // Pesan ditemukan di array pesan
-                                    return messages[i].hasAttachment ? (
-                                      <div className="text-xs text-gray-400 line-clamp-1">
-                                        <span className="text-[#8ba742] mr-1">📎</span>
-                                        <span>{messages[i].attachmentName || 'File'}</span>
-                                      </div>
-                                    ) : (
-                                      <p className="text-xs text-gray-400 line-clamp-1">{messages[i].content || '<Pesan kosong>'}</p>
-                                    );
-                                  }
-                                }
-                              }
-                              
-                              // Jika tidak ditemukan di messages tapi ada replyInfo
-                              if (msg.replyInfo) {
-                                return msg.replyInfo.hasAttachment ? (
-                                  <div className="text-xs text-gray-400 line-clamp-1">
-                                    <span className="text-[#8ba742] mr-1">📎</span>
-                                    <span>{msg.replyInfo.attachmentName || 'File'}</span>
-                                  </div>
-                                ) : (
-                                  <p className="text-xs text-gray-400 line-clamp-1">{msg.replyInfo.content || '<Pesan kosong>'}</p>
-                                );
-                              }
-                              
-                              // Fallback jika tidak ada di keduanya
-                              return <p className="text-xs text-gray-400 line-clamp-1">Pesan yang dibalas tidak tersedia</p>;
-                            } catch (err) {
-                              console.error("Error rendering reply preview:", err);
-                              return <p className="text-xs text-gray-400 line-clamp-1">Error menampilkan pesan</p>;
-                            }
-                          })()}
+                    {/* Forwarded audio */}
+                    {'audioUrl' in msg.forwardedMessage && msg.forwardedMessage.audioUrl && (
+                      <div className="mt-1 ml-4">
+                        <div className="flex flex-col">
+                          <audio controls className="w-full h-8">
+                            <source src={msg.forwardedMessage.audioUrl} type="audio/webm" />
+                            Your browser does not support audio playback.
+                          </audio>
+                          <a 
+                            href={msg.forwardedMessage.audioUrl} 
+                            download={`Voice_Recording_forwarded.webm`}
+                            className="text-xs text-primary underline mt-1 hover:text-primary/80"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Download Voice Recording
+                          </a>
                         </div>
                       </div>
                     )}
                     
-                    <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
-                    
-                    {/* Render attachment if present */}
-                    {msg.hasAttachment && msg.attachmentUrl && (
-                      <MessageAttachment 
-                        attachmentType={msg.attachmentType || 'document'} 
-                        attachmentUrl={msg.attachmentUrl} 
-                        attachmentName={msg.attachmentName || 'file'} 
-                        attachmentSize={msg.attachmentSize}
-                      />
+                    {/* Forwarded attachments */}
+                    {'attachments' in msg.forwardedMessage && msg.forwardedMessage.attachments && msg.forwardedMessage.attachments.length > 0 && (
+                      <div className="mt-1 ml-4 grid grid-cols-2 gap-2">
+                        {msg.forwardedMessage.attachments.map((attachment: any) => (
+                          <a 
+                            key={attachment.id} 
+                            href={attachment.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            download={attachment.name}
+                            className="flex items-center p-2 border border-accent rounded-sm bg-background/30 hover:bg-background/50"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="mr-2 text-xl">{attachment.icon}</div>
+                            <div className="overflow-hidden">
+                              <div className="text-xs font-medium truncate">{attachment.name}</div>
+                              <div className="text-xs text-muted-foreground">{formatFileSize(attachment.size)}</div>
+                            </div>
+                          </a>
+                        ))}
+                      </div>
                     )}
-                    
-                    {/* Message action dropdown menu */}
-                    <div className="relative">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="absolute right-0 -top-6 h-6 w-6 opacity-50 hover:opacity-100"
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => {
-                            // Set reply message
-                            console.log("Setting reply to message:", msg);
-                            setReplyToMessage(msg);
-                            
-                            // Focus on message input after a small delay to ensure DOM is updated
-                            setTimeout(() => {
-                              const input = document.getElementById("message-input");
-                              if (input) {
-                                console.log("Focusing input element");
-                                input.focus();
-                              } else {
-                                console.warn("Input element not found");
-                              }
-                            }, 100);
-                          }}>
-                            <Reply className="mr-2 h-4 w-4" />
-                            Balas
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => {
-                            setSelectedMessage(msg);
-                            setIsForwardDialogOpen(true);
-                          }}>
-                            <Forward className="mr-2 h-4 w-4" />
-                            Teruskan
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setSelectedMessage(msg);
-                              setIsDeleteDialogOpen(true);
-                            }}
-                            className="text-red-500 focus:text-red-500"
-                          >
-                            <Trash className="mr-2 h-4 w-4" />
-                            Hapus
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    <div className="flex justify-end items-center mt-1 space-x-1">
-                      {msg.classification && (
-                        <div className="flex items-center">
-                          <Shield className="h-3 w-3 text-[#a6c455] mr-1" />
-                          <span className="text-[10px] text-[#a6c455]">{msg.classification}</span>
-                        </div>
-                      )}
-                      <span className="text-[10px] text-gray-300">
-                        {formatMessageTime(msg.timestamp)}
-                      </span>
+                  </div>
+                )}
+                
+                <p className="text-sm">{msg.content}</p>
+                
+                {/* Audio player for voice messages */}
+                {'audioUrl' in msg && msg.audioUrl && (
+                  <div className="mt-2">
+                    <div className="flex flex-col">
+                      <audio controls className="w-full h-8 mt-1">
+                        <source src={msg.audioUrl} type="audio/webm" />
+                        Your browser does not support audio playback.
+                      </audio>
+                      
+                      <a 
+                        href={msg.audioUrl} 
+                        download={`Voice_Recording_${msg.id}.webm`}
+                        className="text-xs text-primary underline mt-1 hover:text-primary/80"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Download Voice Recording
+                      </a>
                     </div>
                   </div>
+                )}
+                
+                {/* File attachments */}
+                {'attachments' in msg && msg.attachments && msg.attachments.length > 0 && (
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    {msg.attachments.map((attachment: any) => (
+                      <a 
+                        key={attachment.id} 
+                        href={attachment.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        download={attachment.name}
+                        className="flex items-center p-2 border border-accent rounded-sm bg-background/30 hover:bg-background/50"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="mr-2 text-xl">{attachment.icon}</div>
+                        <div className="overflow-hidden">
+                          <div className="text-xs font-medium truncate">{attachment.name}</div>
+                          <div className="text-xs text-muted-foreground">{formatFileSize(attachment.size)}</div>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Message actions */}
+                <div className="absolute -top-3 -right-1 hidden group-hover:flex bg-background border border-accent rounded-sm shadow-md">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                    onClick={(e) => { e.stopPropagation(); handleReply(msg); }}
+                  >
+                    <Reply className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                    onClick={(e) => { e.stopPropagation(); handleForward(msg); }}
+                  >
+                    <Forward className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    onClick={(e) => { e.stopPropagation(); handleDelete(msg.id); }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
-              );
-            })}
+              </div>
+              
+              <div className={`flex items-center text-xs text-muted-foreground mt-1 ${
+                msg.sender.id === user?.id ? 'justify-end' : 'justify-start'
+              }`}>
+                <span>{msg.timestamp}</span>
+              </div>
+            </div>
           </div>
-        ))}
-        
-        {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-center p-4">
-            <Shield className="h-12 w-12 text-[#a6c455] mb-3" />
-            <h3 className="text-[#a6c455] text-lg font-medium mb-1">Saluran Komunikasi Aman</h3>
-            <p className="text-gray-400 text-sm max-w-md">
-              Komunikasi aman point-to-point dengan enkripsi militer. Pesan Anda dilindungi dengan tingkat keamanan tertinggi.
-            </p>
-          </div>
+          )}
         )}
-        
         <div ref={messagesEndRef} />
       </div>
       
-      {/* Message input - positioned fixed for mobile */}
-      <div className="border-t border-[#333333] p-3 bg-[#1a1a1a] fixed bottom-0 left-0 right-0 z-10">
-        <form onSubmit={handleSendMessage} className="flex flex-col">
-          {/* Show reply preview if replying to a message - WhatsApp style */}
-          {replyToMessage && (
-            <div className="flex items-center bg-[#212121] rounded-lg p-2 mb-2 border-l-4 border-[#8ba742]">
-              <div className="flex-1">
-                <div className="flex items-center text-[#a6c455] text-xs mb-1">
-                  <ArrowLeft className="h-3 w-3 mr-1" />
-                  <span>Membalas {replyToMessage.senderId === user?.id ? 'diri sendiri' : replyToMessage.senderName}</span>
-                </div>
-                {replyToMessage.hasAttachment ? (
-                  <div className="flex items-center text-xs text-gray-300">
-                    <span className="text-[#8ba742] mr-1">📎</span>
-                    <span>{replyToMessage.attachmentName || 'File'}</span>
-                  </div>
-                ) : (
-                  <p className="text-xs text-gray-300 line-clamp-1">{replyToMessage.content || '<Pesan kosong>'}</p>
-                )}
-              </div>
-              <Button 
-                type="button"
-                variant="ghost" 
-                size="sm"
-                className="text-gray-400 hover:text-white h-6 w-6 p-0"
-                onClick={() => setReplyToMessage(null)}
-              >
-                <span className="sr-only">Batal</span>
-                <X className="h-4 w-4" />
-              </Button>
+      {/* Message Input */}
+      <div className="absolute bottom-16 left-0 right-0 bg-background border-t border-accent p-2">
+        {isRecording && (
+          <div className="flex items-center justify-between bg-muted py-2 px-3 mb-2 rounded-sm border border-accent">
+            <div className="flex items-center">
+              <div className="w-3 h-3 rounded-full bg-destructive animate-pulse mr-2"></div>
+              <span className="text-sm font-medium">RECORDING</span>
             </div>
-          )}
-          
-          {/* Show attachment preview if any */}
-          {attachment && (
-            <div className="flex items-center justify-between mb-2 bg-[#2a2a2a] p-2 rounded">
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-white truncate max-w-[200px]">
-                  {attachment.name}
-                </span>
-              </div>
+            <div className="flex items-center">
+              <span className="text-sm font-mono mr-3">{formatTime(recordingTime)}</span>
               <Button
-                type="button"
                 variant="ghost"
-                size="sm"
-                onClick={() => setAttachment(null)}
-                className="text-gray-400 hover:text-white h-6 w-6 p-0"
+                size="icon"
+                className="text-destructive hover:bg-destructive/10"
+                onClick={handleVoiceRecording}
               >
-                <span className="sr-only">Cancel</span>
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
+                <StopCircle className="h-5 w-5" />
               </Button>
             </div>
-          )}
+          </div>
+        )}
+      
+        <div className="flex items-center space-x-2">
+          {/* Hidden file input */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            onChange={handleFileSelect}
+            accept="image/*,video/*,audio/*,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/zip,application/x-zip-compressed"
+            multiple
+          />
           
-          {isVoiceRecording || voiceAttachment ? (
-            <VoiceRecorder
-              onSendAudio={handleVoiceRecordingComplete}
-              onCancel={handleCancelVoiceRecording}
-            />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-muted-foreground hover:bg-accent/20"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <PaperclipIcon className="h-5 w-5" />
+          </Button>
+          
+          <Input 
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Type a secure message..."
+            className="flex-1 bg-muted border-accent"
+            onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
+            disabled={isRecording}
+          />
+          
+          {message.trim() ? (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-primary hover:bg-accent/20"
+              onClick={handleSendMessage}
+            >
+              <SendIcon className="h-5 w-5" />
+            </Button>
           ) : (
-            <div className="flex items-center space-x-2">
-              <AttachmentUploader onFileUploaded={handleFileUploaded} />
-              
-              <Input
-                id="message-input"
-                ref={(el) => {
-                  // Store the input element reference
-                  if (el) {
-                    (window as any).messageInputRef = el;
-                  }
-                }}
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder={replyToMessage ? "Ketik balasan..." : "Ketik pesan..."}
-                className="flex-1 bg-[#252525] border-[#444444] text-white placeholder-gray-500 focus-visible:ring-[#4d5d30]"
-              />
-              
-              {/* Tombol rekam suara */}
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="text-[#a6c455]"
-                onClick={handleStartVoiceRecording}
-              >
-                <Mic className="h-5 w-5" />
-              </Button>
-              
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className={`${isRecording ? 'text-destructive' : 'text-muted-foreground'} hover:bg-accent/20`}
+              onClick={handleVoiceRecording}
+            >
+              {isRecording ? <StopCircle className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+            </Button>
+          )}
+        </div>
+        
+        {/* Attachment Preview */}
+        {attachments.length > 0 && (
+          <div className="flex flex-col gap-2 mt-2">
+            <div className="flex flex-wrap gap-2">
+              {attachments.map((attachment, index) => (
+                <div key={index} className="relative w-28 h-28 bg-muted rounded-sm border border-accent overflow-hidden">
+                  {attachment.type.startsWith('image/') ? (
+                    // Image preview
+                    <img src={attachment.url} alt={attachment.name} className="w-full h-full object-cover" />
+                  ) : (
+                    // File type preview
+                    <div className="w-full h-full flex flex-col items-center justify-center p-2">
+                      <div className="text-3xl">{getFileIcon(attachment.type)}</div>
+                      <div className="text-xs mt-1 text-center truncate w-full">{attachment.name}</div>
+                      <div className="text-xs text-muted-foreground">{formatFileSize(attachment.size)}</div>
+                    </div>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-0 right-0 bg-background/50 hover:bg-background/70 p-0 h-6 w-6"
+                    onClick={() => setAttachments(attachments.filter((_, i) => i !== index))}
+                  >
+                    <span className="text-xs">×</span>
+                  </Button>
+                </div>
+              ))}
+            </div>
+            
+            {/* Send button for attachments */}
+            <div className="flex justify-end">
               <Button 
-                type="submit"
-                disabled={(!message.trim() && !attachment && !voiceAttachment) || sendMessageMutation.isPending}
-                variant="ghost"
-                size="icon"
-                className="text-[#a6c455]"
+                onClick={handleSendMessage}
+                className="military-button text-sm"
               >
-                <Send className="h-5 w-5" />
+                SEND ATTACHMENTS
               </Button>
             </div>
-          )}
-        </form>
+          </div>
+        )}
+
+        {/* Reply form */}
+        {showReplyForm && replyingToMessage && (
+          <div className="flex flex-col mt-2 mb-2 p-2 bg-accent/20 rounded-sm border-l-2 border-accent">
+            <div className="flex justify-between items-start">
+              <div className="flex flex-col">
+                <div className="flex items-center text-xs text-muted-foreground">
+                  <CornerDownRight className="h-3 w-3 mr-1" />
+                  <span className="font-bold uppercase">{replyingToMessage.sender.username}</span>
+                  <span className="ml-1 text-[10px]">{replyingToMessage.timestamp}</span>
+                </div>
+                <span className="text-xs pl-4 truncate">{replyingToMessage.content.substring(0, 60)}{replyingToMessage.content.length > 60 ? '...' : ''}</span>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-5 w-5 -mt-1 -mr-1"
+                onClick={handleCancelReply}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
+      
+      {/* Forward Dialog */}
+      <Dialog open={showForwardDialog} onOpenChange={setShowForwardDialog}>
+        <DialogContent className="bg-background border-accent">
+          <DialogHeader>
+            <DialogTitle className="text-center uppercase tracking-wider font-bold">FORWARD TRANSMISSION</DialogTitle>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <div className="max-h-[50vh] overflow-y-auto space-y-2">
+              <div className="text-xs uppercase font-bold mb-2">TACTICAL CHANNELS</div>
+              {/* Mock channels */}
+              {[
+                { id: 101, name: "ALPHA SQUAD", isRoom: true },
+                { id: 102, name: "SUPPORT TEAM", isRoom: true },
+                { id: 103, name: "COMMAND CENTER", isRoom: true }
+              ].map(channel => (
+                <div 
+                  key={channel.id}
+                  className="flex items-center p-2 border border-accent rounded-sm hover:bg-accent/10 cursor-pointer"
+                  onClick={() => handleSendForward(channel.id, true)}
+                >
+                  <div className="w-8 h-8 rounded-sm bg-secondary text-secondary-foreground flex items-center justify-center mr-3 border border-accent">
+                    <span className="text-xs font-bold">#{channel.id}</span>
+                  </div>
+                  <span className="font-medium">{channel.name}</span>
+                </div>
+              ))}
+              
+              <div className="text-xs uppercase font-bold mb-2 mt-4">OPERATORS</div>
+              {/* Available users based on chat type */}
+              {[
+                { id: 2, name: "BRAVO2", isRoom: false },
+                { id: 3, name: "CHARLIE3", isRoom: false },
+                { id: 4, name: "DELTA4", isRoom: false }
+              ]
+              .filter(person => !isRoom || person.id !== Number(chatId)) // Filter out current user in direct chats
+              .map(person => (
+                <div 
+                  key={person.id}
+                  className="flex items-center p-2 border border-accent rounded-sm hover:bg-accent/10 cursor-pointer"
+                  onClick={() => handleSendForward(person.id, false)}
+                >
+                  <div className="w-8 h-8 rounded-sm bg-secondary text-secondary-foreground flex items-center justify-center mr-3 border border-accent">
+                    <span className="text-xs font-bold">{person.name.substring(0, 2)}</span>
+                  </div>
+                  <span className="font-medium">{person.name}</span>
+                </div>
+              ))}
+            </div>
+            
+            <Button 
+              className="w-full mt-4 military-button"
+              variant="outline"
+              onClick={() => setShowForwardDialog(false)}
+            >
+              CANCEL
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Members Dialog */}
+      <Dialog open={showMembersDialog} onOpenChange={setShowMembersDialog}>
+        <DialogContent className="bg-background border-accent">
+          <DialogHeader>
+            <DialogTitle className="text-center uppercase tracking-wider font-bold">CHANNEL MEMBERS</DialogTitle>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-sm font-bold">TOTAL: {getRoomData().members?.length || 0} OPERATORS</h3>
+              {getRoomData().members?.length > 10 && (
+                <Input 
+                  type="text" 
+                  placeholder="Search members..." 
+                  className="max-w-[200px]"
+                  onChange={(e) => {
+                    const searchTerm = e.target.value.toLowerCase();
+                    // Client-side search in the member list
+                    const memberElements = document.querySelectorAll('.member-item');
+                    memberElements.forEach(el => {
+                      const username = el.getAttribute('data-username')?.toLowerCase() || '';
+                      if (username.includes(searchTerm)) {
+                        (el as HTMLElement).style.display = 'flex';
+                      } else {
+                        (el as HTMLElement).style.display = 'none';
+                      }
+                    });
+                  }}
+                />
+              )}
+            </div>
+            
+            <div className="border border-accent rounded-sm max-h-60 overflow-y-auto custom-scrollbar">
+              {getRoomData().members?.map((member: any, index: number) => (
+                <div
+                  key={index}
+                  className="flex items-center p-2 border-b last:border-b-0 border-accent/30 member-item"
+                  data-username={member.username}
+                >
+                  <div className="w-8 h-8 flex items-center justify-center bg-primary text-primary-foreground rounded-sm border border-accent mr-3">
+                    <span className="font-bold text-xs">{member.username?.substring(0, 2)}</span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-sm">{member.username}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {Math.random() > 0.3 ? "ONLINE" : "OFFLINE"} • ID: {member.id}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <Button 
+              className="w-full mt-4 military-button"
+              variant="outline"
+              onClick={() => setShowMembersDialog(false)}
+            >
+              CLOSE
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

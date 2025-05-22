@@ -1,25 +1,6 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Animasi khusus untuk panggilan audio/video */
-@keyframes wave {
-  0% {
-    height: 8px;
-  }
-  100% {
-    height: 24px;
-  }
-}
-
-@keyframes soundwave {
-  0% {
-    height: 4px;
-  }
-  100% {
-    height: 24px;
-  }
-}
  
 @layer base {
   :root {

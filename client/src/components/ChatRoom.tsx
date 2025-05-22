@@ -1,1169 +1,1169 @@
-import { useState, useRef, useEffect } from "react";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { ArrowLeft, Paperclip, Send, Mic, StopCircle, Reply, Forward, Trash2, MoreVertical, X, CornerDownRight, Phone, Video, Users, User } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
+import { useState, useEffect, useRef } from 'react';
+import { Send, MoreVertical, Shield, Trash, Reply, Forward, X, User, Users, ArrowLeft, Mic, Volume2, Play, Pause, CornerDownRight } from 'lucide-react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useAuth } from '@/hooks/useAuth';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
+import { formatDistanceToNow } from 'date-fns';
+import { id } from 'date-fns/locale';
+import { type Conversation, type Message } from '@shared/schema';
+import AttachmentUploader from './AttachmentUploader';
+import MessageAttachment from './MessageAttachment';
+import VoiceRecorder from './VoiceRecorder';
+import AudioPlayerInline from './AudioPlayerInline';
+import SimpleAudioPlayer from './SimpleAudioPlayer';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle 
+} from "@/components/ui/dialog";
+
+// Interface untuk data chat
+interface ChatData {
+  id: number;
+  name: string;
+  isGroup: boolean;
+}
+
+// Interface untuk pesan chat
+interface ChatMessage {
+  id: number;
+  senderId: number;
+  senderName: string;
+  content: string;
+  timestamp: string;
+  isRead: boolean;
+  classification?: string;
+  // Attachment fields
+  hasAttachment?: boolean;
+  attachmentType?: string;
+  attachmentUrl?: string;
+  attachmentName?: string;
+  attachmentSize?: number;
+  // Reply functionality
+  replyToId?: number;
+  // Reply info yang ditambahkan dari server
+  replyInfo?: {
+    content: string;
+    senderName: string;
+    hasAttachment?: boolean;
+    attachmentName?: string;
+  };
+}
 
 interface ChatRoomProps {
   chatId: number;
-  isRoom: boolean;
-  chatName: string;
+  isGroup: boolean;
   onBack: () => void;
-  onNavigateToChat?: (targetId: number, isTargetRoom: boolean, forwardedMsg?: any) => void;
-  forwardedMessage?: any;
 }
 
-export default function ChatRoom({ chatId, isRoom, chatName, onBack, onNavigateToChat, forwardedMessage }: ChatRoomProps) {
-  const [message, setMessage] = useState("");
-  const [showMembersDialog, setShowMembersDialog] = useState(false);
+export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
+  const { user } = useAuth();
+  const [message, setMessage] = useState('');
+  const [chatData, setChatData] = useState<ChatData | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [selectedMessage, setSelectedMessage] = useState<ChatMessage | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isForwardDialogOpen, setIsForwardDialogOpen] = useState(false);
+  const [replyToMessage, setReplyToMessage] = useState<ChatMessage | null>(null);
+  const [conversations, setConversations] = useState<{id: number, name: string, isGroup?: boolean}[]>([]);
   
-  // State untuk menyimpan data user dari session
-  const [user, setUser] = useState<any>({ id: '', callsign: '' });
+  // State untuk voice recording
+  const [isVoiceRecording, setIsVoiceRecording] = useState(false);
+  const [voiceAttachment, setVoiceAttachment] = useState<{
+    blob: Blob;
+    url: string;
+    duration?: number;
+  } | null>(null);
   
-  // Ambil data user dari session saat komponen dimuat
-  useEffect(() => {
-    const fetchCurrentUser = async () => {
-      try {
-        const response = await fetch('/api/user', {
-          credentials: 'include' // Penting untuk mengirimkan cookies
-        });
-        
-        if (response.ok) {
-          const userData = await response.json();
-          console.log("User data dari session di ChatRoom:", userData);
-          setUser(userData);
-        } else {
-          console.error("Gagal mengambil data user di ChatRoom");
-        }
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-      }
-    };
-    
-    fetchCurrentUser();
-  }, []);
-  
-  // State untuk menyimpan data room/chat
-  const [roomData, setRoomData] = useState<any>({
-    id: chatId,
-    name: chatName,
-    members: []
+  // Fetch chat data
+  const { data: chat } = useQuery({
+    queryKey: [`/api/conversations/${chatId}`],
+    enabled: !!chatId && !!user,
   });
   
-  // Ambil data room dari API
-  useEffect(() => {
-    const fetchRoomData = async () => {
-      if (isRoom) {
-        try {
-          const response = await fetch(`/api/rooms/${chatId}`, {
-            credentials: 'include'
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            console.log("Room data from API:", data);
-            setRoomData(data);
-          } else {
-            console.error("Failed to fetch room data:", await response.text());
-          }
-        } catch (error) {
-          console.error("Error fetching room data:", error);
-        }
-      } else {
-        // For direct chats, just use the props data
-        setRoomData({
-          id: chatId,
-          name: chatName,
-          isDirect: true
-        });
+  // Fetch messages
+  const { data: messages = [], refetch: refetchMessages } = useQuery({
+    queryKey: [`/api/conversations/${chatId}/messages`],
+    enabled: !!chatId && !!user,
+    refetchInterval: 3000, // Polling every 3 seconds
+    retry: 3, // Coba lagi jika gagal
+    staleTime: 10 * 1000, // Data dianggap stale setelah 10 detik
+    // Tambahkan console log untuk membantu debugging
+    onSuccess: (data) => {
+      console.log("Messages loaded:", data);
+      // Cek apakah ada pesan dengan replyToId
+      const repliedMessages = data.filter((m: any) => m.replyToId);
+      if (repliedMessages.length > 0) {
+        console.log("Messages with replies:", repliedMessages);
       }
-    };
-    
-    fetchRoomData();
-  }, [chatId, isRoom, chatName]);
-  
-  // Fungsi untuk scroll ke bawah chat
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-  
-  // Fungsi untuk mengambil pesan dari database
-  const fetchMessages = async () => {
-    try {
-      console.log(`Mengambil pesan untuk chat ID ${chatId} (isRoom: ${isRoom})`);
-      const response = await fetch(`/api/chats/${chatId}/messages?isRoom=${isRoom}`, {
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Error ${response.status}: ${errorText}`);
-      }
-      
-      const data = await response.json();
-      console.log("Pesan dari API:", data);
-      console.log("Jumlah pesan diterima:", data.length);
-      
-      // Format pesan untuk ditampilkan
-      const formattedMessages = data.map((msg: any) => {
-        console.log("Memproses pesan:", {
-          id: msg.id,
-          content: msg.content,
-          senderId: msg.senderId,
-          timestamp: msg.sentAt
-        });
-        
-        return {
-          id: msg.id,
-          content: msg.content || "(Pesan kosong)",
-          sender: {
-            id: msg.sender?.id || msg.senderId,
-            callsign: msg.sender?.callsign || 'User'
-          },
-          timestamp: msg.sentAt ? new Date(msg.sentAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '',
-          isRead: msg.status === 'read',
-          attachments: msg.attachment ? [msg.attachment] : [],
-          type: msg.type || 'text',
-          replyTo: msg.replyToId ? {
-            id: msg.replyToId,
-            content: msg.replyInfo?.content || 'Pesan sebelumnya',
-            sender: msg.replyInfo?.senderName || 'User'
-          } : null
-        };
-      });
-      
-      console.log("Pesan setelah diformat:", formattedMessages);
-      
-      setMessages(formattedMessages);
-      // Scroll ke pesan terakhir
-      setTimeout(scrollToBottom, 100);
-    } catch (error) {
-      console.error("Error fetching messages:", error);
-      // Gunakan array kosong sebagai fallback jika terjadi error
-      setMessages([]);
     }
+  });
+  
+  // Memastikan pesan dimuat ulang saat chat diubah
+  useEffect(() => {
+    if (chatId) {
+      refetchMessages();
+    }
+  }, [chatId, refetchMessages]);
+  
+  // Add console log to debug message data
+  useEffect(() => {
+    console.log("Messages data received:", messages);
+    if (Array.isArray(messages)) {
+      console.log(`Fetched ${messages.length} messages for chat ${chatId}`);
+    }
+  }, [messages, chatId]);
+  
+  // Fungsi untuk handle voice recording
+  const handleStartVoiceRecording = () => {
+    setIsVoiceRecording(true);
   };
   
-  const [messages, setMessages] = useState<any[]>([]);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [users, setUsers] = useState<any[]>([]);
-  
-  // Ambil daftar semua pengguna untuk menampilkan nama pengirim
-  useEffect(() => {
-    const fetchUsers = async () => {
+  const handleVoiceRecordingComplete = (audioBlob: Blob, audioUrl: string, duration?: number) => {
+    console.log("Voice recording complete. Blob:", audioBlob, "URL:", audioUrl, "Duration:", duration);
+    
+    // Pastikan durasi adalah angka valid
+    let safeDuration = 0;
+    
+    if (duration !== undefined && isFinite(duration)) {
+      safeDuration = duration;
+    } else if (audioBlob && audioBlob.size) {
+      // Estimasi durasi berdasarkan ukuran file jika tidak ada durasi yang valid
+      // Asumsi rata-rata bitrate WebM Opus ~12KB per detik
+      safeDuration = Math.ceil(audioBlob.size / 12000);
+      console.log(`Estimated duration from blob size: ${safeDuration}s`);
+    }
+    
+    // Format durasi untuk ditampilkan di pesan
+    const minutes = Math.floor(safeDuration / 60);
+    const seconds = Math.floor(safeDuration % 60);
+    const durationText = ` (${minutes}:${seconds.toString().padStart(2, '0')})`;
+    
+    // Kirim pesan suara dengan mengirimkan langsung payload tanpa melalui voiceAttachment
+    const sendDirectVoiceMessage = async () => {
+      console.log("Uploading and sending voice message directly...");
       try {
-        const response = await fetch('/api/users', {
-          credentials: 'include'
-        });
-        if (response.ok) {
-          const usersData = await response.json();
-          console.log("Loaded", usersData.length, "users from database for personnel list");
-          setUsers(usersData);
-        }
-      } catch (error) {
-        console.error("Error fetching users:", error);
-      }
-    };
-    
-    fetchUsers();
-  }, []);
-  
-  // State untuk menyimpan ID chat aktual dari database
-  const [actualChatId, setActualChatId] = useState<number | null>(null);
-
-  // Memastikan direct chat sudah ada antara user saat ini dan user target
-  const ensureDirectChatExists = async (targetUserId: number | string) => {
-    console.log(`Memastikan direct chat dengan pengguna ID ${targetUserId} sudah ada`);
-    
-    if (!user.id) {
-      console.error("User belum login, tidak bisa membuat direct chat");
-      return null;
-    }
-    
-    try {
-      // Jika chatId adalah numerik dan kita mencoba direct chat, pertama coba ambil direct chat dengan ID tersebut
-      if (!isRoom && !isNaN(Number(targetUserId))) {
-        try {
-          console.log(`Mencoba mendapatkan direct chat dengan ID ${targetUserId}`);
-          const directChatResponse = await fetch(`/api/direct-chats/${targetUserId}`, { 
-            credentials: 'include' 
-          });
-          
-          if (directChatResponse.ok) {
-            const directChat = await directChatResponse.json();
-            if (directChat && directChat.id) {
-              console.log(`Direct chat dengan ID ${directChat.id} ditemukan langsung:`, directChat);
-              setActualChatId(directChat.id);
-              return directChat.id;
-            }
-          } else {
-            console.log(`Direct chat dengan ID ${targetUserId} tidak ditemukan, akan mencari berdasarkan user`);
-          }
-        } catch (error) {
-          console.log(`Error saat mencoba mendapatkan direct chat dengan ID ${targetUserId}:`, error);
-        }
-      }
-      
-      // Dapatkan pengguna sebelum membuat direct chat
-      const usersResponse = await fetch('/api/users', {
-        credentials: 'include'
-      });
-      
-      if (!usersResponse.ok) {
-        console.error("Failed to fetch users:", await usersResponse.text());
-        return null;
-      }
-      
-      const usersList = await usersResponse.json();
-      console.log("Daftar pengguna:", usersList);
-      
-      // Cari pengguna target
-      const targetUser = usersList.find((u: any) => u.id === targetUserId || u.id === String(targetUserId));
-      
-      if (!targetUser) {
-        console.error(`Pengguna dengan ID ${targetUserId} tidak ditemukan`);
-        // Jika target user tidak ditemukan dan numerik, coba ambil direct chat dengan ID tersebut
-        if (!isNaN(Number(targetUserId))) {
-          try {
-            console.log(`Mencoba mendapatkan direct chat langsung dengan ID ${targetUserId}`);
-            // Asumsi chatId adalah ID direct chat
-            setActualChatId(Number(targetUserId));
-            return Number(targetUserId);
-          } catch (error) {
-            console.error(`Error saat menggunakan ID ${targetUserId} sebagai ID direct chat:`, error);
-          }
-        }
-        
-        // Jika masih gagal, coba user default
-        const defaultTarget = usersList.find((u: any) => u.callsign === "alif");
-        if (!defaultTarget) {
-          console.error("Default target user (alif) juga tidak ditemukan");
-          return null;
-        }
-        console.log("Menggunakan default target user:", defaultTarget);
-        targetUserId = defaultTarget.id;
-      } else {
-        console.log("Target user ditemukan:", targetUser);
-      }
-      
-      // Cari direct chat yang sudah ada dulu
-      const directChatsResponse = await fetch('/api/direct-chats', {
-        credentials: 'include'
-      });
-      
-      if (directChatsResponse.ok) {
-        const directChats = await directChatsResponse.json();
-        console.log("Semua direct chats:", directChats);
-        
-        const existingChat = directChats.find((chat: any) => 
-          (chat.user1Id === user.id && chat.user2Id === targetUserId) || 
-          (chat.user1Id === targetUserId && chat.user2Id === user.id)
-        );
-        
-        if (existingChat) {
-          console.log("Direct chat sudah ada:", existingChat);
-          setActualChatId(existingChat.id);
-          return existingChat.id;
-        }
-      }
-      
-      // Jika tidak ada, buat direct chat baru
-      const response = await fetch('/api/direct-chats', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          user2Id: targetUserId
-        }),
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        console.error("Failed to create direct chat:", await response.text());
-        return null;
-      }
-      
-      const directChat = await response.json();
-      console.log("Direct chat dibuat atau ditemukan:", directChat);
-      
-      // Set actual chat ID untuk digunakan dalam pengiriman dan pengambilan pesan
-      if (directChat && directChat.id) {
-        console.log(`Mengupdate chatId dari ${chatId} menjadi ${directChat.id} untuk pengiriman pesan`);
-        setActualChatId(directChat.id);
-        return directChat.id;
-      }
-      
-      return null;
-    } catch (error) {
-      console.error("Error ensuring direct chat exists:", error);
-      return null;
-    }
-  };
-  
-  // Saat component mount atau chatId berubah, langsung gunakan chatId yang benar
-  useEffect(() => {
-    if (user && user.id && chatId) {
-      console.log(`Menggunakan chat ID ${chatId} langsung (${isRoom ? 'Room' : 'Direct Chat'})`);
-      // Gunakan chatId yang diberikan dari database
-      setActualChatId(chatId);
-    }
-  }, [chatId, isRoom, user]);
-
-  // Fetch messages from the server
-  useEffect(() => {
-    // Jika actualChatId belum tersedia, tunggu
-    if (!actualChatId) return;
-    
-    const fetchMessages = async () => {
-      try {
-        // URL for API request
-        const url = isRoom 
-          ? `/api/rooms/${actualChatId}/messages` 
-          : `/api/chats/${actualChatId}/messages`;
-          
-        console.log(`Fetching messages from ${url}`);
-        
-        const response = await fetch(url, {
-          credentials: 'include'
-        });
-        
-        if (response.ok) {
-          const messagesData = await response.json();
-          console.log("Pesan dari server:", messagesData);
-          
-          // Proses pesan dari server
-          const processedMessages = messagesData.map((msg: any) => {
-            // Cari data pengirim
-            const senderUser = users.find(u => u.id === msg.senderId);
-            const senderName = senderUser?.callsign || 'Unknown';
-            
-            // Format waktu
-            const timestamp = msg.timestamp || msg.sentAt || new Date();
-            const formattedTime = new Date(timestamp).toLocaleTimeString([], {
-              hour: '2-digit', 
-              minute: '2-digit'
-            });
-            
-            return {
-              ...msg,
-              sender: { 
-                id: msg.senderId, 
-                callsign: senderName 
-              },
-              timestamp: formattedTime
-            };
-          });
-          
-          if (processedMessages.length > 0) {
-            setMessages(processedMessages);
-          } else if (messages.length === 0) {
-            // Jika tidak ada pesan, tampilkan array kosong
-            setMessages([]);
-          }
-        } else {
-          console.error("Failed to fetch messages:", await response.text());
-          // Tidak mengganti pesan yang sudah ada jika gagal mengambil dari server
-        }
-      } catch (error) {
-        console.error("Error fetching messages:", error);
-      }
-    };
-    
-    fetchMessages();
-    
-    // Setup polling for new messages - refresh every 5 seconds
-    const intervalId = setInterval(() => {
-      fetchMessages();
-    }, 5000);
-    
-    return () => clearInterval(intervalId);
-  }, [actualChatId, isRoom, users]);
-  
-  // Enhanced attachment type to handle different file types
-  type Attachment = {
-    url: string;
-    name: string;
-    type: string;
-    size: number;
-    file: File;
-  };
-  
-  // Message action states
-  const [activeMessageId, setActiveMessageId] = useState<number | null>(null);
-  const [showMessageActions, setShowMessageActions] = useState(false);
-  const [showForwardDialog, setShowForwardDialog] = useState(false);
-  const [showReplyForm, setShowReplyForm] = useState(false);
-  const [replyingToMessage, setReplyingToMessage] = useState<any | null>(null);
-  const [forwardingMessage, setForwardingMessage] = useState<any | null>(null);
-  
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
-  const [audioURL, setAudioURL] = useState<string | null>(null);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
-  const audioChunks = useRef<BlobPart[]>([]);
-  
-  // Voice recording timer
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    
-    if (isRecording) {
-      interval = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
-    }
-    
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isRecording]);
-  
-  // Auto-scroll to bottom when messages change
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages]);
-  
-  // Handle forwarded message if provided
-  useEffect(() => {
-    if (forwardedMessage) {
-      // If this component was rendered with a forwarded message, add it to the messages
-      setMessages(prevMessages => [...prevMessages, forwardedMessage]);
-    }
-  }, [forwardedMessage]);
-  
-  // Function to format seconds into MM:SS
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
-    const secs = (seconds % 60).toString().padStart(2, '0');
-    return `${mins}:${secs}`;
-  };
-  
-  // Get file icon based on file type
-  const getFileIcon = (type: string) => {
-    if (type.startsWith('image/')) return '🖼️';
-    if (type.startsWith('video/')) return '🎬';
-    if (type.startsWith('audio/')) return '🎵';
-    if (type.includes('pdf')) return '📄';
-    if (type.includes('word')) return '📝';
-    if (type.includes('excel') || type.includes('sheet')) return '📊';
-    if (type.includes('zip') || type.includes('compressed')) return '📦';
-    return '📎';
-  };
-  
-  // Format file size
-  const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return bytes + ' B';
-    else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
-    else return (bytes / 1048576).toFixed(1) + ' MB';
-  };
-  
-  // Handle file attachment selection
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    
-    // Create attachment objects with all necessary data
-    const newAttachments = Array.from(files).map(file => ({
-      url: URL.createObjectURL(file),
-      name: file.name,
-      type: file.type,
-      size: file.size,
-      file: file
-    }));
-    
-    setAttachments([...attachments, ...newAttachments]);
-    
-    // Clear the input so the same file can be selected again
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-  
-  // Handle voice recording
-  const handleVoiceRecording = async () => {
-    if (isRecording && mediaRecorder) {
-      // Stop recording
-      mediaRecorder.stop();
-      setIsRecording(false);
-      
-      // We don't reset timer immediately to show the final duration
-      setTimeout(() => {
-        setRecordingTime(0);
-      }, 1000);
-      
-    } else {
-      // Start recording
-      try {
-        audioChunks.current = [];
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const recorder = new MediaRecorder(stream);
-        
-        recorder.ondataavailable = (e) => {
-          if (e.data.size > 0) {
-            audioChunks.current.push(e.data);
-          }
-        };
-        
-        recorder.onstop = () => {
-          // Create audio blob and URL
-          const audioBlob = new Blob(audioChunks.current, { type: 'audio/webm' });
-          const url = URL.createObjectURL(audioBlob);
-          setAudioURL(url);
-          
-          // Create a File object from the Blob for easier handling
-          const audioFile = new File(
-            [audioBlob], 
-            `voice_recording_${new Date().getTime()}.webm`, 
-            { type: 'audio/webm' }
-          );
-          
-          // Process the audio recording as an attachment
-          const audioAttachment = {
-            url: url,
-            name: `Voice Note - ${formatTime(recordingTime)}`,
-            type: 'audio/webm',
-            size: audioBlob.size,
-            file: audioFile
-          };
-          
-          // Add the audio attachment
-          setAttachments([...attachments, audioAttachment]);
-          
-          // Stop all tracks
-          stream.getTracks().forEach(track => track.stop());
-        };
-        
-        setMediaRecorder(recorder);
-        recorder.start();
-        setIsRecording(true);
-      } catch (err) {
-        console.error("Error accessing microphone:", err);
-        alert("Could not access microphone. Please check permissions.");
-      }
-    }
-  };
-  
-  // Handle message actions
-  const handleMessageLongPress = (messageId: number) => {
-    setActiveMessageId(messageId);
-    setShowMessageActions(true);
-  };
-  
-  const handleReply = (msg: any) => {
-    setReplyingToMessage(msg);
-    setShowReplyForm(true);
-    setShowMessageActions(false);
-  };
-  
-  const handleForward = (msg: any) => {
-    setForwardingMessage(msg);
-    setShowForwardDialog(true);
-    setShowMessageActions(false);
-  };
-  
-  const handleDelete = (messageId: number) => {
-    setMessages(messages.filter(msg => msg.id !== messageId));
-    setShowMessageActions(false);
-  };
-  
-  // Helper function to generate a unique message ID
-  const generateUniqueId = () => {
-    return Date.now() + Math.floor(Math.random() * 1000);
-  };
-  
-  // Send message function
-  const sendMessage = async () => {
-    if (message.trim() === '' && attachments.length === 0) return;
-    
-    let content = message;
-    let replyToId = null;
-    
-    // Jika ada attachment tapi tidak ada teks
-    if (message.trim() === '' && attachments.length > 0) {
-      content = "Sent attachment";
-    }
-    
-    // Handle reply case
-    if (showReplyForm && replyingToMessage) {
-      replyToId = replyingToMessage.id;
-    }
-    
-    try {
-      if (attachments.length > 0) {
-        // Kirim pesan dengan attachment
+        // Upload file audio
         const formData = new FormData();
-        formData.append('content', content);
-        formData.append('isRoom', isRoom.toString());
+        const audioType = audioBlob.type || 'audio/webm';
+        const fileExt = audioType.includes('webm') ? 'webm' : 
+                      audioType.includes('ogg') ? 'ogg' : 
+                      audioType.includes('mp4') ? 'm4a' : 'mp3';
         
-        if (replyToId) {
-          formData.append('replyToId', replyToId.toString());
-        }
+        // Buat nama file yang unik dengan timestamp
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const fileName = `voice_note_${timestamp}.${fileExt}`;
         
-        // Tambahkan semua file attachment
-        attachments.forEach((attachment, index) => {
-          if (attachment.file) {
-            formData.append('file', attachment.file);
-          }
-        });
+        const audioFile = new File([audioBlob], fileName, { type: audioType });
+        formData.append('file', audioFile);
         
-        // Tampilkan pesan loading
-        console.log("Mengirim pesan dengan attachment...");
-        
-        // Tambahkan pesan sementara ke daftar
-        const tempId = generateUniqueId();
-        const tempMessage = {
-          id: tempId,
-          content: content,
-          sender: { id: user.id, callsign: user.callsign },
-          timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-          isRead: true,
-          attachments: attachments.length > 0 ? [...attachments] : undefined,
-          replyTo: showReplyForm ? replyingToMessage : undefined,
-          status: 'sending'
-        };
-        
-        setMessages(prev => [...prev, tempMessage]);
-        
-        // Kirim pesan ke server
-        const response = await fetch(`/api/chats/${chatId}/attachments`, {
+        // Upload file
+        const response = await fetch('/api/attachments/upload', {
           method: 'POST',
           body: formData,
           credentials: 'include'
         });
         
         if (!response.ok) {
-          throw new Error(`Error sending message: ${response.status} ${response.statusText}`);
+          throw new Error('Failed to upload voice attachment');
         }
         
-        const sentMessage = await response.json();
-        console.log("Pesan dengan attachment berhasil dikirim:", sentMessage);
+        const data = await response.json();
         
-        // Update pesan temp dengan data dari server
-        setMessages(prev => prev.map(msg => msg.id === tempId ? sentMessage : msg));
-        
-      } else {
-        // Jika bukan room, pastikan direct chat sudah dibuat terlebih dahulu
-        if (!isRoom) {
-          try {
-            console.log(`Memastikan direct chat dengan pengguna ID ${chatId} sudah ada`);
-            
-            // Coba buat direct chat jika belum ada
-            // Di mode non-group, chatId pada komponen ini sebenarnya adalah targetUserId
-            // Tapi kita perlu memperoleh UUID yang tepat dari user yang tersedia
-            // Coba dapatkan daftar pengguna dari server
-            const usersResponse = await fetch('/api/users', {
-              credentials: 'include'
-            });
-            
-            if (!usersResponse.ok) {
-              console.error("Gagal mendapatkan daftar pengguna");
-              throw new Error("Gagal mendapatkan daftar pengguna");
-            }
-            
-            const users = await usersResponse.json();
-            console.log("Daftar pengguna:", users);
-            
-            // Cari user dengan ID atau callsign yang cocok (asumsi chatName adalah callsign)
-            const targetUser = users.find((u: any) => 
-              u.id === chatId.toString() || u.callsign === chatName
-            );
-            
-            if (!targetUser) {
-              console.error(`Pengguna dengan ID ${chatId} atau callsign ${chatName} tidak ditemukan`);
-              throw new Error(`Pengguna dengan ID ${chatId} atau callsign ${chatName} tidak ditemukan`);
-            }
-            
-            console.log(`Target user ditemukan:`, targetUser);
-            
-            // Buat direct chat dengan user yang ditemukan
-            const createChatResponse = await fetch('/api/direct-chats', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ otherUserId: targetUser.id }),
-              credentials: 'include'
-            });
-            
-            if (!createChatResponse.ok) {
-              console.warn(`Gagal membuat direct chat: ${createChatResponse.status} ${createChatResponse.statusText}`);
-            } else {
-              const directChat = await createChatResponse.json();
-              console.log("Direct chat dibuat atau ditemukan:", directChat);
-              
-              // Perbarui chatId untuk mengirim pesan
-              const directChatId = directChat.id;
-              console.log(`Mengupdate chatId dari ${chatId} menjadi ${directChatId} untuk pengiriman pesan`);
-              chatId = directChatId;
-            }
-          } catch (chatError) {
-            console.error("Error saat memastikan direct chat:", chatError);
-          }
-        }
-        
-        // Kirim pesan teks biasa
-        const messageData = {
-          content,
-          isRoom,
-          replyToId
+        // Langsung kirim pesan dengan file yang sudah diupload
+        const payload = {
+          conversationId: chatId,
+          content: `🔊 Pesan Suara${durationText}`,
+          classification: 'UNCLASSIFIED',
+          hasAttachment: true,
+          attachmentType: 'audio',
+          attachmentUrl: data.file.url,
+          attachmentName: data.file.name,
+          attachmentSize: data.file.size,
+          replyToId: replyToMessage ? replyToMessage.id : undefined
         };
         
-        // Tambahkan pesan sementara ke daftar
-        const tempId = generateUniqueId();
-        const tempMessage = {
-          id: tempId,
-          content,
-          sender: { id: user.id, callsign: user.callsign },
-          timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-          isRead: true,
-          replyTo: showReplyForm ? replyingToMessage : undefined,
-          status: 'sending'
-        };
+        console.log("Sending voice message with payload:", payload);
         
-        setMessages(prev => [...prev, tempMessage]);
-        
-        console.log(`Mengirim pesan ke chatId=${chatId}, isRoom=${isRoom}`, messageData);
-        
-        // Kirim pesan ke server
-        const response = await fetch(`/api/chats/${chatId}/messages`, {
+        // Gunakan fetch langsung untuk mengirim pesan
+        const messageResponse = await fetch('/api/messages', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(messageData),
+          body: JSON.stringify(payload),
           credentials: 'include'
         });
         
-        if (!response.ok) {
-          console.error(`Error server: ${response.status} ${response.statusText}`);
-          const errorData = await response.text();
-          console.error(`Response error: ${errorData}`);
-          throw new Error(`Error sending message: ${response.status} ${response.statusText}`);
+        if (!messageResponse.ok) {
+          throw new Error('Failed to send voice message');
         }
         
-        const sentMessage = await response.json();
-        console.log("Pesan berhasil dikirim:", sentMessage);
-        
-        // Update pesan temp dengan data dari server
-        setMessages(prev => prev.map(msg => msg.id === tempId ? sentMessage : msg));
+        // Refresh messages setelah berhasil kirim
+        refetchMessages();
+        setReplyToMessage(null);
+      } catch (error) {
+        console.error("Error sending voice message:", error);
       }
-    } catch (error) {
-      console.error("Gagal mengirim pesan:", error);
-      alert("Gagal mengirim pesan. Silakan coba lagi.");
-    }
+    };
+    
+    // Eksekusi pengiriman pesan langsung
+    sendDirectVoiceMessage();
     
     // Reset state
-    setMessage('');
-    setAttachments([]);
-    setShowReplyForm(false);
-    setReplyingToMessage(null);
+    setIsVoiceRecording(false);
+    setVoiceAttachment(null); // Pastikan voiceAttachment null agar tidak terjadi double upload
   };
   
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
+  const handleCancelVoiceRecording = () => {
+    setIsVoiceRecording(false);
+    setVoiceAttachment(null);
+  };
+  
+  // Upload voice attachment
+  const uploadVoiceAttachment = async (blob: Blob): Promise<{ name: string; url: string; type: string; size: number } | null> => {
+    const formData = new FormData();
+    // Deteksi MIME type yang lebih umum diterima oleh server
+    const audioType = blob.type || 'audio/webm';
+    console.log("Detected audio blob type:", audioType);
+    
+    // Gunakan ekstensi file yang sesuai dengan tipe MIME
+    const fileExt = audioType.includes('webm') ? 'webm' : 
+                   audioType.includes('ogg') ? 'ogg' : 
+                   audioType.includes('mp4') ? 'm4a' : 'mp3';
+    
+    // Mendapatkan timestamp untuk nama file
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    
+    // Ambil data user dari session yang aktif
+    // Format: NRP_Callsign_Timestamp.ext
+    const fileName = `personel_${timestamp}.${fileExt}`;
+                   
+    const audioFile = new File(
+      [blob], 
+      fileName, 
+      { type: audioType }
+    );
+    
+    console.log("Creating audio file with name:", audioFile.name, "and type:", audioFile.type);
+    formData.append('file', audioFile);
+    
+    try {
+      const response = await fetch('/api/attachments/upload', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to upload voice attachment');
+      }
+      
+      const data = await response.json();
+      return {
+        name: data.filename,
+        url: data.path,
+        type: 'audio',
+        size: audioFile.size
+      };
+      
+    } catch (error) {
+      console.error('Error uploading voice attachment:', error);
+      return null;
+    }
+  };
+
+  // Send message mutation
+  const sendMessageMutation = useMutation({
+    mutationFn: async (content: string | Record<string, any>) => {
+      // Handle voice attachment first if present
+      let audioAttachment = null;
+      if (voiceAttachment?.blob) {
+        audioAttachment = await uploadVoiceAttachment(voiceAttachment.blob);
+      }
+      
+      let payload;
+      
+      if (audioAttachment) {
+        // Voice message
+        payload = {
+          conversationId: chatId,
+          content: "🔊 Pesan Suara",
+          classification: 'UNCLASSIFIED',
+          hasAttachment: true,
+          attachmentType: audioAttachment.type,
+          attachmentUrl: audioAttachment.url,
+          attachmentName: audioAttachment.name,
+          attachmentSize: audioAttachment.size,
+          replyToId: replyToMessage ? replyToMessage.id : undefined
+        };
+      } else if (typeof content === 'string') {
+        // Simple text message
+        payload = {
+          conversationId: chatId,
+          content,
+          classification: 'UNCLASSIFIED',
+          replyToId: replyToMessage ? replyToMessage.id : undefined
+        };
+      } else {
+        // Message with attachment
+        payload = {
+          conversationId: chatId,
+          content: content.content,
+          classification: 'UNCLASSIFIED',
+          hasAttachment: content.hasAttachment,
+          attachmentType: content.attachmentType,
+          attachmentUrl: content.attachmentUrl,
+          attachmentName: content.attachmentName,
+          attachmentSize: content.attachmentSize,
+          replyToId: replyToMessage ? replyToMessage.id : undefined
+        };
+      }
+      
+      return fetch('/api/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        credentials: 'include'
+      }).then(res => {
+        if (!res.ok) throw new Error('Failed to send message');
+        return res.json();
+      });
+    },
+    onSuccess: () => {
+      // Invalidate and refetch messages
+      queryClient.invalidateQueries({ queryKey: [`/api/conversations/${chatId}/messages`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+    }
+  });
+  
+  // Fetch all users to find the other user in direct chats
+  const { data: allUsers } = useQuery({
+    queryKey: [`/api/all-users`],
+    enabled: !!user && !isGroup,
+  });
+
+  // Fetch conversation members
+  const { data: conversationMembers } = useQuery({
+    queryKey: [`/api/conversations/${chatId}/members`],
+    enabled: !!chatId && !!user,
+  });
+
+  // Update chat data when chat changes
+  useEffect(() => {
+    if (chat && typeof chat === 'object') {
+      const chatObj = chat as Conversation;
+      
+      // Default chat name
+      let chatName = chatObj.name || 'Chat';
+      
+      if (!isGroup && conversationMembers && Array.isArray(conversationMembers) && allUsers && Array.isArray(allUsers)) {
+        // Find the other member in the conversation (not the current user)
+        const otherMemberId = conversationMembers.find(member => member.userId !== user?.id)?.userId;
+        
+        if (otherMemberId) {
+          // Find the other user's data
+          const otherUser = allUsers.find(u => u.id === otherMemberId);
+          
+          if (otherUser) {
+            // Use the other user's callsign for the chat name
+            chatName = otherUser.callsign || chatName;
+            console.log("Setting chat name to other user's callsign:", chatName);
+          }
+        }
+      }
+      
+      setChatData({
+        id: chatObj.id || chatId,
+        name: chatName,
+        isGroup: typeof chatObj.isGroup === 'boolean' ? chatObj.isGroup : isGroup
+      });
+    }
+  }, [chat, isGroup, chatId, conversationMembers, allUsers, user?.id]);
+  
+  // Auto-scroll to bottom when messages change
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   };
   
-  // Mock startCall function
-  const startCall = (isVideo: boolean) => {
-    alert(`${isVideo ? 'Video' : 'Audio'} call with ${chatName} initiated!`);
-  };
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
   
-  // Generate a list of contacts for the forward dialog
-  const getContacts = () => {
-    return [
-      { id: 101, name: "ALPHA SQUAD", isRoom: true },
-      { id: 102, name: "SUPPORT TEAM", isRoom: true },
-      { id: 103, name: "COMMAND CENTER", isRoom: true },
-      { id: 2, name: "BRAVO2", isRoom: false },
-      { id: 3, name: "CHARLIE3", isRoom: false },
-      { id: 4, name: "DELTA4", isRoom: false }
-    ];
+  // State for attachment
+  const [attachment, setAttachment] = useState<{
+    url: string;
+    name: string;
+    type: string;
+    size: number;
+    mimetype: string;
+  } | null>(null);
+
+  // Handle file upload complete
+  const handleFileUploaded = (fileData: {
+    url: string;
+    name: string;
+    type: string;
+    size: number;
+    mimetype: string;
+  }) => {
+    setAttachment(fileData);
   };
+
+  // Delete message mutation
+  const deleteMessageMutation = useMutation({
+    mutationFn: async (messageId: number) => {
+      const response = await fetch(`/api/messages/${messageId}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete message');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      setIsDeleteDialogOpen(false);
+      setSelectedMessage(null);
+      queryClient.invalidateQueries({ queryKey: [`/api/conversations/${chatId}/messages`] });
+    },
+  });
   
-  // Render the room members dialog
-  const renderMembersDialog = () => {
-    // Menggunakan roomData state yang sudah kita definisikan
-    return (
-      <Dialog open={showMembersDialog} onOpenChange={setShowMembersDialog}>
-        <DialogContent className="bg-[#1a1a1a] border-[#2c2c2c] text-white max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-[#a2bd62]">{roomData.name} - MEMBERS</DialogTitle>
-          </DialogHeader>
-          <div className="mt-2">
-            <ul className="divide-y divide-[#2c2c2c]">
-              {Array.isArray(roomData.members) && roomData.members.length > 0 ? (
-                roomData.members.map((member: any) => (
-                  <li key={member.id} className="py-2 flex items-center">
-                    <div className="w-8 h-8 bg-[#353535] rounded-full flex items-center justify-center text-xs mr-3">
-                      {member.callsign ? member.callsign.substring(0, 2) : "??"}
-                    </div>
-                    <span>{member.callsign || "Unknown Member"}</span>
-                  </li>
-                ))
-              ) : (
-                <li className="py-2 text-center">
-                  <span className="text-gray-400">No members available</span>
-                </li>
-              )}
-            </ul>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  };
+  // Forward message mutation
+  const forwardMessageMutation = useMutation({
+    mutationFn: async ({ messageId, targetConversationId }: { messageId: number, targetConversationId: number }) => {
+      const response = await fetch(`/api/messages/${messageId}/forward`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ conversationId: targetConversationId }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to forward message');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      setIsForwardDialogOpen(false);
+      setSelectedMessage(null);
+    },
+  });
   
-  // Render the forward dialog
-  const renderForwardDialog = () => {
-    const contacts = getContacts();
+  // Load conversations for forward dialog
+  useEffect(() => {
+    if (isForwardDialogOpen) {
+      // Fetch all users first
+      fetch('/api/all-users')
+        .then(res => res.json())
+        .then(users => {
+          console.log("All users:", users);
+          
+          // Fetch direct chats
+          fetch('/api/direct-chats')
+            .then(res => res.json())
+            .then(directChats => {
+              console.log("Direct chats:", directChats);
+              
+              // Fetch group chats
+              fetch('/api/rooms')
+                .then(res => res.json())
+                .then(rooms => {
+                  console.log("Rooms:", rooms);
+                  
+                  // For each direct chat, load its members
+                  const memberPromises = directChats.map((chat: any) => 
+                    fetch(`/api/conversations/${chat.id}/members`)
+                      .then(res => res.json())
+                  );
+                  
+                  Promise.all(memberPromises)
+                    .then(memberResults => {
+                      console.log("All member results:", memberResults);
+                      
+                      // Cari nama personel yang benar untuk setiap chat
+                      const allConversations: { id: number; name: string; isGroup: boolean }[] = [];
+                      
+                      // Tambahkan direct chats dengan nama pengguna dari users yang diambil
+                      if (Array.isArray(directChats)) {
+                        directChats.forEach((chat: any, idx: number) => {
+                          // Get the members for this chat
+                          const members = memberResults[idx] || [];
+                          console.log(`Chat ${chat.id} members:`, members);
+                          
+                          // Find the other user in the conversation
+                          const otherMember = members.find((m: any) => m.userId !== user?.id);
+                          const otherUserId = otherMember?.userId;
+                          
+                          console.log(`For chat ${chat.id} - User ID: ${user?.id}, Other user ID: ${otherUserId}`);
+                          
+                          // Cari data pengguna lain dari daftar users
+                          let otherUserName = 'Chat Langsung';
+                          if (otherUserId && Array.isArray(users)) {
+                            const otherUser = users.find((u: any) => u.id === otherUserId);
+                            if (otherUser) {
+                              // Format: Callsign (Nama Lengkap)
+                              otherUserName = `${otherUser.callsign || 'Pengguna'} ${otherUser.fullName ? `(${otherUser.fullName})` : ''}`;
+                              console.log(`Found user for ID ${otherUserId}:`, otherUserName);
+                            }
+                          }
+                          
+                          console.log(`Adding direct chat: ${chat.id} with user: ${otherUserId}, name: ${otherUserName}`);
+                          
+                          // Jika kita tidak bisa mendapatkan nama yang valid, coba gunakan nama dari chat sendiri
+                          if (otherUserName === 'Chat Langsung' && chat.name && !chat.name.startsWith('Direct chat')) {
+                            otherUserName = chat.name;
+                          }
+                          
+                          allConversations.push({
+                            id: chat.id,
+                            name: otherUserName,
+                            isGroup: false
+                          });
+                        });
+                      }
+                      
+                      // Tambahkan grup chats
+                      if (Array.isArray(rooms)) {
+                        rooms.forEach((room: any) => {
+                          allConversations.push({
+                            id: room.id,
+                            name: room.name || 'Grup Chat',
+                            isGroup: true
+                          });
+                        });
+                      }
+                      
+                      console.log("Final conversations list for forward:", allConversations);
+                      setConversations(allConversations);
+                    })
+                    .catch(error => console.error('Error fetching conversation members:', error));
+                })
+                .catch(error => console.error('Error fetching rooms:', error));
+            })
+            .catch(error => console.error('Error fetching direct chats:', error));
+        })
+        .catch(error => console.error('Error fetching all users:', error));
+    }
+  }, [isForwardDialogOpen, user?.id]);
+  
+  // Handle sending messages
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
     
-    return (
-      <Dialog open={showForwardDialog} onOpenChange={setShowForwardDialog}>
-        <DialogContent className="bg-[#1a1a1a] border-[#2c2c2c] text-white max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-[#a2bd62]">FORWARD MESSAGE</DialogTitle>
-          </DialogHeader>
-          <div className="mt-2">
-            <div className="bg-[#0c0c0c] p-3 rounded mb-4 border border-[#2c2c2c]">
-              <p className="text-xs text-gray-400 mb-1">FORWARDING:</p>
-              <p className="text-sm">{forwardingMessage?.content}</p>
-            </div>
-            <p className="text-sm mb-2">Select recipient:</p>
-            <ul className="divide-y divide-[#2c2c2c]">
-              {contacts.map(contact => (
-                <li
-                  key={`${contact.isRoom ? 'room' : 'chat'}-${contact.id}`}
-                  className="py-2 hover:bg-[#252525] cursor-pointer flex items-center"
-                  onClick={() => {
-                    if (onNavigateToChat) {
-                      onNavigateToChat(contact.id, contact.isRoom, forwardingMessage);
-                    }
-                    setShowForwardDialog(false);
-                  }}
-                >
-                  <div className="w-8 h-8 bg-[#353535] rounded-full flex items-center justify-center mr-3">
-                    {contact.isRoom ? <Users size={14} /> : <User size={14} />}
-                  </div>
-                  <span>{contact.name}</span>
-                  {contact.isRoom && (
-                    <span className="ml-2 text-xs text-gray-400">(Group)</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
+    if ((!message.trim() && !attachment) || !user) return;
+    
+    // Log actual reply information
+    console.log("Current reply state:", replyToMessage);
+    
+    // If we have an attachment, include it in the message
+    if (attachment) {
+      const messageData = {
+        content: message.trim() || `[File: ${attachment.name}]`,
+        hasAttachment: true,
+        attachmentType: attachment.type,
+        attachmentUrl: attachment.url,
+        attachmentName: attachment.name,
+        attachmentSize: attachment.size,
+        replyToId: replyToMessage ? replyToMessage.id : undefined
+      };
+      
+      console.log("Sending message with attachment and reply data:", messageData);
+      sendMessageMutation.mutate(messageData);
+      setAttachment(null);
+    } else {
+      // Send normal text message with reply info if applicable
+      const messageData = {
+        content: message.trim(),
+        replyToId: replyToMessage ? replyToMessage.id : undefined,
+        conversationId: chatId
+      };
+      
+      console.log("Sending text message with reply data:", messageData);
+      sendMessageMutation.mutate(messageData);
+    }
+    
+    setMessage('');
+    setReplyToMessage(null); // Reset reply state after sending
   };
   
-  return (
-    <div className="flex flex-col h-full bg-black">
-      {/* Header */}
-      <div className="bg-[#1a1a1a] border-b border-[#2c2c2c] p-3 flex justify-between items-center">
-        <div className="flex items-center">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="mr-2 text-white hover:bg-[#252525]"
-            onClick={onBack}
-          >
-            <ArrowLeft size={18} />
-          </Button>
+  // Format timestamp
+  const formatMessageTime = (timestamp: string) => {
+    try {
+      const date = new Date(timestamp);
+      return formatDistanceToNow(date, { addSuffix: true, locale: id });
+    } catch (e) {
+      return '';
+    }
+  };
+  
+  // Group messages by date
+  const groupMessagesByDate = (messageData: any[]) => {
+    if (!Array.isArray(messageData)) {
+      console.log("messageData is not an array:", messageData);
+      return [];
+    }
+    
+    console.log("Processing message data for grouping:", messageData);
+    console.log("Total messages to process:", messageData.length);
+    
+    // Debug: inspect all messages with replyToId to see if they exist
+    const repliesMessages = messageData.filter(m => m.replyToId);
+    if (repliesMessages.length > 0) {
+      console.log("Messages with replies:", repliesMessages);
+    }
+    
+    // Sortir pesan berdasarkan waktu (dari yang terlama ke yang terbaru)
+    const sortedMessages = [...messageData].sort((a, b) => {
+      const timeA = new Date(a.timestamp || a.createdAt).getTime();
+      const timeB = new Date(b.timestamp || b.createdAt).getTime();
+      return timeA - timeB;
+    });
+    
+    const groups: { [key: string]: ChatMessage[] } = {};
+    
+    sortedMessages.forEach((msg: any) => {
+      // For messages from the server, createdAt is used instead of timestamp
+      const timestamp = msg.timestamp || msg.createdAt;
+      
+      if (!msg || !timestamp) {
+        console.log("Skipping message without timestamp:", msg);
+        return;
+      }
+      
+      try {
+        const date = new Date(timestamp);
+        const dateStr = date.toDateString();
+        
+        if (!groups[dateStr]) {
+          groups[dateStr] = [];
+        }
+        
+        // Try to get the sender name from allUsers
+        let senderName = 'Unknown';
+        if (allUsers && Array.isArray(allUsers)) {
+          const sender = allUsers.find(u => u.id === msg.senderId);
+          if (sender) {
+            senderName = sender.callsign || sender.fullName || 'Unknown';
+          }
+        }
+        
+        groups[dateStr].push({
+          id: msg.id || Math.random(),
+          senderId: msg.senderId || 0,
+          senderName: senderName,
+          content: msg.content || '',
+          timestamp: timestamp,
+          isRead: msg.isRead || false,
+          classification: msg.classification || 'UNCLASSIFIED',
+          // Attachment fields
+          hasAttachment: msg.hasAttachment || false,
+          attachmentType: msg.attachmentType || '',
+          attachmentUrl: msg.attachmentUrl || '',
+          attachmentName: msg.attachmentName || '',
+          attachmentSize: msg.attachmentSize || 0,
+          // Reply, Forward fields
+          replyToId: msg.replyToId || undefined,
+          forwardedFromId: msg.forwardedFromId || undefined,
+          isDeleted: msg.isDeleted || false
+        });
+      } catch (e) {
+        console.error('Error processing message:', e, msg);
+      }
+    });
+    
+    const result = Object.entries(groups).map(([date, messages]) => ({
+      date,
+      messages
+    }));
+    
+    console.log("Grouped messages:", result);
+    console.log("Total date groups:", result.length);
+    if (result.length > 0) {
+      console.log("Total messages in first group:", result[0].messages.length);
+    }
+    return result;
+  };
+  
+  const messageGroups = groupMessagesByDate(Array.isArray(messages) ? messages : []);
+  
+  // UI untuk reply message (tampilan sudah mengikuti WhatsApp style)
+  const ReplyPreview = () => {
+    if (!replyToMessage) return null;
+
+    return (
+      <div className="px-4 py-2 bg-[#2a2a2a] border-t border-[#333333] flex items-start">
+        <div className="flex-1">
           <div className="flex items-center">
-            <div className="w-8 h-8 bg-[#353535] rounded-full flex items-center justify-center mr-2">
-              <span className="text-[#a2bd62] text-xs font-bold">
-                {chatName.substring(0, 2).toUpperCase()}
-              </span>
-            </div>
-            <div>
-              <h2 className="font-bold text-white">{chatName}</h2>
-              <p className="text-xs text-gray-400">
-                {isRoom ? 'Tactical Channel' : 'Direct Comms'}
+            <div className="w-1 h-full bg-[#a6c455] mr-2"></div>
+            <div className="flex-1">
+              <p className="text-xs text-[#a6c455] flex items-center">
+                <Reply className="h-3 w-3 mr-1" />
+                Membalas {replyToMessage.senderId === user?.id ? 'pesan Anda' : replyToMessage.senderName}
               </p>
+              
+              {/* Preview konten sesuai dengan jenis pesan balasan */}
+              {replyToMessage.hasAttachment ? (
+                <div className="text-xs text-gray-400 flex items-center">
+                  <span className="text-[#a6c455] mr-1">
+                    {replyToMessage.attachmentType === 'audio' ? '🔊' : '📎'}
+                  </span>
+                  <span className="truncate">
+                    {replyToMessage.attachmentType === 'audio' 
+                      ? 'Pesan Suara' 
+                      : (replyToMessage.attachmentName || 'File')}
+                  </span>
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400 truncate max-w-[90%]">
+                  {replyToMessage.content || '<Pesan kosong>'}
+                </p>
+              )}
             </div>
           </div>
         </div>
-        <div className="flex">
-          <Button 
-            variant="ghost" 
-            size="icon"
-            className="text-white hover:bg-[#252525]"
-            onClick={() => startCall(false)}
-          >
-            <Phone size={18} />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon"
-            className="text-white hover:bg-[#252525]"
-            onClick={() => startCall(true)}
-          >
-            <Video size={18} />
-          </Button>
-          {isRoom && (
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className="text-white hover:bg-[#252525]"
-              onClick={() => setShowMembersDialog(true)}
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-5 w-5"
+          onClick={() => setReplyToMessage(null)}
+        >
+          <X className="h-3 w-3" />
+        </Button>
+      </div>
+    );
+  };
+
+  return (
+    <div className="flex flex-col h-screen bg-[#171717] relative">
+      {/* Chat header */}
+      
+      {/* Delete Message Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="bg-[#1a1a1a] border-[#333333] text-white">
+          <DialogHeader>
+            <DialogTitle>Hapus Pesan</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Apakah Anda yakin ingin menghapus pesan ini? Tindakan ini tidak dapat dibatalkan.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="bg-[#2a2a2a] p-3 rounded-md max-h-[100px] overflow-auto my-2">
+            <p className="text-sm">{selectedMessage?.content}</p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setIsDeleteDialogOpen(false)}
             >
-              <Users size={18} />
+              Batal
             </Button>
-          )}
+            <Button
+              variant="destructive"
+              onClick={() => selectedMessage && deleteMessageMutation.mutate(selectedMessage.id)}
+              disabled={deleteMessageMutation.isPending}
+            >
+              {deleteMessageMutation.isPending ? "Menghapus..." : "Hapus"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Forward Message Dialog */}
+      <Dialog open={isForwardDialogOpen} onOpenChange={setIsForwardDialogOpen}>
+        <DialogContent className="bg-[#1a1a1a] border-[#333333] text-white">
+          <DialogHeader>
+            <DialogTitle>Teruskan Pesan</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Pilih percakapan tujuan untuk meneruskan pesan ini.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="bg-[#2a2a2a] p-3 rounded-md max-h-[100px] overflow-auto my-2">
+            <p className="text-sm">{selectedMessage?.content}</p>
+            {selectedMessage?.hasAttachment && (
+              <p className="text-xs text-[#a6c455] mt-1">
+                📎 {selectedMessage.attachmentName}
+              </p>
+            )}
+          </div>
+          <div className="max-h-[200px] overflow-auto">
+            {conversations.length === 0 ? (
+              <p className="text-gray-400 text-center py-2">Memuat percakapan...</p>
+            ) : (
+              <div className="space-y-1">
+                {conversations
+                  .filter(conv => conv.id !== chatId) // Filter out current chat
+                  .map(conv => (
+                    <Button
+                      key={conv.id}
+                      variant="ghost"
+                      className="w-full justify-start text-left"
+                      onClick={() => selectedMessage && forwardMessageMutation.mutate({
+                        messageId: selectedMessage.id,
+                        targetConversationId: conv.id
+                      })}
+                      disabled={forwardMessageMutation.isPending}
+                    >
+                      {conv.isGroup ? (
+                        <Users className="h-4 w-4 mr-2 inline-block" />
+                      ) : (
+                        <User className="h-4 w-4 mr-2 inline-block" />
+                      )}
+                      {conv.name}
+                    </Button>
+                  ))
+                }
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setIsForwardDialogOpen(false)}
+            >
+              Batal
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <div className="flex items-center px-4 py-3 border-b border-[#333333] bg-[#1a1a1a]">
+        <Button onClick={onBack} variant="ghost" size="icon" className="mr-2 text-[#a6c455]">
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        
+        <div className="relative flex-shrink-0">
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center ${
+            isGroup ? "bg-[#4d5d30]" : "bg-[#5a6b38]"
+          }`}>
+            {isGroup ? (
+              <span className="text-white text-xs font-semibold">G</span>
+            ) : (
+              <span className="text-white text-xs font-semibold">
+                {chatData?.name?.charAt(0).toUpperCase() || 'U'}
+              </span>
+            )}
+          </div>
         </div>
+        
+        <div className="ml-3 flex-1">
+          <h3 className="text-[#9bb26b] font-medium truncate">{chatData?.name || 'Chat'}</h3>
+          <p className="text-gray-400 text-xs">
+            {isGroup ? 'Group chat' : 'Direct message'}
+          </p>
+        </div>
+        
+        <Button variant="ghost" size="icon" className="text-[#a6c455]">
+          <MoreVertical className="h-5 w-5" />
+        </Button>
       </div>
       
-      {/* Messages area */}
-      <div className="flex-1 overflow-y-auto p-4 bg-[#0c0c0c] pb-16">
-        {messages.map((msg) => {
-          // Pastikan struktur pesan yang konsisten antara pesan lokal dan dari server
-          const sender = msg.sender || { id: msg.senderId, callsign: 'User' };
-          const isCurrentUser = sender.id === user.id;
-          
-          return (
-            <div
-              key={msg.id}
-              className={`mb-4 ${isCurrentUser ? 'flex flex-col items-end' : 'flex flex-col items-start'}`}
-            >
-              {/* Message container */}
-              <div 
-                className={`relative max-w-[80%] ${isCurrentUser ? 'bg-[#1e3a14] rounded-tl-lg rounded-tr-lg rounded-bl-lg' : 'bg-[#1a1a1a] rounded-tr-lg rounded-tl-lg rounded-br-lg'}`}
-                onClick={() => handleMessageLongPress(msg.id)}
-              >
-                {/* Reply indicator */}
-                {msg.replyTo && (
-                  <div className="border-l-2 border-[#a2bd62] bg-[#1c1c1c] px-3 py-1 mt-1 mx-1 rounded text-xs text-gray-400 flex items-center">
-                    <CornerDownRight size={12} className="mr-1" />
-                    <div className="truncate">
-                      <span className="text-[#a2bd62] mr-1">{msg.replyTo.sender?.callsign || 'User'}:</span>
-                      {msg.replyTo.content.substring(0, 40)}{msg.replyTo.content.length > 40 ? '...' : ''}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Message content */}
-                <div className="px-3 py-2">
-                  {!isCurrentUser && (
-                    <div className="text-xs text-[#a2bd62] font-bold mb-1">{sender.callsign}</div>
-                  )}
-                  <div className="break-words">{msg.content}</div>
-                  
-                  {/* Attachments */}
-                  {msg.attachments && Array.isArray(msg.attachments) && msg.attachments.length > 0 && (
-                    <div className="mt-2 space-y-2">
-                      {msg.attachments.map((attachment: any, index: number) => (
-                        <div 
-                          key={index}
-                          className="bg-[#252525] p-2 rounded flex items-center text-sm"
-                        >
-                          <span className="mr-2 text-lg">
-                            {attachment.icon || getFileIcon(attachment.type)}
-                          </span>
-                          <div className="flex-1 overflow-hidden">
-                            <div className="truncate">{attachment.name}</div>
-                            <div className="text-xs text-gray-400">
-                              {formatFileSize(attachment.size)}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {/* Audio attachment */}
-                  {msg.audioUrl && (
-                    <div className="mt-2">
-                      <audio src={msg.audioUrl} controls className="w-full h-10" />
-                    </div>
-                  )}
-                </div>
-                
-                {/* Timestamp */}
-                <div className={`text-xs text-gray-400 px-3 pb-1 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
-                  {msg.timestamp}
-                </div>
-                
-                {/* Message actions - visible when a message is long-pressed/selected */}
-                {activeMessageId === msg.id && showMessageActions && (
-                  <div className="absolute top-0 right-0 mt-2 mr-2 bg-[#252525] rounded shadow-lg z-10">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      className="text-white p-1 h-auto"
-                      onClick={() => setShowMessageActions(false)}
-                    >
-                      <X size={14} />
-                    </Button>
-                    <div className="p-1 flex">
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        className="text-white p-1 h-auto"
-                        onClick={() => handleReply(msg)}
-                      >
-                        <Reply size={14} />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        className="text-white p-1 h-auto"
-                        onClick={() => handleForward(msg)}
-                      >
-                        <Forward size={14} />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        className="text-white p-1 h-auto"
-                        onClick={() => handleDelete(msg.id)}
-                      >
-                        <Trash2 size={14} />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
+      {/* Messages container with space for input at bottom */}
+      <div className="flex-1 overflow-y-auto p-4 pb-32 space-y-6">
+        {messageGroups.map(group => (
+          <div key={group.date} className="space-y-3">
+            <div className="flex justify-center">
+              <span className="text-xs bg-[#2a2a2a] text-gray-400 px-2 py-1 rounded-md">
+                {new Date(group.date).toLocaleDateString('id-ID', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </span>
             </div>
-          );
-        })}
+            
+            {group.messages.map(msg => {
+              const isOwnMessage = msg.senderId === user?.id;
+              
+              return (
+                <div 
+                  key={msg.id} 
+                  className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div 
+                    className={`max-w-[70%] rounded-lg px-4 py-2 ${
+                      isOwnMessage 
+                        ? 'bg-[#4d5d30] text-white rounded-br-none' 
+                        : 'bg-[#333333] text-white rounded-bl-none'
+                    }`}
+                  >
+                    {!isOwnMessage && (
+                      <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
+                    )}
+                    
+                    {/* Reply message format sesuai dengan kode yang diberikan */}
+                    {msg.replyToId && (
+                      <>
+                        <div className="text-xs mb-0.5">
+                          <span className="text-[#a6c455] mr-1">↪</span>
+                          <span className="text-[#a6c455] uppercase font-medium tracking-wide">
+                            {(() => {
+                              // Dapatkan nama pengirim pesan yang dibalas
+                              const senderName = messages && Array.isArray(messages) 
+                                ? (messages.find((m: any) => m.id === msg.replyToId)?.senderName || 'UNKNOWN')
+                                : 'UNKNOWN';
+                              
+                              // Format waktu
+                              const timestamp = messages && Array.isArray(messages)
+                                ? messages.find((m: any) => m.id === msg.replyToId)?.timestamp
+                                : '';
+                                
+                              let timeStr = '';
+                              if (timestamp) {
+                                try {
+                                  const date = new Date(timestamp);
+                                  timeStr = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                                } catch (e) {
+                                  timeStr = '';
+                                }
+                              }
+                              
+                              return `${senderName} ${timeStr}`;
+                            })()}
+                          </span>
+                        </div>
+                        <div className="text-[#d7d7d7] text-xs mb-1.5 ml-3">
+                          {(() => {
+                            // Dapatkan konten pesan yang dibalas
+                            return messages && Array.isArray(messages) 
+                              ? (messages.find((m: any) => m.id === msg.replyToId)?.content || '')
+                              : '';
+                          })()}
+                        </div>
+                      </>
+                    )}
+                    
+                    {/* Tampilkan isi pesan jika bukan pesan suara */}
+                    {!(msg.hasAttachment && msg.attachmentType === 'audio') && (
+                      <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
+                    )}
+                    
+                    {/* Render attachment jika ada */}
+                    {msg.hasAttachment && (
+                      <>
+                        {/* Pesan audio ditampilkan dengan tampilan militer hijau sesuai gambar */}
+                        {msg.attachmentType === 'audio' ? (
+                          <SimpleAudioPlayer 
+                            messageId={msg.id}
+                            timestamp={msg.timestamp}
+                            audioUrl={msg.attachmentUrl ? msg.attachmentUrl : `/uploads/voice_note_${msg.id}.webm`}
+                          />
+                        ) : (
+                          <MessageAttachment 
+                            attachmentType={msg.attachmentType || 'document'} 
+                            attachmentUrl={msg.attachmentUrl} 
+                            attachmentName={msg.attachmentName || 'file'} 
+                            attachmentSize={msg.attachmentSize}
+                          />
+                        )}
+                      </>
+                    )}
+                    
+                    {/* Message action dropdown menu */}
+                    <div className="relative">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="absolute right-0 -top-6 h-6 w-6 opacity-50 hover:opacity-100"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => {
+                            // Set reply message
+                            console.log("Setting reply to message:", msg);
+                            setReplyToMessage(msg);
+                            
+                            // Focus on message input after a small delay to ensure DOM is updated
+                            setTimeout(() => {
+                              const input = document.getElementById("message-input");
+                              if (input) {
+                                console.log("Focusing input element");
+                                input.focus();
+                              } else {
+                                console.warn("Input element not found");
+                              }
+                            }, 100);
+                          }}>
+                            <Reply className="mr-2 h-4 w-4" />
+                            Balas
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            setSelectedMessage(msg);
+                            setIsForwardDialogOpen(true);
+                          }}>
+                            <Forward className="mr-2 h-4 w-4" />
+                            Teruskan
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedMessage(msg);
+                              setIsDeleteDialogOpen(true);
+                            }}
+                            className="text-red-500 focus:text-red-500"
+                          >
+                            <Trash className="mr-2 h-4 w-4" />
+                            Hapus
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    <div className="flex justify-end items-center mt-1 space-x-1">
+                      {msg.classification && (
+                        <div className="flex items-center">
+                          <Shield className="h-3 w-3 text-[#a6c455] mr-1" />
+                          <span className="text-[10px] text-[#a6c455]">{msg.classification}</span>
+                        </div>
+                      )}
+                      <span className="text-[10px] text-gray-300">
+                        {formatMessageTime(msg.timestamp)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+        
+        {messages.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-full text-center p-4">
+            <Shield className="h-12 w-12 text-[#a6c455] mb-3" />
+            <h3 className="text-[#a6c455] text-lg font-medium mb-1">Saluran Komunikasi Aman</h3>
+            <p className="text-gray-400 text-sm max-w-md">
+              Komunikasi aman point-to-point dengan enkripsi militer. Pesan Anda dilindungi dengan tingkat keamanan tertinggi.
+            </p>
+          </div>
+        )}
+        
         <div ref={messagesEndRef} />
       </div>
       
-      {/* Reply form */}
-      {showReplyForm && replyingToMessage && (
-        <div className="bg-[#1a1a1a] border-t border-[#2c2c2c] p-2 flex items-start">
-          <div className="flex-1 pl-2 border-l-2 border-[#a2bd62]">
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-[#a2bd62]">
-                Replying to {replyingToMessage.sender.callsign}
-              </span>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="p-0 h-6 w-6 text-gray-400 hover:text-white"
-                onClick={() => {
-                  setShowReplyForm(false);
-                  setReplyingToMessage(null);
-                }}
-              >
-                <X size={14} />
-              </Button>
-            </div>
-            <p className="text-xs text-gray-400 truncate">{replyingToMessage.content}</p>
-          </div>
-        </div>
-      )}
-      
-      {/* File attachments preview */}
-      {attachments.length > 0 && (
-        <div className="bg-[#1a1a1a] border-t border-[#2c2c2c] p-2 flex flex-wrap gap-2">
-          {attachments.map((attachment, index) => (
-            <div 
-              key={index}
-              className="bg-[#252525] rounded p-2 flex items-center text-sm"
-            >
-              <span className="mr-2 text-lg">{getFileIcon(attachment.type)}</span>
-              <div className="max-w-[120px] overflow-hidden">
-                <div className="truncate">{attachment.name}</div>
-                <div className="text-xs text-gray-400">
-                  {formatFileSize(attachment.size)}
+      {/* Message input - positioned fixed for mobile */}
+      <div className="border-t border-[#333333] p-3 bg-[#1a1a1a] fixed bottom-0 left-0 right-0 z-10">
+        <form onSubmit={handleSendMessage} className="flex flex-col">
+          {/* Show reply preview if replying to a message - WhatsApp style */}
+          {replyToMessage && (
+            <div className="flex items-center bg-[#212121] rounded-lg p-2 mb-2 border-l-4 border-[#8ba742]">
+              <div className="flex-1">
+                <div className="flex items-center text-[#a6c455] text-xs mb-1">
+                  <ArrowLeft className="h-3 w-3 mr-1" />
+                  <span>Membalas {replyToMessage.senderId === user?.id ? 'diri sendiri' : replyToMessage.senderName}</span>
                 </div>
+                {replyToMessage.hasAttachment ? (
+                  <div className="flex items-center text-xs text-gray-300">
+                    <span className="text-[#8ba742] mr-1">📎</span>
+                    <span>{replyToMessage.attachmentName || 'File'}</span>
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-300 line-clamp-1">{replyToMessage.content || '<Pesan kosong>'}</p>
+                )}
               </div>
               <Button 
+                type="button"
                 variant="ghost" 
                 size="sm"
-                className="ml-2 p-0 h-6 w-6 text-gray-400 hover:text-white"
-                onClick={() => {
-                  const newAttachments = [...attachments];
-                  newAttachments.splice(index, 1);
-                  setAttachments(newAttachments);
-                }}
+                className="text-gray-400 hover:text-white h-6 w-6 p-0"
+                onClick={() => setReplyToMessage(null)}
               >
-                <X size={14} />
+                <span className="sr-only">Batal</span>
+                <X className="h-4 w-4" />
               </Button>
             </div>
-          ))}
-        </div>
-      )}
-      
-      {/* Input area - fixed for mobile display */}
-      <div className="bg-[#1a1a1a] border-t border-[#2c2c2c] p-3 flex items-center w-full fixed bottom-0 left-0 right-0 z-50">
-        <input
-          type="file"
-          multiple
-          onChange={handleFileSelect}
-          ref={fileInputRef}
-          className="hidden"
-        />
-        <Button 
-          variant="ghost" 
-          size="sm"
-          className="text-gray-400 hover:text-white flex-shrink-0 w-10 h-10 p-0"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <Paperclip size={20} />
-        </Button>
-        
-        <div className="flex-1 mx-2 min-w-0">
-          <Input
-            placeholder="Type a message..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className="bg-[#252525] border-[#353535] text-white focus:border-[#a2bd62] w-full h-10"
-          />
-        </div>
-        
-        {message.trim() === '' && attachments.length === 0 ? (
-          <Button 
-            variant="ghost" 
-            size="sm"
-            className={`${isRecording ? 'text-red-500' : 'text-gray-400 hover:text-white'} flex-shrink-0 w-10 h-10 p-0`}
-            onClick={handleVoiceRecording}
-          >
-            {isRecording ? (
-              <>
-                <StopCircle size={20} />
-                <span className="sr-only">Stop recording</span>
-              </>
-            ) : (
-              <>
-                <Mic size={20} />
-                <span className="sr-only">Start recording</span>
-              </>
-            )}
-          </Button>
-        ) : (
-          <Button 
-            variant="ghost" 
-            size="sm"
-            className="text-[#a2bd62] hover:text-[#b8d670] flex-shrink-0 w-10 h-10 p-0"
-            onClick={sendMessage}
-          >
-            <Send size={20} />
-          </Button>
-        )}
-        
-        {/* Recording indicator */}
-        {isRecording && (
-          <div className="absolute bottom-16 left-0 right-0 bg-red-900 bg-opacity-80 text-white py-2 px-4 flex justify-between items-center">
-            <div className="flex items-center">
-              <div className="h-3 w-3 rounded-full bg-red-500 mr-2 animate-pulse"></div>
-              <span>Recording voice message</span>
+          )}
+          
+          {/* Show attachment preview if any */}
+          {attachment && (
+            <div className="flex items-center justify-between mb-2 bg-[#2a2a2a] p-2 rounded">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-white truncate max-w-[200px]">
+                  {attachment.name}
+                </span>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setAttachment(null)}
+                className="text-gray-400 hover:text-white h-6 w-6 p-0"
+              >
+                <span className="sr-only">Cancel</span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </Button>
             </div>
-            <span>{formatTime(recordingTime)}</span>
-          </div>
-        )}
+          )}
+          
+          {isVoiceRecording || voiceAttachment ? (
+            <VoiceRecorder
+              onSendAudio={handleVoiceRecordingComplete}
+              onCancel={handleCancelVoiceRecording}
+            />
+          ) : (
+            <div className="flex items-center space-x-2">
+              <AttachmentUploader onFileUploaded={handleFileUploaded} />
+              
+              <Input
+                id="message-input"
+                ref={(el) => {
+                  // Store the input element reference
+                  if (el) {
+                    (window as any).messageInputRef = el;
+                  }
+                }}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder={replyToMessage ? "Ketik balasan..." : "Ketik pesan..."}
+                className="flex-1 bg-[#252525] border-[#444444] text-white placeholder-gray-500 focus-visible:ring-[#4d5d30]"
+              />
+              
+              {/* Tombol rekam suara */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="text-[#a6c455]"
+                onClick={handleStartVoiceRecording}
+              >
+                <Mic className="h-5 w-5" />
+              </Button>
+              
+              <Button 
+                type="submit"
+                disabled={(!message.trim() && !attachment && !voiceAttachment) || sendMessageMutation.isPending}
+                variant="ghost"
+                size="icon"
+                className="text-[#a6c455]"
+              >
+                <Send className="h-5 w-5" />
+              </Button>
+            </div>
+          )}
+        </form>
       </div>
-      
-      {/* Dialogs */}
-      {renderMembersDialog()}
-      {renderForwardDialog()}
     </div>
   );
 }
