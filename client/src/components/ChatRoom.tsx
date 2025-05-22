@@ -899,36 +899,6 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <div className="flex items-center px-4 py-3 border-b border-[#333333] bg-[#1a1a1a]">
-        <Button onClick={onBack} variant="ghost" size="icon" className="mr-2 text-[#a6c455]">
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        
-        <div className="relative flex-shrink-0">
-          <div className={`w-9 h-9 rounded-full flex items-center justify-center ${
-            isGroup ? "bg-[#4d5d30]" : "bg-[#5a6b38]"
-          }`}>
-            {isGroup ? (
-              <span className="text-white text-xs font-semibold">G</span>
-            ) : (
-              <span className="text-white text-xs font-semibold">
-                {chatData?.name?.charAt(0).toUpperCase() || 'U'}
-              </span>
-            )}
-          </div>
-        </div>
-        
-        <div className="ml-3 flex-1">
-          <h3 className="text-[#9bb26b] font-medium truncate">{chatData?.name || 'Chat'}</h3>
-          <p className="text-gray-400 text-xs">
-            {isGroup ? 'Group chat' : 'Direct message'}
-          </p>
-        </div>
-        
-        <Button variant="ghost" size="icon" className="text-[#a6c455]">
-          <MoreVertical className="h-5 w-5" />
-        </Button>
-      </div>
       
       {/* Messages container with space for input at bottom */}
       <div className="flex-1 overflow-y-auto p-4 pb-32 space-y-6">
