@@ -87,7 +87,25 @@ function Router() {
 
 export default function App() {
   // Initialize PWA functionality
-  const { isInstallable, installPWA } = usePWA();
+  const { isInstallable, showManualPrompt, installPWA } = usePWA();
+
+  const handleDismissPrompt = () => {
+    window.location.reload();
+  };
+
+  const handleManualInstall = () => {
+    // Detect device type and show appropriate instructions
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isAndroid = /Android/.test(navigator.userAgent);
+    
+    if (isIOS) {
+      alert('📱 Untuk install di iPhone/iPad:\n\n1. Tap tombol Share (⬆️) di Safari\n2. Pilih "Add to Home Screen"\n3. Tap "Add" untuk install\n\nSetelah itu buka NXZZ-VComm dari home screen!');
+    } else if (isAndroid) {
+      alert('📱 Untuk install di Android:\n\n1. Tap menu titik tiga (⋮) di Chrome\n2. Pilih "Add to Home screen"\n3. Tap "Add" untuk install\n\nSetelah itu buka NXZZ-VComm dari home screen!');
+    } else {
+      alert('💻 Untuk install di Desktop:\n\n1. Klik icon install di address bar\n2. Atau: Menu → Install NXZZ-VComm\n3. Klik "Install" untuk menambah ke desktop');
+    }
+  };
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -95,21 +113,45 @@ export default function App() {
         <Toaster />
         <Router />
         
-        {/* PWA Install Prompt */}
+        {/* PWA Install Prompt - Native (Android Chrome) */}
         {isInstallable && (
           <div className="fixed bottom-4 right-4 z-50">
             <div className="bg-green-600 text-white p-4 rounded-lg shadow-lg max-w-sm">
-              <h3 className="font-bold text-sm mb-2">Install NXZZ-VComm</h3>
+              <h3 className="font-bold text-sm mb-2">📱 Install NXZZ-VComm</h3>
               <p className="text-xs mb-3">Install aplikasi untuk akses lebih cepat dan fitur offline!</p>
               <div className="flex gap-2">
                 <button 
                   onClick={installPWA}
                   className="bg-white text-green-600 px-3 py-1 rounded text-xs font-medium hover:bg-gray-100"
                 >
-                  Install
+                  Install Sekarang
                 </button>
                 <button 
-                  onClick={() => window.location.reload()}
+                  onClick={handleDismissPrompt}
+                  className="bg-green-700 text-white px-3 py-1 rounded text-xs hover:bg-green-800"
+                >
+                  Nanti
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PWA Install Prompt - Manual (iOS/Other browsers) */}
+        {showManualPrompt && !isInstallable && (
+          <div className="fixed bottom-4 right-4 z-50">
+            <div className="bg-green-600 text-white p-4 rounded-lg shadow-lg max-w-sm">
+              <h3 className="font-bold text-sm mb-2">📱 Install NXZZ-VComm</h3>
+              <p className="text-xs mb-3">Akses lebih cepat dengan install ke home screen!</p>
+              <div className="flex gap-2">
+                <button 
+                  onClick={handleManualInstall}
+                  className="bg-white text-green-600 px-3 py-1 rounded text-xs font-medium hover:bg-gray-100"
+                >
+                  Cara Install
+                </button>
+                <button 
+                  onClick={handleDismissPrompt}
                   className="bg-green-700 text-white px-3 py-1 rounded text-xs hover:bg-green-800"
                 >
                   Nanti
