@@ -378,30 +378,45 @@ export function CallProvider({ children }: { children: ReactNode }) {
   };
 
   const hangupCall = () => {
-    if (!activeCall || !ws || !user) {
-      console.error('[CallContext] No active call or WebSocket not connected');
-      return;
-    }
-
-    console.log('[CallContext] Hanging up call');
-
-    // Stop local media stream
-    if (activeCall.localStream) {
-      activeCall.localStream.getTracks().forEach(track => track.stop());
-    }
-
-    // Send call end message
-    ws.send(JSON.stringify({
-      type: 'end_call',
-      callId: activeCall.callId,
-      toUserId: activeCall.peerUserId,
-      fromUserId: user.id,
-    }));
-
-    setActiveCall(null);
+    console.log('[CallContext] Hanging up call - start');
     
-    // Navigate back to chat
-    setLocation('/');
+    try {
+      // Stop local media stream safely
+      if (activeCall?.localStream) {
+        console.log('[CallContext] Stopping media tracks');
+        activeCall.localStream.getTracks().forEach(track => {
+          try {
+            track.stop();
+          } catch (err) {
+            console.warn('[CallContext] Error stopping track:', err);
+          }
+        });
+      }
+
+      // Send call end message safely
+      if (ws && ws.readyState === WebSocket.OPEN && activeCall && user) {
+        try {
+          ws.send(JSON.stringify({
+            type: 'end_call',
+            callId: activeCall.callId,
+            toUserId: activeCall.peerUserId,
+            fromUserId: user.id,
+          }));
+        } catch (err) {
+          console.warn('[CallContext] Error sending end call message:', err);
+        }
+      }
+
+      // Clear call state
+      setActiveCall(null);
+      
+      console.log('[CallContext] Call ended successfully, staying on current page');
+      
+    } catch (error) {
+      console.error('[CallContext] Error during hangup:', error);
+      // Still clear the call state even if there's an error
+      setActiveCall(null);
+    }
   };
 
   const toggleCallAudio = () => {
