@@ -107,8 +107,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     console.log('[CallContext] Initializing WebSocket for calls...');
     
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    // Force WS protocol for development (not WSS) to match server
+    const wsUrl = `ws://${window.location.host}/ws`;
     const websocket = new WebSocket(wsUrl);
 
     websocket.onopen = () => {
