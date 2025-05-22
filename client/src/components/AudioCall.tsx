@@ -28,20 +28,28 @@ export default function AudioCall() {
     };
   }, [activeCall]);
   
-  // Safety check - if no activeCall, show a fallback UI
+  // Auto-redirect when call ends
+  useEffect(() => {
+    if (!activeCall) {
+      console.log("[AudioCall] No active call, redirecting to chat");
+      // Small delay to ensure smooth transition
+      const timer = setTimeout(() => {
+        window.history.back();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [activeCall]);
+
+  // Safety check - if no activeCall, show loading state briefly
   if (!activeCall) {
-    console.log("[AudioCall] No active call, showing fallback UI");
+    console.log("[AudioCall] No active call, showing loading state");
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0a0a0a]">
         <div className="text-center p-8">
-          <h2 className="text-xl font-bold uppercase mb-4">CONNECTION INTERRUPTED</h2>
-          <p className="mb-6">Call data not available. Please try again.</p>
-          <Button 
-            onClick={() => window.history.back()}
-            className="military-button"
-          >
-            RETURN TO COMMS
-          </Button>
+          <div className="animate-pulse">
+            <h2 className="text-xl font-bold uppercase mb-4 text-[#8d9c6b]">ENDING CALL...</h2>
+            <p className="text-gray-400">Returning to chat...</p>
+          </div>
         </div>
       </div>
     );
