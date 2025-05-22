@@ -695,12 +695,90 @@ export default function Chat() {
           
           {/* Call View */}
           {activeView === 'calls' && (
-            <div className="flex flex-col items-center justify-center h-full">
-              <div className="bg-[#1a1a1a] p-8 rounded-lg shadow-lg">
-                <h2 className="text-xl font-semibold text-[#8d9c6b] mb-4">Fitur Panggilan</h2>
-                <p className="text-gray-400 mb-4">Fitur panggilan sedang dalam pengembangan.</p>
-                <div className="flex justify-center">
-                  <PhoneIcon className="h-24 w-24 text-[#8d9c6b] opacity-50" />
+            <div className="flex flex-col h-full p-4">
+              <h2 className="text-xl font-semibold text-[#8d9c6b] mb-6">Test Permission Media</h2>
+              
+              <div className="space-y-4">
+                <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#333]">
+                  <h3 className="text-[#8d9c6b] font-medium mb-3">Test Microphone Permission</h3>
+                  <p className="text-gray-400 text-sm mb-4">
+                    Klik tombol ini untuk test akses microphone di HP Anda
+                  </p>
+                  <Button 
+                    className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
+                    onClick={async () => {
+                      try {
+                        console.log('[Test] Testing microphone permission...');
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        console.log('[Test] ✅ Microphone permission granted');
+                        alert('✅ Microphone berhasil diakses!');
+                        stream.getTracks().forEach(track => track.stop());
+                      } catch (error: any) {
+                        console.error('[Test] ❌ Microphone permission failed:', error);
+                        alert(`❌ Microphone gagal: ${error.name} - ${error.message}`);
+                      }
+                    }}
+                  >
+                    Test Microphone
+                  </Button>
+                </div>
+
+                <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#333]">
+                  <h3 className="text-[#8d9c6b] font-medium mb-3">Test Camera Permission</h3>
+                  <p className="text-gray-400 text-sm mb-4">
+                    Klik tombol ini untuk test akses camera di HP Anda
+                  </p>
+                  <Button 
+                    className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
+                    onClick={async () => {
+                      try {
+                        console.log('[Test] Testing camera permission...');
+                        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                        console.log('[Test] ✅ Camera permission granted');
+                        alert('✅ Camera berhasil diakses!');
+                        stream.getTracks().forEach(track => track.stop());
+                      } catch (error: any) {
+                        console.error('[Test] ❌ Camera permission failed:', error);
+                        alert(`❌ Camera gagal: ${error.name} - ${error.message}`);
+                      }
+                    }}
+                  >
+                    Test Camera
+                  </Button>
+                </div>
+
+                <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#333]">
+                  <h3 className="text-[#8d9c6b] font-medium mb-3">Test Both (Audio + Video)</h3>
+                  <p className="text-gray-400 text-sm mb-4">
+                    Test microphone dan camera sekaligus untuk video call
+                  </p>
+                  <Button 
+                    className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
+                    onClick={async () => {
+                      try {
+                        console.log('[Test] Testing both audio and video permission...');
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+                        console.log('[Test] ✅ Both permissions granted');
+                        alert('✅ Audio dan Video berhasil diakses!');
+                        stream.getTracks().forEach(track => track.stop());
+                      } catch (error: any) {
+                        console.error('[Test] ❌ Both permissions failed:', error);
+                        alert(`❌ Audio/Video gagal: ${error.name} - ${error.message}`);
+                      }
+                    }}
+                  >
+                    Test Audio + Video
+                  </Button>
+                </div>
+
+                <div className="bg-[#262626] rounded-lg p-4 border border-[#444]">
+                  <h3 className="text-yellow-400 font-medium mb-2">💡 Tips untuk HP:</h3>
+                  <ul className="text-gray-300 text-sm space-y-1">
+                    <li>• Gunakan HTTPS (bukan HTTP)</li>
+                    <li>• Pastikan Chrome/Safari terbaru</li>
+                    <li>• Izinkan permission saat browser meminta</li>
+                    <li>• Refresh halaman jika permission ditolak</li>
+                  </ul>
                 </div>
               </div>
             </div>
