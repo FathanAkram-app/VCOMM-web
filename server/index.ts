@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { createHttpsServer } from "./https-config";
 import * as dotenv from 'dotenv';
 
 // Load environment variables from .env file
@@ -63,15 +64,36 @@ app.use((req, res, next) => {
   // ALWAYS serve the app on port 5000
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
+  // Check if SSL certificates exist for HTTPS
+  const fs = require('fs');
+  const path = require('path');
+  const certPath = path.join(process.cwd(), 'localhost+2.pem');
+  const keyPath = path.join(process.cwd(), 'localhost+2-key.pem');
+  
+  let finalServer;
+  if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
+    // Use HTTPS with mkcert certificates for offline deployment
+    finalServer = createHttpsServer(app);
+    console.log('🔒 Using HTTPS with mkcert certificates for offline deployment');
+  } else {
+    // Fallback to HTTP for development
+    finalServer = server;
+    console.log('🌐 Using HTTP (HTTPS certificates not found)');
+  }
+
   const port = process.env.PORT ? parseInt(process.env.PORT) : 5000;
   const host = process.env.HOST || "0.0.0.0";
   
-  server.listen({
+  finalServer.listen({
     port,
     host,
     // reusePort option causes issues on Windows
     ...(process.platform !== 'win32' && { reusePort: true }),
   }, () => {
-    log(`serving on port ${port}`);
+    const protocol = fs.existsSync(certPath) && fs.existsSync(keyPath) ? 'https' : 'http';
+    log(`serving on ${protocol}://${host}:${port}`);
+    if (protocol === 'https') {
+      console.log(`📱 Access from mobile: https://192.168.100.165:${port}`);
+    }
   });
 })();
