@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Shield, Lock, AlertTriangle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import iconPath from "@assets/Icon Chat NXXZ.png";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RANKS, BRANCHES } from "@shared/schema";

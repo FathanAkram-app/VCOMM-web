@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Shield, Lock, AlertTriangle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import iconPath from "@assets/Icon Chat NXXZ.png";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
@@ -67,9 +68,11 @@ export default function Login() {
           <div className="w-24 h-24 relative mb-4">
             <div className="absolute inset-0 rounded-md bg-[#4d5d30] p-1">
               <div className="w-full h-full flex items-center justify-center bg-[#5a6b38] rounded-sm">
-                <svg viewBox="0 0 100 100" className="w-16 h-16 text-[#e0e0b0]">
-                  <path fill="currentColor" d="M50,20 C60,20 70,25 75,35 C80,45 80,55 75,65 L90,80 L80,90 L65,75 C55,80 45,80 35,75 C25,70 20,60 20,50 C20,33 33,20 50,20 Z M45,45 C45,45 45,45 35,55 C35,55 35,55 45,65 C45,65 45,65 55,55 C55,55 55,55 45,45 Z" />
-                </svg>
+                <img 
+                  src={iconPath} 
+                  alt="NXXZ Chat Icon" 
+                  className="w-16 h-16 object-contain"
+                />
               </div>
             </div>
           </div>
