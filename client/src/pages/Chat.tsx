@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { 
   MessageSquare, PhoneIcon, Settings, Plus, User, 
-  ArrowLeft, Paperclip, Send, Users, Search, Info
+  ArrowLeft, Paperclip, Send, Users, Search, Info, X
 } from 'lucide-react';
 import WhatsAppStyleChatList from '@/components/WhatsAppStyleChatList';
 import ChatRoom from '@/components/ChatRoom';
@@ -328,86 +328,23 @@ export default function Chat() {
   const fetchMessagesForChat = async (chatId: number, isGroup: boolean) => {
     try {
       setIsLoadingMessages(true);
-      console.log(`Fetching messages for chat ID: ${chatId}, isGroup: ${isGroup}`);
+      console.log(`Fetching messages from /api/chats/${chatId}/messages`);
       
-      // Generate mock messages for demo
-      const generateMessages = (chatId: number, isGroup: boolean) => {
-        if (isGroup) {
-          return [
-            {
-              id: 1,
-              chatId: chatId,
-              senderId: 101,
-              content: "Sitrep update: Objective Alpha secured",
-              timestamp: "09:15:00",
-              isRead: true
-            },
-            {
-              id: 2,
-              chatId: chatId,
-              senderId: 102,
-              content: "Moving to rally point Bravo, ETA 10 minutes",
-              timestamp: "09:20:00",
-              isRead: true
-            },
-            {
-              id: 3,
-              chatId: chatId,
-              senderId: user.id,
-              content: "Copy all. Stand by for further instructions.",
-              timestamp: "09:22:00",
-              isRead: true
-            },
-            {
-              id: 4,
-              chatId: chatId,
-              senderId: 103,
-              content: "Supply drop confirmed at grid reference 342-567",
-              timestamp: "09:25:00",
-              isRead: true
-            }
-          ];
-        } else {
-          return [
-            {
-              id: 1,
-              chatId: chatId,
-              senderId: user.id,
-              content: "Transmitting coordinates for next mission",
-              timestamp: "10:05:00",
-              isRead: true
-            },
-            {
-              id: 2,
-              chatId: chatId,
-              senderId: chatId === 2 ? 101 : (chatId === 4 ? 102 : 103),
-              content: "Received. Will proceed as planned.",
-              timestamp: "10:07:00",
-              isRead: true
-            },
-            {
-              id: 3,
-              chatId: chatId,
-              senderId: user.id,
-              content: "Confirm equipment status for night operation",
-              timestamp: "10:15:00",
-              isRead: true
-            },
-            {
-              id: 4,
-              chatId: chatId,
-              senderId: chatId === 2 ? 101 : (chatId === 4 ? 102 : 103),
-              content: "All equipment checked and operational",
-              timestamp: "10:20:00",
-              isRead: true
-            }
-          ];
-        }
-      };
+      // Fetch actual messages from database
+      const response = await fetch(`/api/chats/${chatId}/messages`, {
+        credentials: 'include'
+      });
       
-      const messages = generateMessages(chatId, isGroup);
-      setDatabaseMessages(messages);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Failed to fetch messages: ${errorText}`);
+        setDatabaseMessages([]);
+        return;
+      }
+      
+      const messages = await response.json();
       console.log(`Loaded ${messages.length} messages for chat ${chatId}`);
+      setDatabaseMessages(messages);
       
     } catch (error) {
       console.error("Error fetching messages:", error);
@@ -940,7 +877,7 @@ export default function Chat() {
                         onClick={() => setSelectedUserIds(selectedUserIds.filter(uid => uid !== id))}
                       >
                         {user.callsign}
-                        <X className="h-3 w-3 cursor-pointer" />
+                        <span className="cursor-pointer">×</span>
                       </Badge>
                     ) : null;
                   })}
