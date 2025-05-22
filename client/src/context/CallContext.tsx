@@ -2,6 +2,68 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { useLocation } from 'wouter';
 import { useAuth } from '@/hooks/useAuth';
 
+// Utility function to check mobile device compatibility
+const checkMobileCompatibility = () => {
+  const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isHTTPS = location.protocol === 'https:';
+  const hasMediaDevices = navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
+  
+  console.log('[CallContext] Mobile compatibility check:', {
+    isMobile,
+    isHTTPS,
+    hasMediaDevices,
+    userAgent: navigator.userAgent
+  });
+  
+  return { isMobile, isHTTPS, hasMediaDevices };
+};
+
+// Function to get mobile-specific error message
+const getMobileErrorMessage = (error: any) => {
+  const { isMobile, isHTTPS, hasMediaDevices } = checkMobileCompatibility();
+  
+  let message = 'Gagal memulai panggilan. ';
+  
+  if (!hasMediaDevices) {
+    message += 'Browser Anda tidak mendukung fitur media. Gunakan Chrome, Firefox, atau Safari terbaru.';
+    return message;
+  }
+  
+  if (isMobile && !isHTTPS) {
+    message += 'Untuk keamanan, gunakan HTTPS (https://) di mobile device.';
+    return message;
+  }
+  
+  switch (error.name) {
+    case 'NotAllowedError':
+      if (isMobile) {
+        message += 'Di mobile: Buka Settings browser → Site permissions → Camera/Microphone → Izinkan untuk situs ini. Lalu refresh halaman.';
+      } else {
+        message += 'Klik ikon kamera/microphone di address bar dan pilih "Allow".';
+      }
+      break;
+    case 'NotFoundError':
+      message += isMobile 
+        ? 'Pastikan microphone dan camera tidak sedang digunakan aplikasi lain di HP Anda.'
+        : 'Periksa apakah microphone dan camera terhubung dengan benar.';
+      break;
+    case 'NotSupportedError':
+      message += isMobile
+        ? 'Gunakan Chrome atau Firefox terbaru di mobile device Anda.'
+        : 'Browser tidak mendukung WebRTC. Gunakan Chrome atau Firefox.';
+      break;
+    case 'NotReadableError':
+      message += 'Microphone/camera sedang digunakan aplikasi lain. Tutup aplikasi tersebut dan coba lagi.';
+      break;
+    default:
+      message += isMobile
+        ? 'Pastikan browser mendukung WebRTC dan permission media diizinkan.'
+        : 'Periksa koneksi microphone dan camera.';
+  }
+  
+  return message;
+};
+
 interface CallState {
   callId?: string;
   callType: 'audio' | 'video';
@@ -227,24 +289,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     } catch (error: any) {
       console.error('[CallContext] Error starting call:', error);
-      
-      let errorMessage = 'Gagal memulai panggilan. ';
-      
-      if (error.name === 'NotAllowedError') {
-        errorMessage += 'Silakan izinkan akses microphone dan camera di browser Anda. Refresh halaman dan coba lagi.';
-      } else if (error.name === 'NotFoundError') {
-        errorMessage += 'Microphone atau camera tidak ditemukan. Pastikan perangkat tersedia.';
-      } else if (error.name === 'NotSupportedError') {
-        errorMessage += 'Browser Anda tidak mendukung fitur ini. Gunakan Chrome atau Firefox terbaru.';
-      } else if (error.name === 'NotReadableError') {
-        errorMessage += 'Microphone atau camera sedang digunakan aplikasi lain. Tutup aplikasi lain dan coba lagi.';
-      } else if (error.name === 'OverconstrainedError') {
-        errorMessage += 'Pengaturan media tidak didukung. Coba gunakan browser yang berbeda.';
-      } else {
-        errorMessage += 'Pastikan microphone dan camera tersedia, dan browser mendukung WebRTC.';
-      }
-      
-      alert(errorMessage);
+      alert(getMobileErrorMessage(error));
     }
   };
 
@@ -306,24 +351,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     } catch (error: any) {
       console.error('[CallContext] Error accepting call:', error);
-      
-      let errorMessage = 'Gagal menerima panggilan. ';
-      
-      if (error.name === 'NotAllowedError') {
-        errorMessage += 'Silakan izinkan akses microphone dan camera di browser Anda. Refresh halaman dan coba lagi.';
-      } else if (error.name === 'NotFoundError') {
-        errorMessage += 'Microphone atau camera tidak ditemukan. Pastikan perangkat tersedia.';
-      } else if (error.name === 'NotSupportedError') {
-        errorMessage += 'Browser Anda tidak mendukung fitur ini. Gunakan Chrome atau Firefox terbaru.';
-      } else if (error.name === 'NotReadableError') {
-        errorMessage += 'Microphone atau camera sedang digunakan aplikasi lain. Tutup aplikasi lain dan coba lagi.';
-      } else if (error.name === 'OverconstrainedError') {
-        errorMessage += 'Pengaturan media tidak didukung. Coba gunakan browser yang berbeda.';
-      } else {
-        errorMessage += 'Pastikan microphone dan camera tersedia, dan browser mendukung WebRTC.';
-      }
-      
-      alert(errorMessage);
+      alert(getMobileErrorMessage(error).replace('Gagal memulai panggilan', 'Gagal menerima panggilan'));
     }
   };
 
