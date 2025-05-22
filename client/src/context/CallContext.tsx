@@ -227,36 +227,11 @@ export function CallProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Check WebSocket connection and try to reconnect if needed
+    // Simple WebSocket check - no complex reconnection
     if (!ws || ws.readyState !== WebSocket.OPEN) {
-      console.log('[CallContext] WebSocket not connected, attempting to reconnect...');
-      
-      // Try to reconnect WebSocket
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/ws`;
-      const newWebsocket = new WebSocket(wsUrl);
-      
-      await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('WebSocket connection timeout'));
-        }, 5000); // 5 second timeout
-        
-        newWebsocket.onopen = () => {
-          console.log('[CallContext] WebSocket reconnected successfully');
-          clearTimeout(timeout);
-          setWs(newWebsocket);
-          resolve(true);
-        };
-        
-        newWebsocket.onerror = () => {
-          clearTimeout(timeout);
-          reject(new Error('WebSocket connection failed'));
-        };
-      }).catch((error) => {
-        console.error('[CallContext] Failed to reconnect WebSocket:', error);
-        alert('Tidak dapat terhubung ke server. Periksa koneksi jaringan dan refresh halaman.');
-        return;
-      });
+      console.error('[CallContext] WebSocket not connected');
+      alert('Koneksi terputus. Refresh halaman dan coba lagi.');
+      return;
     }
 
     console.log(`[CallContext] Starting ${callType} call to:`, peerName);
