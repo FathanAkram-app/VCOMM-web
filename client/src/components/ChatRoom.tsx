@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, MoreVertical, Shield, Trash, Reply, Forward, X, User, Users, ArrowLeft, Mic, Volume2, Play, Pause, CornerDownRight } from 'lucide-react';
+import { Send, MoreVertical, Shield, Trash, Reply, Forward, X, User, Users, ArrowLeft, Mic, Volume2, Play, Pause, CornerDownRight, Phone, Video } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -756,6 +756,61 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   return (
     <div className="flex flex-col h-screen bg-[#171717] relative">
       {/* Chat header */}
+      <div className="bg-[#1a1a1a] border-b border-[#333333] p-3 flex items-center justify-between sticky top-0 z-10">
+        <div className="flex items-center space-x-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onBack}
+            className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex items-center space-x-2">
+            <Avatar className="h-8 w-8 bg-[#333333] border border-[#a6c455]">
+              <AvatarFallback className="bg-[#333333] text-[#a6c455] text-sm font-bold">
+                {chatData?.name ? chatData.name.substring(0, 2).toUpperCase() : '??'}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h3 className="text-white font-semibold text-sm">
+                {chatData?.name || 'Loading...'}
+              </h3>
+              <p className="text-xs text-gray-400">
+                {isGroup ? 'Grup Chat' : 'Online'}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        {/* Call buttons - only show for direct chats */}
+        {!isGroup && (
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
+              onClick={() => {
+                // TODO: Implement voice call
+                console.log('Voice call clicked');
+              }}
+            >
+              <Phone className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
+              onClick={() => {
+                // TODO: Implement video call
+                console.log('Video call clicked');
+              }}
+            >
+              <Video className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </div>
       
       {/* Delete Message Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
