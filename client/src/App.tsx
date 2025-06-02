@@ -80,6 +80,31 @@ function Router() {
           <VideoCall />
         </AuthCheck>
       </Route>
+      <Route path="/group-audio/:groupCallId">
+        {({ groupCallId }) => (
+          <AuthCheck>
+            <div>
+              {(() => {
+                const GroupAudioCall = require('@/components/GroupAudioCall').default;
+                return <GroupAudioCall 
+                  groupCallId={groupCallId} 
+                  onBack={() => window.location.href = '/chat'} 
+                />;
+              })()}
+            </div>
+          </AuthCheck>
+        )}
+      </Route>
+      <Route path="/group-video/:groupCallId">
+        {({ groupCallId }) => (
+          <AuthCheck>
+            <GroupVideoCall 
+              groupCallId={groupCallId} 
+              onBack={() => window.location.href = '/chat'} 
+            />
+          </AuthCheck>
+        )}
+      </Route>
       <Route path="/">
         <Login />
       </Route>

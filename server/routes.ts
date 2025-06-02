@@ -693,6 +693,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Initiate group call from chat interface
+  app.post('/api/group-calls/initiate', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const { groupCallId, conversationId, callType, memberIds } = req.body;
+      const userId = req.session.user.id;
+
+      // Create group call
+      const groupCall = {
+        id: groupCallId,
+        conversationId,
+        callType,
+        initiatorId: userId,
+        memberIds: [userId, ...memberIds],
+        participants: new Map(),
+        createdAt: new Date(),
+        status: 'active'
+      };
+
+      activeGroupCalls.set(groupCallId, groupCall);
+
+      // Notify all members via WebSocket
+      memberIds.forEach((memberId: number) => {
+        const memberConnections = userConnections.get(memberId);
+        if (memberConnections) {
+          memberConnections.forEach(ws => {
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({
+                type: 'group_call_incoming',
+                payload: {
+                  groupCallId,
+                  conversationId,
+                  callType,
+                  initiatorId: userId,
+                  initiatorName: req.session.user.callsign || req.session.user.fullName
+                }
+              }));
+            }
+          });
+        }
+      });
+
+      res.json({ message: 'Group call initiated', groupCallId });
+    } catch (error) {
+      console.error('Error initiating group call:', error);
+      res.status(500).json({ message: 'Failed to initiate group call' });
+    }
+  });
+
   app.post('/api/group-calls/:id/leave', isAuthenticated, async (req: AuthRequest, res) => {
     try {
       const groupCallId = parseInt(req.params.id);

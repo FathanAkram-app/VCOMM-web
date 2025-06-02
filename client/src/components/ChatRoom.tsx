@@ -799,8 +799,34 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
             className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
             onClick={() => {
               if (isGroup) {
-                // For group chats, start group call (feature not yet implemented)
-                alert('Fitur group call sedang dalam pengembangan');
+                // Start group audio call
+                const groupMemberIds = chatMembers?.map((member: any) => member.userId).filter((id: number) => id !== user?.id) || [];
+                if (groupMemberIds.length > 0) {
+                  // Create group call ID
+                  const groupCallId = `group_${chatId}_${Date.now()}`;
+                  
+                  // Send group call initiation message to all members
+                  fetch('/api/group-calls/initiate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                      groupCallId,
+                      conversationId: chatId,
+                      callType: 'audio',
+                      memberIds: groupMemberIds
+                    })
+                  }).then(response => {
+                    if (response.ok) {
+                      // Navigate to group audio call
+                      window.location.href = `/group-audio/${groupCallId}`;
+                    } else {
+                      alert('Gagal memulai group audio call');
+                    }
+                  });
+                } else {
+                  alert('Tidak ada anggota lain dalam grup');
+                }
               } else {
                 // Find the other user ID for direct chat
                 const otherUser = chatMembers?.find((member: any) => member.userId !== user?.id);
@@ -819,8 +845,34 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
             className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
             onClick={() => {
               if (isGroup) {
-                // For group chats, start group video call (feature not yet implemented)
-                alert('Fitur group video call sedang dalam pengembangan');
+                // Start group video call
+                const groupMemberIds = chatMembers?.map((member: any) => member.userId).filter((id: number) => id !== user?.id) || [];
+                if (groupMemberIds.length > 0) {
+                  // Create group call ID
+                  const groupCallId = `group_${chatId}_${Date.now()}`;
+                  
+                  // Send group call initiation message to all members
+                  fetch('/api/group-calls/initiate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                      groupCallId,
+                      conversationId: chatId,
+                      callType: 'video',
+                      memberIds: groupMemberIds
+                    })
+                  }).then(response => {
+                    if (response.ok) {
+                      // Navigate to group video call
+                      window.location.hash = `group-video-${groupCallId}`;
+                    } else {
+                      alert('Gagal memulai group video call');
+                    }
+                  });
+                } else {
+                  alert('Tidak ada anggota lain dalam grup');
+                }
               } else {
                 // Find the other user ID for direct chat
                 const otherUser = chatMembers?.find((member: any) => member.userId !== user?.id);

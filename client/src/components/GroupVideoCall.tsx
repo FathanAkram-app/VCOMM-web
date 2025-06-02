@@ -1,268 +1,280 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { useCall } from '@/hooks/useCall';
-import { useGroupCall } from '@/context/GroupCallContext';
-import { useAuth } from '@/hooks/useAuth';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-  Camera,
-  CameraOff,
-  Mic,
-  MicOff,
-  Phone,
-  Users,
-  ChevronDown
-} from 'lucide-react';
+import { Video, VideoOff, Mic, MicOff, PhoneOff, ArrowLeft } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 interface GroupVideoCallProps {
   groupCallId: string;
-  onEndCall: () => void;
+  onBack: () => void;
 }
 
-export default function GroupVideoCall({ groupCallId, onEndCall }: GroupVideoCallProps) {
+export default function GroupVideoCall({ groupCallId, onBack }: GroupVideoCallProps) {
   const { user } = useAuth();
-  const { activeCall, hangupCall, toggleCallAudio, toggleCallVideo } = useCall();
-  const { activeGroupCall, leaveGroupCall, endGroupCallForAll } = useGroupCall();
-  
-  // Video references
+  const [isConnected, setIsConnected] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+  const [participants, setParticipants] = useState<any[]>([]);
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
-  const remoteVideoRefs = useRef<{ [key: string]: HTMLVideoElement }>({});
-  
-  // UI state
-  const [callDuration, setCallDuration] = useState("00:00:00");
-  const [showDebug, setShowDebug] = useState(false);
+  const wsRef = useRef<WebSocket | null>(null);
 
-  // Set up local video stream
   useEffect(() => {
-    if (!activeCall?.localStream || !localVideoRef.current) return;
-    
-    localVideoRef.current.srcObject = activeCall.localStream;
-    localVideoRef.current.muted = true;
-  }, [activeCall?.localStream]);
+    initializeGroupVideoCall();
+    return () => {
+      cleanup();
+    };
+  }, [groupCallId]);
 
-  // Set up remote video streams
-  useEffect(() => {
-    if (!activeCall?.remoteStreams) return;
-    
-    activeCall.remoteStreams.forEach((stream, peerId) => {
-      const videoElement = remoteVideoRefs.current[peerId];
-      if (videoElement && stream) {
-        videoElement.srcObject = stream;
+  const initializeGroupVideoCall = async () => {
+    try {
+      console.log('[GroupVideoCall] Initializing group video call:', groupCallId);
+      
+      // Get video and audio stream
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: true, 
+        audio: true 
+      });
+      setLocalStream(stream);
+      
+      // Set local video
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
       }
-    });
-  }, [activeCall?.remoteStreams]);
+      
+      // Connect to WebSocket for group call
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
 
-  // Call duration timer
-  useEffect(() => {
-    if (!activeCall?.startTime) return;
-    
-    const interval = setInterval(() => {
-      const duration = new Date().getTime() - activeCall.startTime.getTime();
-      const hours = Math.floor(duration / 3600000).toString().padStart(2, '0');
-      const minutes = Math.floor((duration % 3600000) / 60000).toString().padStart(2, '0');
-      const seconds = Math.floor((duration % 60000) / 1000).toString().padStart(2, '0');
-      setCallDuration(`${hours}:${minutes}:${seconds}`);
-    }, 1000);
-    
-    return () => clearInterval(interval);
-  }, [activeCall?.startTime]);
+      ws.onopen = () => {
+        console.log('[GroupVideoCall] WebSocket connected');
+        // Join the group call
+        ws.send(JSON.stringify({
+          type: 'join_group_call',
+          payload: {
+            groupCallId,
+            userId: user?.id,
+            callType: 'video'
+          }
+        }));
+        setIsConnected(true);
+      };
 
-  // Handle end call
-  const handleEndCall = () => {
-    leaveGroupCall();
-    hangupCall();
+      ws.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        handleWebSocketMessage(message);
+      };
+
+      ws.onclose = () => {
+        console.log('[GroupVideoCall] WebSocket disconnected');
+        setIsConnected(false);
+      };
+
+    } catch (error) {
+      console.error('[GroupVideoCall] Error initializing group video call:', error);
+      alert('Gagal mengakses camera/microphone. Periksa permissions browser Anda.');
+    }
   };
 
-  // Safety checks
-  if (!activeGroupCall) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">
-        <div className="text-center p-8">
-          <h2 className="text-xl font-bold uppercase mb-4">GROUP DATA UNAVAILABLE</h2>
-          <p className="mb-6">Tactical group information not available.</p>
-          <Button 
-            onClick={() => window.history.back()}
-            className="military-button"
-          >
-            RETURN TO COMMS
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!activeCall) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">
-        <div className="text-center p-8">
-          <h2 className="text-xl font-bold uppercase mb-4">INITIALIZING VIDEO LINK</h2>
-          <p className="mb-6">Establishing tactical video communications...</p>
-          <div className="w-10 h-10 border-2 border-accent rounded-full border-t-transparent animate-spin mx-auto"></div>
-        </div>
-      </div>
-    );
-  }
-
-  const remoteStreamsArray = Array.from(activeCall.remoteStreams?.entries() || []);
-  const totalParticipants = remoteStreamsArray.length + 1;
-
-  // Create video element for remote stream
-  const createRemoteVideoElement = (peerId: string, index: number) => (
-    <div 
-      key={peerId} 
-      className="relative bg-black border-2 border-accent rounded-sm overflow-hidden"
-      style={{ aspectRatio: "16/9" }}
-    >
-      <video
-        ref={(el) => {
-          if (el) {
-            remoteVideoRefs.current[peerId] = el;
-            const [, stream] = remoteStreamsArray[index] || [];
-            if (stream && el.srcObject !== stream) {
-              el.srcObject = stream;
-            }
+  const handleWebSocketMessage = (message: any) => {
+    console.log('[GroupVideoCall] Received message:', message);
+    
+    switch (message.type) {
+      case 'group_call_participant_joined':
+        console.log('[GroupVideoCall] Participant joined:', message.payload);
+        setParticipants(prev => {
+          const existingIndex = prev.findIndex(p => p.userId === message.payload.userId);
+          if (existingIndex >= 0) {
+            return prev;
           }
-        }}
-        autoPlay
-        playsInline
-        className="w-full h-full object-cover"
-      />
-      <div className="absolute bottom-1 left-1 bg-background/80 px-1 py-0.5 text-xs font-bold">
-        REMOTE {index + 1}
-      </div>
-    </div>
-  );
+          return [...prev, message.payload];
+        });
+        break;
+        
+      case 'group_call_participant_left':
+        console.log('[GroupVideoCall] Participant left:', message.payload);
+        setParticipants(prev => prev.filter(p => p.userId !== message.payload.userId));
+        break;
+        
+      case 'group_call_ended':
+        console.log('[GroupVideoCall] Group call ended');
+        onBack();
+        break;
+    }
+  };
+
+  const toggleMute = () => {
+    if (localStream) {
+      const audioTrack = localStream.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        setIsMuted(!audioTrack.enabled);
+        
+        // Notify other participants
+        if (wsRef.current) {
+          wsRef.current.send(JSON.stringify({
+            type: 'group_call_mute_status',
+            payload: {
+              groupCallId,
+              userId: user?.id,
+              isMuted: !audioTrack.enabled
+            }
+          }));
+        }
+      }
+    }
+  };
+
+  const toggleVideo = () => {
+    if (localStream) {
+      const videoTrack = localStream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = !videoTrack.enabled;
+        setIsVideoEnabled(videoTrack.enabled);
+        
+        // Notify other participants
+        if (wsRef.current) {
+          wsRef.current.send(JSON.stringify({
+            type: 'group_call_video_status',
+            payload: {
+              groupCallId,
+              userId: user?.id,
+              isVideoEnabled: videoTrack.enabled
+            }
+          }));
+        }
+      }
+    }
+  };
+
+  const endCall = () => {
+    if (wsRef.current) {
+      wsRef.current.send(JSON.stringify({
+        type: 'leave_group_call',
+        payload: {
+          groupCallId,
+          userId: user?.id
+        }
+      }));
+    }
+    cleanup();
+    onBack();
+  };
+
+  const cleanup = () => {
+    if (localStream) {
+      localStream.getTracks().forEach(track => track.stop());
+    }
+    if (wsRef.current) {
+      wsRef.current.close();
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-background">
+    <div className="flex flex-col h-screen bg-[#171717] text-white">
       {/* Header */}
-      <div className="bg-accent px-4 py-3 text-white flex items-center justify-between">
-        <div className="flex items-center">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="mr-2 text-white hover:bg-accent/80" 
-            onClick={() => window.history.back()}
+      <div className="bg-[#1a1a1a] border-b border-[#333333] p-4 flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onBack}
+            className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
           >
-            <ChevronDown className="h-5 w-5" />
+            <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h3 className="font-bold uppercase text-sm tracking-wider">
-              {activeGroupCall.name}
-            </h3>
-            <p className="text-xs opacity-90">
-              {callDuration} • {totalParticipants} OPERATORS
+            <h3 className="text-white font-semibold">Group Video Call</h3>
+            <p className="text-xs text-gray-400">
+              {isConnected ? 'Connected' : 'Connecting...'}
             </p>
           </div>
         </div>
-        
-        <Button 
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowDebug(!showDebug)}
-          className="text-white hover:bg-accent/80 text-xs"
-        >
-          DEBUG
-        </Button>
       </div>
-      
-      {/* Debug info */}
-      {showDebug && (
-        <div className="bg-black/90 text-green-400 p-2 text-xs font-mono">
-          <div>Local stream: {activeCall.localStream ? 'YES' : 'NO'}</div>
-          <div>Remote streams: {activeCall.remoteStreams?.size || 0}</div>
-          <div>Call type: {activeCall.callType}</div>
-          <div>Video enabled: {activeCall.videoEnabled ? 'YES' : 'NO'}</div>
-          <div>Audio enabled: {activeCall.audioEnabled ? 'YES' : 'NO'}</div>
-        </div>
-      )}
-      
+
       {/* Video Grid */}
-      <div className="flex-1 bg-muted/30 p-2 overflow-auto">
-        <div className="grid grid-cols-2 gap-2 w-full max-w-4xl mx-auto">
-          {/* Local video */}
-          <div className="relative bg-black border-2 border-accent rounded-sm overflow-hidden" 
-               style={{ aspectRatio: "16/9" }}>
-            <video
-              ref={localVideoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute bottom-1 left-1 bg-background/80 px-1 py-0.5 text-xs font-bold">
-              YOU ({user?.callsign || 'LOCAL'})
-            </div>
-            {!activeCall.videoEnabled && (
-              <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
-                <CameraOff className="text-accent h-8 w-8" />
-              </div>
-            )}
+      <div className="flex-1 p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Local video */}
+        <div className="relative bg-[#2a2a2a] rounded-lg overflow-hidden aspect-video">
+          <video
+            ref={localVideoRef}
+            autoPlay
+            muted
+            playsInline
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute bottom-2 left-2 bg-black bg-opacity-70 rounded px-2 py-1">
+            <span className="text-sm text-white">{user?.callsign || 'You'}</span>
+            {isMuted && <span className="ml-2 text-red-400">🔇</span>}
+            {!isVideoEnabled && <span className="ml-2 text-red-400">📹</span>}
           </div>
-          
-          {/* Remote videos */}
-          {remoteStreamsArray.slice(0, 3).map(([peerId], index) => 
-            createRemoteVideoElement(peerId, index)
-          )}
-          
-          {/* Empty slots for additional participants */}
-          {Array.from({ length: Math.max(0, 3 - remoteStreamsArray.length) }, (_, index) => (
-            <div 
-              key={`empty-${index}`}
-              className="relative bg-black border-2 border-accent/50 rounded-sm overflow-hidden flex items-center justify-center"
-              style={{ aspectRatio: "16/9" }}
-            >
-              <p className="text-xs text-accent/60 uppercase font-bold">Awaiting Connection</p>
-            </div>
-          ))}
         </div>
-      </div>
-      
-      {/* Call Controls */}
-      <div className="bg-background py-4 flex justify-center space-x-4 border-t border-accent">
-        <Button 
-          variant={activeCall.audioEnabled ? "outline" : "destructive"}
-          size="icon" 
-          onClick={toggleCallAudio}
-          className="h-12 w-12 rounded-full"
-        >
-          {activeCall.audioEnabled ? <Mic /> : <MicOff />}
-        </Button>
-        
-        <Button 
-          variant={activeCall.videoEnabled ? "outline" : "destructive"}
-          size="icon" 
-          onClick={toggleCallVideo}
-          className="h-12 w-12 rounded-full"
-        >
-          {activeCall.videoEnabled ? <Camera /> : <CameraOff />}
-        </Button>
-        
-        <Button 
-          variant="destructive" 
-          size="icon" 
-          className="h-14 w-14 rounded-full"
-          onClick={handleEndCall}
-        >
-          <Phone className="h-6 w-6 rotate-135" />
-        </Button>
-        
-        {/* End Call for All - only for group creator */}
-        {activeGroupCall && user && (activeGroupCall.creatorId === user.id) && (
-          <Button 
-            variant="destructive" 
-            size="icon" 
-            className="h-12 w-12 rounded-full ml-2"
-            onClick={() => {
-              if (window.confirm("Are you sure you want to end this call for ALL participants?")) {
-                endGroupCallForAll();
-                hangupCall();
-              }
-            }}
-            title="End call for all participants"
-          >
-            <Users className="h-5 w-5" />
-          </Button>
+
+        {/* Participant videos */}
+        {participants.map((participant, index) => (
+          <div key={participant.userId} className="relative bg-[#2a2a2a] rounded-lg overflow-hidden aspect-video flex items-center justify-center">
+            {/* Placeholder for participant video */}
+            <div className="w-20 h-20 bg-[#555555] rounded-full flex items-center justify-center">
+              <span className="text-2xl font-bold text-white">
+                {participant.username?.substring(0, 2).toUpperCase() || `U${index + 1}`}
+              </span>
+            </div>
+            <div className="absolute bottom-2 left-2 bg-black bg-opacity-70 rounded px-2 py-1">
+              <span className="text-sm text-white">{participant.username || `User ${index + 1}`}</span>
+              {participant.isMuted && <span className="ml-2 text-red-400">🔇</span>}
+              {!participant.isVideoEnabled && <span className="ml-2 text-red-400">📹</span>}
+            </div>
+          </div>
+        ))}
+
+        {/* Empty slots for more participants */}
+        {participants.length < 5 && (
+          <div className="bg-[#2a2a2a] rounded-lg aspect-video flex items-center justify-center border-2 border-dashed border-[#444444]">
+            <p className="text-gray-400 text-center">
+              Waiting for more<br />participants...
+            </p>
+          </div>
         )}
+      </div>
+
+      {/* Call Status */}
+      <div className="text-center py-4">
+        <p className="text-sm text-gray-400">
+          {participants.length + 1} participant{participants.length !== 0 ? 's' : ''} in call
+        </p>
+      </div>
+
+      {/* Call Controls */}
+      <div className="bg-[#1a1a1a] border-t border-[#333333] p-6">
+        <div className="flex justify-center space-x-6">
+          <Button
+            variant={isMuted ? "destructive" : "outline"}
+            size="lg"
+            onClick={toggleMute}
+            className="rounded-full w-16 h-16"
+          >
+            {isMuted ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
+          </Button>
+          
+          <Button
+            variant={!isVideoEnabled ? "destructive" : "outline"}
+            size="lg"
+            onClick={toggleVideo}
+            className="rounded-full w-16 h-16"
+          >
+            {isVideoEnabled ? <Video className="h-6 w-6" /> : <VideoOff className="h-6 w-6" />}
+          </Button>
+          
+          <Button
+            variant="destructive"
+            size="lg"
+            onClick={endCall}
+            className="rounded-full w-16 h-16 bg-red-600 hover:bg-red-700"
+          >
+            <PhoneOff className="h-6 w-6" />
+          </Button>
+        </div>
       </div>
     </div>
   );
