@@ -5,7 +5,7 @@ import { ChevronDown, Mic, MicOff, Video, VideoOff, Phone, Volume2, VolumeX, Swi
 import { useLocation } from "wouter";
 
 export default function VideoCall() {
-  const { activeCall, hangupCall, toggleCallAudio, toggleCallVideo, toggleMute, switchCallCamera } = useCall();
+  const { activeCall, hangupCall, toggleCallAudio, toggleCallVideo, toggleMute, switchCallCamera, remoteAudioStream } = useCall();
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const [callDuration, setCallDuration] = useState("00:00:00");
@@ -22,16 +22,21 @@ export default function VideoCall() {
     }
   }, [activeCall?.localStream]);
   
-  // Handle remote streams
+  // Handle remote streams - use same system as audio call
   useEffect(() => {
-    console.log("[VideoCall] Remote streams changed:", activeCall?.remoteStreams);
-    if (remoteVideoRef.current && activeCall?.remoteStreams) {
-      const firstRemoteStream = Array.from(activeCall.remoteStreams.values())[0];
-      if (firstRemoteStream) {
-        remoteVideoRef.current.srcObject = firstRemoteStream;
-      }
+    console.log("[VideoCall] Remote stream changed:", remoteAudioStream);
+    if (remoteVideoRef.current && remoteAudioStream) {
+      console.log("[VideoCall] Setting remote stream to video element");
+      remoteVideoRef.current.srcObject = remoteAudioStream;
+      
+      // Attempt to play the video
+      remoteVideoRef.current.play().then(() => {
+        console.log("[VideoCall] ✅ Remote video playing successfully");
+      }).catch(error => {
+        console.error("[VideoCall] ❌ Remote video play failed:", error);
+      });
     }
-  }, [activeCall?.remoteStreams]);
+  }, [remoteAudioStream]);
   
   // Update call duration timer
   useEffect(() => {
