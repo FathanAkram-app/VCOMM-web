@@ -939,6 +939,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Helper function to send message to specific user
+  function sendToUser(userId: number, message: any) {
+    const client = clients.get(userId);
+    if (client && client.readyState === client.OPEN) {
+      client.send(JSON.stringify(message));
+      return true;
+    }
+    return false;
+  }
+
   // WebRTC HTTP API fallback endpoints
   app.post('/api/webrtc/offer', async (req: Request, res: Response) => {
     try {
