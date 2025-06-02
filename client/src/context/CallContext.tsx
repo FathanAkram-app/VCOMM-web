@@ -106,6 +106,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
   // Use refs to store stable call state that won't be lost during re-renders
   const activeCallRef = useRef<CallState | null>(null);
   const incomingCallRef = useRef<CallState | null>(null);
+  
+  // Queue for ICE candidates that arrive before remote description is set
+  const pendingIceCandidates = useRef<any[]>([]);
 
   // Keep refs in sync with state
   useEffect(() => {
@@ -617,8 +620,25 @@ export function CallProvider({ children }: { children: ReactNode }) {
     try {
       console.log('[CallContext] Processing WebRTC offer...');
       await currentCall.peerConnection.setRemoteDescription(new RTCSessionDescription(message.offer));
+      console.log('[CallContext] ✅ Remote description set successfully');
+      
+      // Process any pending ICE candidates now that remote description is set
+      if (pendingIceCandidates.current.length > 0) {
+        console.log('[CallContext] Processing', pendingIceCandidates.current.length, 'pending ICE candidates');
+        for (const candidate of pendingIceCandidates.current) {
+          try {
+            await currentCall.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+            console.log('[CallContext] ✅ Added pending ICE candidate');
+          } catch (error) {
+            console.error('[CallContext] Error adding pending ICE candidate:', error);
+          }
+        }
+        pendingIceCandidates.current = []; // Clear the queue
+      }
+      
       const answer = await currentCall.peerConnection.createAnswer();
       await currentCall.peerConnection.setLocalDescription(answer);
+      console.log('[CallContext] ✅ Local description (answer) set successfully');
 
       // Send answer back
       if (ws && ws.readyState === WebSocket.OPEN) {
@@ -662,8 +682,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }
 
     try {
+      // Check if remote description is set
+      if (!currentCall.peerConnection.remoteDescription) {
+        console.log('[CallContext] Remote description not set yet, queuing ICE candidate');
+        pendingIceCandidates.current.push(message.candidate);
+        return;
+      }
+      
       await currentCall.peerConnection.addIceCandidate(new RTCIceCandidate(message.candidate));
-      console.log('[CallContext] Added ICE candidate successfully');
+      console.log('[CallContext] ✅ Added ICE candidate successfully');
     } catch (error) {
       console.error('[CallContext] Error handling ICE candidate:', error);
     }
