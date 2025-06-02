@@ -9,6 +9,28 @@ export default function AudioCall() {
   
   console.log("[AudioCall] Component rendering with activeCall:", activeCall);
   
+  // Setup remote audio stream when component mounts
+  useEffect(() => {
+    if (!activeCall) return;
+    
+    console.log("[AudioCall] Setting up remote audio stream...");
+    const audioElement = document.querySelector('#remoteAudio') as HTMLAudioElement;
+    
+    if (audioElement && activeCall.remoteStreams.has('audio')) {
+      const remoteStream = activeCall.remoteStreams.get('audio');
+      console.log("[AudioCall] ✅ Found stored remote stream, setting to audio element");
+      audioElement.srcObject = remoteStream;
+      audioElement.volume = 1.0;
+      audioElement.play().then(() => {
+        console.log('[AudioCall] ✅ Remote audio playing successfully');
+      }).catch(e => {
+        console.log('[AudioCall] Remote audio autoplay failed:', e);
+      });
+    } else {
+      console.log("[AudioCall] ❌ Remote audio element or stream not found");
+    }
+  }, [activeCall]);
+
   // Update call duration timer
   useEffect(() => {
     if (!activeCall || activeCall.status !== 'connected') return;

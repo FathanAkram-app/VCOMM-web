@@ -83,6 +83,7 @@ interface CallState {
 interface CallContextType {
   activeCall: CallState | null;
   incomingCall: CallState | null;
+  remoteAudioStream: MediaStream | null;
   startCall: (peerUserId: number, peerName: string, callType: 'audio' | 'video') => void;
   acceptCall: () => void;
   rejectCall: () => void;
@@ -102,6 +103,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const [incomingCall, setIncomingCall] = useState<CallState | null>(null);
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [ringtoneAudio, setRingtoneAudio] = useState<HTMLAudioElement | null>(null);
+  const [remoteAudioStream, setRemoteAudioStream] = useState<MediaStream | null>(null);
 
   // Message handler function for WebSocket messages
   const handleWebSocketMessage = (message: any) => {
@@ -445,27 +447,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
       const remoteStream = event.streams[0];
       console.log('[CallContext] Remote stream tracks:', remoteStream.getTracks().length);
       
-      // Retry finding audio element with increasing delays
-      const trySetRemoteAudio = (attempt = 1, maxAttempts = 5) => {
-        const audioElement = document.querySelector('#remoteAudio') as HTMLAudioElement;
-        if (audioElement) {
-          console.log(`[CallContext] ✅ Found remote audio element on attempt ${attempt}`);
-          audioElement.srcObject = remoteStream;
-          audioElement.volume = 1.0;
-          audioElement.play().then(() => {
-            console.log('[CallContext] ✅ Remote audio playing successfully in incoming call setup');
-          }).catch(e => {
-            console.log('[CallContext] Remote audio autoplay failed in incoming call setup:', e);
-          });
-        } else if (attempt < maxAttempts) {
-          console.log(`[CallContext] Audio element not found, retrying in ${attempt * 100}ms (attempt ${attempt}/${maxAttempts})`);
-          setTimeout(() => trySetRemoteAudio(attempt + 1, maxAttempts), attempt * 100);
-        } else {
-          console.log('[CallContext] ❌ Remote audio element not found after all attempts');
-        }
-      };
-      
-      trySetRemoteAudio();
+      // Store remote stream for AudioCall component
+      console.log('[CallContext] 📡 Storing remote stream globally');
+      setRemoteAudioStream(remoteStream);
     };
 
     setIncomingCall({
@@ -1075,20 +1059,17 @@ export function CallProvider({ children }: { children: ReactNode }) {
     
     // Method 2: Stop all audio contexts globally
     try {
-      // Stop Web Audio API ringtone if it exists
-      if (webAudioSource) {
-        console.log('[CallContext] Stopping Web Audio API source...');
-        webAudioSource.stop();
-        webAudioSource.disconnect();
-        webAudioSource = null;
-        console.log('[CallContext] ✅ Web Audio API source stopped');
-      }
-      
-      if (audioContext && audioContext.state !== 'closed') {
-        console.log('[CallContext] Suspending Web Audio API context...');
-        audioContext.suspend();
-        console.log('[CallContext] ✅ Web Audio API context suspended');
-      }
+      console.log('[CallContext] 🔇 Force stopping ALL Web Audio API contexts');
+      // Try to stop any running AudioContext
+      const audioContexts = (window as any).webAudioContexts || [];
+      audioContexts.forEach((ctx: AudioContext, index: number) => {
+        try {
+          ctx.suspend();
+          console.log(`[CallContext] ✅ Suspended AudioContext ${index}`);
+        } catch (e) {
+          console.log(`[CallContext] Failed to suspend AudioContext ${index}:`, e);
+        }
+      });
     } catch (e) {
       console.log('[CallContext] Audio context suspend error:', e);
     }
@@ -1379,6 +1360,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     <CallContext.Provider value={{
       activeCall,
       incomingCall,
+      remoteAudioStream,
       startCall,
       acceptCall,
       rejectCall,

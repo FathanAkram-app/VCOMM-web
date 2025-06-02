@@ -1,0 +1,74 @@
+[IncomingCallModal] Rendering with incomingCall: null
+CallContext.tsx:225 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:225 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:225 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:225 [CallContext] Received message: {type: 'webrtc_offer', callId: 'call_1748872534213_3_1', offer: {…}}
+CallContext.tsx:732 [CallContext] Received WebRTC offer for callId: call_1748872534213_3_1
+CallContext.tsx:739 [CallContext] Current activeCall: undefined
+CallContext.tsx:740 [CallContext] Current incomingCall: undefined
+CallContext.tsx:741 [CallContext] Looking for callId: call_1748872534213_3_1
+CallContext.tsx:745 [CallContext] No matching call found, queuing WebRTC offer for callId: call_1748872534213_3_1
+CallContext.tsx:754 [CallContext] Queued offer, total pending: 1
+CallContext.tsx:225 [CallContext] Received message: {type: 'incoming_call', payload: {…}}
+CallContext.tsx:277 [CallContext] Incoming call from: aji
+CallContext.tsx:284 [CallContext] Attempting to play ringtone...
+CallContext.tsx:292 [CallContext] Direct play failed, trying autoplay bypass techniques...
+CallContext.tsx:303 [CallContext] ❌ HTML5 audio failed, trying Web Audio API...
+CallContext.tsx:365 [CallContext] ✅ Web Audio API ringtone playing
+CallContext.tsx:225 [CallContext] Received message: {type: 'webrtc_ice_candidate', callId: 'call_1748872534213_3_1', candidate: {…}}
+CallContext.tsx:834 [CallContext] Received ICE candidate for callId: call_1748872534213_3_1
+CallContext.tsx:841 [CallContext] Current activeCall for ICE: undefined
+CallContext.tsx:842 [CallContext] Current incomingCall for ICE: undefined
+CallContext.tsx:843 [CallContext] Looking for callId: call_1748872534213_3_1
+CallContext.tsx:847 [CallContext] No matching call found, queuing ICE candidate for callId: call_1748872534213_3_1
+CallContext.tsx:848 [CallContext] Available calls: {activeCallId: undefined, incomingCallId: undefined}
+CallContext.tsx:225 [CallContext] Received message: {type: 'webrtc_ice_candidate', callId: 'call_1748872534213_3_1', candidate: {…}}
+CallContext.tsx:834 [CallContext] Received ICE candidate for callId: call_1748872534213_3_1
+CallContext.tsx:841 [CallContext] Current activeCall for ICE: undefined
+CallContext.tsx:842 [CallContext] Current incomingCall for ICE: undefined
+CallContext.tsx:843 [CallContext] Looking for callId: call_1748872534213_3_1
+CallContext.tsx:847 [CallContext] No matching call found, queuing ICE candidate for callId: call_1748872534213_3_1
+CallContext.tsx:848 [CallContext] Available calls: {activeCallId: undefined, incomingCallId: undefined}
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: {callId: 'call_1748872534213_3_1', callType: 'audio', status: 'ringing', isIncoming: true, peerUserId: 3, …}
+CallContext.tsx:225 [CallContext] Received message: {type: 'webrtc_ice_candidate', callId: 'call_1748872534213_3_1', candidate: {…}}
+CallContext.tsx:834 [CallContext] Received ICE candidate for callId: call_1748872534213_3_1
+CallContext.tsx:841 [CallContext] Current activeCall for ICE: undefined
+CallContext.tsx:842 [CallContext] Current incomingCall for ICE: call_1748872534213_3_1
+CallContext.tsx:843 [CallContext] Looking for callId: call_1748872534213_3_1
+CallContext.tsx:862 [CallContext] Remote description not set yet, queuing ICE candidate
+CallContext.tsx:225 [CallContext] Received message: {type: 'webrtc_ice_candidate', callId: 'call_1748872534213_3_1', candidate: {…}}
+CallContext.tsx:834 [CallContext] Received ICE candidate for callId: call_1748872534213_3_1
+CallContext.tsx:841 [CallContext] Current activeCall for ICE: undefined
+CallContext.tsx:842 [CallContext] Current incomingCall for ICE: call_1748872534213_3_1
+CallContext.tsx:843 [CallContext] Looking for callId: call_1748872534213_3_1
+CallContext.tsx:862 [CallContext] Remote description not set yet, queuing ICE candidate
+CallContext.tsx:225 [CallContext] Received message: {type: 'webrtc_ice_candidate', callId: 'call_1748872534213_3_1', candidate: {…}}
+CallContext.tsx:834 [CallContext] Received ICE candidate for callId: call_1748872534213_3_1
+CallContext.tsx:841 [CallContext] Current activeCall for ICE: undefined
+CallContext.tsx:842 [CallContext] Current incomingCall for ICE: call_1748872534213_3_1
+CallContext.tsx:843 [CallContext] Looking for callId: call_1748872534213_3_1
+CallContext.tsx:862 [CallContext] Remote description not set yet, queuing ICE candidate
+CallContext.tsx:487 [CallContext] Checking for pending offers for callId: call_1748872534213_3_1
+CallContext.tsx:488 [CallContext] Total pending offers: 1
+CallContext.tsx:489 [CallContext] Pending offer callIds: ['call_1748872534213_3_1']
+CallContext.tsx:493 [CallContext] ✅ Found pending WebRTC offer for callId: call_1748872534213_3_1
+CallContext.tsx:494 [CallContext] Processing pending offer...
+CallContext.tsx:732 [CallContext] Received WebRTC offer for callId: call_1748872534213_3_1
+CallContext.tsx:739 [CallContext] Current activeCall: undefined
+CallContext.tsx:740 [CallContext] Current incomingCall: call_1748872534213_3_1
+CallContext.tsx:741 [CallContext] Looking for callId: call_1748872534213_3_1
+CallContext.tsx:759 [CallContext] Processing WebRTC offer...
+CallContext.tsx:499 [CallContext] Removed processed offer, remaining pending: 0
+CallContext.tsx:444 [CallContext] Received remote stream in incoming call setup
+CallContext.tsx:446 [CallContext] Remote stream tracks: 1
+CallContext.tsx:461 [CallContext] Audio element not found, retrying in 100ms (attempt 1/5)
+CallContext.tsx:761 [CallContext] ✅ Remote description set successfully
+CallContext.tsx:766 [CallContext] Processing 2 pending ICE candidates for callId: call_1748872534213_3_1
+2CallContext.tsx:770 [CallContext] ✅ Added pending ICE candidate
+CallContext.tsx:781 [CallContext] ✅ Local description (answer) set successfully
+CallContext.tsx:792 [CallContext] ⚠️ WebSocket not ready for answer, using HTTP API fallback
+CallContext.tsx:809 [CallContext] ✅ Sent WebRTC answer via HTTP API fallback
+CallContext.tsx:461 [CallContext] Audio element not found, retrying in 200ms (attempt 2/5)
+CallContext.tsx:461 [CallContext] Audio element not found, retrying in 300ms (attempt 3/5)
+CallContext.tsx:461 [CallContext] Audio element not found, retrying in 400ms (attempt 4/5)
+CallContext.tsx:464 [CallContext] ❌ Remote audio element not found after all attempts
