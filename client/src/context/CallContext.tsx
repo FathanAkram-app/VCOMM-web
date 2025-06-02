@@ -102,6 +102,36 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const [incomingCall, setIncomingCall] = useState<CallState | null>(null);
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [ringtoneAudio, setRingtoneAudio] = useState<HTMLAudioElement | null>(null);
+
+  // Message handler function for WebSocket messages
+  const handleWebSocketMessage = (message: any) => {
+    switch (message.type) {
+      case 'incoming_call':
+        handleIncomingCall(message);
+        break;
+      case 'call_accepted':
+        handleCallAccepted(message);
+        break;
+      case 'call_ended':
+        handleCallEnded(message);
+        break;
+      case 'webrtc_ready':
+        handleWebRTCReady(message);
+        break;
+      case 'webrtc_offer':
+        handleWebRTCOffer(message);
+        break;
+      case 'webrtc_answer':
+        handleWebRTCAnswer(message);
+        break;
+      case 'webrtc_ice_candidate':
+        handleWebRTCIceCandidate(message);
+        break;
+      default:
+        // Ignore other message types (chat, user_status, etc.)
+        break;
+    }
+  };
   
   // Use refs to store stable call state that won't be lost during re-renders
   const activeCallRef = useRef<CallState | null>(null);
@@ -153,13 +183,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }
   }, []); // Only run once on mount
 
-  // Simple WebSocket connection for calls - just like in Chat.tsx
+  // Simple WebSocket connection - no reconnection, just stable connection
   useEffect(() => {
     if (!user) return;
 
-    console.log('[CallContext] Initializing WebSocket for calls...');
+    console.log('[CallContext] Creating stable WebSocket for calls...');
     
-    // Use the same protocol as the page (auto-detect HTTPS/HTTP)
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws`;
     const websocket = new WebSocket(wsUrl);
@@ -167,15 +196,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
     websocket.onopen = () => {
       console.log('[CallContext] WebSocket connected successfully for calls');
       setWs(websocket);
-      
-      // Start heartbeat to keep connection alive
-      const heartbeatInterval = setInterval(() => {
-        if (websocket.readyState === WebSocket.OPEN) {
-          websocket.send(JSON.stringify({ type: 'ping' }));
-        } else {
-          clearInterval(heartbeatInterval);
-        }
-      }, 30000); // Ping every 30 seconds
       
       // Authenticate user with WebSocket
       if (user?.id) {
@@ -228,37 +248,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     websocket.onclose = () => {
       console.log('[CallContext] WebSocket disconnected');
-      console.log('[CallContext] Current activeCall when disconnected:', activeCall);
-      console.log('[CallContext] Current incomingCall when disconnected:', incomingCall);
       setWs(null);
-      
-      // Auto-reconnect after 3 seconds if user is still authenticated
-      setTimeout(() => {
-        if (user && (!websocket || websocket.readyState === WebSocket.CLOSED)) {
-          console.log('[CallContext] Attempting WebSocket reconnection...');
-          // Create new WebSocket connection
-          const newWebsocket = new WebSocket(wsUrl);
-          
-          newWebsocket.onopen = () => {
-            console.log('[CallContext] WebSocket reconnected successfully');
-            setWs(newWebsocket);
-            
-            // Re-authenticate
-            if (user?.id) {
-              newWebsocket.send(JSON.stringify({
-                type: 'auth',
-                payload: { userId: user.id }
-              }));
-              console.log(`[CallContext] Re-authenticated user ${user.id} with WebSocket`);
-            }
-          };
-          
-          // Set up the same event handlers for the new connection
-          newWebsocket.onmessage = websocket.onmessage;
-          newWebsocket.onclose = websocket.onclose;
-          newWebsocket.onerror = websocket.onerror;
-        }
-      }, 3000);
     };
 
     websocket.onerror = (error) => {
