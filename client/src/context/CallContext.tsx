@@ -232,6 +232,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
             handleIncomingCall(message.payload || message);
             break;
           case 'call_accepted':
+            console.log('[CallContext] 🎯 Processing call_accepted message:', message);
             handleCallAccepted(message.payload || message);
             break;
           case 'call_rejected':
@@ -495,7 +496,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   };
 
   const handleCallAccepted = async (message: any) => {
-    console.log('[CallContext] Call accepted, payload:', message);
+    console.log('[CallContext] 🎯 handleCallAccepted called with:', message);
     console.log('[CallContext] Current activeCall (state):', activeCall);
     console.log('[CallContext] Current activeCall (ref):', activeCallRef.current);
     console.log('[CallContext] Current incomingCall:', incomingCall);
@@ -504,7 +505,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
     const currentActiveCall = activeCallRef.current || activeCall;
     
     if (currentActiveCall && currentActiveCall.peerConnection) {
-      console.log('[CallContext] ✅ Call accepted - updating caller status to connected');
+      console.log('[CallContext] ✅ CALLER: Call accepted - updating status to connected');
+      console.log('[CallContext] 📊 CALLER: Current call status before update:', currentActiveCall.status);
       
       // Stop ALL ringtone sources when call is accepted
       console.log('[CallContext] Stopping ALL ringtone sources - call accepted');
