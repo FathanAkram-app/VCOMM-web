@@ -84,13 +84,22 @@ export default function GroupVideoCall({ groupCallId, onBack, onEndCall }: Group
     switch (message.type) {
       case 'group_call_participant_joined':
         console.log('[GroupVideoCall] Participant joined:', message.payload);
+        console.log('[GroupVideoCall] Current participants before join:', participants);
         setParticipants(prev => {
           const existingIndex = prev.findIndex(p => p.userId === message.payload.userId);
           if (existingIndex >= 0) {
+            console.log('[GroupVideoCall] Participant already exists, skipping');
             return prev;
           }
-          return [...prev, message.payload];
+          const newParticipants = [...prev, message.payload];
+          console.log('[GroupVideoCall] Updated participants:', newParticipants);
+          return newParticipants;
         });
+        break;
+        
+      case 'group_call_participant_list':
+        console.log('[GroupVideoCall] Received participant list:', message.payload);
+        setParticipants(message.payload.participants || []);
         break;
         
       case 'group_call_participant_left':

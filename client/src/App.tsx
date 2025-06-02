@@ -12,6 +12,7 @@ import AudioCall from "@/components/AudioCall";
 import VideoCall from "@/components/VideoCall";
 import GroupCallManager from "@/components/GroupCallManager";
 import GroupVideoCall from "@/components/GroupVideoCall";
+import GroupAudioCall from "@/components/GroupAudioCall";
 import { CallProvider } from "@/context/CallContext";
 import { GroupCallProvider } from "@/context/GroupCallContext";
 // import { usePWA } from "@/hooks/usePWA"; // Removed PWA install prompts
@@ -83,15 +84,10 @@ function Router() {
       <Route path="/group-audio/:groupCallId">
         {({ groupCallId }) => (
           <AuthCheck>
-            <div>
-              {(() => {
-                const GroupAudioCall = require('@/components/GroupAudioCall').default;
-                return <GroupAudioCall 
-                  groupCallId={groupCallId} 
-                  onBack={() => window.location.href = '/chat'} 
-                />;
-              })()}
-            </div>
+            <GroupAudioCall 
+              groupCallId={groupCallId} 
+              onBack={() => window.location.href = '/chat'} 
+            />
           </AuthCheck>
         )}
       </Route>
