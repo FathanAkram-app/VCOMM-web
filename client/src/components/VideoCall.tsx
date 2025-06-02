@@ -129,7 +129,7 @@ export default function VideoCall() {
     }
   };
   
-  const hasRemoteStream = activeCall.remoteStreams?.size > 0;
+  const hasRemoteStream = !!remoteAudioStream;
   
   return (
     <div className="fixed inset-0 z-50 bg-[#171717] flex flex-col">
