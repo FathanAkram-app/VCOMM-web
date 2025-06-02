@@ -1,0 +1,36 @@
+[IncomingCallModal] Rendering with incomingCall: {callId: 'call_1748868782292_1_3', callType: 'audio', status: 'ringing', isIncoming: true, peerUserId: 1, …}
+CallContext.tsx:222 [CallContext] Received message: {type: 'webrtc_ice_candidate', callId: 'call_1748868782292_1_3', candidate: {…}}
+CallContext.tsx:794 [CallContext] Received ICE candidate for callId: call_1748868782292_1_3
+CallContext.tsx:801 [CallContext] Current activeCall for ICE: null
+CallContext.tsx:802 [CallContext] Current incomingCall for ICE: null
+CallContext.tsx:806 [CallContext] No matching call found, queuing ICE candidate for callId: call_1748868782292_1_3
+CallContext.tsx:222 [CallContext] Received message: {type: 'webrtc_ice_candidate', callId: 'call_1748868782292_1_3', candidate: {…}}
+CallContext.tsx:794 [CallContext] Received ICE candidate for callId: call_1748868782292_1_3
+CallContext.tsx:801 [CallContext] Current activeCall for ICE: null
+CallContext.tsx:802 [CallContext] Current incomingCall for ICE: null
+CallContext.tsx:806 [CallContext] No matching call found, queuing ICE candidate for callId: call_1748868782292_1_3
+CallContext.tsx:998 [CallContext] Accepting call
+CallContext.tsx:1023 [CallContext] Requesting media permissions for mobile (accept call)...
+CallContext.tsx:1025 [CallContext] Got local media stream for incoming call
+CallContext.tsx:1038 [CallContext] Added local stream to existing peerConnection
+ChatRoom.tsx:634 Processing message data for grouping: (4) [{…}, {…}, {…}, {…}]
+ChatRoom.tsx:635 Total messages to process: 4
+ChatRoom.tsx:707 Grouped messages: [{…}]
+ChatRoom.tsx:708 Total date groups: 1
+ChatRoom.tsx:710 Total messages in first group: 4
+SimpleAudioPlayer.tsx:189 Trying to play audio from URL: /uploads/d95eac12-3030-4982-9b9a-7fea917432b3.webm
+SimpleAudioPlayer.tsx:190 File name extracted: d95eac12-3030-4982-9b9a-7fea917432b3.webm
+SimpleAudioPlayer.tsx:189 Trying to play audio from URL: /uploads/c4547895-0558-447b-94cb-4cba9ed7981a.webm
+SimpleAudioPlayer.tsx:190 File name extracted: c4547895-0558-447b-94cb-4cba9ed7981a.webm
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748868782292_1_3', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 1, …}
+AudioCall.tsx:16 [AudioCall] Setting up call duration timer
+CallContext.tsx:1090 [CallContext] 📤 Sending WebRTC ready signal to caller: 1
+CallContext.tsx:1098 [CallContext] ✅ WebRTC ready signal sent successfully
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748868782292_1_3', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 1, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748868782292_1_3', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 1, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748868782292_1_3', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 1, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748868782292_1_3', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 1, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748868782292_1_3', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 1, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748868782292_1_3', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 1, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748868782292_1_3', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 1, …}

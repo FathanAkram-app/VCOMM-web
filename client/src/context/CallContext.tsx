@@ -798,12 +798,17 @@ export function CallProvider({ children }: { children: ReactNode }) {
     const currentIncomingCall = incomingCallRef.current || incomingCall;
     const currentCall = currentActiveCall || currentIncomingCall;
     
-    console.log('[CallContext] Current activeCall for ICE:', currentActiveCall);
-    console.log('[CallContext] Current incomingCall for ICE:', currentIncomingCall);
+    console.log('[CallContext] Current activeCall for ICE:', currentActiveCall?.callId);
+    console.log('[CallContext] Current incomingCall for ICE:', currentIncomingCall?.callId);
+    console.log('[CallContext] Looking for callId:', message.callId);
     
     // If no current call matches the callId, queue the candidate for later
     if (!currentCall || !currentCall.peerConnection || currentCall.callId !== message.callId) {
       console.log('[CallContext] No matching call found, queuing ICE candidate for callId:', message.callId);
+      console.log('[CallContext] Available calls:', { 
+        activeCallId: currentActiveCall?.callId, 
+        incomingCallId: currentIncomingCall?.callId 
+      });
       pendingIceCandidates.current.push({
         callId: message.callId,
         candidate: message.candidate
