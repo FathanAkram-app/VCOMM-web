@@ -599,7 +599,16 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   const handleWebRTCOffer = async (message: any) => {
     console.log('[CallContext] Received WebRTC offer');
-    const currentCall = activeCall || incomingCall;
+    
+    // Use ref for more stable reference
+    const currentActiveCall = activeCallRef.current || activeCall;
+    const currentIncomingCall = incomingCallRef.current || incomingCall;
+    const currentCall = currentActiveCall || currentIncomingCall;
+    
+    console.log('[CallContext] Current activeCall:', currentActiveCall);
+    console.log('[CallContext] Current incomingCall:', currentIncomingCall);
+    console.log('[CallContext] Selected call for offer:', currentCall);
+    
     if (!currentCall || !currentCall.peerConnection) {
       console.log('[CallContext] No active call or peerConnection for WebRTC offer');
       return;
@@ -638,7 +647,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   const handleWebRTCIceCandidate = async (message: any) => {
     console.log('[CallContext] Received ICE candidate');
-    const currentCall = activeCall || incomingCall;
+    
+    // Use ref for more stable reference
+    const currentActiveCall = activeCallRef.current || activeCall;
+    const currentIncomingCall = incomingCallRef.current || incomingCall;
+    const currentCall = currentActiveCall || currentIncomingCall;
+    
+    console.log('[CallContext] Current activeCall for ICE:', currentActiveCall);
+    console.log('[CallContext] Current incomingCall for ICE:', currentIncomingCall);
+    
     if (!currentCall || !currentCall.peerConnection) {
       console.log('[CallContext] No active call or peerConnection for ICE candidate');
       return;
