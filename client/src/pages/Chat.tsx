@@ -848,8 +848,8 @@ export default function Chat() {
                               credentials: 'include',
                               body: JSON.stringify({
                                 name: groupName,
-                                description: 'Tactical communication group',
-                                callType: 'video'
+                                callType: 'video',
+                                memberIds: [] // Start with empty member list, creator will be added automatically
                               })
                             });
                             

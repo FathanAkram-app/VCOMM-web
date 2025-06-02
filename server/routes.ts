@@ -646,6 +646,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       groupCall.members = await Promise.all(memberPromises);
       
+      // Store the group call in memory
+      activeGroupCalls.set(groupCall.id, groupCall);
+      
       // Broadcast group call creation
       broadcastToAll({
         type: 'group_call_created',
@@ -659,9 +662,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add storage for active group calls
+  const activeGroupCalls: Map<number, any> = new Map();
+
   app.get('/api/group-calls/available', isAuthenticated, async (req: AuthRequest, res) => {
     try {
-      res.json([]);
+      // Return all active group calls as an array
+      const groupCalls = Array.from(activeGroupCalls.values());
+      res.json(groupCalls);
     } catch (error) {
       console.error("Error fetching available group calls:", error);
       res.status(500).json({ message: "Failed to fetch group calls" });
