@@ -895,7 +895,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    console.log(`[CallContext] Starting ${callType} call to:`, peerName);
+    console.log(`[CallContext] 📱 MOBILE: Starting ${callType} call to:`, peerName, 'from mobile device');
     
     // Check mobile compatibility first
     const { isMobile, isHTTPS, hasMediaDevices } = checkMobileCompatibility();
