@@ -497,6 +497,32 @@ export function CallProvider({ children }: { children: ReactNode }) {
       
       // Don't create offer here, wait for webrtc_ready signal from receiver
       console.log('[CallContext] Waiting for receiver to be ready for WebRTC...');
+      
+      // Add fallback mechanism - if no webrtc_ready signal received within 3 seconds, proceed anyway
+      const fallbackTimeout = setTimeout(() => {
+        console.log('[CallContext] ⚠️ No WebRTC ready signal received, proceeding with fallback offer creation');
+        const fallbackActiveCall = activeCallRef.current;
+        if (fallbackActiveCall && fallbackActiveCall.peerConnection) {
+          fallbackActiveCall.peerConnection!.createOffer()
+            .then(offer => {
+              fallbackActiveCall.peerConnection!.setLocalDescription(offer);
+              if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                  type: 'webrtc_offer',
+                  callId: fallbackActiveCall.callId,
+                  offer: offer
+                }));
+                console.log('[CallContext] ✅ Fallback WebRTC offer sent');
+              }
+            })
+            .catch(error => {
+              console.error('[CallContext] ❌ Fallback offer creation failed:', error);
+            });
+        }
+      }, 3000);
+      
+      // Store timeout so we can clear it if webrtc_ready is received
+      (window as any).__webrtcFallbackTimeout = fallbackTimeout;
     } else {
       console.error('[CallContext] ❌ No activeCall or peerConnection when call accepted');
       console.error('[CallContext] activeCall (state):', activeCall);
@@ -515,6 +541,14 @@ export function CallProvider({ children }: { children: ReactNode }) {
     
     if (currentActiveCall && currentActiveCall.peerConnection) {
       console.log('[CallContext] ✅ Found activeCall and peerConnection for WebRTC ready');
+      
+      // Clear the fallback timeout since we received the ready signal
+      if ((window as any).__webrtcFallbackTimeout) {
+        clearTimeout((window as any).__webrtcFallbackTimeout);
+        (window as any).__webrtcFallbackTimeout = null;
+        console.log('[CallContext] ✅ Cleared fallback timeout - received ready signal');
+      }
+      
       // Now create and send WebRTC offer since receiver is ready
       try {
         console.log('[CallContext] Creating WebRTC offer after receiver ready...');
@@ -856,6 +890,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       // Send ready signal after a short delay to ensure everything is set up
       setTimeout(() => {
         if (ws && ws.readyState === WebSocket.OPEN) {
+          console.log('[CallContext] 📤 Sending WebRTC ready signal to caller:', peerUserId);
           ws.send(JSON.stringify({
             type: 'webrtc_ready',
             payload: {
@@ -863,7 +898,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
               toUserId: peerUserId,
             }
           }));
-          console.log('[CallContext] Sent WebRTC ready signal');
+          console.log('[CallContext] ✅ WebRTC ready signal sent successfully');
+        } else {
+          console.error('[CallContext] ❌ Cannot send WebRTC ready - WebSocket not connected');
         }
       }, 200);
 
