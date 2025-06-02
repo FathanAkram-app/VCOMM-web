@@ -804,6 +804,127 @@ export default function Chat() {
                     <li>• Refresh halaman jika permission ditolak</li>
                   </ul>
                 </div>
+
+                {/* Group Call Section */}
+                <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#333]">
+                  <h3 className="text-[#8d9c6b] font-medium mb-3">Tactical Group Operations</h3>
+                  <p className="text-gray-400 text-sm mb-4">
+                    Create and manage multi-person tactical communications for coordinated operations
+                  </p>
+                  <div className="space-y-2">
+                    <Button 
+                      className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338] border border-[#444]"
+                      onClick={() => {
+                        // Navigate to group call view
+                        setActiveView('group-calls' as any);
+                      }}
+                    >
+                      <Users className="mr-2 h-4 w-4" />
+                      Manage Group Calls
+                    </Button>
+                    <p className="text-xs text-gray-500">Create tactical groups, add members, start group video conferences</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Group Calls View */}
+          {activeView === 'group-calls' && (
+            <div className="flex flex-col h-full">
+              <div className="flex justify-between items-center p-4 border-b border-[#333]">
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setActiveView('calls')}
+                    className="text-gray-400 hover:text-white"
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-1" />
+                    Back
+                  </Button>
+                  <h2 className="text-xl font-semibold text-[#8d9c6b]">Tactical Group Operations</h2>
+                </div>
+              </div>
+              
+              <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+                <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#333]">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-[#8d9c6b] font-medium">Create New Tactical Group</h3>
+                    <Button 
+                      className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
+                      onClick={() => {
+                        const groupName = prompt('Enter tactical group name:');
+                        if (groupName) {
+                          // Create group call logic here
+                          console.log('Creating group:', groupName);
+                        }
+                      }}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create Group
+                    </Button>
+                  </div>
+                  <p className="text-gray-400 text-sm">
+                    Create a new tactical communication group for coordinated operations
+                  </p>
+                </div>
+
+                <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#333]">
+                  <h3 className="text-[#8d9c6b] font-medium mb-3">Available Tactical Groups</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-3 bg-[#262626] rounded border border-[#444]">
+                      <div>
+                        <h4 className="text-white font-medium">Alpha Team - Operations</h4>
+                        <p className="text-gray-400 text-sm">3 members • Created by Command</p>
+                      </div>
+                      <Button 
+                        className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
+                        size="sm"
+                      >
+                        Join
+                      </Button>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-3 bg-[#262626] rounded border border-[#444]">
+                      <div>
+                        <h4 className="text-white font-medium">Bravo Team - Reconnaissance</h4>
+                        <p className="text-gray-400 text-sm">2 members • Created by Field Command</p>
+                      </div>
+                      <Button 
+                        className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
+                        size="sm"
+                      >
+                        Join
+                      </Button>
+                    </div>
+                    
+                    <div className="text-center p-4 text-gray-500">
+                      <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">More tactical groups will appear here when created</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#333]">
+                  <h3 className="text-[#8d9c6b] font-medium mb-3">Quick Actions</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button 
+                      className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338] border border-[#444]"
+                      onClick={() => setActiveView('chats')}
+                    >
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      Back to Comms
+                    </Button>
+                    <Button 
+                      className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338] border border-[#444]"
+                      onClick={() => setActiveView('personnel')}
+                    >
+                      <User className="mr-2 h-4 w-4" />
+                      View Personnel
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
