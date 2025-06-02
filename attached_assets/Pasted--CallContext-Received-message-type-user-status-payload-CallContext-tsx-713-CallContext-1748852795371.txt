@@ -1,0 +1,26 @@
+[CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:713 [CallContext] Starting audio call to: aji
+CallContext.tsx:11 [CallContext] Mobile compatibility check: {isMobile: false, isHTTPS: true, userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWeb…KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36', hasMediaDevices: ƒ}
+CallContext.tsx:739 [CallContext] Requesting media permissions with mobile-optimized constraints: {audio: true}
+CallContext.tsx:740 [CallContext] Device info: {isMobile: false, isHTTPS: true, hasMediaDevices: ƒ}
+CallContext.tsx:753 [CallContext] ✅ Successfully got media stream: {audioTracks: 1, videoTracks: 0}
+ChatRoom.tsx:634 Processing message data for grouping: (2) [{…}, {…}]
+ChatRoom.tsx:635 Total messages to process: 2
+ChatRoom.tsx:707 Grouped messages: [{…}]
+ChatRoom.tsx:708 Total date groups: 1
+ChatRoom.tsx:710 Total messages in first group: 2
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748852736045_1_3', callType: 'audio', status: 'calling', isIncoming: false, peerUserId: 3, …}
+CallContext.tsx:186 [CallContext] Received message: {type: 'call_accepted', payload: {…}}
+CallContext.tsx:443 [CallContext] Call accepted, payload: {callId: 'call_1748852736045_1_3'}
+CallContext.tsx:444 [CallContext] Current activeCall (state): null
+CallContext.tsx:445 [CallContext] Current activeCall (ref): {callId: 'call_1748852736045_1_3', callType: 'audio', status: 'calling', isIncoming: false, peerUserId: 3, …}
+CallContext.tsx:446 [CallContext] Current incomingCall: null
+CallContext.tsx:452 [CallContext] Updating call status to connected
+CallContext.tsx:455 [CallContext] Stopping ALL ringtone sources - call accepted
+CallContext.tsx:502 [CallContext] Waiting for receiver to be ready for WebRTC...
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748852736045_1_3', callType: 'audio', status: 'connected', isIncoming: false, peerUserId: 3, …}
+AudioCall.tsx:16 [AudioCall] Setting up call duration timer
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748852736045_1_3', callType: 'audio', status: 'connected', isIncoming: false, peerUserId: 3, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748852736045_1_3', callType: 'audio', status: 'connected', isIncoming: false, peerUserId: 3, …}
+CallContext.tsx:506 [CallContext] ⚠️ No WebRTC ready signal received, proceeding with fallback offer creation
