@@ -5,10 +5,11 @@ import { useAuth } from '@/hooks/useAuth';
 
 interface GroupVideoCallProps {
   groupCallId: string;
-  onBack: () => void;
+  onBack?: () => void;
+  onEndCall?: () => void;
 }
 
-export default function GroupVideoCall({ groupCallId, onBack }: GroupVideoCallProps) {
+export default function GroupVideoCall({ groupCallId, onBack, onEndCall }: GroupVideoCallProps) {
   const { user } = useAuth();
   const [isConnected, setIsConnected] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -99,7 +100,8 @@ export default function GroupVideoCall({ groupCallId, onBack }: GroupVideoCallPr
         
       case 'group_call_ended':
         console.log('[GroupVideoCall] Group call ended');
-        onBack();
+        if (onBack) onBack();
+        if (onEndCall) onEndCall();
         break;
     }
   };
@@ -159,7 +161,8 @@ export default function GroupVideoCall({ groupCallId, onBack }: GroupVideoCallPr
       }));
     }
     cleanup();
-    onBack();
+    if (onBack) onBack();
+    if (onEndCall) onEndCall();
   };
 
   const cleanup = () => {
