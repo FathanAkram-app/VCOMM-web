@@ -123,7 +123,16 @@ export default function AudioCall() {
             // If currentTime is still 0, try Web Audio API as alternative
             if (audioElement.currentTime === 0) {
               console.log('[AudioCall] 🚨 currentTime still 0, trying Web Audio API...');
+              console.log('[AudioCall] 🔧 Audio element not processing stream data, forcing Web Audio API');
+              
+              // Force stop HTML5 audio and switch to Web Audio API immediately
+              audioElement.pause();
+              audioElement.srcObject = null;
+              console.log('[AudioCall] 🛑 Stopped HTML5 audio element');
+              
               tryWebAudioAPI();
+            } else {
+              console.log('[AudioCall] ✅ HTML5 audio working correctly, currentTime:', audioElement.currentTime);
             }
           }, 1000);
           
