@@ -362,6 +362,47 @@ export function CallProvider({ children }: { children: ReactNode }) {
     
     playRingtone();
     
+    // Create RTCPeerConnection for incoming call immediately
+    const peerConnection = new RTCPeerConnection({
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+      ]
+    });
+
+    // Setup ICE candidate handling for incoming call
+    peerConnection.onicecandidate = (event) => {
+      if (event.candidate && ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'webrtc_ice_candidate',
+          callId: message.callId,
+          candidate: event.candidate
+        }));
+      }
+    };
+
+    // Setup remote stream handling for incoming call
+    peerConnection.ontrack = (event) => {
+      console.log('[CallContext] Received remote stream in incoming call setup');
+      const remoteStream = event.streams[0];
+      console.log('[CallContext] Remote stream tracks:', remoteStream.getTracks().length);
+      
+      setTimeout(() => {
+        const audioElement = document.querySelector('#remoteAudio') as HTMLAudioElement;
+        if (audioElement) {
+          audioElement.srcObject = remoteStream;
+          audioElement.volume = 1.0;
+          audioElement.play().then(() => {
+            console.log('[CallContext] ✅ Remote audio playing successfully in incoming call setup');
+          }).catch(e => {
+            console.log('[CallContext] Remote audio autoplay failed in incoming call setup:', e);
+          });
+        } else {
+          console.log('[CallContext] ❌ Remote audio element not found in incoming call setup');
+        }
+      }, 100);
+    };
+
     setIncomingCall({
       callId: message.callId,
       callType: message.callType,
@@ -370,6 +411,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       peerUserId: message.fromUserId,
       peerName: message.fromUserName,
       remoteStreams: new Map(),
+      peerConnection,
       audioEnabled: true,
       videoEnabled: message.callType === 'video',
       isMuted: false,
@@ -406,20 +448,26 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   const handleWebRTCOffer = async (message: any) => {
     console.log('[CallContext] Received WebRTC offer');
-    if (!activeCall || !activeCall.peerConnection) return;
+    const currentCall = activeCall || incomingCall;
+    if (!currentCall || !currentCall.peerConnection) {
+      console.log('[CallContext] No active call or peerConnection for WebRTC offer');
+      return;
+    }
 
     try {
-      await activeCall.peerConnection.setRemoteDescription(new RTCSessionDescription(message.offer));
-      const answer = await activeCall.peerConnection.createAnswer();
-      await activeCall.peerConnection.setLocalDescription(answer);
+      console.log('[CallContext] Processing WebRTC offer...');
+      await currentCall.peerConnection.setRemoteDescription(new RTCSessionDescription(message.offer));
+      const answer = await currentCall.peerConnection.createAnswer();
+      await currentCall.peerConnection.setLocalDescription(answer);
 
       // Send answer back
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({
           type: 'webrtc_answer',
-          callId: activeCall.callId,
+          callId: currentCall.callId,
           answer: answer
         }));
+        console.log('[CallContext] Sent WebRTC answer');
       }
     } catch (error) {
       console.error('[CallContext] Error handling WebRTC offer:', error);
@@ -439,10 +487,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   const handleWebRTCIceCandidate = async (message: any) => {
     console.log('[CallContext] Received ICE candidate');
-    if (!activeCall || !activeCall.peerConnection) return;
+    const currentCall = activeCall || incomingCall;
+    if (!currentCall || !currentCall.peerConnection) {
+      console.log('[CallContext] No active call or peerConnection for ICE candidate');
+      return;
+    }
 
     try {
-      await activeCall.peerConnection.addIceCandidate(new RTCIceCandidate(message.candidate));
+      await currentCall.peerConnection.addIceCandidate(new RTCIceCandidate(message.candidate));
+      console.log('[CallContext] Added ICE candidate successfully');
     } catch (error) {
       console.error('[CallContext] Error handling ICE candidate:', error);
     }
