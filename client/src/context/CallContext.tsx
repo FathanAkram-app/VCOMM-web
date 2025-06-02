@@ -168,6 +168,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
       console.log('[CallContext] WebSocket connected successfully for calls');
       setWs(websocket);
       
+      // Start heartbeat to keep connection alive
+      const heartbeatInterval = setInterval(() => {
+        if (websocket.readyState === WebSocket.OPEN) {
+          websocket.send(JSON.stringify({ type: 'ping' }));
+        } else {
+          clearInterval(heartbeatInterval);
+        }
+      }, 30000); // Ping every 30 seconds
+      
       // Authenticate user with WebSocket
       if (user?.id) {
         websocket.send(JSON.stringify({
@@ -222,6 +231,34 @@ export function CallProvider({ children }: { children: ReactNode }) {
       console.log('[CallContext] Current activeCall when disconnected:', activeCall);
       console.log('[CallContext] Current incomingCall when disconnected:', incomingCall);
       setWs(null);
+      
+      // Auto-reconnect after 3 seconds if user is still authenticated
+      setTimeout(() => {
+        if (user && (!websocket || websocket.readyState === WebSocket.CLOSED)) {
+          console.log('[CallContext] Attempting WebSocket reconnection...');
+          // Create new WebSocket connection
+          const newWebsocket = new WebSocket(wsUrl);
+          
+          newWebsocket.onopen = () => {
+            console.log('[CallContext] WebSocket reconnected successfully');
+            setWs(newWebsocket);
+            
+            // Re-authenticate
+            if (user?.id) {
+              newWebsocket.send(JSON.stringify({
+                type: 'auth',
+                payload: { userId: user.id }
+              }));
+              console.log(`[CallContext] Re-authenticated user ${user.id} with WebSocket`);
+            }
+          };
+          
+          // Set up the same event handlers for the new connection
+          newWebsocket.onmessage = websocket.onmessage;
+          newWebsocket.onclose = websocket.onclose;
+          newWebsocket.onerror = websocket.onerror;
+        }
+      }, 3000);
     };
 
     websocket.onerror = (error) => {
@@ -569,6 +606,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
           console.log('[CallContext] ✅ Sent WebRTC offer after receiver ready');
         } else {
           console.error('[CallContext] ❌ WebSocket not connected when trying to send offer');
+          // Fallback: End call if WebSocket is not available
+          console.error('[CallContext] ❌ Call failed due to WebSocket disconnection');
+          hangupCall();
         }
       } catch (error) {
         console.error('[CallContext] ❌ Error creating WebRTC offer after receiver ready:', error);
