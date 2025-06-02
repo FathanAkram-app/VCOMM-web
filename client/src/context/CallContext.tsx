@@ -699,19 +699,29 @@ export function CallProvider({ children }: { children: ReactNode }) {
   };
 
   const handleWebRTCOffer = async (message: any) => {
-    console.log('[CallContext] Received WebRTC offer');
+    console.log('[CallContext] Received WebRTC offer for callId:', message.callId);
     
     // Use ref for more stable reference
     const currentActiveCall = activeCallRef.current || activeCall;
     const currentIncomingCall = incomingCallRef.current || incomingCall;
     const currentCall = currentActiveCall || currentIncomingCall;
     
-    console.log('[CallContext] Current activeCall:', currentActiveCall);
-    console.log('[CallContext] Current incomingCall:', currentIncomingCall);
-    console.log('[CallContext] Selected call for offer:', currentCall);
+    console.log('[CallContext] Current activeCall:', currentActiveCall?.callId);
+    console.log('[CallContext] Current incomingCall:', currentIncomingCall?.callId);
+    console.log('[CallContext] Looking for callId:', message.callId);
     
-    if (!currentCall || !currentCall.peerConnection) {
-      console.log('[CallContext] No active call or peerConnection for WebRTC offer');
+    // If no call exists yet or callId doesn't match, queue the offer
+    if (!currentCall || !currentCall.peerConnection || currentCall.callId !== message.callId) {
+      console.log('[CallContext] No matching call found, queuing WebRTC offer for callId:', message.callId);
+      
+      // Initialize pending offers array if not exists
+      if (!pendingOffers.current) {
+        pendingOffers.current = [];
+      }
+      
+      // Store the offer for later processing
+      pendingOffers.current.push(message);
+      console.log('[CallContext] Queued offer, total pending:', pendingOffers.current.length);
       return;
     }
 
