@@ -1015,6 +1015,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Find the group call
           const groupCall = activeGroupCalls.get(groupCallId);
           if (groupCall) {
+            // Add user to group call if not already there
+            if (!groupCall.memberIds.includes(ws.userId)) {
+              groupCall.memberIds.push(ws.userId);
+            }
+            
+            // Send current participant list to the joining user
+            const currentParticipants = groupCall.memberIds
+              .filter((id: number) => id !== ws.userId)
+              .map((id: number) => ({
+                userId: id,
+                callType,
+                groupCallId
+              }));
+            
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({
+                type: 'group_call_participant_list',
+                payload: {
+                  groupCallId,
+                  participants: currentParticipants
+                }
+              }));
+            }
+            
             // Notify other participants that user joined
             groupCall.memberIds.forEach((memberId: number) => {
               if (memberId !== ws.userId) {
