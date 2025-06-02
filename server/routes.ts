@@ -671,7 +671,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        // Handle call initiation
+        // Handle call initiation  
         if (data.type === 'initiate_call' && ws.userId) {
           const { callId, toUserId, callType, fromUserId, fromUserName } = data.payload;
           console.log(`[Call] User ${fromUserId} (${fromUserName}) initiating ${callType} call to ${toUserId}`);
