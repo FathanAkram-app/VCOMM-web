@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '../hooks/useAuth';
 import ChatRoom from '../components/ChatRoom';
 import IncomingCallModal from '../components/IncomingCallModal';
+import GroupVideoCall from '../components/GroupVideoCall';
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +32,11 @@ export default function Chat() {
   const bottomRef = useRef<HTMLDivElement>(null);
   
   // View management
-  const [activeView, setActiveView] = useState<'chats' | 'calls' | 'personnel' | 'config'>('chats');
+  const [activeView, setActiveView] = useState<'chats' | 'calls' | 'personnel' | 'config' | 'group-calls'>('chats');
+  
+  // Group calls state
+  const [availableGroupCalls, setAvailableGroupCalls] = useState<any[]>([]);
+  const [currentGroupCall, setCurrentGroupCall] = useState<any>(null);
   
   // Personnel state
   const [filterText, setFilterText] = useState("");
@@ -236,6 +241,29 @@ export default function Chat() {
       console.error('Error fetching all users:', error);
     } finally {
       setIsLoadingPersonnel(false);
+    }
+  };
+
+  // Fetch available group calls
+  const fetchAvailableGroupCalls = async () => {
+    try {
+      const response = await fetch('/api/group-calls/available', {
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache'
+        },
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`Fetched ${data.length} available group calls`);
+        setAvailableGroupCalls(data);
+      } else {
+        console.error(`Failed to fetch group calls: ${response.status} ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Error fetching group calls:', error);
     }
   };
   
@@ -761,6 +789,14 @@ export default function Chat() {
                   </Button>
                   <h2 className="text-xl font-semibold text-[#8d9c6b]">Tactical Group Operations</h2>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={fetchAvailableGroupCalls}
+                  className="text-gray-400 hover:text-white"
+                >
+                  Refresh All
+                </Button>
               </div>
               
               <div className="flex-1 p-4 space-y-4 overflow-y-auto">
@@ -769,11 +805,35 @@ export default function Chat() {
                     <h3 className="text-[#8d9c6b] font-medium">Create New Tactical Group</h3>
                     <Button 
                       className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
-                      onClick={() => {
+                      onClick={async () => {
                         const groupName = prompt('Enter tactical group name:');
-                        if (groupName) {
-                          // Create group call logic here
-                          console.log('Creating group:', groupName);
+                        if (groupName && user) {
+                          try {
+                            const response = await fetch('/api/group-calls', {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                              },
+                              credentials: 'include',
+                              body: JSON.stringify({
+                                name: groupName,
+                                description: 'Tactical communication group',
+                                callType: 'video'
+                              })
+                            });
+                            
+                            if (response.ok) {
+                              const newGroup = await response.json();
+                              alert(`Tactical group "${groupName}" created successfully!`);
+                              // Refresh the page to show new group
+                              window.location.reload();
+                            } else {
+                              alert('Failed to create tactical group');
+                            }
+                          } catch (error) {
+                            console.error('Error creating group:', error);
+                            alert('Error creating tactical group');
+                          }
                         }
                       }}
                     >
@@ -787,38 +847,67 @@ export default function Chat() {
                 </div>
 
                 <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#333]">
-                  <h3 className="text-[#8d9c6b] font-medium mb-3">Available Tactical Groups</h3>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-[#8d9c6b] font-medium">Available Tactical Groups</h3>
+                    <Button 
+                      className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
+                      size="sm"
+                      onClick={fetchAvailableGroupCalls}
+                    >
+                      Refresh
+                    </Button>
+                  </div>
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between p-3 bg-[#262626] rounded border border-[#444]">
-                      <div>
-                        <h4 className="text-white font-medium">Alpha Team - Operations</h4>
-                        <p className="text-gray-400 text-sm">3 members • Created by Command</p>
+                    {availableGroupCalls.length > 0 ? (
+                      availableGroupCalls.map((groupCall) => (
+                        <div key={groupCall.id} className="flex items-center justify-between p-3 bg-[#262626] rounded border border-[#444]">
+                          <div>
+                            <h4 className="text-white font-medium">{groupCall.name}</h4>
+                            <p className="text-gray-400 text-sm">
+                              {groupCall.members?.length || 0} members • 
+                              {groupCall.callType === 'video' ? ' Video Call' : ' Audio Call'} • 
+                              {groupCall.status === 'active' ? ' Active' : ' Standby'}
+                            </p>
+                            {groupCall.description && (
+                              <p className="text-gray-500 text-xs mt-1">{groupCall.description}</p>
+                            )}
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button 
+                              className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  const response = await fetch(`/api/group-calls/${groupCall.id}/join`, {
+                                    method: 'POST',
+                                    credentials: 'include'
+                                  });
+                                  
+                                  if (response.ok) {
+                                    alert(`Joined tactical group: ${groupCall.name}`);
+                                    // Start group video call
+                                    window.location.hash = `group-video-${groupCall.id}`;
+                                  } else {
+                                    alert('Failed to join tactical group');
+                                  }
+                                } catch (error) {
+                                  console.error('Error joining group:', error);
+                                  alert('Error joining tactical group');
+                                }
+                              }}
+                            >
+                              Join
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center p-4 text-gray-500">
+                        <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">No tactical groups available</p>
+                        <p className="text-xs mt-1">Create a new group to start tactical communications</p>
                       </div>
-                      <Button 
-                        className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
-                        size="sm"
-                      >
-                        Join
-                      </Button>
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-3 bg-[#262626] rounded border border-[#444]">
-                      <div>
-                        <h4 className="text-white font-medium">Bravo Team - Reconnaissance</h4>
-                        <p className="text-gray-400 text-sm">2 members • Created by Field Command</p>
-                      </div>
-                      <Button 
-                        className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
-                        size="sm"
-                      >
-                        Join
-                      </Button>
-                    </div>
-                    
-                    <div className="text-center p-4 text-gray-500">
-                      <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">More tactical groups will appear here when created</p>
-                    </div>
+                    )}
                   </div>
                 </div>
 
