@@ -50,6 +50,9 @@ export default function Chat() {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [lastMessageId, setLastMessageId] = useState<number>(0);
   
+  // Hash routing for group video call
+  const [currentHash, setCurrentHash] = useState(window.location.hash);
+  
   // Dialog states
   const [showNewGroupDialog, setShowNewGroupDialog] = useState(false);
   const [showNewDirectChatDialog, setShowNewDirectChatDialog] = useState(false);
@@ -567,7 +570,35 @@ export default function Chat() {
       console.error('Error logging out:', error);
     }
   };
+
+  // Listen to hash changes for group video call routing
+  useEffect(() => {
+    const handleHashChange = () => {
+      setCurrentHash(window.location.hash);
+    };
+    
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // Check if we're currently in a group video call
+  const isGroupVideoCall = currentHash.startsWith('#group-video-');
+  const groupCallId = isGroupVideoCall ? currentHash.replace('#group-video-', '') : null;
   
+  // If we're in a group video call, show the GroupVideoCall component
+  if (isGroupVideoCall && groupCallId) {
+    return (
+      <GroupVideoCall 
+        groupCallId={groupCallId}
+        onEndCall={() => {
+          window.location.hash = '';
+          setCurrentHash('');
+          setCurrentGroupCall(null);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen bg-black text-gray-100">
       {/* Header */}
@@ -884,9 +915,11 @@ export default function Chat() {
                                   });
                                   
                                   if (response.ok) {
-                                    alert(`Joined tactical group: ${groupCall.name}`);
+                                    const data = await response.json();
+                                    setCurrentGroupCall(data);
                                     // Start group video call
                                     window.location.hash = `group-video-${groupCall.id}`;
+                                    setCurrentHash(`group-video-${groupCall.id}`);
                                   } else {
                                     alert('Failed to join tactical group');
                                   }
