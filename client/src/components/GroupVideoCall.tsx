@@ -13,7 +13,12 @@ import {
   ChevronDown
 } from 'lucide-react';
 
-export default function GroupVideoCall() {
+interface GroupVideoCallProps {
+  groupCallId: string;
+  onEndCall: () => void;
+}
+
+export default function GroupVideoCall({ groupCallId, onEndCall }: GroupVideoCallProps) {
   const { user } = useAuth();
   const { activeCall, hangupCall, toggleCallAudio, toggleCallVideo } = useCall();
   const { activeGroupCall, leaveGroupCall, endGroupCallForAll } = useGroupCall();
