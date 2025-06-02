@@ -31,6 +31,15 @@ export default function AudioCall() {
       // Force audio to play with multiple attempts and debugging
       const tryPlay = async (attempt = 1) => {
         try {
+          // Add browser environment debugging
+          console.log(`[AudioCall] 🌐 Browser environment:`, {
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            isSecureContext: window.isSecureContext,
+            protocol: window.location.protocol,
+            hostname: window.location.hostname
+          });
+          
           console.log(`[AudioCall] 🔊 Attempt ${attempt} - Audio element state:`, {
             paused: audioElement.paused,
             muted: audioElement.muted,
@@ -38,25 +47,70 @@ export default function AudioCall() {
             readyState: audioElement.readyState,
             networkState: audioElement.networkState,
             currentTime: audioElement.currentTime,
-            srcObject: !!audioElement.srcObject
+            srcObject: !!audioElement.srcObject,
+            autoplay: audioElement.autoplay,
+            controls: audioElement.controls
           });
           
           // Check if stream has audio tracks
           if (remoteAudioStream) {
             const audioTracks = remoteAudioStream.getAudioTracks();
-            console.log(`[AudioCall] 🎤 Remote stream audio tracks:`, audioTracks.length);
+            console.log(`[AudioCall] 🎤 Remote stream info:`, {
+              tracksCount: audioTracks.length,
+              streamActive: remoteAudioStream.active,
+              streamId: remoteAudioStream.id
+            });
             audioTracks.forEach((track, index) => {
               console.log(`[AudioCall] Track ${index}:`, {
                 enabled: track.enabled,
                 muted: track.muted,
                 readyState: track.readyState,
-                kind: track.kind
+                kind: track.kind,
+                id: track.id,
+                label: track.label
               });
             });
           }
           
-          await audioElement.play();
-          console.log(`[AudioCall] ✅ Remote audio playing successfully (attempt ${attempt})`);
+          // Check for browser audio policy restrictions
+          console.log(`[AudioCall] 🎮 Checking autoplay policy...`);
+          
+          // Test user interaction requirement
+          let userInteractionRequired = false;
+          try {
+            const testPlay = audioElement.play();
+            if (testPlay instanceof Promise) {
+              await testPlay;
+            }
+            console.log(`[AudioCall] ✅ Remote audio playing successfully (attempt ${attempt})`);
+          } catch (error: any) {
+            if (error.name === 'NotAllowedError') {
+              userInteractionRequired = true;
+              console.log(`[AudioCall] ⚠️ User interaction required for audio playback`);
+              
+              // Add user interaction listener
+              const handleUserInteraction = () => {
+                console.log(`[AudioCall] 🖱️ User interaction detected, attempting audio play...`);
+                audioElement.play().then(() => {
+                  console.log(`[AudioCall] ✅ Audio started after user interaction`);
+                }).catch(err => {
+                  console.error(`[AudioCall] ❌ Audio still failed after user interaction:`, err);
+                });
+                // Remove listeners after first interaction
+                document.removeEventListener('click', handleUserInteraction);
+                document.removeEventListener('keydown', handleUserInteraction);
+                document.removeEventListener('touchstart', handleUserInteraction);
+              };
+              
+              document.addEventListener('click', handleUserInteraction);
+              document.addEventListener('keydown', handleUserInteraction);
+              document.addEventListener('touchstart', handleUserInteraction);
+              
+              console.log(`[AudioCall] 👋 Click anywhere to enable audio playback`);
+            } else {
+              throw error; // Re-throw other errors
+            }
+          }
           
           // Additional check after play
           setTimeout(() => {
