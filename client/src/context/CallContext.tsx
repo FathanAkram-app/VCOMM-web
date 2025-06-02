@@ -102,68 +102,50 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [ringtoneAudio, setRingtoneAudio] = useState<HTMLAudioElement | null>(null);
 
-  // Initialize ringtone audio with autoplay bypass
+  // Initialize ringtone audio once
+  const [audioInitialized, setAudioInitialized] = useState(false);
+  
   useEffect(() => {
-    if (ringtoneAudio) return; // Prevent creating multiple instances
+    if (audioInitialized || ringtoneAudio) return;
     
     const createRingtone = () => {
       try {
-        // Create multiple audio sources for better compatibility
         const audio = new Audio();
-        
-        // Use a simple base64 encoded ringtone that works better with autoplay
         const ringtoneData = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhC';
         
         audio.src = ringtoneData;
         audio.loop = true;
         audio.volume = 0.8;
         audio.preload = 'auto';
-        
-        // Add multiple techniques to bypass autoplay policy
-        audio.muted = false;
-        audio.crossOrigin = 'anonymous';
-        
-        // Preload the audio
         audio.load();
         
         setRingtoneAudio(audio);
+        setAudioInitialized(true);
         console.log('[CallContext] Ringtone audio created successfully');
+        
+        // Setup user interaction for audio unlock
+        const unlockAudio = () => {
+          audio.play().then(() => {
+            audio.pause();
+            audio.currentTime = 0;
+            console.log('[CallContext] Audio unlocked via user interaction');
+          }).catch(() => {});
+          
+          document.removeEventListener('click', unlockAudio);
+          document.removeEventListener('touchstart', unlockAudio);
+        };
+        
+        document.addEventListener('click', unlockAudio, { once: true });
+        document.addEventListener('touchstart', unlockAudio, { once: true });
         
       } catch (error) {
         console.log('[CallContext] Could not create ringtone audio:', error);
+        setAudioInitialized(true);
       }
     };
     
     createRingtone();
-  }, []); // Only run once on mount
-
-  // Setup user interaction handlers once
-  useEffect(() => {
-    let hasSetupInteraction = false;
-    
-    const enableAudioOnUserInteraction = async () => {
-      if (hasSetupInteraction) return;
-      hasSetupInteraction = true;
-      
-      console.log('[CallContext] Setting up audio on user interaction');
-      
-      // Remove event listeners after first interaction
-      document.removeEventListener('click', enableAudioOnUserInteraction);
-      document.removeEventListener('touchstart', enableAudioOnUserInteraction);
-      document.removeEventListener('keydown', enableAudioOnUserInteraction);
-    };
-    
-    // Add event listeners for user interaction
-    document.addEventListener('click', enableAudioOnUserInteraction);
-    document.addEventListener('touchstart', enableAudioOnUserInteraction);
-    document.addEventListener('keydown', enableAudioOnUserInteraction);
-    
-    return () => {
-      document.removeEventListener('click', enableAudioOnUserInteraction);
-      document.removeEventListener('touchstart', enableAudioOnUserInteraction);
-      document.removeEventListener('keydown', enableAudioOnUserInteraction);
-    };
-  }, []); // Run only once
+  }, [audioInitialized, ringtoneAudio])
 
   // Simple WebSocket connection for calls - just like in Chat.tsx
   useEffect(() => {
