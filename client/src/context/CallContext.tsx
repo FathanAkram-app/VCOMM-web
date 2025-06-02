@@ -183,6 +183,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
           case 'call_ended':
             handleCallEnded(message.payload || message);
             break;
+          case 'webrtc_ready':
+            handleWebRTCReady(message.payload || message);
+            break;
           case 'webrtc_offer':
             handleWebRTCOffer(message.payload || message);
             break;
@@ -430,10 +433,20 @@ export function CallProvider({ children }: { children: ReactNode }) {
         startTime: new Date(),
       };
       setActiveCall(updatedCall);
+      
+      // Don't create offer here, wait for webrtc_ready signal from receiver
+      console.log('[CallContext] Waiting for receiver to be ready for WebRTC...');
+    } else {
+      console.error('[CallContext] ❌ No activeCall or peerConnection when call accepted');
+    }
+  };
 
-      // Create and send WebRTC offer to establish connection
+  const handleWebRTCReady = async (message: any) => {
+    console.log('[CallContext] Received WebRTC ready signal, payload:', message);
+    if (activeCall && activeCall.peerConnection) {
+      // Now create and send WebRTC offer since receiver is ready
       try {
-        console.log('[CallContext] Creating WebRTC offer after call accepted...');
+        console.log('[CallContext] Creating WebRTC offer after receiver ready...');
         const offer = await activeCall.peerConnection.createOffer();
         await activeCall.peerConnection.setLocalDescription(offer);
         console.log('[CallContext] Local description set successfully');
@@ -445,15 +458,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
             callId: activeCall.callId,
             offer: offer
           }));
-          console.log('[CallContext] ✅ Sent WebRTC offer after call accepted');
+          console.log('[CallContext] ✅ Sent WebRTC offer after receiver ready');
         } else {
           console.error('[CallContext] ❌ WebSocket not connected when trying to send offer');
         }
       } catch (error) {
-        console.error('[CallContext] ❌ Error creating WebRTC offer after call accepted:', error);
+        console.error('[CallContext] ❌ Error creating WebRTC offer after receiver ready:', error);
       }
     } else {
-      console.error('[CallContext] ❌ No activeCall or peerConnection when call accepted');
+      console.error('[CallContext] ❌ No activeCall or peerConnection when receiver ready');
     }
   };
 
@@ -762,6 +775,20 @@ export function CallProvider({ children }: { children: ReactNode }) {
           fromUserId: user.id,
         }
       }));
+
+      // Send ready signal after a short delay to ensure everything is set up
+      setTimeout(() => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: 'webrtc_ready',
+            payload: {
+              callId: incomingCall.callId,
+              toUserId: incomingCall.peerUserId,
+            }
+          }));
+          console.log('[CallContext] Sent WebRTC ready signal');
+        }
+      }, 200);
 
       // Navigate to call interface with a small delay to ensure state is set
       setTimeout(() => {

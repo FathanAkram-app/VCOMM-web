@@ -717,6 +717,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[Call] Sent call accepted notification to user ${toUserId}`);
           }
         }
+
+        // Handle WebRTC ready signal
+        if (data.type === 'webrtc_ready' && ws.userId) {
+          const { callId, toUserId } = data.payload;
+          console.log(`[WebRTC] User ${ws.userId} is ready for WebRTC on call ${callId}`);
+          
+          const targetClient = clients.get(toUserId);
+          if (targetClient && targetClient.readyState === targetClient.OPEN) {
+            targetClient.send(JSON.stringify({
+              type: 'webrtc_ready',
+              payload: { callId }
+            }));
+            console.log(`[WebRTC] Sent ready signal to user ${toUserId}`);
+          }
+        }
         
         // Handle call rejection
         if (data.type === 'reject_call' && ws.userId) {
