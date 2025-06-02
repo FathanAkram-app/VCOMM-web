@@ -829,9 +829,27 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                 }
               } else {
                 // Find the other user ID for direct chat
+                console.log("[ChatRoom] Audio call - chatMembers:", chatMembers);
+                console.log("[ChatRoom] Audio call - current user ID:", user?.id);
+                
                 const otherUser = chatMembers?.find((member: any) => member.userId !== user?.id);
+                console.log("[ChatRoom] Audio call - found other user:", otherUser);
+                
                 if (otherUser && otherUser.user) {
-                  startCall(otherUser.userId, otherUser.user.callsign || otherUser.user.fullName || 'Unknown', 'audio');
+                  const targetUserId = otherUser.userId;
+                  const targetUserName = otherUser.user.callsign || otherUser.user.fullName || 'Unknown';
+                  
+                  console.log("[ChatRoom] Starting audio call to:", { targetUserId, targetUserName });
+                  
+                  if (typeof startCall === 'function') {
+                    startCall(targetUserId, targetUserName, 'audio');
+                  } else {
+                    console.error("[ChatRoom] startCall is not a function:", typeof startCall);
+                    alert('Fungsi panggilan tidak tersedia. Silakan refresh halaman.');
+                  }
+                } else {
+                  console.error("[ChatRoom] Could not find other user for audio call");
+                  alert('Tidak dapat menemukan lawan bicara untuk panggilan audio.');
                 }
               }
             }}
@@ -875,9 +893,27 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                 }
               } else {
                 // Find the other user ID for direct chat
+                console.log("[ChatRoom] Video call - chatMembers:", chatMembers);
+                console.log("[ChatRoom] Video call - current user ID:", user?.id);
+                
                 const otherUser = chatMembers?.find((member: any) => member.userId !== user?.id);
+                console.log("[ChatRoom] Video call - found other user:", otherUser);
+                
                 if (otherUser && otherUser.user) {
-                  startCall(otherUser.userId, otherUser.user.callsign || otherUser.user.fullName || 'Unknown', 'video');
+                  const targetUserId = otherUser.userId;
+                  const targetUserName = otherUser.user.callsign || otherUser.user.fullName || 'Unknown';
+                  
+                  console.log("[ChatRoom] Starting video call to:", { targetUserId, targetUserName });
+                  
+                  if (typeof startCall === 'function') {
+                    startCall(targetUserId, targetUserName, 'video');
+                  } else {
+                    console.error("[ChatRoom] startCall is not a function:", typeof startCall);
+                    alert('Fungsi panggilan tidak tersedia. Silakan refresh halaman.');
+                  }
+                } else {
+                  console.error("[ChatRoom] Could not find other user for video call");
+                  alert('Tidak dapat menemukan lawan bicara untuk panggilan video.');
                 }
               }
             }}
