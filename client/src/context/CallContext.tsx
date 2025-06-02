@@ -100,6 +100,106 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const [activeCall, setActiveCall] = useState<CallState | null>(null);
   const [incomingCall, setIncomingCall] = useState<CallState | null>(null);
   const [ws, setWs] = useState<WebSocket | null>(null);
+  const [ringtoneAudio, setRingtoneAudio] = useState<HTMLAudioElement | null>(null);
+
+  // Initialize ringtone audio
+  useEffect(() => {
+    // Create ringtone using Web Audio API for better browser compatibility
+    const createRingtone = () => {
+      try {
+        const audio = new Audio();
+        // Create a simple ringtone using data URL (beep sound)
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Create ringtone pattern: beep beep pause beep beep pause
+        const createBeepPattern = () => {
+          return new Promise<string>((resolve) => {
+            const sampleRate = 44100;
+            const duration = 2; // 2 seconds
+            const buffer = audioContext.createBuffer(1, sampleRate * duration, sampleRate);
+            const data = buffer.getChannelData(0);
+            
+            // Generate beep pattern
+            for (let i = 0; i < data.length; i++) {
+              const time = i / sampleRate;
+              if ((time < 0.3 || (time > 0.5 && time < 0.8)) && time < 1.5) {
+                data[i] = Math.sin(2 * Math.PI * 800 * time) * 0.3; // 800Hz beep
+              } else {
+                data[i] = 0; // silence
+              }
+            }
+            
+            // Convert to data URL
+            const wav = encodeWAV(buffer);
+            const blob = new Blob([wav], { type: 'audio/wav' });
+            resolve(URL.createObjectURL(blob));
+          });
+        };
+        
+        // Simple WAV encoder
+        const encodeWAV = (buffer: AudioBuffer) => {
+          const length = buffer.length;
+          const arrayBuffer = new ArrayBuffer(44 + length * 2);
+          const view = new DataView(arrayBuffer);
+          const channels = buffer.numberOfChannels;
+          const sampleRate = buffer.sampleRate;
+          
+          // WAV header
+          const writeString = (offset: number, string: string) => {
+            for (let i = 0; i < string.length; i++) {
+              view.setUint8(offset + i, string.charCodeAt(i));
+            }
+          };
+          
+          writeString(0, 'RIFF');
+          view.setUint32(4, 36 + length * 2, true);
+          writeString(8, 'WAVE');
+          writeString(12, 'fmt ');
+          view.setUint32(16, 16, true);
+          view.setUint16(20, 1, true);
+          view.setUint16(22, channels, true);
+          view.setUint32(24, sampleRate, true);
+          view.setUint32(28, sampleRate * 2, true);
+          view.setUint16(32, 2, true);
+          view.setUint16(34, 16, true);
+          writeString(36, 'data');
+          view.setUint32(40, length * 2, true);
+          
+          // Convert float samples to 16-bit PCM
+          const data = buffer.getChannelData(0);
+          let offset = 44;
+          for (let i = 0; i < length; i++) {
+            const sample = Math.max(-1, Math.min(1, data[i]));
+            view.setInt16(offset, sample * 0x7FFF, true);
+            offset += 2;
+          }
+          
+          return arrayBuffer;
+        };
+        
+        createBeepPattern().then(url => {
+          const audio = new Audio(url);
+          audio.loop = true;
+          audio.volume = 0.7;
+          setRingtoneAudio(audio);
+          console.log('[CallContext] Ringtone audio created successfully');
+        });
+        
+      } catch (error) {
+        console.log('[CallContext] Could not create ringtone audio:', error);
+        // Fallback: use system notification sound
+        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhC');
+        setRingtoneAudio(audio);
+      }
+    };
+    
+    createRingtone();
+  }, []);
 
   // Simple WebSocket connection for calls - just like in Chat.tsx
   useEffect(() => {
@@ -107,8 +207,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     console.log('[CallContext] Initializing WebSocket for calls...');
     
-    // Force WS protocol for development (not WSS) to match server
-    const wsUrl = `ws://${window.location.host}/ws`;
+    // Use the same protocol as the page (auto-detect HTTPS/HTTP)
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
     const websocket = new WebSocket(wsUrl);
 
     websocket.onopen = () => {
@@ -169,6 +270,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   const handleIncomingCall = (message: any) => {
     console.log('[CallContext] Incoming call from:', message.fromUserName);
+    
+    // Play ringtone for incoming call
+    if (ringtoneAudio) {
+      ringtoneAudio.currentTime = 0;
+      ringtoneAudio.play().catch(error => {
+        console.log('[CallContext] Could not play ringtone:', error);
+      });
+    }
+    
     setIncomingCall({
       callId: message.callId,
       callType: message.callType,
@@ -396,6 +506,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     console.log('[CallContext] Rejecting call');
 
+    // Stop ringtone when call is rejected
+    if (ringtoneAudio) {
+      ringtoneAudio.pause();
+      ringtoneAudio.currentTime = 0;
+    }
+
     // Send call rejection message
     ws.send(JSON.stringify({
       type: 'reject_call',
@@ -409,6 +525,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   const hangupCall = () => {
     console.log('[CallContext] Hanging up call - start');
+    
+    // Stop ringtone when call is ended
+    if (ringtoneAudio) {
+      ringtoneAudio.pause();
+      ringtoneAudio.currentTime = 0;
+    }
     
     try {
       // Stop local media stream safely
