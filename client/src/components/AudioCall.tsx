@@ -180,6 +180,9 @@ export default function AudioCall() {
           </Button>
         </div>
       </div>
+      
+      {/* Hidden audio element for remote stream */}
+      <audio id="remoteAudio" autoPlay playsInline style={{ display: 'none' }} />
     </div>
   );
 }

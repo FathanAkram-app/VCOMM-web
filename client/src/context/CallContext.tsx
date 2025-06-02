@@ -73,6 +73,7 @@ interface CallState {
   peerName?: string;
   localStream?: MediaStream;
   remoteStreams: Map<number, MediaStream>;
+  peerConnection?: RTCPeerConnection;
   audioEnabled: boolean;
   videoEnabled: boolean;
   isMuted: boolean;
@@ -403,19 +404,48 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const handleWebRTCOffer = (message: any) => {
+  const handleWebRTCOffer = async (message: any) => {
     console.log('[CallContext] Received WebRTC offer');
-    // TODO: Implement WebRTC offer handling
+    if (!activeCall || !activeCall.peerConnection) return;
+
+    try {
+      await activeCall.peerConnection.setRemoteDescription(new RTCSessionDescription(message.offer));
+      const answer = await activeCall.peerConnection.createAnswer();
+      await activeCall.peerConnection.setLocalDescription(answer);
+
+      // Send answer back
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'webrtc_answer',
+          callId: activeCall.callId,
+          answer: answer
+        }));
+      }
+    } catch (error) {
+      console.error('[CallContext] Error handling WebRTC offer:', error);
+    }
   };
 
-  const handleWebRTCAnswer = (message: any) => {
+  const handleWebRTCAnswer = async (message: any) => {
     console.log('[CallContext] Received WebRTC answer');
-    // TODO: Implement WebRTC answer handling
+    if (!activeCall || !activeCall.peerConnection) return;
+
+    try {
+      await activeCall.peerConnection.setRemoteDescription(new RTCSessionDescription(message.answer));
+    } catch (error) {
+      console.error('[CallContext] Error handling WebRTC answer:', error);
+    }
   };
 
-  const handleWebRTCIceCandidate = (message: any) => {
+  const handleWebRTCIceCandidate = async (message: any) => {
     console.log('[CallContext] Received ICE candidate');
-    // TODO: Implement ICE candidate handling
+    if (!activeCall || !activeCall.peerConnection) return;
+
+    try {
+      await activeCall.peerConnection.addIceCandidate(new RTCIceCandidate(message.candidate));
+    } catch (error) {
+      console.error('[CallContext] Error handling ICE candidate:', error);
+    }
   };
 
   const startCall = async (peerUserId: number, peerName: string, callType: 'audio' | 'video') => {
@@ -479,6 +509,43 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
       const callId = `call_${Date.now()}_${user.id}_${peerUserId}`;
 
+      // Create RTCPeerConnection for the calling side
+      const peerConnection = new RTCPeerConnection({
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' }
+        ]
+      });
+
+      // Add local stream to peer connection
+      localStream.getTracks().forEach(track => {
+        peerConnection.addTrack(track, localStream);
+      });
+
+      // Handle incoming remote stream
+      peerConnection.ontrack = (event) => {
+        console.log('[CallContext] Received remote stream');
+        const remoteStream = event.streams[0];
+        
+        // Find and setup audio element for remote stream
+        const audioElement = document.querySelector('#remoteAudio') as HTMLAudioElement;
+        if (audioElement) {
+          audioElement.srcObject = remoteStream;
+          audioElement.play().catch(e => console.log('Remote audio autoplay failed:', e));
+        }
+      };
+
+      // Handle ICE candidates
+      peerConnection.onicecandidate = (event) => {
+        if (event.candidate && ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: 'webrtc_ice_candidate',
+            callId: callId,
+            candidate: event.candidate
+          }));
+        }
+      };
+
       const newCall: CallState = {
         callId,
         callType,
@@ -488,12 +555,28 @@ export function CallProvider({ children }: { children: ReactNode }) {
         peerName,
         localStream,
         remoteStreams: new Map(),
+        peerConnection,
         audioEnabled: true,
         videoEnabled: callType === 'video',
         isMuted: false,
       };
 
       setActiveCall(newCall);
+
+      // Create and send WebRTC offer
+      try {
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+        
+        // Send offer via WebSocket
+        ws.send(JSON.stringify({
+          type: 'webrtc_offer',
+          callId: callId,
+          offer: offer
+        }));
+      } catch (error) {
+        console.error('[CallContext] Error creating WebRTC offer:', error);
+      }
 
       // Send call initiation message (ws is guaranteed to be connected at this point)
       ws!.send(JSON.stringify({
@@ -553,11 +636,49 @@ export function CallProvider({ children }: { children: ReactNode }) {
       const localStream = await navigator.mediaDevices.getUserMedia(constraints);
       console.log('[CallContext] Got local media stream for incoming call');
 
+      // Create RTCPeerConnection for the accepting side
+      const peerConnection = new RTCPeerConnection({
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' }
+        ]
+      });
+
+      // Add local stream to peer connection
+      localStream.getTracks().forEach(track => {
+        peerConnection.addTrack(track, localStream);
+      });
+
+      // Handle incoming remote stream
+      peerConnection.ontrack = (event) => {
+        console.log('[CallContext] Received remote stream');
+        const remoteStream = event.streams[0];
+        
+        // Find and setup audio element for remote stream
+        const audioElement = document.querySelector('#remoteAudio') as HTMLAudioElement;
+        if (audioElement) {
+          audioElement.srcObject = remoteStream;
+          audioElement.play().catch(e => console.log('Remote audio autoplay failed:', e));
+        }
+      };
+
+      // Handle ICE candidates
+      peerConnection.onicecandidate = (event) => {
+        if (event.candidate && ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: 'webrtc_ice_candidate',
+            callId: incomingCall.callId,
+            candidate: event.candidate
+          }));
+        }
+      };
+
       // Accept the call
       setActiveCall({
         ...incomingCall,
         status: 'connected',
         localStream,
+        peerConnection,
         startTime: new Date(),
       });
 
