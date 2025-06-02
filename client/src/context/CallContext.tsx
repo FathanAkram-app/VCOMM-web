@@ -448,6 +448,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
     if (currentActiveCall && currentActiveCall.peerConnection) {
       console.log('[CallContext] Updating call status to connected');
       
+      // Stop ringtone when call is accepted
+      if (ringtoneAudio) {
+        console.log('[CallContext] Stopping ringtone - call accepted');
+        ringtoneAudio.pause();
+        ringtoneAudio.currentTime = 0;
+      }
+
       // Update call status first
       setActiveCall(prevCall => {
         if (!prevCall) return prevCall;
@@ -807,23 +814,30 @@ export function CallProvider({ children }: { children: ReactNode }) {
         }
       }));
 
+      // Store callId and peerUserId before clearing incomingCall
+      const callId = incomingCall.callId;
+      const peerUserId = incomingCall.peerUserId;
+
       // Send ready signal after a short delay to ensure everything is set up
       setTimeout(() => {
         if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({
             type: 'webrtc_ready',
             payload: {
-              callId: incomingCall.callId,
-              toUserId: incomingCall.peerUserId,
+              callId: callId,
+              toUserId: peerUserId,
             }
           }));
           console.log('[CallContext] Sent WebRTC ready signal');
         }
       }, 200);
 
+      // Store callType before clearing incomingCall
+      const callType = incomingCall.callType;
+      
       // Navigate to call interface with a small delay to ensure state is set
       setTimeout(() => {
-        setLocation(incomingCall.callType === 'video' ? '/video-call' : '/audio-call');
+        setLocation(callType === 'video' ? '/video-call' : '/audio-call');
       }, 100);
 
     } catch (error: any) {
