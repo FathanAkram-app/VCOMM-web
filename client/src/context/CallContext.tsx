@@ -102,50 +102,39 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [ringtoneAudio, setRingtoneAudio] = useState<HTMLAudioElement | null>(null);
 
-  // Initialize ringtone audio once
-  const [audioInitialized, setAudioInitialized] = useState(false);
-  
+  // Initialize ringtone audio once on mount
   useEffect(() => {
-    if (audioInitialized || ringtoneAudio) return;
+    if (ringtoneAudio) return;
     
-    const createRingtone = () => {
-      try {
-        const audio = new Audio();
-        const ringtoneData = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhC';
-        
-        audio.src = ringtoneData;
-        audio.loop = true;
-        audio.volume = 0.8;
-        audio.preload = 'auto';
-        audio.load();
-        
-        setRingtoneAudio(audio);
-        setAudioInitialized(true);
-        console.log('[CallContext] Ringtone audio created successfully');
-        
-        // Setup user interaction for audio unlock
-        const unlockAudio = () => {
-          audio.play().then(() => {
-            audio.pause();
-            audio.currentTime = 0;
-            console.log('[CallContext] Audio unlocked via user interaction');
-          }).catch(() => {});
-          
-          document.removeEventListener('click', unlockAudio);
-          document.removeEventListener('touchstart', unlockAudio);
-        };
-        
-        document.addEventListener('click', unlockAudio, { once: true });
-        document.addEventListener('touchstart', unlockAudio, { once: true });
-        
-      } catch (error) {
-        console.log('[CallContext] Could not create ringtone audio:', error);
-        setAudioInitialized(true);
-      }
-    };
-    
-    createRingtone();
-  }, [audioInitialized, ringtoneAudio])
+    try {
+      const audio = new Audio();
+      const ringtoneData = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2+LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhC';
+      
+      audio.src = ringtoneData;
+      audio.loop = true;
+      audio.volume = 0.8;
+      audio.preload = 'auto';
+      audio.load();
+      
+      setRingtoneAudio(audio);
+      console.log('[CallContext] Ringtone audio created successfully');
+      
+      // Setup user interaction for audio unlock
+      const unlockAudio = () => {
+        audio.play().then(() => {
+          audio.pause();
+          audio.currentTime = 0;
+          console.log('[CallContext] Audio unlocked via user interaction');
+        }).catch(() => {});
+      };
+      
+      document.addEventListener('click', unlockAudio, { once: true });
+      document.addEventListener('touchstart', unlockAudio, { once: true });
+      
+    } catch (error) {
+      console.log('[CallContext] Could not create ringtone audio:', error);
+    }
+  }, []); // Only run once on mount
 
   // Simple WebSocket connection for calls - just like in Chat.tsx
   useEffect(() => {
