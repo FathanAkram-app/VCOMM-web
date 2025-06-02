@@ -939,5 +939,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // WebRTC HTTP API fallback endpoints
+  app.post('/api/webrtc/offer', async (req: Request, res: Response) => {
+    try {
+      const { callId, targetUserId, offer } = req.body;
+      
+      console.log(`[HTTP API] Received WebRTC offer for call ${callId}, target user ${targetUserId}`);
+      
+      // Send WebRTC offer to target user via WebSocket
+      const message = {
+        type: 'webrtc_offer',
+        callId,
+        offer
+      };
+      
+      sendToUser(targetUserId, message);
+      console.log(`[HTTP API] Sent WebRTC offer to user ${targetUserId}`);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('[HTTP API] Error handling WebRTC offer:', error);
+      res.status(500).json({ message: 'Failed to send WebRTC offer' });
+    }
+  });
+  
+  app.post('/api/webrtc/answer', async (req: Request, res: Response) => {
+    try {
+      const { callId, targetUserId, answer } = req.body;
+      
+      console.log(`[HTTP API] Received WebRTC answer for call ${callId}, target user ${targetUserId}`);
+      
+      // Send WebRTC answer to target user via WebSocket
+      const message = {
+        type: 'webrtc_answer',
+        callId,
+        answer
+      };
+      
+      sendToUser(targetUserId, message);
+      console.log(`[HTTP API] Sent WebRTC answer to user ${targetUserId}`);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('[HTTP API] Error handling WebRTC answer:', error);
+      res.status(500).json({ message: 'Failed to send WebRTC answer' });
+    }
+  });
+  
+  app.post('/api/webrtc/ice-candidate', async (req: Request, res: Response) => {
+    try {
+      const { callId, targetUserId, candidate } = req.body;
+      
+      console.log(`[HTTP API] Received ICE candidate for call ${callId}, target user ${targetUserId}`);
+      
+      // Send ICE candidate to target user via WebSocket
+      const message = {
+        type: 'webrtc_ice_candidate',
+        callId,
+        candidate
+      };
+      
+      sendToUser(targetUserId, message);
+      console.log(`[HTTP API] Sent ICE candidate to user ${targetUserId}`);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('[HTTP API] Error handling ICE candidate:', error);
+      res.status(500).json({ message: 'Failed to send ICE candidate' });
+    }
+  });
+
   return httpServer;
 }

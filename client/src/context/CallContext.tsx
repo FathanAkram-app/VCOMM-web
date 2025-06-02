@@ -607,29 +607,42 @@ export function CallProvider({ children }: { children: ReactNode }) {
         await currentActiveCall.peerConnection.setLocalDescription(offer);
         console.log('[CallContext] Local description set successfully');
 
-        // Store offer for sending when WebSocket is ready
-        (window as any).__pendingWebRTCOffer = {
+        // Try WebSocket first, fallback to HTTP API
+        const offerData = {
           type: 'webrtc_offer',
           callId: currentActiveCall.callId,
           offer: offer
         };
         
-        // Try to send immediately
         if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify((window as any).__pendingWebRTCOffer));
-          console.log('[CallContext] ✅ Sent WebRTC offer immediately');
-          (window as any).__pendingWebRTCOffer = null;
+          ws.send(JSON.stringify(offerData));
+          console.log('[CallContext] ✅ Sent WebRTC offer via WebSocket');
         } else {
-          console.log('[CallContext] ⚠️ WebSocket not ready, offer stored for when connection is available');
+          console.log('[CallContext] ⚠️ WebSocket not ready, using HTTP API fallback');
           
-          // Set timeout to fail if no connection after 10 seconds
-          setTimeout(() => {
-            if ((window as any).__pendingWebRTCOffer) {
-              console.error('[CallContext] ❌ Failed to send WebRTC offer - timeout');
-              (window as any).__pendingWebRTCOffer = null;
-              hangupCall();
+          // Use HTTP API as fallback
+          try {
+            const response = await fetch('/api/webrtc/offer', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                callId: currentActiveCall.callId,
+                targetUserId: currentActiveCall.peerUserId,
+                offer: offer
+              })
+            });
+            
+            if (response.ok) {
+              console.log('[CallContext] ✅ Sent WebRTC offer via HTTP API fallback');
+            } else {
+              throw new Error('HTTP API failed');
             }
-          }, 10000);
+          } catch (error) {
+            console.error('[CallContext] ❌ Both WebSocket and HTTP API failed:', error);
+            hangupCall();
+          }
         }
       } catch (error) {
         console.error('[CallContext] ❌ Error creating WebRTC offer after receiver ready:', error);
