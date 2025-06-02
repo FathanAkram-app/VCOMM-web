@@ -1,0 +1,41 @@
+[IncomingCallModal] Rendering with incomingCall: null
+ChatList.tsx:94 Contoh data percakapan dari server: {id: 35, createdById: 1, createdAt: '2025-06-02T15:31:27.620Z', updatedAt: '2025-06-02T16:38:39.590Z', isGroup: false, …}
+Chat.tsx:238 Fetched 6 users for personnel list
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+Chat.tsx:128 All conversations from server: (5) [{…}, {…}, {…}, {…}, {…}]
+Chat.tsx:141 Fetching direct chats from server for user ID: 3
+useWebSocket.ts:26 [WebSocket] Connected successfully
+useWebSocket.ts:42 [WebSocket] Received message: {type: 'user_status', payload: {…}}
+Chat.tsx:155 Fetched 4 direct chats from server
+Chat.tsx:182 Fetching group chats/rooms for user ID: 3
+Chat.tsx:196 Fetched 1 group chats/rooms
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+CallContext.tsx:202 [CallContext] WebSocket connected successfully for calls
+CallContext.tsx:213 [CallContext] Authenticated user 3 with WebSocket
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+CallContext.tsx:227 [CallContext] Received message: {type: 'user_status', payload: {…}}
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+Chat.tsx:263 Fetched 1 available group calls
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+Chat.tsx:263 Fetched 1 available group calls
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+CallContext.tsx:227 [CallContext] Received message: {type: 'group_call_joined', payload: {…}}
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+useWebSocket.ts:22 [WebSocket] Connecting to: wss://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/ws
+CallContext.tsx:195 [CallContext] Creating stable WebSocket for calls...
+CallContext.tsx:264 [CallContext] WebSocket disconnected
+useWebSocket.ts:58 [WebSocket] Connection closed
+useWebSocket.ts:26 [WebSocket] Connected successfully
+useWebSocket.ts:42 [WebSocket] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:202 [CallContext] WebSocket connected successfully for calls
+CallContext.tsx:213 [CallContext] Authenticated user 3 with WebSocket
+CallContext.tsx:227 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:227 [CallContext] Received message: {type: 'group_call_joined', payload: {…}}
+useWebSocket.ts:22 [WebSocket] Connecting to: wss://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/ws
+CallContext.tsx:227 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:227 [CallContext] Received message: {type: 'user_status', payload: {…}}
+useWebSocket.ts:26 [WebSocket] Connected successfully
+useWebSocket.ts:42 [WebSocket] Received message: {type: 'user_status', payload: {…}}
+useWebSocket.ts:42 [WebSocket] Received message: {type: 'user_status', payload: {…}}
+useWebSocket.ts:42 [WebSocket] Received message: {type: 'user_status', payload: {…}}

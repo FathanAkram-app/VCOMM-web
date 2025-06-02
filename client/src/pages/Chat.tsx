@@ -916,10 +916,12 @@ export default function Chat() {
                                   
                                   if (response.ok) {
                                     const data = await response.json();
-                                    setCurrentGroupCall(data);
-                                    // Start group video call
-                                    window.location.hash = `group-video-${groupCall.id}`;
-                                    setCurrentHash(`group-video-${groupCall.id}`);
+                                    console.log('Successfully joined group call:', data);
+                                    // Navigate to group video call
+                                    const hashValue = `group-video-${groupCall.id}`;
+                                    window.location.hash = hashValue;
+                                    setCurrentHash(hashValue);
+                                    console.log('Set hash to:', hashValue);
                                   } else {
                                     alert('Failed to join tactical group');
                                   }
