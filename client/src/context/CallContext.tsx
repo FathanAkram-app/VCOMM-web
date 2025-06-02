@@ -478,15 +478,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
       // Now create and send WebRTC offer since receiver is ready
       try {
         console.log('[CallContext] Creating WebRTC offer after receiver ready...');
-        const offer = await activeCall.peerConnection.createOffer();
-        await activeCall.peerConnection.setLocalDescription(offer);
+        const offer = await currentActiveCall.peerConnection.createOffer();
+        await currentActiveCall.peerConnection.setLocalDescription(offer);
         console.log('[CallContext] Local description set successfully');
 
         // Send offer to the other peer
         if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({
             type: 'webrtc_offer',
-            callId: activeCall.callId,
+            callId: currentActiveCall.callId,
             offer: offer
           }));
           console.log('[CallContext] ✅ Sent WebRTC offer after receiver ready');
