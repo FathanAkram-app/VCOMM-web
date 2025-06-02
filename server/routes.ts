@@ -609,6 +609,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Group Call API Routes
+  app.post('/api/group-calls', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const { name, callType, memberIds } = req.body;
+      const creatorId = req.session.user.id;
+      
+      if (!name || !callType || !Array.isArray(memberIds)) {
+        return res.status(400).json({ message: "Invalid group call data" });
+      }
+      
+      // Create a group call record
+      const groupCall = {
+        id: Date.now(),
+        name,
+        callType,
+        creatorId,
+        isActive: true,
+        createdAt: new Date(),
+        members: []
+      };
+      
+      // Add creator and members
+      const allMemberIds = [creatorId, ...memberIds];
+      const memberPromises = allMemberIds.map(async (memberId) => {
+        const user = await storage.getUser(memberId);
+        return {
+          id: memberId,
+          username: user?.callsign || user?.fullName || `User ${memberId}`,
+          fullName: user?.fullName || user?.callsign || `User ${memberId}`,
+          hasJoined: memberId === creatorId,
+          isActive: memberId === creatorId,
+          isMuted: false
+        };
+      });
+      
+      groupCall.members = await Promise.all(memberPromises);
+      
+      // Broadcast group call creation
+      broadcastToAll({
+        type: 'group_call_created',
+        payload: { groupCall }
+      });
+      
+      res.status(201).json(groupCall);
+    } catch (error) {
+      console.error("Error creating group call:", error);
+      res.status(500).json({ message: "Failed to create group call" });
+    }
+  });
+
+  app.get('/api/group-calls/available', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      res.json([]);
+    } catch (error) {
+      console.error("Error fetching available group calls:", error);
+      res.status(500).json({ message: "Failed to fetch group calls" });
+    }
+  });
+
+  app.post('/api/group-calls/:id/join', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const groupCallId = parseInt(req.params.id);
+      const userId = req.session.user.id;
+      
+      broadcastToAll({
+        type: 'group_call_joined',
+        payload: { groupCallId, userId }
+      });
+      
+      res.json({ message: "Joined group call successfully" });
+    } catch (error) {
+      console.error("Error joining group call:", error);
+      res.status(500).json({ message: "Failed to join group call" });
+    }
+  });
+
+  app.post('/api/group-calls/:id/leave', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const groupCallId = parseInt(req.params.id);
+      const userId = req.session.user.id;
+      
+      broadcastToAll({
+        type: 'group_call_left',
+        payload: { groupCallId, userId }
+      });
+      
+      res.json({ message: "Left group call successfully" });
+    } catch (error) {
+      console.error("Error leaving group call:", error);
+      res.status(500).json({ message: "Failed to leave group call" });
+    }
+  });
+
+  app.post('/api/group-calls/:id/end', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const groupCallId = parseInt(req.params.id);
+      
+      broadcastToAll({
+        type: 'group_call_ended',
+        payload: { groupCallId }
+      });
+      
+      res.json({ message: "Group call ended successfully" });
+    } catch (error) {
+      console.error("Error ending group call:", error);
+      res.status(500).json({ message: "Failed to end group call" });
+    }
+  });
+
+  app.post('/api/group-calls/:id/members', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const groupCallId = parseInt(req.params.id);
+      const { userId } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ message: "User ID is required" });
+      }
+      
+      broadcastToAll({
+        type: 'group_call_member_added',
+        payload: { groupCallId, userId }
+      });
+      
+      res.json({ message: "Member added successfully" });
+    } catch (error) {
+      console.error("Error adding member:", error);
+      res.status(500).json({ message: "Failed to add member" });
+    }
+  });
+
   const httpServer = createServer(app);
   
   // WebSocket server - ini akan menggunakan path yang sama untuk semua koneksi

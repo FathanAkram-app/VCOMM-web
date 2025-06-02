@@ -10,7 +10,10 @@ import Chat from "@/pages/Chat";
 import NotFound from "@/pages/not-found";
 import AudioCall from "@/components/AudioCall";
 import VideoCall from "@/components/VideoCall";
+import GroupCallManager from "@/components/GroupCallManager";
+import GroupVideoCall from "@/components/GroupVideoCall";
 import { CallProvider } from "@/context/CallContext";
+import { GroupCallProvider } from "@/context/GroupCallContext";
 // import { usePWA } from "@/hooks/usePWA"; // Removed PWA install prompts
 
 // Komponen sederhana untuk mengecek login
@@ -89,8 +92,10 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <CallProvider>
-        <Toaster />
-        <Router />
+        <GroupCallProvider>
+          <Toaster />
+          <Router />
+        </GroupCallProvider>
       </CallProvider>
     </QueryClientProvider>
   );
