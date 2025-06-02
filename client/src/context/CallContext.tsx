@@ -477,14 +477,21 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     // Process any pending WebRTC offers for this call
     setTimeout(() => {
+      console.log('[CallContext] Checking for pending offers for callId:', message.callId);
+      console.log('[CallContext] Total pending offers:', pendingOffers.current.length);
+      console.log('[CallContext] Pending offer callIds:', pendingOffers.current.map(o => o.callId));
+      
       const pendingOffer = pendingOffers.current.find(offer => offer.callId === message.callId);
       if (pendingOffer) {
-        console.log('[CallContext] Processing pending WebRTC offer for callId:', message.callId);
+        console.log('[CallContext] ✅ Found pending WebRTC offer for callId:', message.callId);
+        console.log('[CallContext] Processing pending offer...');
         handleWebRTCOffer(pendingOffer);
         
         // Remove the processed offer from queue
         pendingOffers.current = pendingOffers.current.filter(offer => offer.callId !== message.callId);
         console.log('[CallContext] Removed processed offer, remaining pending:', pendingOffers.current.length);
+      } else {
+        console.log('[CallContext] ❌ No pending offer found for callId:', message.callId);
       }
     }, 100); // Small delay to ensure incoming call state is set
   };
