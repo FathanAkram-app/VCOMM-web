@@ -445,9 +445,11 @@ export function CallProvider({ children }: { children: ReactNode }) {
       const remoteStream = event.streams[0];
       console.log('[CallContext] Remote stream tracks:', remoteStream.getTracks().length);
       
-      setTimeout(() => {
+      // Retry finding audio element with increasing delays
+      const trySetRemoteAudio = (attempt = 1, maxAttempts = 5) => {
         const audioElement = document.querySelector('#remoteAudio') as HTMLAudioElement;
         if (audioElement) {
+          console.log(`[CallContext] ✅ Found remote audio element on attempt ${attempt}`);
           audioElement.srcObject = remoteStream;
           audioElement.volume = 1.0;
           audioElement.play().then(() => {
@@ -455,10 +457,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
           }).catch(e => {
             console.log('[CallContext] Remote audio autoplay failed in incoming call setup:', e);
           });
+        } else if (attempt < maxAttempts) {
+          console.log(`[CallContext] Audio element not found, retrying in ${attempt * 100}ms (attempt ${attempt}/${maxAttempts})`);
+          setTimeout(() => trySetRemoteAudio(attempt + 1, maxAttempts), attempt * 100);
         } else {
-          console.log('[CallContext] ❌ Remote audio element not found in incoming call setup');
+          console.log('[CallContext] ❌ Remote audio element not found after all attempts');
         }
-      }, 100);
+      };
+      
+      trySetRemoteAudio();
     };
 
     setIncomingCall({
