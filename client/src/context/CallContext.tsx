@@ -429,12 +429,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
     
     playRingtone();
     
-    // Create RTCPeerConnection for incoming call immediately
+    // Create RTCPeerConnection for incoming call (offline/intranet mode)
     const peerConnection = new RTCPeerConnection({
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
-      ]
+      iceServers: [], // Empty array for local network only - no STUN/TURN servers
+      iceTransportPolicy: 'all', // Allow both UDP and TCP
+      bundlePolicy: 'max-bundle',
+      rtcpMuxPolicy: 'require'
     });
 
     // Setup ICE candidate handling for incoming call
@@ -942,12 +942,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
       const callId = `call_${Date.now()}_${user.id}_${peerUserId}`;
 
-      // Create RTCPeerConnection for the calling side
+      // Create RTCPeerConnection for offline/intranet mode (no internet required)
       const peerConnection = new RTCPeerConnection({
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' }
-        ]
+        iceServers: [], // Empty array for local network only - no STUN/TURN servers
+        iceTransportPolicy: 'all', // Allow both UDP and TCP
+        bundlePolicy: 'max-bundle',
+        rtcpMuxPolicy: 'require'
       });
 
       // Add local stream to peer connection
