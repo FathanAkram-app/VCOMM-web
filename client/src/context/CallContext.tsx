@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -102,6 +102,19 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const [incomingCall, setIncomingCall] = useState<CallState | null>(null);
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [ringtoneAudio, setRingtoneAudio] = useState<HTMLAudioElement | null>(null);
+  
+  // Use refs to store stable call state that won't be lost during re-renders
+  const activeCallRef = useRef<CallState | null>(null);
+  const incomingCallRef = useRef<CallState | null>(null);
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    activeCallRef.current = activeCall;
+  }, [activeCall]);
+
+  useEffect(() => {
+    incomingCallRef.current = incomingCall;
+  }, [incomingCall]);
 
   // Initialize ringtone audio once on mount
   useEffect(() => {
@@ -203,6 +216,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     websocket.onclose = () => {
       console.log('[CallContext] WebSocket disconnected');
+      console.log('[CallContext] Current activeCall when disconnected:', activeCall);
+      console.log('[CallContext] Current incomingCall when disconnected:', incomingCall);
       setWs(null);
     };
 
@@ -423,10 +438,14 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   const handleCallAccepted = async (message: any) => {
     console.log('[CallContext] Call accepted, payload:', message);
-    console.log('[CallContext] Current activeCall:', activeCall);
+    console.log('[CallContext] Current activeCall (state):', activeCall);
+    console.log('[CallContext] Current activeCall (ref):', activeCallRef.current);
     console.log('[CallContext] Current incomingCall:', incomingCall);
     
-    if (activeCall && activeCall.peerConnection) {
+    // Use ref for stable call reference
+    const currentActiveCall = activeCallRef.current || activeCall;
+    
+    if (currentActiveCall && currentActiveCall.peerConnection) {
       console.log('[CallContext] Updating call status to connected');
       
       // Update call status first
@@ -443,14 +462,19 @@ export function CallProvider({ children }: { children: ReactNode }) {
       console.log('[CallContext] Waiting for receiver to be ready for WebRTC...');
     } else {
       console.error('[CallContext] ❌ No activeCall or peerConnection when call accepted');
-      console.error('[CallContext] activeCall:', activeCall);
+      console.error('[CallContext] activeCall (state):', activeCall);
+      console.error('[CallContext] activeCall (ref):', activeCallRef.current);
       console.error('[CallContext] incomingCall:', incomingCall);
     }
   };
 
   const handleWebRTCReady = async (message: any) => {
     console.log('[CallContext] Received WebRTC ready signal, payload:', message);
-    if (activeCall && activeCall.peerConnection) {
+    
+    // Use ref for stable call reference
+    const currentActiveCall = activeCallRef.current || activeCall;
+    
+    if (currentActiveCall && currentActiveCall.peerConnection) {
       // Now create and send WebRTC offer since receiver is ready
       try {
         console.log('[CallContext] Creating WebRTC offer after receiver ready...');
