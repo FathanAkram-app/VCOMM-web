@@ -1,0 +1,61 @@
+[IncomingCallModal] Rendering with incomingCall: {callId: 'call_1748885723414_4_3', callType: 'audio', status: 'ringing', isIncoming: true, peerUserId: 4, …}
+CallContext.tsx:772 [CallContext] ✅ Local description (answer) set successfully
+CallContext.tsx:783 [CallContext] ⚠️ WebSocket not ready for answer, using HTTP API fallback
+CallContext.tsx:227 [CallContext] Received message: {type: 'webrtc_ice_candidate', callId: 'call_1748885723414_4_3', candidate: {…}}
+CallContext.tsx:844 [CallContext] Received ICE candidate for callId: call_1748885723414_4_3
+CallContext.tsx:851 [CallContext] Current activeCall for ICE: undefined
+CallContext.tsx:852 [CallContext] Current incomingCall for ICE: call_1748885723414_4_3
+CallContext.tsx:853 [CallContext] Looking for callId: call_1748885723414_4_3
+CallContext.tsx:878 [CallContext] ✅ Added ICE candidate successfully
+CallContext.tsx:227 [CallContext] Received message: {type: 'webrtc_ice_candidate', callId: 'call_1748885723414_4_3', candidate: {…}}
+CallContext.tsx:844 [CallContext] Received ICE candidate for callId: call_1748885723414_4_3
+CallContext.tsx:851 [CallContext] Current activeCall for ICE: undefined
+CallContext.tsx:852 [CallContext] Current incomingCall for ICE: call_1748885723414_4_3
+CallContext.tsx:853 [CallContext] Looking for callId: call_1748885723414_4_3
+CallContext.tsx:878 [CallContext] ✅ Added ICE candidate successfully
+CallContext.tsx:800 [CallContext] ✅ Sent WebRTC answer via HTTP API fallback
+CallContext.tsx:227 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:1173 [CallContext] acceptCall function called
+CallContext.tsx:1174 [CallContext] incomingCall: {callId: 'call_1748885723414_4_3', callType: 'audio', status: 'ringing', isIncoming: true, peerUserId: 4, …}
+CallContext.tsx:1175 [CallContext] ws connected: true
+CallContext.tsx:1176 [CallContext] user: {id: 3, callsign: 'aji', nrp: '123123', fullName: 'aji a', rank: 'SPC', …}
+CallContext.tsx:1183 [CallContext] Accepting call
+CallContext.tsx:1186 [CallContext] 🔇 FORCE STOPPING ALL RINGTONES - Call accepted
+CallContext.tsx:1191 [CallContext] Stopping HTML5 ringtone - current state: {paused: true, currentTime: 0, volume: 0.8, muted: false}
+CallContext.tsx:1209 [CallContext] ✅ HTML5 ringtone completely removed
+CallContext.tsx:1219 [CallContext] 🔇 Force stopping ALL Web Audio API contexts
+CallContext.tsx:1261 [CallContext] ✅ All page audio elements stopped
+CallContext.tsx:1289 [CallContext] Requesting media permissions for mobile (accept call)...
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: {callId: 'call_1748885723414_4_3', callType: 'audio', status: 'ringing', isIncoming: true, peerUserId: 4, …}
+CallContext.tsx:1291 [CallContext] Got local media stream for incoming call
+CallContext.tsx:1304 [CallContext] Added local stream to existing peerConnection
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748885723414_4_3', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 4, …}
+AudioCall.tsx:11 [AudioCall] remoteAudioStream: MediaStream {id: '2917447a-91a7-4545-80da-e1bf1eb3ca23', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:15 [AudioCall] Remote stream effect triggered, remoteAudioStream: MediaStream {id: '2917447a-91a7-4545-80da-e1bf1eb3ca23', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:21 [AudioCall] Setting up remote audio stream...
+AudioCall.tsx:25 [AudioCall] ✅ Found remote audio element, setting stream
+AudioCall.tsx:35 [AudioCall] 🌐 Browser environment: {userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWeb…KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36', platform: 'Win32', isSecureContext: true, protocol: 'https:', hostname: 'd6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev'}
+AudioCall.tsx:43 [AudioCall] 🔊 Attempt 1 - Audio element state: {paused: true, muted: false, volume: 1, readyState: 0, networkState: 3, …}
+AudioCall.tsx:58 [AudioCall] 🎤 Remote stream info: {tracksCount: 1, streamActive: true, streamId: '2917447a-91a7-4545-80da-e1bf1eb3ca23'}
+AudioCall.tsx:64 [AudioCall] Track 0: {enabled: true, muted: false, readyState: 'live', kind: 'audio', id: '08216727-004d-4b75-9946-9964cdb52582', …}
+AudioCall.tsx:76 [AudioCall] 🎮 Checking autoplay policy...
+AudioCall.tsx:204 [AudioCall] Setting up call duration timer
+AudioCall.tsx:85 [AudioCall] ✅ Remote audio playing successfully (attempt 1)
+CallContext.tsx:1365 [CallContext] 📤 Sending WebRTC ready signal to caller: 4
+CallContext.tsx:1373 [CallContext] ✅ WebRTC ready signal sent successfully
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748885723414_4_3', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 4, …}
+AudioCall.tsx:11 [AudioCall] remoteAudioStream: MediaStream {id: '2917447a-91a7-4545-80da-e1bf1eb3ca23', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:117 [AudioCall] 📊 Audio status after play: {paused: false, currentTime: 0, volume: 1}
+AudioCall.tsx:125 [AudioCall] 🚨 currentTime still 0, trying Web Audio API...
+AudioCall.tsx:126 [AudioCall] 🔧 Audio element not processing stream data, forcing Web Audio API
+AudioCall.tsx:131 [AudioCall] 🛑 Stopped HTML5 audio element
+AudioCall.tsx:165 [AudioCall] 🔧 Trying Web Audio API approach...
+AudioCall.tsx:183 [AudioCall] ✅ Web Audio API setup complete
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748885723414_4_3', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 4, …}
+AudioCall.tsx:11 [AudioCall] remoteAudioStream: MediaStream {id: '2917447a-91a7-4545-80da-e1bf1eb3ca23', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748885723414_4_3', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 4, …}
+AudioCall.tsx:11 [AudioCall] remoteAudioStream: MediaStream {id: '2917447a-91a7-4545-80da-e1bf1eb3ca23', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748885723414_4_3', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 4, …}
+AudioCall.tsx:11 [AudioCall] remoteAudioStream: MediaStream {id: '2917447a-91a7-4545-80da-e1bf1eb3ca23', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748885723414_4_3', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 4, …}

@@ -888,11 +888,66 @@ export function CallProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Enhanced WebSocket check with simple retry
+    // Enhanced WebSocket check with automatic retry
     if (!ws || ws.readyState !== WebSocket.OPEN) {
-      console.log('[CallContext] WebSocket not connected, please refresh page');
-      alert('Koneksi terputus. Refresh halaman (F5) dan coba lagi.');
-      return;
+      console.log('[CallContext] WebSocket not connected, attempting to reconnect...');
+      
+      // Try to reconnect WebSocket with retry
+      try {
+        const reconnectPromise = new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error('Connection timeout')), 5000);
+          
+          const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+          const wsUrl = `${protocol}//${window.location.host}/ws`;
+          const reconnectWs = new WebSocket(wsUrl);
+          
+          reconnectWs.onopen = () => {
+            clearTimeout(timeout);
+            setWs(reconnectWs);
+            
+            // Re-authenticate immediately
+            reconnectWs.send(JSON.stringify({
+              type: 'auth',
+              payload: { userId: user.id }
+            }));
+            
+            // Set up message handlers
+            reconnectWs.onmessage = (event) => {
+              try {
+                const message = JSON.parse(event.data);
+                console.log('[CallContext] Received message:', message);
+                handleWebSocketMessage(message);
+              } catch (error) {
+                console.error('[CallContext] Error parsing WebSocket message:', error);
+              }
+            };
+            
+            reconnectWs.onclose = () => {
+              console.log('[CallContext] WebSocket disconnected');
+              setWs(null);
+            };
+            
+            console.log('[CallContext] WebSocket reconnected successfully');
+            resolve();
+          };
+          
+          reconnectWs.onerror = (error) => {
+            clearTimeout(timeout);
+            console.error('[CallContext] WebSocket reconnection failed:', error);
+            reject(new Error('Connection failed'));
+          };
+        });
+        
+        await reconnectPromise;
+        
+        // Wait for authentication to complete
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+      } catch (error) {
+        console.error('[CallContext] Failed to reconnect WebSocket:', error);
+        alert('Koneksi terputus dan gagal menyambung kembali. Refresh halaman dan coba lagi.');
+        return;
+      }
     }
 
     console.log(`[CallContext] 📱 MOBILE: Starting ${callType} call to:`, peerName, 'from mobile device');
@@ -1073,22 +1128,40 @@ export function CallProvider({ children }: { children: ReactNode }) {
         console.error('[CallContext] Error creating WebRTC offer:', error);
       }
 
-      // Send call initiation message (ws is guaranteed to be connected at this point)
-      ws!.send(JSON.stringify({
-        type: 'initiate_call',
-        payload: {
-          callId,
-          toUserId: peerUserId,
-          callType,
-          fromUserId: user.id,
-          fromUserName: user.callsign,
-        }
-      }));
+      // Ensure WebSocket is still connected before sending message
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        console.error('[CallContext] WebSocket disconnected during call setup');
+        alert('Koneksi terputus saat memulai panggilan. Silakan coba lagi.');
+        setActiveCall(null);
+        return;
+      }
 
-      // Navigate to call interface with a small delay to ensure state is set
-      setTimeout(() => {
-        setLocation(callType === 'video' ? '/video-call' : '/audio-call');
-      }, 100);
+      // Send call initiation message
+      try {
+        ws.send(JSON.stringify({
+          type: 'initiate_call',
+          payload: {
+            callId,
+            toUserId: peerUserId,
+            callType,
+            fromUserId: user.id,
+            fromUserName: user.callsign,
+          }
+        }));
+        
+        console.log('[CallContext] Call initiation message sent successfully');
+        
+        // Navigate to call interface with a small delay to ensure state is set
+        setTimeout(() => {
+          setLocation(callType === 'video' ? '/video-call' : '/audio-call');
+        }, 100);
+        
+      } catch (error) {
+        console.error('[CallContext] Failed to send call initiation message:', error);
+        alert('Gagal mengirim permintaan panggilan. Silakan coba lagi.');
+        setActiveCall(null);
+        return;
+      }
 
     } catch (error: any) {
       console.error('[CallContext] Error starting call:', error);
