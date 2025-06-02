@@ -809,13 +809,32 @@ export function CallProvider({ children }: { children: ReactNode }) {
   };
 
   const handleWebRTCAnswer = async (message: any) => {
-    console.log('[CallContext] Received WebRTC answer');
-    if (!activeCall || !activeCall.peerConnection) return;
+    console.log('[CallContext] 📡 Received WebRTC answer for callId:', message.callId);
+    
+    // Use ref for stable call reference
+    const currentActiveCall = activeCallRef.current || activeCall;
+    console.log('[CallContext] Current activeCall for answer:', currentActiveCall?.callId);
+    
+    if (!currentActiveCall || !currentActiveCall.peerConnection) {
+      console.error('[CallContext] ❌ No activeCall or peerConnection for answer');
+      return;
+    }
+
+    if (currentActiveCall.callId !== message.callId) {
+      console.error('[CallContext] ❌ CallId mismatch for answer. Expected:', currentActiveCall.callId, 'Got:', message.callId);
+      return;
+    }
 
     try {
-      await activeCall.peerConnection.setRemoteDescription(new RTCSessionDescription(message.answer));
+      console.log('[CallContext] 📡 Setting remote description (answer) on caller side');
+      await currentActiveCall.peerConnection.setRemoteDescription(new RTCSessionDescription(message.answer));
+      console.log('[CallContext] ✅ Remote description (answer) set successfully on caller side');
+      
+      // The ontrack handler should now be triggered for the caller to receive audio
+      console.log('[CallContext] 🎯 Waiting for ontrack event to provide remote stream to caller...');
+      
     } catch (error) {
-      console.error('[CallContext] Error handling WebRTC answer:', error);
+      console.error('[CallContext] ❌ Error handling WebRTC answer:', error);
     }
   };
 
