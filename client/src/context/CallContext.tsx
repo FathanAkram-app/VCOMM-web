@@ -453,6 +453,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
         console.log('[CallContext] Stopping ringtone - call accepted');
         ringtoneAudio.pause();
         ringtoneAudio.currentTime = 0;
+        ringtoneAudio.loop = false;
+        // Force stop by setting src to empty
+        ringtoneAudio.src = '';
+        ringtoneAudio.load();
       }
 
       // Update call status first
@@ -477,11 +481,14 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   const handleWebRTCReady = async (message: any) => {
     console.log('[CallContext] Received WebRTC ready signal, payload:', message);
+    console.log('[CallContext] Current activeCall (state):', activeCall);
+    console.log('[CallContext] Current activeCall (ref):', activeCallRef.current);
     
     // Use ref for stable call reference
     const currentActiveCall = activeCallRef.current || activeCall;
     
     if (currentActiveCall && currentActiveCall.peerConnection) {
+      console.log('[CallContext] ✅ Found activeCall and peerConnection for WebRTC ready');
       // Now create and send WebRTC offer since receiver is ready
       try {
         console.log('[CallContext] Creating WebRTC offer after receiver ready...');
@@ -505,6 +512,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
       }
     } else {
       console.error('[CallContext] ❌ No activeCall or peerConnection when receiver ready');
+      console.error('[CallContext] activeCall (state):', activeCall);
+      console.error('[CallContext] activeCall (ref):', activeCallRef.current);
     }
   };
 
