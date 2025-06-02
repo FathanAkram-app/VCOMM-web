@@ -244,9 +244,11 @@ export function CallProvider({ children }: { children: ReactNode }) {
             handleWebRTCReady(message.payload || message);
             break;
           case 'webrtc_offer':
+            console.log('[CallContext] 🎯 Processing webrtc_offer message:', message);
             handleWebRTCOffer(message.payload || message);
             break;
           case 'webrtc_answer':
+            console.log('[CallContext] 🎯 Processing webrtc_answer message:', message);
             handleWebRTCAnswer(message.payload || message);
             break;
           case 'webrtc_ice_candidate':
