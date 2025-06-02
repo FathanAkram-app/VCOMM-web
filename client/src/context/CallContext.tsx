@@ -491,23 +491,37 @@ export function CallProvider({ children }: { children: ReactNode }) {
       // Stop ALL ringtone sources when call is accepted
       console.log('[CallContext] Stopping ALL ringtone sources - call accepted');
       
-      // Stop HTML5 Audio
+      // Force stop HTML5 Audio
       if (ringtoneAudio) {
         ringtoneAudio.pause();
         ringtoneAudio.currentTime = 0;
         ringtoneAudio.loop = false;
+        ringtoneAudio.volume = 0;
         ringtoneAudio.src = '';
         ringtoneAudio.load();
+        console.log('[CallContext] ✅ HTML5 ringtone force stopped');
       }
       
-      // Stop Web Audio API source
+      // Force stop Web Audio API source
       if ((window as any).__ringtoneSource) {
         try {
           (window as any).__ringtoneSource.stop();
+          (window as any).__ringtoneSource.disconnect();
           (window as any).__ringtoneSource = null;
           console.log('[CallContext] ✅ Web Audio API ringtone stopped');
         } catch (e) {
           console.log('[CallContext] Web Audio API source already stopped');
+        }
+      }
+      
+      // Close audio context completely
+      if ((window as any).__audioContext) {
+        try {
+          (window as any).__audioContext.close();
+          (window as any).__audioContext = null;
+          console.log('[CallContext] ✅ Audio context closed');
+        } catch (e) {
+          console.log('[CallContext] Audio context already closed');
         }
       }
       
@@ -596,19 +610,38 @@ export function CallProvider({ children }: { children: ReactNode }) {
         await currentActiveCall.peerConnection.setLocalDescription(offer);
         console.log('[CallContext] Local description set successfully');
 
-        // Send offer to the other peer
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({
-            type: 'webrtc_offer',
-            callId: currentActiveCall.callId,
-            offer: offer
-          }));
-          console.log('[CallContext] ✅ Sent WebRTC offer after receiver ready');
-        } else {
-          console.error('[CallContext] ❌ WebSocket not connected when trying to send offer');
-          // Fallback: End call if WebSocket is not available
-          console.error('[CallContext] ❌ Call failed due to WebSocket disconnection');
-          hangupCall();
+        // Send offer to the other peer - with retry mechanism
+        const sendOffer = () => {
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+              type: 'webrtc_offer',
+              callId: currentActiveCall.callId,
+              offer: offer
+            }));
+            console.log('[CallContext] ✅ Sent WebRTC offer after receiver ready');
+            return true;
+          }
+          return false;
+        };
+        
+        // Try to send immediately
+        if (!sendOffer()) {
+          console.log('[CallContext] ⚠️ WebSocket not ready, waiting for connection...');
+          
+          // Wait a bit and retry (WebSocket might be reconnecting)
+          let retryCount = 0;
+          const retryInterval = setInterval(() => {
+            retryCount++;
+            
+            if (sendOffer()) {
+              clearInterval(retryInterval);
+              console.log('[CallContext] ✅ WebRTC offer sent after retry');
+            } else if (retryCount >= 10) { // 5 second timeout (500ms * 10)
+              clearInterval(retryInterval);
+              console.error('[CallContext] ❌ Failed to send WebRTC offer after 5 seconds');
+              hangupCall();
+            }
+          }, 500);
         }
       } catch (error) {
         console.error('[CallContext] ❌ Error creating WebRTC offer after receiver ready:', error);

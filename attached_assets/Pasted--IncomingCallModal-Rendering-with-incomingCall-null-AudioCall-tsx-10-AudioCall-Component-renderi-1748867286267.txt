@@ -1,0 +1,69 @@
+[IncomingCallModal] Rendering with incomingCall: null
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748867259497_1_3', callType: 'audio', status: 'calling', isIncoming: false, peerUserId: 3, …}
+CallContext.tsx:238 [CallContext] Attempting WebSocket reconnection...
+CallContext.tsx:243 [CallContext] WebSocket reconnected successfully
+CallContext.tsx:252 [CallContext] Re-authenticated user 1 with WebSocket
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748867259497_1_3', callType: 'audio', status: 'calling', isIncoming: false, peerUserId: 3, …}
+CallContext.tsx:195 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:195 [CallContext] Received message: {type: 'call_accepted', payload: {…}}
+CallContext.tsx:480 [CallContext] Call accepted, payload: {callId: 'call_1748867259497_1_3'}
+CallContext.tsx:481 [CallContext] Current activeCall (state): null
+CallContext.tsx:482 [CallContext] Current activeCall (ref): {callId: 'call_1748867259497_1_3', callType: 'audio', status: 'calling', isIncoming: false, peerUserId: 3, …}
+CallContext.tsx:483 [CallContext] Current incomingCall: null
+CallContext.tsx:489 [CallContext] Updating call status to connected
+CallContext.tsx:492 [CallContext] Stopping ALL ringtone sources - call accepted
+CallContext.tsx:539 [CallContext] Waiting for receiver to be ready for WebRTC...
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748867259497_1_3', callType: 'audio', status: 'connected', isIncoming: false, peerUserId: 3, …}
+AudioCall.tsx:16 [AudioCall] Setting up call duration timer
+CallContext.tsx:195 [CallContext] Received message: {type: 'webrtc_ready', payload: {…}}
+CallContext.tsx:575 [CallContext] Received WebRTC ready signal, payload: {callId: 'call_1748867259497_1_3'}
+CallContext.tsx:576 [CallContext] Current activeCall (state): null
+CallContext.tsx:577 [CallContext] Current activeCall (ref): {callId: 'call_1748867259497_1_3', callType: 'audio', status: 'connected', isIncoming: false, peerUserId: 3, …}
+CallContext.tsx:583 [CallContext] ✅ Found activeCall and peerConnection for WebRTC ready
+CallContext.tsx:589 [CallContext] ✅ Cleared fallback timeout - received ready signal
+CallContext.tsx:594 [CallContext] Creating WebRTC offer after receiver ready...
+CallContext.tsx:597 [CallContext] Local description set successfully
+CallContext.tsx:608 [CallContext] ❌ WebSocket not connected when trying to send offer
+handleWebRTCReady @ CallContext.tsx:608
+await in handleWebRTCReady
+websocket.onmessage @ CallContext.tsx:212Understand this error
+CallContext.tsx:610 [CallContext] ❌ Call failed due to WebSocket disconnection
+handleWebRTCReady @ CallContext.tsx:610
+await in handleWebRTCReady
+websocket.onmessage @ CallContext.tsx:212Understand this error
+CallContext.tsx:1087 [CallContext] Hanging up call - start
+CallContext.tsx:1127 [CallContext] Call ended successfully, staying on current page
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: null
+AudioCall.tsx:45 [AudioCall] No active call, showing loading state
+AudioCall.tsx:26 [AudioCall] Cleaning up call duration timer
+AudioCall.tsx:34 [AudioCall] No active call, redirecting to chat
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+ChatList.tsx:94 Contoh data percakapan dari server: {id: 1, createdById: 1, createdAt: '2025-05-20T05:29:09.034Z', updatedAt: '2025-05-22T19:53:13.947Z', isGroup: false, …}
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+ChatList.tsx:94 Contoh data percakapan dari server: {id: 1, createdById: 1, createdAt: '2025-05-20T05:29:09.034Z', updatedAt: '2025-05-22T19:53:13.947Z', isGroup: false, …}
+CallContext.tsx:160 [CallContext] Initializing WebSocket for calls...
+CallContext.tsx:230 [CallContext] WebSocket disconnected
+CallContext.tsx:231 [CallContext] Current activeCall when disconnected: null
+CallContext.tsx:232 [CallContext] Current incomingCall when disconnected: null
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+Chat.tsx:79 User data from session: {id: 1, callsign: 'eko', nrp: '123123', fullName: 'eko e', rank: 'PFC', …}
+Chat.tsx:107 Fetching all conversations for user ID: 1
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+CallContext.tsx:168 [CallContext] WebSocket connected successfully for calls
+CallContext.tsx:188 [CallContext] Authenticated user 1 with WebSocket
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+CallContext.tsx:195 [CallContext] Received message: {type: 'user_status', payload: {…}}
+Chat.tsx:120 All conversations from server: (4) [{…}, {…}, {…}, {…}]
+Chat.tsx:133 Fetching direct chats from server for user ID: 1
+Chat.tsx:230 Fetched 3 users for personnel list
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+Chat.tsx:147 Fetched 2 direct chats from server
+Chat.tsx:174 Fetching group chats/rooms for user ID: 1
+Chat.tsx:188 Fetched 2 group chats/rooms
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+CallContext.tsx:238 [CallContext] Attempting WebSocket reconnection...
+CallContext.tsx:243 [CallContext] WebSocket reconnected successfully
+CallContext.tsx:252 [CallContext] Re-authenticated user 1 with WebSocket
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+CallContext.tsx:195 [CallContext] Received message: {type: 'user_status', payload: {…}}
