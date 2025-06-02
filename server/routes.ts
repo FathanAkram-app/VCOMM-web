@@ -999,6 +999,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           });
         }
+
+        // Handle group call join
+        if (data.type === 'join_group_call' && ws.userId) {
+          const { groupCallId, callType } = data.payload;
+          console.log(`[GroupCall] User ${ws.userId} joining group call ${groupCallId}`);
+          
+          // Find the group call
+          const groupCall = activeGroupCalls.get(groupCallId);
+          if (groupCall) {
+            // Notify other participants that user joined
+            groupCall.memberIds.forEach((memberId: number) => {
+              if (memberId !== ws.userId) {
+                const memberClient = clients.get(memberId);
+                if (memberClient && memberClient.readyState === WebSocket.OPEN) {
+                  memberClient.send(JSON.stringify({
+                    type: 'group_call_participant_joined',
+                    payload: {
+                      groupCallId,
+                      userId: ws.userId,
+                      callType
+                    }
+                  }));
+                }
+              }
+            });
+          }
+        }
+
+        // Handle group call leave
+        if (data.type === 'leave_group_call' && ws.userId) {
+          const { groupCallId } = data.payload;
+          console.log(`[GroupCall] User ${ws.userId} leaving group call ${groupCallId}`);
+          
+          // Find the group call
+          const groupCall = activeGroupCalls.get(groupCallId);
+          if (groupCall) {
+            // Notify other participants that user left
+            groupCall.memberIds.forEach((memberId: number) => {
+              if (memberId !== ws.userId) {
+                const memberClient = clients.get(memberId);
+                if (memberClient && memberClient.readyState === WebSocket.OPEN) {
+                  memberClient.send(JSON.stringify({
+                    type: 'group_call_participant_left',
+                    payload: {
+                      groupCallId,
+                      userId: ws.userId
+                    }
+                  }));
+                }
+              }
+            });
+          }
+        }
+
+        // Handle group call mute status
+        if (data.type === 'group_call_mute_status' && ws.userId) {
+          const { groupCallId, isMuted } = data.payload;
+          console.log(`[GroupCall] User ${ws.userId} ${isMuted ? 'muted' : 'unmuted'} in group call ${groupCallId}`);
+          
+          // Find the group call
+          const groupCall = activeGroupCalls.get(groupCallId);
+          if (groupCall) {
+            // Broadcast mute status to other participants
+            groupCall.memberIds.forEach((memberId: number) => {
+              if (memberId !== ws.userId) {
+                const memberClient = clients.get(memberId);
+                if (memberClient && memberClient.readyState === WebSocket.OPEN) {
+                  memberClient.send(JSON.stringify({
+                    type: 'group_call_mute_update',
+                    payload: {
+                      groupCallId,
+                      userId: ws.userId,
+                      isMuted
+                    }
+                  }));
+                }
+              }
+            });
+          }
+        }
+
+        // Handle group call video status
+        if (data.type === 'group_call_video_status' && ws.userId) {
+          const { groupCallId, isVideoEnabled } = data.payload;
+          console.log(`[GroupCall] User ${ws.userId} ${isVideoEnabled ? 'enabled' : 'disabled'} video in group call ${groupCallId}`);
+          
+          // Find the group call
+          const groupCall = activeGroupCalls.get(groupCallId);
+          if (groupCall) {
+            // Broadcast video status to other participants
+            groupCall.memberIds.forEach((memberId: number) => {
+              if (memberId !== ws.userId) {
+                const memberClient = clients.get(memberId);
+                if (memberClient && memberClient.readyState === WebSocket.OPEN) {
+                  memberClient.send(JSON.stringify({
+                    type: 'group_call_video_update',
+                    payload: {
+                      groupCallId,
+                      userId: ws.userId,
+                      isVideoEnabled
+                    }
+                  }));
+                }
+              }
+            });
+          }
+        }
       } catch (error) {
         console.error('WebSocket message error:', error);
       }

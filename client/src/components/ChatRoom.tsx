@@ -865,7 +865,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                   }).then(response => {
                     if (response.ok) {
                       // Navigate to group video call
-                      window.location.hash = `group-video-${groupCallId}`;
+                      window.location.href = `/group-video/${groupCallId}`;
                     } else {
                       alert('Gagal memulai group video call');
                     }
