@@ -102,104 +102,69 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [ringtoneAudio, setRingtoneAudio] = useState<HTMLAudioElement | null>(null);
 
-  // Initialize ringtone audio
+  // Initialize ringtone audio with autoplay bypass
   useEffect(() => {
-    // Create ringtone using Web Audio API for better browser compatibility
     const createRingtone = () => {
       try {
+        // Create multiple audio sources for better compatibility
         const audio = new Audio();
-        // Create a simple ringtone using data URL (beep sound)
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
         
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
+        // Use a simple base64 encoded ringtone that works better with autoplay
+        const ringtoneData = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhC';
         
-        // Create ringtone pattern: beep beep pause beep beep pause
-        const createBeepPattern = () => {
-          return new Promise<string>((resolve) => {
-            const sampleRate = 44100;
-            const duration = 2; // 2 seconds
-            const buffer = audioContext.createBuffer(1, sampleRate * duration, sampleRate);
-            const data = buffer.getChannelData(0);
-            
-            // Generate beep pattern
-            for (let i = 0; i < data.length; i++) {
-              const time = i / sampleRate;
-              if ((time < 0.3 || (time > 0.5 && time < 0.8)) && time < 1.5) {
-                data[i] = Math.sin(2 * Math.PI * 800 * time) * 0.3; // 800Hz beep
-              } else {
-                data[i] = 0; // silence
-              }
-            }
-            
-            // Convert to data URL
-            const wav = encodeWAV(buffer);
-            const blob = new Blob([wav], { type: 'audio/wav' });
-            resolve(URL.createObjectURL(blob));
-          });
-        };
+        audio.src = ringtoneData;
+        audio.loop = true;
+        audio.volume = 0.8;
+        audio.preload = 'auto';
         
-        // Simple WAV encoder
-        const encodeWAV = (buffer: AudioBuffer) => {
-          const length = buffer.length;
-          const arrayBuffer = new ArrayBuffer(44 + length * 2);
-          const view = new DataView(arrayBuffer);
-          const channels = buffer.numberOfChannels;
-          const sampleRate = buffer.sampleRate;
-          
-          // WAV header
-          const writeString = (offset: number, string: string) => {
-            for (let i = 0; i < string.length; i++) {
-              view.setUint8(offset + i, string.charCodeAt(i));
-            }
-          };
-          
-          writeString(0, 'RIFF');
-          view.setUint32(4, 36 + length * 2, true);
-          writeString(8, 'WAVE');
-          writeString(12, 'fmt ');
-          view.setUint32(16, 16, true);
-          view.setUint16(20, 1, true);
-          view.setUint16(22, channels, true);
-          view.setUint32(24, sampleRate, true);
-          view.setUint32(28, sampleRate * 2, true);
-          view.setUint16(32, 2, true);
-          view.setUint16(34, 16, true);
-          writeString(36, 'data');
-          view.setUint32(40, length * 2, true);
-          
-          // Convert float samples to 16-bit PCM
-          const data = buffer.getChannelData(0);
-          let offset = 44;
-          for (let i = 0; i < length; i++) {
-            const sample = Math.max(-1, Math.min(1, data[i]));
-            view.setInt16(offset, sample * 0x7FFF, true);
-            offset += 2;
-          }
-          
-          return arrayBuffer;
-        };
+        // Add multiple techniques to bypass autoplay policy
+        audio.muted = false;
+        audio.crossOrigin = 'anonymous';
         
-        createBeepPattern().then(url => {
-          const audio = new Audio(url);
-          audio.loop = true;
-          audio.volume = 0.7;
-          setRingtoneAudio(audio);
-          console.log('[CallContext] Ringtone audio created successfully');
-        });
+        // Preload the audio
+        audio.load();
+        
+        setRingtoneAudio(audio);
+        console.log('[CallContext] Ringtone audio created successfully');
         
       } catch (error) {
         console.log('[CallContext] Could not create ringtone audio:', error);
-        // Fallback: use system notification sound
-        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhC');
-        setRingtoneAudio(audio);
       }
     };
     
     createRingtone();
-  }, []);
+    
+    // Set up user interaction handler to enable audio
+    const enableAudioOnUserInteraction = async () => {
+      if (ringtoneAudio) {
+        try {
+          // Try to play and immediately pause to enable audio context
+          await ringtoneAudio.play();
+          ringtoneAudio.pause();
+          ringtoneAudio.currentTime = 0;
+          console.log('[CallContext] Audio context enabled through user interaction');
+        } catch (error) {
+          console.log('[CallContext] Could not enable audio context:', error);
+        }
+      }
+      
+      // Remove event listeners after first interaction
+      document.removeEventListener('click', enableAudioOnUserInteraction);
+      document.removeEventListener('touch', enableAudioOnUserInteraction);
+      document.removeEventListener('keydown', enableAudioOnUserInteraction);
+    };
+    
+    // Add event listeners for user interaction
+    document.addEventListener('click', enableAudioOnUserInteraction);
+    document.addEventListener('touch', enableAudioOnUserInteraction);
+    document.addEventListener('keydown', enableAudioOnUserInteraction);
+    
+    return () => {
+      document.removeEventListener('click', enableAudioOnUserInteraction);
+      document.removeEventListener('touch', enableAudioOnUserInteraction);
+      document.removeEventListener('keydown', enableAudioOnUserInteraction);
+    };
+  }, [ringtoneAudio]);
 
   // Simple WebSocket connection for calls - just like in Chat.tsx
   useEffect(() => {
@@ -282,45 +247,145 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const handleIncomingCall = (message: any) => {
     console.log('[CallContext] Incoming call from:', message.fromUserName);
     
-    // Play ringtone for incoming call with multiple fallbacks
+    // Play ringtone for incoming call with advanced autoplay bypass
     const playRingtone = async () => {
       try {
         if (ringtoneAudio) {
           ringtoneAudio.currentTime = 0;
           console.log('[CallContext] Attempting to play ringtone...');
-          await ringtoneAudio.play();
-          console.log('[CallContext] ✅ Ringtone playing successfully');
-        } else {
-          console.log('[CallContext] ❌ Ringtone audio not available');
-          // Fallback: use system notification
-          if ('Notification' in window) {
-            new Notification('Panggilan Masuk', {
-              body: `${message.fromUserName} sedang menelpon`,
-              icon: '/favicon.ico'
-            });
+          
+          // First try: Direct play
+          try {
+            await ringtoneAudio.play();
+            console.log('[CallContext] ✅ Ringtone playing successfully');
+            return;
+          } catch (error) {
+            console.log('[CallContext] Direct play failed, trying autoplay bypass techniques...');
           }
+          
+          // Second try: Reset audio and play with muted then unmuted
+          ringtoneAudio.muted = true;
+          await ringtoneAudio.play();
+          ringtoneAudio.muted = false;
+          console.log('[CallContext] ✅ Ringtone playing with mute bypass');
+          return;
         }
       } catch (error) {
-        console.log('[CallContext] ❌ Could not play ringtone:', error);
-        // Additional fallback: create simple beep
-        try {
-          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-          const oscillator = audioContext.createOscillator();
-          const gainNode = audioContext.createGain();
-          
-          oscillator.connect(gainNode);
-          gainNode.connect(audioContext.destination);
-          
-          oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-          
-          oscillator.start();
-          oscillator.stop(audioContext.currentTime + 0.5);
-          
-          console.log('[CallContext] ✅ Fallback beep played');
-        } catch (beepError) {
-          console.log('[CallContext] ❌ Fallback beep also failed:', beepError);
+        console.log('[CallContext] ❌ HTML5 audio failed, trying Web Audio API...');
+      }
+      
+      // Fallback 1: Advanced Web Audio API with user gesture simulation
+      try {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        
+        // Resume audio context if suspended
+        if (audioContext.state === 'suspended') {
+          await audioContext.resume();
         }
+        
+        // Create a more complex ringtone pattern
+        const createRingtonePattern = () => {
+          const duration = 3;
+          const sampleRate = audioContext.sampleRate;
+          const length = sampleRate * duration;
+          const buffer = audioContext.createBuffer(1, length, sampleRate);
+          const data = buffer.getChannelData(0);
+          
+          for (let i = 0; i < length; i++) {
+            const time = i / sampleRate;
+            let signal = 0;
+            
+            // Create ringtone pattern: ring ring pause ring ring
+            if ((time % 1.5 < 0.3) || (time % 1.5 > 0.5 && time % 1.5 < 0.8)) {
+              // Mix of frequencies for richer sound
+              signal = (
+                Math.sin(2 * Math.PI * 800 * time) * 0.3 +
+                Math.sin(2 * Math.PI * 1000 * time) * 0.2 +
+                Math.sin(2 * Math.PI * 600 * time) * 0.2
+              );
+              
+              // Add envelope for smoother sound
+              const envelope = Math.sin((time % 0.3) * Math.PI / 0.3);
+              signal *= envelope;
+            }
+            
+            data[i] = signal;
+          }
+          
+          return buffer;
+        };
+        
+        const buffer = createRingtonePattern();
+        const source = audioContext.createBufferSource();
+        const gainNode = audioContext.createGain();
+        
+        source.buffer = buffer;
+        source.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Set volume
+        gainNode.gain.setValueAtTime(0.7, audioContext.currentTime);
+        
+        // Play with looping
+        source.loop = true;
+        source.start();
+        
+        // Store source for cleanup
+        (window as any).__ringtoneSource = source;
+        
+        console.log('[CallContext] ✅ Web Audio API ringtone playing');
+        return;
+        
+      } catch (webAudioError) {
+        console.log('[CallContext] ❌ Web Audio API failed:', webAudioError);
+      }
+      
+      // Fallback 2: Browser notification with sound
+      try {
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('📞 Panggilan Masuk', {
+            body: `${message.fromUserName} sedang menelpon`,
+            icon: '/favicon.ico',
+            tag: 'incoming-call',
+            requireInteraction: true,
+            silent: false
+          });
+          console.log('[CallContext] ✅ Notification displayed');
+        } else if ('Notification' in window && Notification.permission !== 'denied') {
+          // Request notification permission
+          Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+              new Notification('📞 Panggilan Masuk', {
+                body: `${message.fromUserName} sedang menelpon`,
+                icon: '/favicon.ico',
+                tag: 'incoming-call',
+                requireInteraction: true
+              });
+            }
+          });
+        }
+      } catch (notificationError) {
+        console.log('[CallContext] ❌ Notification failed:', notificationError);
+      }
+      
+      // Fallback 3: Simple oscillator beep
+      try {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 0.5);
+        
+        console.log('[CallContext] ✅ Fallback beep played');
+      } catch (beepError) {
+        console.log('[CallContext] ❌ All audio methods failed:', beepError);
       }
     };
     
