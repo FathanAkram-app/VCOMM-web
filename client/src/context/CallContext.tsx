@@ -139,17 +139,17 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   // Separate useEffect for user interaction handling
   useEffect(() => {
+    if (!ringtoneAudio) return;
+    
     const enableAudioOnUserInteraction = async () => {
-      if (ringtoneAudio) {
-        try {
-          // Try to play and immediately pause to enable audio context
-          await ringtoneAudio.play();
-          ringtoneAudio.pause();
-          ringtoneAudio.currentTime = 0;
-          console.log('[CallContext] Audio context enabled through user interaction');
-        } catch (error) {
-          console.log('[CallContext] Could not enable audio context:', error);
-        }
+      try {
+        // Try to play and immediately pause to enable audio context
+        await ringtoneAudio.play();
+        ringtoneAudio.pause();
+        ringtoneAudio.currentTime = 0;
+        console.log('[CallContext] Audio context enabled through user interaction');
+      } catch (error) {
+        console.log('[CallContext] Could not enable audio context:', error);
       }
       
       // Remove event listeners after first interaction
@@ -168,7 +168,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       document.removeEventListener('touch', enableAudioOnUserInteraction);
       document.removeEventListener('keydown', enableAudioOnUserInteraction);
     };
-  }, [ringtoneAudio]); // Only run when ringtoneAudio changes
+  }, []); // Run only once to avoid infinite loop
 
   // Simple WebSocket connection for calls - just like in Chat.tsx
   useEffect(() => {
