@@ -791,43 +791,49 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
           </div>
         </div>
         
-        {/* Call buttons - only show for direct chats */}
-        {!isGroup && (
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
-              onClick={() => {
-                if (chatData && chatMembers) {
-                  // Get the other user's ID from chat members
-                  const otherMember = chatMembers.find((member: any) => member.userId !== user?.id);
-                  if (otherMember) {
-                    startCall(otherMember.userId, chatData.name, 'audio');
-                  }
+        {/* Call buttons - show for both direct and group chats */}
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
+            onClick={() => {
+              if (isGroup) {
+                // For group chats, start group call (feature not yet implemented)
+                alert('Fitur group call sedang dalam pengembangan');
+              } else {
+                // Find the other user ID for direct chat
+                const otherUser = chatMembers?.find((member: any) => member.userId !== user?.id);
+                if (otherUser && otherUser.user) {
+                  startCall(otherUser.userId, otherUser.user.callsign || otherUser.user.fullName || 'Unknown', 'audio');
                 }
-              }}
-            >
-              <Phone className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
-              onClick={() => {
-                if (chatData && chatMembers) {
-                  // Get the other user's ID from chat members
-                  const otherMember = chatMembers.find((member: any) => member.userId !== user?.id);
-                  if (otherMember) {
-                    startCall(otherMember.userId, chatData.name, 'video');
-                  }
+              }
+            }}
+            title={isGroup ? "Start Group Audio Call" : "Start Audio Call"}
+          >
+            <Phone className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
+            onClick={() => {
+              if (isGroup) {
+                // For group chats, start group video call (feature not yet implemented)
+                alert('Fitur group video call sedang dalam pengembangan');
+              } else {
+                // Find the other user ID for direct chat
+                const otherUser = chatMembers?.find((member: any) => member.userId !== user?.id);
+                if (otherUser && otherUser.user) {
+                  startCall(otherUser.userId, otherUser.user.callsign || otherUser.user.fullName || 'Unknown', 'video');
                 }
-              }}
-            >
-              <Video className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
+              }
+            }}
+            title={isGroup ? "Start Group Video Call" : "Start Video Call"}
+          >
+            <Video className="h-5 w-5" />
+          </Button>
+        </div>
       </div>
       
       {/* Delete Message Dialog */}
