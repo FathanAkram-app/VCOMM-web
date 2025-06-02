@@ -137,38 +137,33 @@ export function CallProvider({ children }: { children: ReactNode }) {
     createRingtone();
   }, []); // Only run once on mount
 
-  // Separate useEffect for user interaction handling
+  // Setup user interaction handlers once
   useEffect(() => {
-    if (!ringtoneAudio) return;
+    let hasSetupInteraction = false;
     
     const enableAudioOnUserInteraction = async () => {
-      try {
-        // Try to play and immediately pause to enable audio context
-        await ringtoneAudio.play();
-        ringtoneAudio.pause();
-        ringtoneAudio.currentTime = 0;
-        console.log('[CallContext] Audio context enabled through user interaction');
-      } catch (error) {
-        console.log('[CallContext] Could not enable audio context:', error);
-      }
+      if (hasSetupInteraction) return;
+      hasSetupInteraction = true;
+      
+      console.log('[CallContext] Setting up audio on user interaction');
       
       // Remove event listeners after first interaction
       document.removeEventListener('click', enableAudioOnUserInteraction);
-      document.removeEventListener('touch', enableAudioOnUserInteraction);
+      document.removeEventListener('touchstart', enableAudioOnUserInteraction);
       document.removeEventListener('keydown', enableAudioOnUserInteraction);
     };
     
     // Add event listeners for user interaction
     document.addEventListener('click', enableAudioOnUserInteraction);
-    document.addEventListener('touch', enableAudioOnUserInteraction);
+    document.addEventListener('touchstart', enableAudioOnUserInteraction);
     document.addEventListener('keydown', enableAudioOnUserInteraction);
     
     return () => {
       document.removeEventListener('click', enableAudioOnUserInteraction);
-      document.removeEventListener('touch', enableAudioOnUserInteraction);
+      document.removeEventListener('touchstart', enableAudioOnUserInteraction);
       document.removeEventListener('keydown', enableAudioOnUserInteraction);
     };
-  }, []); // Run only once to avoid infinite loop
+  }, []); // Run only once
 
   // Simple WebSocket connection for calls - just like in Chat.tsx
   useEffect(() => {
