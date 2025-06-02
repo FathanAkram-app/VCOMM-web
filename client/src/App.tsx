@@ -10,11 +10,7 @@ import Chat from "@/pages/Chat";
 import NotFound from "@/pages/not-found";
 import AudioCall from "@/components/AudioCall";
 import VideoCall from "@/components/VideoCall";
-import GroupCallManager from "@/components/GroupCallManager";
-import GroupVideoCall from "@/components/GroupVideoCall";
-import GroupAudioCall from "@/components/GroupAudioCall";
 import { CallProvider } from "@/context/CallContext";
-import { GroupCallProvider } from "@/context/GroupCallContext";
 // import { usePWA } from "@/hooks/usePWA"; // Removed PWA install prompts
 
 // Komponen sederhana untuk mengecek login
@@ -81,26 +77,6 @@ function Router() {
           <VideoCall />
         </AuthCheck>
       </Route>
-      <Route path="/group-audio/:groupCallId">
-        {({ groupCallId }) => (
-          <AuthCheck>
-            <GroupAudioCall 
-              groupCallId={groupCallId} 
-              onBack={() => window.location.href = '/chat'} 
-            />
-          </AuthCheck>
-        )}
-      </Route>
-      <Route path="/group-video/:groupCallId">
-        {({ groupCallId }) => (
-          <AuthCheck>
-            <GroupVideoCall 
-              groupCallId={groupCallId} 
-              onBack={() => window.location.href = '/chat'} 
-            />
-          </AuthCheck>
-        )}
-      </Route>
       <Route path="/">
         <Login />
       </Route>
@@ -113,10 +89,8 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <CallProvider>
-        <GroupCallProvider>
-          <Toaster />
-          <Router />
-        </GroupCallProvider>
+        <Toaster />
+        <Router />
       </CallProvider>
     </QueryClientProvider>
   );

@@ -232,7 +232,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
             handleIncomingCall(message.payload || message);
             break;
           case 'call_accepted':
-            console.log('[CallContext] 🎯 Processing call_accepted message:', message);
             handleCallAccepted(message.payload || message);
             break;
           case 'call_rejected':
@@ -496,7 +495,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   };
 
   const handleCallAccepted = async (message: any) => {
-    console.log('[CallContext] 🎯 handleCallAccepted called with:', message);
+    console.log('[CallContext] Call accepted, payload:', message);
     console.log('[CallContext] Current activeCall (state):', activeCall);
     console.log('[CallContext] Current activeCall (ref):', activeCallRef.current);
     console.log('[CallContext] Current incomingCall:', incomingCall);
@@ -505,8 +504,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     const currentActiveCall = activeCallRef.current || activeCall;
     
     if (currentActiveCall && currentActiveCall.peerConnection) {
-      console.log('[CallContext] ✅ CALLER: Call accepted - updating status to connected');
-      console.log('[CallContext] 📊 CALLER: Current call status before update:', currentActiveCall.status);
+      console.log('[CallContext] Updating call status to connected');
       
       // Stop ALL ringtone sources when call is accepted
       console.log('[CallContext] Stopping ALL ringtone sources - call accepted');
@@ -559,26 +557,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // Update call status to connected for CALLER side
+      // Update call status first
       setActiveCall(prevCall => {
         if (!prevCall) return prevCall;
-        console.log('[CallContext] ✅ CALLER: Updating status from', prevCall.status, 'to connected');
         return {
           ...prevCall,
           status: 'connected' as const,
           startTime: new Date(),
         };
       });
-      
-      // Also update the ref immediately for consistency
-      if (activeCallRef.current) {
-        activeCallRef.current = {
-          ...activeCallRef.current,
-          status: 'connected' as const,
-          startTime: new Date(),
-        };
-        console.log('[CallContext] ✅ CALLER: Updated ref status to connected');
-      }
       
       // Don't create offer here, wait for webrtc_ready signal from receiver
       console.log('[CallContext] Waiting for receiver to be ready for WebRTC...');
@@ -901,66 +888,11 @@ export function CallProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Enhanced WebSocket check with automatic retry
+    // Enhanced WebSocket check with simple retry
     if (!ws || ws.readyState !== WebSocket.OPEN) {
-      console.log('[CallContext] WebSocket not connected, attempting to reconnect...');
-      
-      // Try to reconnect WebSocket with retry
-      try {
-        const reconnectPromise = new Promise<void>((resolve, reject) => {
-          const timeout = setTimeout(() => reject(new Error('Connection timeout')), 5000);
-          
-          const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-          const wsUrl = `${protocol}//${window.location.host}/ws`;
-          const reconnectWs = new WebSocket(wsUrl);
-          
-          reconnectWs.onopen = () => {
-            clearTimeout(timeout);
-            setWs(reconnectWs);
-            
-            // Re-authenticate immediately
-            reconnectWs.send(JSON.stringify({
-              type: 'auth',
-              payload: { userId: user.id }
-            }));
-            
-            // Set up message handlers
-            reconnectWs.onmessage = (event) => {
-              try {
-                const message = JSON.parse(event.data);
-                console.log('[CallContext] Received message:', message);
-                handleWebSocketMessage(message);
-              } catch (error) {
-                console.error('[CallContext] Error parsing WebSocket message:', error);
-              }
-            };
-            
-            reconnectWs.onclose = () => {
-              console.log('[CallContext] WebSocket disconnected');
-              setWs(null);
-            };
-            
-            console.log('[CallContext] WebSocket reconnected successfully');
-            resolve();
-          };
-          
-          reconnectWs.onerror = (error) => {
-            clearTimeout(timeout);
-            console.error('[CallContext] WebSocket reconnection failed:', error);
-            reject(new Error('Connection failed'));
-          };
-        });
-        
-        await reconnectPromise;
-        
-        // Wait for authentication to complete
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-      } catch (error) {
-        console.error('[CallContext] Failed to reconnect WebSocket:', error);
-        alert('Koneksi terputus dan gagal menyambung kembali. Refresh halaman dan coba lagi.');
-        return;
-      }
+      console.log('[CallContext] WebSocket not connected, please refresh page');
+      alert('Koneksi terputus. Refresh halaman (F5) dan coba lagi.');
+      return;
     }
 
     console.log(`[CallContext] 📱 MOBILE: Starting ${callType} call to:`, peerName, 'from mobile device');
@@ -1053,9 +985,14 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
       const callId = `call_${Date.now()}_${user.id}_${peerUserId}`;
 
-      // Create RTCPeerConnection for offline/intranet mode (no internet required)
+      // Create RTCPeerConnection with STUN servers for cross-network calls
       const peerConnection = new RTCPeerConnection({
-        iceServers: [], // Empty array for local network only - no STUN/TURN servers
+        iceServers: [
+          // Public STUN servers for NAT traversal between different networks
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' }
+        ],
         iceTransportPolicy: 'all', // Allow both UDP and TCP
         bundlePolicy: 'max-bundle',
         rtcpMuxPolicy: 'require'
@@ -1141,40 +1078,22 @@ export function CallProvider({ children }: { children: ReactNode }) {
         console.error('[CallContext] Error creating WebRTC offer:', error);
       }
 
-      // Ensure WebSocket is still connected before sending message
-      if (!ws || ws.readyState !== WebSocket.OPEN) {
-        console.error('[CallContext] WebSocket disconnected during call setup');
-        alert('Koneksi terputus saat memulai panggilan. Silakan coba lagi.');
-        setActiveCall(null);
-        return;
-      }
+      // Send call initiation message (ws is guaranteed to be connected at this point)
+      ws!.send(JSON.stringify({
+        type: 'initiate_call',
+        payload: {
+          callId,
+          toUserId: peerUserId,
+          callType,
+          fromUserId: user.id,
+          fromUserName: user.callsign,
+        }
+      }));
 
-      // Send call initiation message
-      try {
-        ws.send(JSON.stringify({
-          type: 'initiate_call',
-          payload: {
-            callId,
-            toUserId: peerUserId,
-            callType,
-            fromUserId: user.id,
-            fromUserName: user.callsign,
-          }
-        }));
-        
-        console.log('[CallContext] Call initiation message sent successfully');
-        
-        // Navigate to call interface with a small delay to ensure state is set
-        setTimeout(() => {
-          setLocation(callType === 'video' ? '/video-call' : '/audio-call');
-        }, 100);
-        
-      } catch (error) {
-        console.error('[CallContext] Failed to send call initiation message:', error);
-        alert('Gagal mengirim permintaan panggilan. Silakan coba lagi.');
-        setActiveCall(null);
-        return;
-      }
+      // Navigate to call interface with a small delay to ensure state is set
+      setTimeout(() => {
+        setLocation(callType === 'video' ? '/video-call' : '/audio-call');
+      }, 100);
 
     } catch (error: any) {
       console.error('[CallContext] Error starting call:', error);

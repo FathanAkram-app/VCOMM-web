@@ -12,7 +12,6 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '../hooks/useAuth';
 import ChatRoom from '../components/ChatRoom';
 import IncomingCallModal from '../components/IncomingCallModal';
-import GroupVideoCall from '../components/GroupVideoCall';
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -32,11 +31,7 @@ export default function Chat() {
   const bottomRef = useRef<HTMLDivElement>(null);
   
   // View management
-  const [activeView, setActiveView] = useState<'chats' | 'calls' | 'personnel' | 'config' | 'group-calls'>('chats');
-  
-  // Group calls state
-  const [availableGroupCalls, setAvailableGroupCalls] = useState<any[]>([]);
-  const [currentGroupCall, setCurrentGroupCall] = useState<any>(null);
+  const [activeView, setActiveView] = useState<'chats' | 'calls' | 'personnel' | 'config'>('chats');
   
   // Personnel state
   const [filterText, setFilterText] = useState("");
@@ -49,9 +44,6 @@ export default function Chat() {
   const [wsConnected, setWsConnected] = useState(false);
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [lastMessageId, setLastMessageId] = useState<number>(0);
-  
-  // Hash routing for group video call
-  const [currentHash, setCurrentHash] = useState(window.location.hash);
   
   // Dialog states
   const [showNewGroupDialog, setShowNewGroupDialog] = useState(false);
@@ -244,29 +236,6 @@ export default function Chat() {
       console.error('Error fetching all users:', error);
     } finally {
       setIsLoadingPersonnel(false);
-    }
-  };
-
-  // Fetch available group calls
-  const fetchAvailableGroupCalls = async () => {
-    try {
-      const response = await fetch('/api/group-calls/available', {
-        headers: {
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache'
-        },
-        credentials: 'include'
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`Fetched ${data.length} available group calls`);
-        setAvailableGroupCalls(data);
-      } else {
-        console.error(`Failed to fetch group calls: ${response.status} ${response.statusText}`);
-      }
-    } catch (error) {
-      console.error('Error fetching group calls:', error);
     }
   };
   
@@ -570,35 +539,7 @@ export default function Chat() {
       console.error('Error logging out:', error);
     }
   };
-
-  // Listen to hash changes for group video call routing
-  useEffect(() => {
-    const handleHashChange = () => {
-      setCurrentHash(window.location.hash);
-    };
-    
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
-
-  // Check if we're currently in a group video call
-  const isGroupVideoCall = currentHash.startsWith('#group-video-');
-  const groupCallId = isGroupVideoCall ? currentHash.replace('#group-video-', '') : null;
   
-  // If we're in a group video call, show the GroupVideoCall component
-  if (isGroupVideoCall && groupCallId) {
-    return (
-      <GroupVideoCall 
-        groupCallId={groupCallId}
-        onEndCall={() => {
-          window.location.hash = '';
-          setCurrentHash('');
-          setCurrentGroupCall(null);
-        }}
-      />
-    );
-  }
-
   return (
     <div className="flex flex-col h-screen bg-black text-gray-100">
       {/* Header */}
@@ -754,216 +695,114 @@ export default function Chat() {
           
           {/* Call View */}
           {activeView === 'calls' && (
-            <div className="flex flex-col h-full">
-              <div className="flex justify-between items-center p-4 border-b border-[#333]">
-                <h2 className="text-xl font-semibold text-[#8d9c6b]">CALL</h2>
-              </div>
+            <div className="flex flex-col h-full p-4">
+              <h2 className="text-xl font-semibold text-[#8d9c6b] mb-6">Test Permission Media</h2>
               
-              <div className="flex-1 p-4 space-y-4 overflow-y-auto">
-                <div className="text-center p-8 bg-[#1a1a1a] rounded-lg border border-[#333]">
-                  <PhoneIcon className="h-16 w-16 text-[#8d9c6b] mx-auto mb-4 opacity-50" />
-                  <h3 className="text-xl text-white mb-2">Call Center</h3>
-                  <p className="text-gray-400 mb-6">Sistem komunikasi audio dan video tersedia</p>
-                  
-                  <div className="space-y-3">
-                    <p className="text-sm text-gray-500">Audio dan video calling terintegrasi dengan chat. Akses melalui tombol panggilan di setiap chat room.</p>
-                  </div>
+              <div className="space-y-4">
+                <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#333]">
+                  <h3 className="text-[#8d9c6b] font-medium mb-3">Test Microphone Permission</h3>
+                  <p className="text-gray-400 text-sm mb-4">
+                    Klik tombol ini untuk test akses microphone di HP Anda
+                  </p>
+                  <Button 
+                    className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
+                    onClick={async () => {
+                      try {
+                        console.log('[Test] Testing microphone permission...');
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        console.log('[Test] ✅ Microphone permission granted');
+                        
+                        // Stop the stream immediately
+                        stream.getTracks().forEach(track => track.stop());
+                        
+                        // Show success message
+                        const result = confirm('✅ MICROPHONE BERHASIL!\n\nMicrophone sudah bisa diakses. Audio call seharusnya berfungsi normal.\n\nKlik OK untuk melanjutkan atau Cancel untuk test ulang.');
+                        if (result) {
+                          console.log('[Test] User confirmed microphone working');
+                        }
+                      } catch (error: any) {
+                        console.error('[Test] ❌ Microphone permission failed:', error);
+                        const errorMsg = `❌ MICROPHONE GAGAL!\n\nError: ${error.name}\nPesan: ${error.message}\n\nSolusi:\n- Refresh halaman\n- Izinkan akses microphone di browser\n- Pastikan menggunakan HTTPS`;
+                        alert(errorMsg);
+                      }
+                    }}
+                  >
+                    Test Microphone
+                  </Button>
                 </div>
 
-                {/* Group Call Section */}
                 <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#333]">
-                  <h3 className="text-[#8d9c6b] font-medium mb-3">Tactical Group Operations</h3>
+                  <h3 className="text-[#8d9c6b] font-medium mb-3">Test Camera Permission</h3>
                   <p className="text-gray-400 text-sm mb-4">
-                    Create and manage multi-person tactical communications for coordinated operations
+                    Klik tombol ini untuk test akses camera di HP Anda
                   </p>
-                  <div className="space-y-2">
-                    <Button 
-                      className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338] border border-[#444]"
-                      onClick={() => {
-                        // Navigate to group call view
-                        setActiveView('group-calls' as any);
-                      }}
-                    >
-                      <Users className="mr-2 h-4 w-4" />
-                      Manage Group Calls
-                    </Button>
-                    <p className="text-xs text-gray-500">Create tactical groups, add members, start group video conferences</p>
-                  </div>
+                  <Button 
+                    className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
+                    onClick={async () => {
+                      try {
+                        console.log('[Test] Testing camera permission...');
+                        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                        console.log('[Test] ✅ Camera permission granted');
+                        
+                        // Stop the stream immediately
+                        stream.getTracks().forEach(track => track.stop());
+                        
+                        // Show success message
+                        const result = confirm('✅ CAMERA BERHASIL!\n\nCamera sudah bisa diakses. Video call seharusnya berfungsi normal.\n\nKlik OK untuk melanjutkan atau Cancel untuk test ulang.');
+                        if (result) {
+                          console.log('[Test] User confirmed camera working');
+                        }
+                      } catch (error: any) {
+                        console.error('[Test] ❌ Camera permission failed:', error);
+                        const errorMsg = `❌ CAMERA GAGAL!\n\nError: ${error.name}\nPesan: ${error.message}\n\nSolusi:\n- Refresh halaman\n- Izinkan akses camera di Chrome\n- Pastikan tidak ada app lain yang pakai camera`;
+                        alert(errorMsg);
+                      }
+                    }}
+                  >
+                    Test Camera
+                  </Button>
+                </div>
+
+                <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#333]">
+                  <h3 className="text-[#8d9c6b] font-medium mb-3">Test Both (Audio + Video)</h3>
+                  <p className="text-gray-400 text-sm mb-4">
+                    Test microphone dan camera sekaligus untuk video call
+                  </p>
+                  <Button 
+                    className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
+                    onClick={async () => {
+                      try {
+                        console.log('[Test] Testing both audio and video permission...');
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+                        console.log('[Test] ✅ Both permissions granted');
+                        
+                        // Stop the stream immediately
+                        stream.getTracks().forEach(track => track.stop());
+                        
+                        // Show success message
+                        const result = confirm('✅ AUDIO + VIDEO BERHASIL!\n\nMicrophone dan Camera sudah bisa diakses sekaligus. Video call dengan audio seharusnya berfungsi sempurna.\n\nKlik OK untuk melanjutkan atau Cancel untuk test ulang.');
+                        if (result) {
+                          console.log('[Test] User confirmed both audio and video working');
+                        }
+                      } catch (error: any) {
+                        console.error('[Test] ❌ Both permissions failed:', error);
+                        const errorMsg = `❌ AUDIO/VIDEO GAGAL!\n\nError: ${error.name}\nPesan: ${error.message}\n\nSolusi:\n- Test microphone dan camera satu per satu\n- Refresh halaman di Chrome\n- Izinkan kedua akses saat diminta\n- Pastikan HP tidak dalam mode hemat baterai`;
+                        alert(errorMsg);
+                      }
+                    }}
+                  >
+                    Test Audio + Video
+                  </Button>
                 </div>
 
                 <div className="bg-[#262626] rounded-lg p-4 border border-[#444]">
-                  <h3 className="text-yellow-400 font-medium mb-2">💡 Info:</h3>
+                  <h3 className="text-yellow-400 font-medium mb-2">💡 Tips untuk HP:</h3>
                   <ul className="text-gray-300 text-sm space-y-1">
-                    <li>• Individual calls available in each chat room</li>
-                    <li>• Group calls available through tactical operations</li>
-                    <li>• WebRTC technology for secure communications</li>
-                    <li>• Works on both mobile and desktop devices</li>
+                    <li>• Gunakan HTTPS (bukan HTTP)</li>
+                    <li>• Pastikan Chrome/Safari terbaru</li>
+                    <li>• Izinkan permission saat browser meminta</li>
+                    <li>• Refresh halaman jika permission ditolak</li>
                   </ul>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {/* Group Calls View */}
-          {activeView === 'group-calls' && (
-            <div className="flex flex-col h-full">
-              <div className="flex justify-between items-center p-4 border-b border-[#333]">
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setActiveView('calls')}
-                    className="text-gray-400 hover:text-white"
-                  >
-                    <ArrowLeft className="h-4 w-4 mr-1" />
-                    Back
-                  </Button>
-                  <h2 className="text-xl font-semibold text-[#8d9c6b]">Tactical Group Operations</h2>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={fetchAvailableGroupCalls}
-                  className="text-gray-400 hover:text-white"
-                >
-                  Refresh All
-                </Button>
-              </div>
-              
-              <div className="flex-1 p-4 space-y-4 overflow-y-auto">
-                <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#333]">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-[#8d9c6b] font-medium">Create New Tactical Group</h3>
-                    <Button 
-                      className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
-                      onClick={async () => {
-                        const groupName = prompt('Enter tactical group name:');
-                        if (groupName && user) {
-                          try {
-                            const response = await fetch('/api/group-calls', {
-                              method: 'POST',
-                              headers: {
-                                'Content-Type': 'application/json',
-                              },
-                              credentials: 'include',
-                              body: JSON.stringify({
-                                name: groupName,
-                                callType: 'video',
-                                memberIds: [] // Start with empty member list, creator will be added automatically
-                              })
-                            });
-                            
-                            if (response.ok) {
-                              const newGroup = await response.json();
-                              alert(`Tactical group "${groupName}" created successfully!`);
-                              // Refresh the page to show new group
-                              window.location.reload();
-                            } else {
-                              alert('Failed to create tactical group');
-                            }
-                          } catch (error) {
-                            console.error('Error creating group:', error);
-                            alert('Error creating tactical group');
-                          }
-                        }
-                      }}
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Create Group
-                    </Button>
-                  </div>
-                  <p className="text-gray-400 text-sm">
-                    Create a new tactical communication group for coordinated operations
-                  </p>
-                </div>
-
-                <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#333]">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-[#8d9c6b] font-medium">Available Tactical Groups</h3>
-                    <Button 
-                      className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
-                      size="sm"
-                      onClick={fetchAvailableGroupCalls}
-                    >
-                      Refresh
-                    </Button>
-                  </div>
-                  <div className="space-y-2">
-                    {availableGroupCalls.length > 0 ? (
-                      availableGroupCalls.map((groupCall) => (
-                        <div key={groupCall.id} className="flex items-center justify-between p-3 bg-[#262626] rounded border border-[#444]">
-                          <div>
-                            <h4 className="text-white font-medium">{groupCall.name}</h4>
-                            <p className="text-gray-400 text-sm">
-                              {groupCall.members?.length || 0} members • 
-                              {groupCall.callType === 'video' ? ' Video Call' : ' Audio Call'} • 
-                              {groupCall.status === 'active' ? ' Active' : ' Standby'}
-                            </p>
-                            {groupCall.description && (
-                              <p className="text-gray-500 text-xs mt-1">{groupCall.description}</p>
-                            )}
-                          </div>
-                          <div className="flex space-x-2">
-                            <Button 
-                              className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
-                              size="sm"
-                              onClick={async () => {
-                                try {
-                                  const response = await fetch(`/api/group-calls/${groupCall.id}/join`, {
-                                    method: 'POST',
-                                    credentials: 'include'
-                                  });
-                                  
-                                  if (response.ok) {
-                                    const data = await response.json();
-                                    console.log('Successfully joined group call:', data);
-                                    // Navigate to group video call
-                                    const hashValue = `group-video-${groupCall.id}`;
-                                    window.location.hash = hashValue;
-                                    setCurrentHash(hashValue);
-                                    console.log('Set hash to:', hashValue);
-                                  } else {
-                                    alert('Failed to join tactical group');
-                                  }
-                                } catch (error) {
-                                  console.error('Error joining group:', error);
-                                  alert('Error joining tactical group');
-                                }
-                              }}
-                            >
-                              Join
-                            </Button>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-center p-4 text-gray-500">
-                        <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">No tactical groups available</p>
-                        <p className="text-xs mt-1">Create a new group to start tactical communications</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#333]">
-                  <h3 className="text-[#8d9c6b] font-medium mb-3">Quick Actions</h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button 
-                      className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338] border border-[#444]"
-                      onClick={() => setActiveView('chats')}
-                    >
-                      <MessageSquare className="mr-2 h-4 w-4" />
-                      Back to Comms
-                    </Button>
-                    <Button 
-                      className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338] border border-[#444]"
-                      onClick={() => setActiveView('personnel')}
-                    >
-                      <User className="mr-2 h-4 w-4" />
-                      View Personnel
-                    </Button>
-                  </div>
                 </div>
               </div>
             </div>

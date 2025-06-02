@@ -791,155 +791,43 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
           </div>
         </div>
         
-        {/* Call buttons - show for both direct and group chats */}
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
-            onClick={() => {
-              if (isGroup) {
-                // Start group audio call
-                const groupMemberIds = chatMembers?.map((member: any) => member.userId).filter((id: number) => id !== user?.id) || [];
-                if (groupMemberIds.length > 0) {
-                  // Create group call ID
-                  const groupCallId = `group_${chatId}_${Date.now()}`;
-                  
-                  // Send group call initiation message to all members
-                  fetch('/api/group-calls/initiate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({
-                      groupCallId,
-                      conversationId: chatId,
-                      callType: 'audio',
-                      memberIds: groupMemberIds
-                    })
-                  }).then(response => {
-                    if (response.ok) {
-                      // Navigate to group audio call
-                      window.location.href = `/group-audio/${groupCallId}`;
-                    } else {
-                      alert('Gagal memulai group audio call');
-                    }
-                  });
-                } else {
-                  alert('Tidak ada anggota lain dalam grup');
-                }
-              } else {
-                // Find the other user ID for direct chat
-                console.log("[ChatRoom] Audio call - conversationMembers:", conversationMembers);
-                console.log("[ChatRoom] Audio call - allUsers:", allUsers);
-                console.log("[ChatRoom] Audio call - current user ID:", user?.id);
-                
-                const otherMember = conversationMembers?.find((member: any) => member.userId !== user?.id);
-                console.log("[ChatRoom] Audio call - found other member:", otherMember);
-                
-                if (otherMember && allUsers) {
-                  const otherUser = allUsers.find((u: any) => u.id === otherMember.userId);
-                  console.log("[ChatRoom] Audio call - found other user data:", otherUser);
-                  
-                  if (otherUser) {
-                    const targetUserId = otherUser.id;
-                    const targetUserName = otherUser.callsign || otherUser.fullName || 'Unknown';
-                    
-                    console.log("[ChatRoom] Starting audio call to:", { targetUserId, targetUserName });
-                    
-                    if (typeof startCall === 'function') {
-                      startCall(targetUserId, targetUserName, 'audio');
-                    } else {
-                      console.error("[ChatRoom] startCall is not a function:", typeof startCall);
-                      alert('Fungsi panggilan tidak tersedia. Silakan refresh halaman.');
-                    }
-                  } else {
-                    console.error("[ChatRoom] Could not find user data for audio call");
-                    alert('Tidak dapat menemukan data lawan bicara untuk panggilan audio.');
+        {/* Call buttons - only show for direct chats */}
+        {!isGroup && (
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
+              onClick={() => {
+                if (chatData && chatMembers) {
+                  // Get the other user's ID from chat members
+                  const otherMember = chatMembers.find((member: any) => member.userId !== user?.id);
+                  if (otherMember) {
+                    startCall(otherMember.userId, chatData.name, 'audio');
                   }
-                } else {
-                  console.error("[ChatRoom] Could not find other member for audio call");
-                  alert('Tidak dapat menemukan lawan bicara untuk panggilan audio.');
                 }
-              }
-            }}
-            title={isGroup ? "Start Group Audio Call" : "Start Audio Call"}
-          >
-            <Phone className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
-            onClick={() => {
-              if (isGroup) {
-                // Start group video call
-                const groupMemberIds = chatMembers?.map((member: any) => member.userId).filter((id: number) => id !== user?.id) || [];
-                if (groupMemberIds.length > 0) {
-                  // Create group call ID
-                  const groupCallId = `group_${chatId}_${Date.now()}`;
-                  
-                  // Send group call initiation message to all members
-                  fetch('/api/group-calls/initiate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({
-                      groupCallId,
-                      conversationId: chatId,
-                      callType: 'video',
-                      memberIds: groupMemberIds
-                    })
-                  }).then(response => {
-                    if (response.ok) {
-                      // Navigate to group video call
-                      window.location.href = `/group-video/${groupCallId}`;
-                    } else {
-                      alert('Gagal memulai group video call');
-                    }
-                  });
-                } else {
-                  alert('Tidak ada anggota lain dalam grup');
-                }
-              } else {
-                // Find the other user ID for direct chat
-                console.log("[ChatRoom] Video call - conversationMembers:", conversationMembers);
-                console.log("[ChatRoom] Video call - allUsers:", allUsers);
-                console.log("[ChatRoom] Video call - current user ID:", user?.id);
-                
-                const otherMember = conversationMembers?.find((member: any) => member.userId !== user?.id);
-                console.log("[ChatRoom] Video call - found other member:", otherMember);
-                
-                if (otherMember && allUsers) {
-                  const otherUser = allUsers.find((u: any) => u.id === otherMember.userId);
-                  console.log("[ChatRoom] Video call - found other user data:", otherUser);
-                  
-                  if (otherUser) {
-                    const targetUserId = otherUser.id;
-                    const targetUserName = otherUser.callsign || otherUser.fullName || 'Unknown';
-                    
-                    console.log("[ChatRoom] Starting video call to:", { targetUserId, targetUserName });
-                    
-                    if (typeof startCall === 'function') {
-                      startCall(targetUserId, targetUserName, 'video');
-                    } else {
-                      console.error("[ChatRoom] startCall is not a function:", typeof startCall);
-                      alert('Fungsi panggilan tidak tersedia. Silakan refresh halaman.');
-                    }
-                  } else {
-                    console.error("[ChatRoom] Could not find user data for video call");
-                    alert('Tidak dapat menemukan data lawan bicara untuk panggilan video.');
+              }}
+            >
+              <Phone className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
+              onClick={() => {
+                if (chatData && chatMembers) {
+                  // Get the other user's ID from chat members
+                  const otherMember = chatMembers.find((member: any) => member.userId !== user?.id);
+                  if (otherMember) {
+                    startCall(otherMember.userId, chatData.name, 'video');
                   }
-                } else {
-                  console.error("[ChatRoom] Could not find other member for video call");
-                  alert('Tidak dapat menemukan lawan bicara untuk panggilan video.');
                 }
-              }
-            }}
-            title={isGroup ? "Start Group Video Call" : "Start Video Call"}
-          >
-            <Video className="h-5 w-5" />
-          </Button>
-        </div>
+              }}
+            >
+              <Video className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </div>
       
       {/* Delete Message Dialog */}

@@ -7,95 +7,26 @@ export function useWebSocket() {
   const [error, setError] = useState<string | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
   const { user } = useAuth();
-  const messageListenersRef = useRef<Set<(data: any) => void>>(new Set());
 
+  // WebSocket connection dinonaktifkan untuk mencegah error
   useEffect(() => {
-    if (!user) return;
-
-    let reconnectTimeout: NodeJS.Timeout;
+    // Tidak perlu mencoba koneksi WebSocket lagi
+    console.log("WebSocket dinonaktifkan untuk komunikasi offline");
     
-    const connectWebSocket = () => {
-      try {
-        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-        const wsUrl = `${protocol}//${window.location.host}/ws`;
-        
-        console.log("[WebSocket] Connecting to:", wsUrl);
-        socketRef.current = new WebSocket(wsUrl);
-
-        socketRef.current.onopen = () => {
-          console.log("[WebSocket] Connected successfully");
-          setIsConnected(true);
-          setError(null);
-          
-          // Authenticate user
-          if (socketRef.current && user) {
-            socketRef.current.send(JSON.stringify({
-              type: 'auth',
-              payload: { userId: user.id }
-            }));
-          }
-        };
-
-        socketRef.current.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            console.log("[WebSocket] Received message:", data);
-            
-            // Notify all listeners
-            messageListenersRef.current.forEach(listener => {
-              try {
-                listener(data);
-              } catch (error) {
-                console.error("[WebSocket] Error in message listener:", error);
-              }
-            });
-          } catch (error) {
-            console.error("[WebSocket] Failed to parse message:", error);
-          }
-        };
-
-        socketRef.current.onclose = () => {
-          console.log("[WebSocket] Connection closed");
-          setIsConnected(false);
-          
-          // Attempt to reconnect after 3 seconds
-          if (user) {
-            reconnectTimeout = setTimeout(connectWebSocket, 3000);
-          }
-        };
-
-        socketRef.current.onerror = (error) => {
-          console.error("[WebSocket] Error:", error);
-          setError("WebSocket connection failed");
-        };
-      } catch (error) {
-        console.error("[WebSocket] Failed to create connection:", error);
-        setError("Failed to create WebSocket connection");
-      }
-    };
-
-    connectWebSocket();
-
+    // Tidak ada koneksi WebSocket, gunakan polling sebagai gantinya
     return () => {
-      if (reconnectTimeout) {
-        clearTimeout(reconnectTimeout);
-      }
-      if (socketRef.current) {
-        socketRef.current.close();
-      }
+      // Cleanup tidak diperlukan
     };
   }, [user]);
 
+  // Metode pengiriman pesan diubah agar tidak mencoba menggunakan WebSocket yang dinonaktifkan
   const sendMessage = useCallback((message: WebSocketMessage) => {
-    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      socketRef.current.send(JSON.stringify(message));
-      return true;
-    } else {
-      console.warn("[WebSocket] Cannot send message - not connected");
-      return false;
-    }
+    // WebSocket dinonaktifkan, tidak perlu mencoba mengirim pesan
+    console.log("WebSocket dinonaktifkan, pesan tidak dikirim:", message);
+    return false;
   }, []);
 
+  // Send typing indicator
   const sendTypingIndicator = useCallback((conversationId: number, isTyping: boolean) => {
     return sendMessage({
       type: 'typing',
@@ -106,16 +37,16 @@ export function useWebSocket() {
     });
   }, [sendMessage]);
 
-  const addMessageListener = useCallback((callback: (data: any) => void) => {
-    messageListenersRef.current.add(callback);
+  // Add message listener - dimodifikasi agar tidak mencoba menggunakan WebSocket
+  const addMessageListener = useCallback((callback: (data: WebSocketMessage) => void) => {
+    // WebSocket dinonaktifkan, listener tidak akan menerima pesan
+    console.log("WebSocket dinonaktifkan, message listener tidak aktif");
     
-    return () => {
-      messageListenersRef.current.delete(callback);
-    };
+    // Return fungsi cleanup kosong
+    return () => {};
   }, []);
 
   return {
-    socket: socketRef.current,
     isConnected,
     error,
     sendMessage,
