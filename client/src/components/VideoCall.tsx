@@ -26,7 +26,7 @@ export default function VideoCall() {
   useEffect(() => {
     console.log("[VideoCall] Remote stream changed:", remoteAudioStream);
     if (remoteVideoRef.current && remoteAudioStream) {
-      console.log("[VideoCall] Setting remote stream to video element");
+      console.log("[VideoCall] ✅ Setting remote stream to video element");
       console.log("[VideoCall] Remote stream details:", {
         id: remoteAudioStream.id,
         active: remoteAudioStream.active,
@@ -47,12 +47,36 @@ export default function VideoCall() {
       
       remoteVideoRef.current.srcObject = remoteAudioStream;
       
+      // Enable autoplay and set volume
+      remoteVideoRef.current.autoplay = true;
+      remoteVideoRef.current.playsInline = true;
+      remoteVideoRef.current.muted = false; // Don't mute - we want audio!
+      remoteVideoRef.current.volume = 1.0;
+      
       // Attempt to play the video
       remoteVideoRef.current.play().then(() => {
-        console.log("[VideoCall] ✅ Remote video playing successfully");
+        console.log("[VideoCall] ✅ Remote video playing successfully with audio");
       }).catch(error => {
         console.error("[VideoCall] ❌ Remote video play failed:", error);
+        // Try muted autoplay as fallback
+        remoteVideoRef.current.muted = true;
+        remoteVideoRef.current.play().then(() => {
+          console.log("[VideoCall] ✅ Remote video playing (muted fallback)");
+          // Unmute after starting
+          setTimeout(() => {
+            if (remoteVideoRef.current) {
+              remoteVideoRef.current.muted = false;
+              console.log("[VideoCall] 🔊 Unmuted remote video after autoplay");
+            }
+          }, 100);
+        }).catch(err => {
+          console.error("[VideoCall] ❌ Even muted autoplay failed:", err);
+        });
       });
+    } else if (!remoteAudioStream) {
+      console.log("[VideoCall] ⏳ Waiting for remote stream...");
+    } else if (!remoteVideoRef.current) {
+      console.log("[VideoCall] ⏳ Waiting for video element...");
     }
   }, [remoteAudioStream]);
   
