@@ -84,24 +84,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Download certificate for mobile HTTPS setup
-  app.get('/cert.pem', (req, res) => {
-    const fs = require('fs');
-    const path = require('path');
-    
-    try {
-      const certPath = path.join(process.cwd(), 'cert.pem');
-      if (fs.existsSync(certPath)) {
-        res.setHeader('Content-Type', 'application/x-pem-file');
-        res.setHeader('Content-Disposition', 'attachment; filename="cert.pem"');
-        res.sendFile(certPath);
-      } else {
-        res.status(404).send('Certificate file not found. Please generate certificate first.');
-      }
-    } catch (error) {
-      res.status(500).send('Error accessing certificate file');
-    }
-  });
+
 
   // Get all users (for personnel list)
   app.get('/api/all-users', isAuthenticated, async (req: AuthRequest, res) => {

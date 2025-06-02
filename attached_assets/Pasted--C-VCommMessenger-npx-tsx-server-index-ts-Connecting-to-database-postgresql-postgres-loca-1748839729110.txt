@@ -1,0 +1,39 @@
+
+C:\VCommMessenger>npx tsx server/index.ts
+Connecting to database: postgresql://postgres:****@localhost:5432/nxzz_vcomm
+Setting up WebSocket server on path /ws
+🌐 Using HTTP (HTTPS certificates not found)
+12:48:11 PM [express] serving on http://0.0.0.0:5000
+Browserslist: browsers data (caniuse-lite) is 8 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+Checking authentication: User found
+12:48:17 PM [express] GET /api/auth/user 200 in 81ms :: {"id":3,"callsign":"aji","nrp":"12312311","fu…
+WebSocket connection received
+Received message: {"type":"auth","payload":{"userId":3}}
+User 3 authenticated via WebSocket
+ReferenceError: require is not defined
+    at <anonymous> (C:\VCommMessenger\server\routes.ts:89:16)
+    at Layer.handle [as handle_request] (C:\VCommMessenger\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\VCommMessenger\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\VCommMessenger\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\VCommMessenger\node_modules\express\lib\router\layer.js:95:5)
+    at C:\VCommMessenger\node_modules\express\lib\router\index.js:284:15
+    at Function.process_params (C:\VCommMessenger\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\VCommMessenger\node_modules\express\lib\router\index.js:280:10)
+    at C:\VCommMessenger\node_modules\express-session\index.js:514:7
+    at C:\VCommMessenger\node_modules\connect-pg-simple\index.js:370:18
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+WebSocket connection closed
+ReferenceError: require is not defined
+    at <anonymous> (C:\VCommMessenger\server\routes.ts:89:16)
+    at Layer.handle [as handle_request] (C:\VCommMessenger\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\VCommMessenger\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\VCommMessenger\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\VCommMessenger\node_modules\express\lib\router\layer.js:95:5)
+    at C:\VCommMessenger\node_modules\express\lib\router\index.js:284:15
+    at Function.process_params (C:\VCommMessenger\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\VCommMessenger\node_modules\express\lib\router\index.js:280:10)
+    at C:\VCommMessenger\node_modules\express-session\index.js:514:7
+    at C:\VCommMessenger\node_modules\connect-pg-simple\index.js:370:18
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
