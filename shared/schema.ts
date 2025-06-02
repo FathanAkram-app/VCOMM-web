@@ -140,9 +140,51 @@ export const insertConversationMemberSchema = createInsertSchema(conversationMem
 });
 export type InsertConversationMember = z.infer<typeof insertConversationMemberSchema>;
 
+// Group calls table
+export const groupCalls = pgTable("group_calls", {
+  id: serial("id").primaryKey(),
+  name: varchar("name").notNull(),
+  callType: varchar("call_type").notNull(), // 'audio' | 'video'
+  creatorId: integer("creator_id").references(() => users.id).notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  endedAt: timestamp("ended_at"),
+});
+
+// Group call members table
+export const groupCallMembers = pgTable("group_call_members", {
+  id: serial("id").primaryKey(),
+  groupCallId: integer("group_call_id").references(() => groupCalls.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  hasJoined: boolean("has_joined").default(false),
+  isActive: boolean("is_active").default(false),
+  isMuted: boolean("is_muted").default(false),
+  joinedAt: timestamp("joined_at"),
+  leftAt: timestamp("left_at"),
+}, (table) => [
+  unique().on(table.groupCallId, table.userId)
+]);
+
+// Group call types
+export type GroupCall = typeof groupCalls.$inferSelect;
+export type GroupCallMember = typeof groupCallMembers.$inferSelect;
+
+export const insertGroupCallSchema = createInsertSchema(groupCalls).pick({
+  name: true,
+  callType: true,
+  creatorId: true,
+});
+export type InsertGroupCall = z.infer<typeof insertGroupCallSchema>;
+
+export const insertGroupCallMemberSchema = createInsertSchema(groupCallMembers).pick({
+  groupCallId: true,
+  userId: true,
+});
+export type InsertGroupCallMember = z.infer<typeof insertGroupCallMemberSchema>;
+
 // WebSocket message types
 export type WebSocketMessage = {
-  type: 'new_message' | 'user_status' | 'typing' | 'read_receipt';
+  type: 'new_message' | 'user_status' | 'typing' | 'read_receipt' | 'group_call_created' | 'group_call_joined' | 'group_call_left' | 'group_call_ended';
   payload: any;
 };
 
