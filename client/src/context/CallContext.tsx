@@ -207,6 +207,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
         }));
         console.log(`[CallContext] Authenticated user ${user.id} with WebSocket`);
       }
+      
+      // Send any pending WebRTC offer
+      if ((window as any).__pendingWebRTCOffer) {
+        websocket.send(JSON.stringify((window as any).__pendingWebRTCOffer));
+        console.log('[CallContext] ✅ Sent pending WebRTC offer after connection');
+        (window as any).__pendingWebRTCOffer = null;
+      }
     };
 
     websocket.onmessage = (event) => {
@@ -600,38 +607,29 @@ export function CallProvider({ children }: { children: ReactNode }) {
         await currentActiveCall.peerConnection.setLocalDescription(offer);
         console.log('[CallContext] Local description set successfully');
 
-        // Send offer to the other peer - with retry mechanism
-        const sendOffer = () => {
-          if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({
-              type: 'webrtc_offer',
-              callId: currentActiveCall.callId,
-              offer: offer
-            }));
-            console.log('[CallContext] ✅ Sent WebRTC offer after receiver ready');
-            return true;
-          }
-          return false;
+        // Store offer for sending when WebSocket is ready
+        (window as any).__pendingWebRTCOffer = {
+          type: 'webrtc_offer',
+          callId: currentActiveCall.callId,
+          offer: offer
         };
         
         // Try to send immediately
-        if (!sendOffer()) {
-          console.log('[CallContext] ⚠️ WebSocket not ready, waiting for connection...');
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify((window as any).__pendingWebRTCOffer));
+          console.log('[CallContext] ✅ Sent WebRTC offer immediately');
+          (window as any).__pendingWebRTCOffer = null;
+        } else {
+          console.log('[CallContext] ⚠️ WebSocket not ready, offer stored for when connection is available');
           
-          // Wait a bit and retry (WebSocket might be reconnecting)
-          let retryCount = 0;
-          const retryInterval = setInterval(() => {
-            retryCount++;
-            
-            if (sendOffer()) {
-              clearInterval(retryInterval);
-              console.log('[CallContext] ✅ WebRTC offer sent after retry');
-            } else if (retryCount >= 10) { // 5 second timeout (500ms * 10)
-              clearInterval(retryInterval);
-              console.error('[CallContext] ❌ Failed to send WebRTC offer after 5 seconds');
+          // Set timeout to fail if no connection after 10 seconds
+          setTimeout(() => {
+            if ((window as any).__pendingWebRTCOffer) {
+              console.error('[CallContext] ❌ Failed to send WebRTC offer - timeout');
+              (window as any).__pendingWebRTCOffer = null;
               hangupCall();
             }
-          }, 500);
+          }, 10000);
         }
       } catch (error) {
         console.error('[CallContext] ❌ Error creating WebRTC offer after receiver ready:', error);
