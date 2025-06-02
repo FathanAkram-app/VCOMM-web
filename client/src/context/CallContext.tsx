@@ -937,8 +937,23 @@ export function CallProvider({ children }: { children: ReactNode }) {
       });
       console.log('[CallContext] ✅ Successfully got media stream:', {
         audioTracks: localStream.getAudioTracks().length,
-        videoTracks: localStream.getVideoTracks().length
+        videoTracks: localStream.getVideoTracks().length,
+        callType: callType
       });
+      
+      // Debug track details for video calls
+      if (callType === 'video') {
+        console.log('[CallContext] 📹 Video call tracks details:');
+        localStream.getTracks().forEach((track, index) => {
+          console.log(`[CallContext] Local track ${index}:`, {
+            kind: track.kind,
+            enabled: track.enabled,
+            readyState: track.readyState,
+            id: track.id,
+            label: track.label
+          });
+        });
+      }
 
       const callId = `call_${Date.now()}_${user.id}_${peerUserId}`;
 

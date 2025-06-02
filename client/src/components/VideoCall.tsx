@@ -27,6 +27,24 @@ export default function VideoCall() {
     console.log("[VideoCall] Remote stream changed:", remoteAudioStream);
     if (remoteVideoRef.current && remoteAudioStream) {
       console.log("[VideoCall] Setting remote stream to video element");
+      console.log("[VideoCall] Remote stream details:", {
+        id: remoteAudioStream.id,
+        active: remoteAudioStream.active,
+        audioTracks: remoteAudioStream.getAudioTracks().length,
+        videoTracks: remoteAudioStream.getVideoTracks().length
+      });
+      
+      // Log track details
+      remoteAudioStream.getTracks().forEach((track, index) => {
+        console.log(`[VideoCall] Track ${index}:`, {
+          kind: track.kind,
+          enabled: track.enabled,
+          muted: track.muted,
+          readyState: track.readyState,
+          id: track.id
+        });
+      });
+      
       remoteVideoRef.current.srcObject = remoteAudioStream;
       
       // Attempt to play the video
