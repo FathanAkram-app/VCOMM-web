@@ -934,11 +934,20 @@ export function CallProvider({ children }: { children: ReactNode }) {
         peerConnection.addTrack(track, localStream);
       });
 
-      // Handle incoming remote stream
+      // Handle incoming remote stream for caller
       peerConnection.ontrack = (event) => {
-        console.log('[CallContext] Received remote stream in startCall');
+        console.log('[CallContext] 📡 CALLER: Received remote stream in startCall');
         const remoteStream = event.streams[0];
-        console.log('[CallContext] Remote stream tracks:', remoteStream.getTracks().length);
+        console.log('[CallContext] 📡 CALLER: Remote stream details:', {
+          id: remoteStream.id,
+          active: remoteStream.active,
+          audioTracks: remoteStream.getAudioTracks().length,
+          videoTracks: remoteStream.getVideoTracks().length
+        });
+        
+        // Store remote stream globally for AudioCall component
+        console.log('[CallContext] 📡 CALLER: Storing remote stream globally');
+        setRemoteAudioStream(remoteStream);
         
         // Find and setup audio element for remote stream
         setTimeout(() => {
@@ -947,12 +956,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
             audioElement.srcObject = remoteStream;
             audioElement.volume = 1.0;
             audioElement.play().then(() => {
-              console.log('[CallContext] ✅ Remote audio playing successfully in startCall');
+              console.log('[CallContext] ✅ CALLER: Remote audio playing successfully in startCall');
             }).catch(e => {
-              console.log('[CallContext] Remote audio autoplay failed in startCall:', e);
+              console.log('[CallContext] CALLER: Remote audio autoplay failed in startCall:', e);
             });
           } else {
-            console.log('[CallContext] ❌ Remote audio element not found in startCall');
+            console.log('[CallContext] ❌ CALLER: Remote audio element not found in startCall');
           }
         }, 100);
       };
@@ -1159,9 +1168,18 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
       // Setup remote stream handler for receiver
       peerConnection.ontrack = (event) => {
-        console.log('[CallContext] Receiver: Received remote stream');
+        console.log('[CallContext] 📡 RECEIVER: Received remote stream');
         const remoteStream = event.streams[0];
-        console.log('[CallContext] Receiver: Remote stream tracks:', remoteStream.getTracks().length);
+        console.log('[CallContext] 📡 RECEIVER: Remote stream details:', {
+          id: remoteStream.id,
+          active: remoteStream.active,
+          audioTracks: remoteStream.getAudioTracks().length,
+          videoTracks: remoteStream.getVideoTracks().length
+        });
+        
+        // Store remote stream globally for AudioCall component
+        console.log('[CallContext] 📡 RECEIVER: Storing remote stream globally');
+        setRemoteAudioStream(remoteStream);
         
         // Find and setup audio element for remote stream
         setTimeout(() => {
@@ -1170,12 +1188,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
             audioElement.srcObject = remoteStream;
             audioElement.volume = 1.0;
             audioElement.play().then(() => {
-              console.log('[CallContext] ✅ Receiver: Remote audio playing successfully');
+              console.log('[CallContext] ✅ RECEIVER: Remote audio playing successfully');
             }).catch(e => {
-              console.log('[CallContext] Receiver: Remote audio autoplay failed:', e);
+              console.log('[CallContext] RECEIVER: Remote audio autoplay failed:', e);
             });
           } else {
-            console.log('[CallContext] ❌ Receiver: Remote audio element not found');
+            console.log('[CallContext] ❌ RECEIVER: Remote audio element not found');
           }
         }, 100);
       };
