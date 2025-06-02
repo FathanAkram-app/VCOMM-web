@@ -909,9 +909,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
       // Ultra-simple constraints for maximum mobile compatibility
       let constraints;
       if (callType === 'video') {
+        // Try progressively simpler video constraints for mobile
         constraints = { 
           audio: true, 
-          video: { 
+          video: isMobile ? {
+            width: { max: 640 },
+            height: { max: 480 },
+            facingMode: 'user',
+            frameRate: { max: 15 }
+          } : {
             width: { ideal: 640 },
             height: { ideal: 480 },
             facingMode: 'user'
@@ -928,12 +934,34 @@ export function CallProvider({ children }: { children: ReactNode }) {
       const localStream = await navigator.mediaDevices.getUserMedia(constraints).catch(async (error) => {
         console.error('[CallContext] Failed with optimized constraints, trying fallback:', error);
         
-        // Fallback to most basic constraints
-        const fallbackConstraints = callType === 'video' 
-          ? { audio: true, video: true }
-          : { audio: true };
-          
-        return await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+        // First fallback - very basic video constraints
+        if (callType === 'video') {
+          try {
+            console.log('[CallContext] 📱 Mobile video fallback 1: basic constraints');
+            return await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+          } catch (error2) {
+            console.error('[CallContext] 📱 Mobile video fallback 1 failed:', error2);
+            
+            // Second fallback - try rear camera
+            try {
+              console.log('[CallContext] 📱 Mobile video fallback 2: rear camera');
+              return await navigator.mediaDevices.getUserMedia({ 
+                audio: true, 
+                video: { facingMode: 'environment' }
+              });
+            } catch (error3) {
+              console.error('[CallContext] 📱 Mobile video fallback 2 failed:', error3);
+              
+              // Final fallback - audio only for video calls
+              console.log('[CallContext] 📱 Mobile video fallback 3: audio only');
+              alert('Camera tidak tersedia. Video call akan menggunakan audio saja.');
+              return await navigator.mediaDevices.getUserMedia({ audio: true });
+            }
+          }
+        } else {
+          // Audio call fallback
+          return await navigator.mediaDevices.getUserMedia({ audio: true });
+        }
       });
       console.log('[CallContext] ✅ Successfully got media stream:', {
         audioTracks: localStream.getAudioTracks().length,
