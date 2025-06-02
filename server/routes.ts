@@ -807,6 +807,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Store active connections
   const clients = new Map<number, AuthenticatedWebSocket>();
+  const userConnections = new Map<number, Set<AuthenticatedWebSocket>>();
   
   wss.on('connection', (ws: AuthenticatedWebSocket, req) => {
     console.log("WebSocket connection received");
@@ -828,6 +829,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`User ${userId} authenticated via WebSocket`);
             ws.userId = userId;
             clients.set(userId, ws);
+            
+            // Add to userConnections
+            if (!userConnections.has(userId)) {
+              userConnections.set(userId, new Set());
+            }
+            userConnections.get(userId)!.add(ws);
             
             // Update user status to online
             await storage.updateUserStatus(userId, 'online');
@@ -1116,6 +1123,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (ws.userId) {
         const userId = ws.userId;
         clients.delete(userId);
+        
+        // Remove from userConnections
+        const userConns = userConnections.get(userId);
+        if (userConns) {
+          userConns.delete(ws);
+          if (userConns.size === 0) {
+            userConnections.delete(userId);
+          }
+        }
         
         // Update user status to offline
         await storage.updateUserStatus(userId, 'offline');
