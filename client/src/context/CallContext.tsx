@@ -1047,9 +1047,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
         ringtoneAudio.currentTime = 0;
         ringtoneAudio.volume = 0;
         ringtoneAudio.muted = true;
-        ringtoneAudio.src = ''; // Clear the source
-        ringtoneAudio.load(); // Force reload to stop any buffer
-        console.log('[CallContext] ✅ HTML5 ringtone force stopped');
+        ringtoneAudio.src = '';
+        ringtoneAudio.srcObject = null;
+        ringtoneAudio.load();
+        // Remove from DOM completely
+        if (ringtoneAudio.parentNode) {
+          ringtoneAudio.parentNode.removeChild(ringtoneAudio);
+        }
+        setRingtoneAudio(null);
+        console.log('[CallContext] ✅ HTML5 ringtone completely removed');
       } catch (e) {
         console.log('[CallContext] HTML5 stop error:', e);
       }
@@ -1057,19 +1063,37 @@ export function CallProvider({ children }: { children: ReactNode }) {
       console.log('[CallContext] ❌ No HTML5 ringtone audio object found');
     }
     
-    // Method 2: Stop all audio contexts globally
+    // Method 2: Stop all audio contexts globally (aggressive approach)
     try {
       console.log('[CallContext] 🔇 Force stopping ALL Web Audio API contexts');
-      // Try to stop any running AudioContext
+      
+      // Stop any stored audio contexts
       const audioContexts = (window as any).webAudioContexts || [];
       audioContexts.forEach((ctx: AudioContext, index: number) => {
         try {
           ctx.suspend();
-          console.log(`[CallContext] ✅ Suspended AudioContext ${index}`);
+          ctx.close();
+          console.log(`[CallContext] ✅ Closed AudioContext ${index}`);
         } catch (e) {
-          console.log(`[CallContext] Failed to suspend AudioContext ${index}:`, e);
+          console.log(`[CallContext] Failed to close AudioContext ${index}:`, e);
         }
       });
+      
+      // Clear the stored contexts
+      (window as any).webAudioContexts = [];
+      
+      // Try to stop any global audio sources
+      if ((window as any).globalAudioSource) {
+        try {
+          (window as any).globalAudioSource.stop();
+          (window as any).globalAudioSource.disconnect();
+          delete (window as any).globalAudioSource;
+          console.log('[CallContext] ✅ Global audio source stopped');
+        } catch (e) {
+          console.log('[CallContext] Error stopping global audio source:', e);
+        }
+      }
+      
     } catch (e) {
       console.log('[CallContext] Audio context suspend error:', e);
     }

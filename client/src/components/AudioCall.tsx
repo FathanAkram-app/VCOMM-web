@@ -24,11 +24,25 @@ export default function AudioCall() {
       console.log("[AudioCall] ✅ Found remote audio element, setting stream");
       audioElement.srcObject = remoteAudioStream;
       audioElement.volume = 1.0;
-      audioElement.play().then(() => {
-        console.log('[AudioCall] ✅ Remote audio playing successfully');
-      }).catch(e => {
-        console.log('[AudioCall] Remote audio autoplay failed:', e);
-      });
+      audioElement.autoplay = true;
+      audioElement.muted = false;
+      
+      // Force audio to play with multiple attempts
+      const tryPlay = async (attempt = 1) => {
+        try {
+          await audioElement.play();
+          console.log(`[AudioCall] ✅ Remote audio playing successfully (attempt ${attempt})`);
+        } catch (e) {
+          console.log(`[AudioCall] Remote audio play failed attempt ${attempt}:`, e);
+          if (attempt < 3) {
+            setTimeout(() => tryPlay(attempt + 1), 500);
+          } else {
+            console.log('[AudioCall] ❌ Failed to play remote audio after 3 attempts');
+          }
+        }
+      };
+      
+      tryPlay();
     } else {
       console.log("[AudioCall] ❌ Remote audio element not found");
     }
@@ -95,6 +109,14 @@ export default function AudioCall() {
   
   return (
     <div className="h-full w-full flex flex-col bg-[#171717]">
+      {/* Hidden audio element for remote stream */}
+      <audio 
+        id="remoteAudio"
+        autoPlay
+        playsInline
+        style={{ display: 'none' }}
+      />
+      
       {/* Audio Call UI */}
       <div className="flex-1 flex flex-col">
         {/* Call Info Header */}
