@@ -829,26 +829,35 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                 }
               } else {
                 // Find the other user ID for direct chat
-                console.log("[ChatRoom] Audio call - chatMembers:", chatMembers);
+                console.log("[ChatRoom] Audio call - conversationMembers:", conversationMembers);
+                console.log("[ChatRoom] Audio call - allUsers:", allUsers);
                 console.log("[ChatRoom] Audio call - current user ID:", user?.id);
                 
-                const otherUser = chatMembers?.find((member: any) => member.userId !== user?.id);
-                console.log("[ChatRoom] Audio call - found other user:", otherUser);
+                const otherMember = conversationMembers?.find((member: any) => member.userId !== user?.id);
+                console.log("[ChatRoom] Audio call - found other member:", otherMember);
                 
-                if (otherUser && otherUser.user) {
-                  const targetUserId = otherUser.userId;
-                  const targetUserName = otherUser.user.callsign || otherUser.user.fullName || 'Unknown';
+                if (otherMember && allUsers) {
+                  const otherUser = allUsers.find((u: any) => u.id === otherMember.userId);
+                  console.log("[ChatRoom] Audio call - found other user data:", otherUser);
                   
-                  console.log("[ChatRoom] Starting audio call to:", { targetUserId, targetUserName });
-                  
-                  if (typeof startCall === 'function') {
-                    startCall(targetUserId, targetUserName, 'audio');
+                  if (otherUser) {
+                    const targetUserId = otherUser.id;
+                    const targetUserName = otherUser.callsign || otherUser.fullName || 'Unknown';
+                    
+                    console.log("[ChatRoom] Starting audio call to:", { targetUserId, targetUserName });
+                    
+                    if (typeof startCall === 'function') {
+                      startCall(targetUserId, targetUserName, 'audio');
+                    } else {
+                      console.error("[ChatRoom] startCall is not a function:", typeof startCall);
+                      alert('Fungsi panggilan tidak tersedia. Silakan refresh halaman.');
+                    }
                   } else {
-                    console.error("[ChatRoom] startCall is not a function:", typeof startCall);
-                    alert('Fungsi panggilan tidak tersedia. Silakan refresh halaman.');
+                    console.error("[ChatRoom] Could not find user data for audio call");
+                    alert('Tidak dapat menemukan data lawan bicara untuk panggilan audio.');
                   }
                 } else {
-                  console.error("[ChatRoom] Could not find other user for audio call");
+                  console.error("[ChatRoom] Could not find other member for audio call");
                   alert('Tidak dapat menemukan lawan bicara untuk panggilan audio.');
                 }
               }
@@ -893,26 +902,35 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                 }
               } else {
                 // Find the other user ID for direct chat
-                console.log("[ChatRoom] Video call - chatMembers:", chatMembers);
+                console.log("[ChatRoom] Video call - conversationMembers:", conversationMembers);
+                console.log("[ChatRoom] Video call - allUsers:", allUsers);
                 console.log("[ChatRoom] Video call - current user ID:", user?.id);
                 
-                const otherUser = chatMembers?.find((member: any) => member.userId !== user?.id);
-                console.log("[ChatRoom] Video call - found other user:", otherUser);
+                const otherMember = conversationMembers?.find((member: any) => member.userId !== user?.id);
+                console.log("[ChatRoom] Video call - found other member:", otherMember);
                 
-                if (otherUser && otherUser.user) {
-                  const targetUserId = otherUser.userId;
-                  const targetUserName = otherUser.user.callsign || otherUser.user.fullName || 'Unknown';
+                if (otherMember && allUsers) {
+                  const otherUser = allUsers.find((u: any) => u.id === otherMember.userId);
+                  console.log("[ChatRoom] Video call - found other user data:", otherUser);
                   
-                  console.log("[ChatRoom] Starting video call to:", { targetUserId, targetUserName });
-                  
-                  if (typeof startCall === 'function') {
-                    startCall(targetUserId, targetUserName, 'video');
+                  if (otherUser) {
+                    const targetUserId = otherUser.id;
+                    const targetUserName = otherUser.callsign || otherUser.fullName || 'Unknown';
+                    
+                    console.log("[ChatRoom] Starting video call to:", { targetUserId, targetUserName });
+                    
+                    if (typeof startCall === 'function') {
+                      startCall(targetUserId, targetUserName, 'video');
+                    } else {
+                      console.error("[ChatRoom] startCall is not a function:", typeof startCall);
+                      alert('Fungsi panggilan tidak tersedia. Silakan refresh halaman.');
+                    }
                   } else {
-                    console.error("[ChatRoom] startCall is not a function:", typeof startCall);
-                    alert('Fungsi panggilan tidak tersedia. Silakan refresh halaman.');
+                    console.error("[ChatRoom] Could not find user data for video call");
+                    alert('Tidak dapat menemukan data lawan bicara untuk panggilan video.');
                   }
                 } else {
-                  console.error("[ChatRoom] Could not find other user for video call");
+                  console.error("[ChatRoom] Could not find other member for video call");
                   alert('Tidak dapat menemukan lawan bicara untuk panggilan video.');
                 }
               }
