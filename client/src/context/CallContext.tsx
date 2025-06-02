@@ -418,14 +418,34 @@ export function CallProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const handleCallAccepted = (message: any) => {
+  const handleCallAccepted = async (message: any) => {
     console.log('[CallContext] Call accepted');
-    if (activeCall) {
+    if (activeCall && activeCall.peerConnection) {
+      // Update call status
       setActiveCall({
         ...activeCall,
         status: 'connected',
         startTime: new Date(),
       });
+
+      // Create and send WebRTC offer to establish connection
+      try {
+        console.log('[CallContext] Creating WebRTC offer after call accepted...');
+        const offer = await activeCall.peerConnection.createOffer();
+        await activeCall.peerConnection.setLocalDescription(offer);
+
+        // Send offer to the other peer
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: 'webrtc_offer',
+            callId: activeCall.callId,
+            offer: offer
+          }));
+          console.log('[CallContext] Sent WebRTC offer after call accepted');
+        }
+      } catch (error) {
+        console.error('[CallContext] Error creating WebRTC offer after call accepted:', error);
+      }
     }
   };
 
@@ -699,59 +719,24 @@ export function CallProvider({ children }: { children: ReactNode }) {
       const localStream = await navigator.mediaDevices.getUserMedia(constraints);
       console.log('[CallContext] Got local media stream for incoming call');
 
-      // Create RTCPeerConnection for the accepting side
-      const peerConnection = new RTCPeerConnection({
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' }
-        ]
-      });
+      // Use existing peerConnection from incomingCall (already setup)
+      const peerConnection = incomingCall.peerConnection;
+      if (!peerConnection) {
+        throw new Error('No peerConnection found in incoming call');
+      }
 
-      // Add local stream to peer connection
+      // Add local stream to existing peer connection
       localStream.getTracks().forEach(track => {
         peerConnection.addTrack(track, localStream);
       });
 
-      // Handle incoming remote stream
-      peerConnection.ontrack = (event) => {
-        console.log('[CallContext] Received remote stream in acceptCall');
-        const remoteStream = event.streams[0];
-        console.log('[CallContext] Remote stream tracks:', remoteStream.getTracks().length);
-        
-        // Find and setup audio element for remote stream
-        setTimeout(() => {
-          const audioElement = document.querySelector('#remoteAudio') as HTMLAudioElement;
-          if (audioElement) {
-            audioElement.srcObject = remoteStream;
-            audioElement.volume = 1.0;
-            audioElement.play().then(() => {
-              console.log('[CallContext] ✅ Remote audio playing successfully in acceptCall');
-            }).catch(e => {
-              console.log('[CallContext] Remote audio autoplay failed in acceptCall:', e);
-            });
-          } else {
-            console.log('[CallContext] ❌ Remote audio element not found in acceptCall');
-          }
-        }, 100);
-      };
-
-      // Handle ICE candidates
-      peerConnection.onicecandidate = (event) => {
-        if (event.candidate && ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({
-            type: 'webrtc_ice_candidate',
-            callId: incomingCall.callId,
-            candidate: event.candidate
-          }));
-        }
-      };
+      console.log('[CallContext] Added local stream to existing peerConnection');
 
       // Accept the call
       setActiveCall({
         ...incomingCall,
         status: 'connected',
         localStream,
-        peerConnection,
         startTime: new Date(),
       });
 
