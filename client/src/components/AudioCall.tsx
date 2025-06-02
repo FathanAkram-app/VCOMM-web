@@ -65,6 +65,12 @@ export default function AudioCall() {
               currentTime: audioElement.currentTime,
               volume: audioElement.volume
             });
+            
+            // If currentTime is still 0, try Web Audio API as alternative
+            if (audioElement.currentTime === 0) {
+              console.log('[AudioCall] 🚨 currentTime still 0, trying Web Audio API...');
+              tryWebAudioAPI();
+            }
           }, 1000);
           
         } catch (e) {
@@ -90,6 +96,38 @@ export default function AudioCall() {
         }
       };
       
+      // Web Audio API fallback function
+      const tryWebAudioAPI = async () => {
+        try {
+          console.log('[AudioCall] 🔧 Trying Web Audio API approach...');
+          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+          
+          // Resume audio context if suspended
+          if (audioContext.state === 'suspended') {
+            await audioContext.resume();
+            console.log('[AudioCall] AudioContext resumed');
+          }
+          
+          // Create media stream source from remote stream
+          const source = audioContext.createMediaStreamSource(remoteAudioStream);
+          const gainNode = audioContext.createGain();
+          gainNode.gain.value = 1.0;
+          
+          // Connect to destination (speakers)
+          source.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          console.log('[AudioCall] ✅ Web Audio API setup complete');
+          
+          // Store reference for cleanup
+          (window as any).currentAudioContext = audioContext;
+          (window as any).currentAudioSource = source;
+          
+        } catch (webAudioError) {
+          console.log('[AudioCall] ❌ Web Audio API failed:', webAudioError);
+        }
+      };
+
       tryPlay();
     } else {
       console.log("[AudioCall] ❌ Remote audio element not found");
