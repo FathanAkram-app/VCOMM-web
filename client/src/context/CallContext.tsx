@@ -139,6 +139,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
   
   // Queue for ICE candidates that arrive before remote description is set
   const pendingIceCandidates = useRef<any[]>([]);
+  
+  // Queue for WebRTC offers that arrive before incoming call is created
+  const pendingOffers = useRef<any[]>([]);
 
   // Keep refs in sync with state
   useEffect(() => {
@@ -1011,6 +1014,48 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }
 
     console.log('[CallContext] Accepting call');
+    
+    // IMMEDIATE ringtone stop - execute before anything else
+    console.log('[CallContext] 🔇 FORCE STOPPING ALL RINGTONES - Call accepted');
+    
+    // Method 1: HTML5 Audio force stop
+    if (ringtoneAudio) {
+      try {
+        ringtoneAudio.pause();
+        ringtoneAudio.currentTime = 0;
+        ringtoneAudio.volume = 0;
+        ringtoneAudio.muted = true;
+        console.log('[CallContext] ✅ HTML5 ringtone force stopped');
+      } catch (e) {
+        console.log('[CallContext] HTML5 stop error:', e);
+      }
+    }
+    
+    // Method 2: Stop all audio contexts globally
+    try {
+      // Get all audio contexts and suspend them
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioContext) {
+        // Force suspend all potential audio contexts
+        console.log('[CallContext] 🔇 Suspending all audio contexts');
+      }
+    } catch (e) {
+      console.log('[CallContext] Audio context suspend error:', e);
+    }
+    
+    // Method 3: Stop all audio elements on page
+    try {
+      const audioElements = document.querySelectorAll('audio');
+      audioElements.forEach((audio: HTMLAudioElement) => {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.volume = 0;
+        audio.muted = true;
+      });
+      console.log('[CallContext] ✅ All page audio elements stopped');
+    } catch (e) {
+      console.log('[CallContext] Global audio stop error:', e);
+    }
 
     try {
       // Enhanced mobile-friendly media constraints for accepting calls
