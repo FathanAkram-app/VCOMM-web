@@ -1035,6 +1035,11 @@ export function CallProvider({ children }: { children: ReactNode }) {
   };
 
   const acceptCall = async () => {
+    console.log('[CallContext] acceptCall function called');
+    console.log('[CallContext] incomingCall:', incomingCall);
+    console.log('[CallContext] ws connected:', ws?.readyState === WebSocket.OPEN);
+    console.log('[CallContext] user:', user);
+    
     if (!incomingCall || !ws || !user) {
       console.error('[CallContext] No incoming call or WebSocket not connected');
       return;
@@ -1048,23 +1053,41 @@ export function CallProvider({ children }: { children: ReactNode }) {
     // Method 1: HTML5 Audio force stop
     if (ringtoneAudio) {
       try {
+        console.log('[CallContext] Stopping HTML5 ringtone - current state:', {
+          paused: ringtoneAudio.paused,
+          currentTime: ringtoneAudio.currentTime,
+          volume: ringtoneAudio.volume,
+          muted: ringtoneAudio.muted
+        });
         ringtoneAudio.pause();
         ringtoneAudio.currentTime = 0;
         ringtoneAudio.volume = 0;
         ringtoneAudio.muted = true;
+        ringtoneAudio.src = ''; // Clear the source
+        ringtoneAudio.load(); // Force reload to stop any buffer
         console.log('[CallContext] ✅ HTML5 ringtone force stopped');
       } catch (e) {
         console.log('[CallContext] HTML5 stop error:', e);
       }
+    } else {
+      console.log('[CallContext] ❌ No HTML5 ringtone audio object found');
     }
     
     // Method 2: Stop all audio contexts globally
     try {
-      // Get all audio contexts and suspend them
-      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioContext) {
-        // Force suspend all potential audio contexts
-        console.log('[CallContext] 🔇 Suspending all audio contexts');
+      // Stop Web Audio API ringtone if it exists
+      if (webAudioSource) {
+        console.log('[CallContext] Stopping Web Audio API source...');
+        webAudioSource.stop();
+        webAudioSource.disconnect();
+        webAudioSource = null;
+        console.log('[CallContext] ✅ Web Audio API source stopped');
+      }
+      
+      if (audioContext && audioContext.state !== 'closed') {
+        console.log('[CallContext] Suspending Web Audio API context...');
+        audioContext.suspend();
+        console.log('[CallContext] ✅ Web Audio API context suspended');
       }
     } catch (e) {
       console.log('[CallContext] Audio context suspend error:', e);
