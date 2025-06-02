@@ -1,0 +1,51 @@
+[CallContext] Accepting call
+CallContext.tsx:1035 [CallContext] 🔇 FORCE STOPPING ALL RINGTONES - Call accepted
+CallContext.tsx:1040 [CallContext] Stopping HTML5 ringtone - current state: {paused: true, currentTime: 0, volume: 0.8, muted: true}
+CallContext.tsx:1058 [CallContext] ✅ HTML5 ringtone completely removed
+CallContext.tsx:1068 [CallContext] 🔇 Force stopping ALL Web Audio API contexts
+CallContext.tsx:1110 [CallContext] ✅ All page audio elements stopped
+CallContext.tsx:1138 [CallContext] Requesting media permissions for mobile (accept call)...
+ChatRoom.tsx:634 Processing message data for grouping: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:635 Total messages to process: 6
+ChatRoom.tsx:707 Grouped messages: (2) [{…}, {…}]
+ChatRoom.tsx:708 Total date groups: 2
+ChatRoom.tsx:710 Total messages in first group: 3
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: {callId: 'call_1748873436625_2_1', callType: 'audio', status: 'ringing', isIncoming: true, peerUserId: 2, …}
+CallContext.tsx:1140 [CallContext] Got local media stream for incoming call
+CallContext.tsx:1153 [CallContext] Added local stream to existing peerConnection
+ChatRoom.tsx:634 Processing message data for grouping: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:635 Total messages to process: 6
+ChatRoom.tsx:707 Grouped messages: (2) [{…}, {…}]
+ChatRoom.tsx:708 Total date groups: 2
+ChatRoom.tsx:710 Total messages in first group: 3
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748873436625_2_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 2, …}
+AudioCall.tsx:11 [AudioCall] remoteAudioStream: MediaStream {id: '14c73acf-e6a4-4ed3-b8ac-8caaf88ed434', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:15 [AudioCall] Remote stream effect triggered, remoteAudioStream: MediaStream {id: '14c73acf-e6a4-4ed3-b8ac-8caaf88ed434', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:21 [AudioCall] Setting up remote audio stream...
+AudioCall.tsx:25 [AudioCall] ✅ Found remote audio element, setting stream
+AudioCall.tsx:56 [AudioCall] Setting up call duration timer
+AudioCall.tsx:35 [AudioCall] ✅ Remote audio playing successfully (attempt 1)
+CallContext.tsx:1205 [CallContext] 📤 Sending WebRTC ready signal to caller: 2
+CallContext.tsx:1213 [CallContext] ✅ WebRTC ready signal sent successfully
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748873436625_2_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 2, …}
+AudioCall.tsx:11 [AudioCall] remoteAudioStream: MediaStream {id: '14c73acf-e6a4-4ed3-b8ac-8caaf88ed434', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748873436625_2_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 2, …}
+AudioCall.tsx:11 [AudioCall] remoteAudioStream: MediaStream {id: '14c73acf-e6a4-4ed3-b8ac-8caaf88ed434', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748873436625_2_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 2, …}
+AudioCall.tsx:11 [AudioCall] remoteAudioStream: MediaStream {id: '14c73acf-e6a4-4ed3-b8ac-8caaf88ed434', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748873436625_2_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 2, …}
+AudioCall.tsx:11 [AudioCall] remoteAudioStream: MediaStream {id: '14c73acf-e6a4-4ed3-b8ac-8caaf88ed434', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748873436625_2_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 2, …}
+AudioCall.tsx:11 [AudioCall] remoteAudioStream: MediaStream {id: '14c73acf-e6a4-4ed3-b8ac-8caaf88ed434', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748873436625_2_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 2, …}
+AudioCall.tsx:11 [AudioCall] remoteAudioStream: MediaStream {id: '14c73acf-e6a4-4ed3-b8ac-8caaf88ed434', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748873436625_2_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 2, …}
+AudioCall.tsx:11 [AudioCall] remoteAudioStream: MediaStream {id: '14c73acf-e6a4-4ed3-b8ac-8caaf88ed434', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748873436625_2_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 2, …}
+AudioCall.tsx:11 [AudioCall] remoteAudioStream: MediaStream {id: '14c73acf-e6a4-4ed3-b8ac-8caaf88ed434', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748873436625_2_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 2, …}
+AudioCall.tsx:11 [AudioCall] remoteAudioStream: MediaStream {id: '14c73acf-e6a4-4ed3-b8ac-8caaf88ed434', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748873436625_2_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 2, …}
+AudioCall.tsx:11 [AudioCall] remoteAudioStream: MediaStream {id: '14c73acf-e6a4-4ed3-b8ac-8caaf88ed434', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748873436625_2_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 2, …}

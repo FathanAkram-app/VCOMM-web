@@ -279,7 +279,11 @@ export function CallProvider({ children }: { children: ReactNode }) {
     console.log('[CallContext] Incoming call from:', message.fromUserName);
     
     // Play ringtone for incoming call with advanced autoplay bypass
+    // DISABLED: Ringtone functionality disabled to avoid audio conflicts
     const playRingtone = async () => {
+      console.log('[CallContext] ⚠️ Ringtone disabled to avoid audio conflicts');
+      return;
+      /*
       try {
         if (ringtoneAudio) {
           ringtoneAudio.currentTime = 0;
@@ -418,6 +422,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       } catch (beepError) {
         console.log('[CallContext] ❌ All audio methods failed:', beepError);
       }
+      */
     };
     
     playRingtone();
