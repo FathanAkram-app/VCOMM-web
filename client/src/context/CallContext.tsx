@@ -423,21 +423,28 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   const handleCallAccepted = async (message: any) => {
     console.log('[CallContext] Call accepted, payload:', message);
+    console.log('[CallContext] Current activeCall:', activeCall);
+    console.log('[CallContext] Current incomingCall:', incomingCall);
+    
     if (activeCall && activeCall.peerConnection) {
       console.log('[CallContext] Updating call status to connected');
       
       // Update call status first
-      const updatedCall = {
-        ...activeCall,
-        status: 'connected' as const,
-        startTime: new Date(),
-      };
-      setActiveCall(updatedCall);
+      setActiveCall(prevCall => {
+        if (!prevCall) return prevCall;
+        return {
+          ...prevCall,
+          status: 'connected' as const,
+          startTime: new Date(),
+        };
+      });
       
       // Don't create offer here, wait for webrtc_ready signal from receiver
       console.log('[CallContext] Waiting for receiver to be ready for WebRTC...');
     } else {
       console.error('[CallContext] ❌ No activeCall or peerConnection when call accepted');
+      console.error('[CallContext] activeCall:', activeCall);
+      console.error('[CallContext] incomingCall:', incomingCall);
     }
   };
 
