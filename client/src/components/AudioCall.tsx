@@ -4,22 +4,25 @@ import { Button } from "./ui/button";
 import { ChevronDown, Mic, MicOff, Phone, Volume2, VolumeX, MessageSquare } from "lucide-react";
 
 export default function AudioCall() {
-  const { activeCall, hangupCall, toggleCallAudio, toggleMute } = useCall();
+  const { activeCall, remoteAudioStream, hangupCall, toggleCallAudio, toggleMute } = useCall();
   const [callDuration, setCallDuration] = useState("00:00:00");
   
   console.log("[AudioCall] Component rendering with activeCall:", activeCall);
+  console.log("[AudioCall] remoteAudioStream:", remoteAudioStream);
   
   // Setup remote audio stream when component mounts
   useEffect(() => {
-    if (!activeCall) return;
+    if (!remoteAudioStream) {
+      console.log("[AudioCall] ❌ No remote audio stream available");
+      return;
+    }
     
     console.log("[AudioCall] Setting up remote audio stream...");
     const audioElement = document.querySelector('#remoteAudio') as HTMLAudioElement;
     
-    if (audioElement && activeCall.remoteStreams.has('audio')) {
-      const remoteStream = activeCall.remoteStreams.get('audio');
-      console.log("[AudioCall] ✅ Found stored remote stream, setting to audio element");
-      audioElement.srcObject = remoteStream;
+    if (audioElement) {
+      console.log("[AudioCall] ✅ Found remote audio element, setting stream");
+      audioElement.srcObject = remoteAudioStream;
       audioElement.volume = 1.0;
       audioElement.play().then(() => {
         console.log('[AudioCall] ✅ Remote audio playing successfully');
@@ -27,9 +30,9 @@ export default function AudioCall() {
         console.log('[AudioCall] Remote audio autoplay failed:', e);
       });
     } else {
-      console.log("[AudioCall] ❌ Remote audio element or stream not found");
+      console.log("[AudioCall] ❌ Remote audio element not found");
     }
-  }, [activeCall]);
+  }, [remoteAudioStream]);
 
   // Update call duration timer
   useEffect(() => {
