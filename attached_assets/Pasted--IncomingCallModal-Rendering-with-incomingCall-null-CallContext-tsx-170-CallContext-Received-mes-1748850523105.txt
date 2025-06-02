@@ -1,0 +1,29 @@
+[IncomingCallModal] Rendering with incomingCall: null
+CallContext.tsx:170 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:538 [CallContext] Starting audio call to: aji
+CallContext.tsx:11 [CallContext] Mobile compatibility check: {isMobile: false, isHTTPS: true, userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWeb…KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36', hasMediaDevices: ƒ}
+CallContext.tsx:564 [CallContext] Requesting media permissions with mobile-optimized constraints: {audio: true}
+CallContext.tsx:565 [CallContext] Device info: {isMobile: false, isHTTPS: true, hasMediaDevices: ƒ}
+CallContext.tsx:578 [CallContext] ✅ Successfully got media stream: {audioTracks: 1, videoTracks: 0}
+ChatRoom.tsx:634 Processing message data for grouping: (2) [{…}, {…}]
+ChatRoom.tsx:635 Total messages to process: 2
+ChatRoom.tsx:707 Grouped messages: [{…}]
+ChatRoom.tsx:708 Total date groups: 1
+ChatRoom.tsx:710 Total messages in first group: 2
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748850449567_1_3', callType: 'audio', status: 'calling', isIncoming: false, peerUserId: 3, …}
+CallContext.tsx:170 [CallContext] Received message: {type: 'call_accepted', payload: {…}}
+CallContext.tsx:422 [CallContext] Call accepted
+CallContext.tsx:170 [CallContext] Received message: {type: 'call_ended', payload: {…}}
+CallContext.tsx:459 [CallContext] Call ended
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: null
+AudioCall.tsx:45 [AudioCall] No active call, showing loading state
+AudioCall.tsx:34 [AudioCall] No active call, redirecting to chat
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+ChatList.tsx:94 Contoh data percakapan dari server: {id: 1, createdById: 1, createdAt: '2025-05-20T05:29:09.034Z', updatedAt: '2025-05-22T19:53:13.947Z', isGroup: false, …}
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+ChatList.tsx:94 Contoh data percakapan dari server: {id: 1, createdById: 1, createdAt: '2025-05-20T05:29:09.034Z', updatedAt: '2025-05-22T19:53:13.947Z', isGroup: false, …}
+CallContext.tsx:144 [CallContext] Initializing WebSocket for calls...
+CallContext.tsx:202 [CallContext] WebSocket disconnected
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null

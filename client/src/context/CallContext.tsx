@@ -419,20 +419,24 @@ export function CallProvider({ children }: { children: ReactNode }) {
   };
 
   const handleCallAccepted = async (message: any) => {
-    console.log('[CallContext] Call accepted');
+    console.log('[CallContext] Call accepted, payload:', message);
     if (activeCall && activeCall.peerConnection) {
-      // Update call status
-      setActiveCall({
+      console.log('[CallContext] Updating call status to connected');
+      
+      // Update call status first
+      const updatedCall = {
         ...activeCall,
-        status: 'connected',
+        status: 'connected' as const,
         startTime: new Date(),
-      });
+      };
+      setActiveCall(updatedCall);
 
       // Create and send WebRTC offer to establish connection
       try {
         console.log('[CallContext] Creating WebRTC offer after call accepted...');
         const offer = await activeCall.peerConnection.createOffer();
         await activeCall.peerConnection.setLocalDescription(offer);
+        console.log('[CallContext] Local description set successfully');
 
         // Send offer to the other peer
         if (ws && ws.readyState === WebSocket.OPEN) {
@@ -441,11 +445,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
             callId: activeCall.callId,
             offer: offer
           }));
-          console.log('[CallContext] Sent WebRTC offer after call accepted');
+          console.log('[CallContext] ✅ Sent WebRTC offer after call accepted');
+        } else {
+          console.error('[CallContext] ❌ WebSocket not connected when trying to send offer');
         }
       } catch (error) {
-        console.error('[CallContext] Error creating WebRTC offer after call accepted:', error);
+        console.error('[CallContext] ❌ Error creating WebRTC offer after call accepted:', error);
       }
+    } else {
+      console.error('[CallContext] ❌ No activeCall or peerConnection when call accepted');
     }
   };
 
@@ -456,7 +464,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
   };
 
   const handleCallEnded = (message: any) => {
-    console.log('[CallContext] Call ended');
+    console.log('[CallContext] ❌ Call ended unexpectedly, payload:', message);
+    console.log('[CallContext] Current activeCall status:', activeCall?.status);
+    console.log('[CallContext] Current incomingCall status:', incomingCall?.status);
+    
     setActiveCall(null);
     setIncomingCall(null);
     
