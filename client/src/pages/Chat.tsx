@@ -695,114 +695,20 @@ export default function Chat() {
           
           {/* Call View */}
           {activeView === 'calls' && (
-            <div className="flex flex-col h-full p-4">
-              <h2 className="text-xl font-semibold text-[#8d9c6b] mb-6">Test Permission Media</h2>
+            <div className="flex flex-col h-full">
+              <div className="flex justify-between items-center p-4 border-b border-[#333]">
+                <h2 className="text-xl font-semibold text-[#8d9c6b]">CALL</h2>
+              </div>
               
-              <div className="space-y-4">
-                <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#333]">
-                  <h3 className="text-[#8d9c6b] font-medium mb-3">Test Microphone Permission</h3>
-                  <p className="text-gray-400 text-sm mb-4">
-                    Klik tombol ini untuk test akses microphone di HP Anda
-                  </p>
-                  <Button 
-                    className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
-                    onClick={async () => {
-                      try {
-                        console.log('[Test] Testing microphone permission...');
-                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                        console.log('[Test] ✅ Microphone permission granted');
-                        
-                        // Stop the stream immediately
-                        stream.getTracks().forEach(track => track.stop());
-                        
-                        // Show success message
-                        const result = confirm('✅ MICROPHONE BERHASIL!\n\nMicrophone sudah bisa diakses. Audio call seharusnya berfungsi normal.\n\nKlik OK untuk melanjutkan atau Cancel untuk test ulang.');
-                        if (result) {
-                          console.log('[Test] User confirmed microphone working');
-                        }
-                      } catch (error: any) {
-                        console.error('[Test] ❌ Microphone permission failed:', error);
-                        const errorMsg = `❌ MICROPHONE GAGAL!\n\nError: ${error.name}\nPesan: ${error.message}\n\nSolusi:\n- Refresh halaman\n- Izinkan akses microphone di browser\n- Pastikan menggunakan HTTPS`;
-                        alert(errorMsg);
-                      }
-                    }}
-                  >
-                    Test Microphone
-                  </Button>
-                </div>
-
-                <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#333]">
-                  <h3 className="text-[#8d9c6b] font-medium mb-3">Test Camera Permission</h3>
-                  <p className="text-gray-400 text-sm mb-4">
-                    Klik tombol ini untuk test akses camera di HP Anda
-                  </p>
-                  <Button 
-                    className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
-                    onClick={async () => {
-                      try {
-                        console.log('[Test] Testing camera permission...');
-                        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                        console.log('[Test] ✅ Camera permission granted');
-                        
-                        // Stop the stream immediately
-                        stream.getTracks().forEach(track => track.stop());
-                        
-                        // Show success message
-                        const result = confirm('✅ CAMERA BERHASIL!\n\nCamera sudah bisa diakses. Video call seharusnya berfungsi normal.\n\nKlik OK untuk melanjutkan atau Cancel untuk test ulang.');
-                        if (result) {
-                          console.log('[Test] User confirmed camera working');
-                        }
-                      } catch (error: any) {
-                        console.error('[Test] ❌ Camera permission failed:', error);
-                        const errorMsg = `❌ CAMERA GAGAL!\n\nError: ${error.name}\nPesan: ${error.message}\n\nSolusi:\n- Refresh halaman\n- Izinkan akses camera di Chrome\n- Pastikan tidak ada app lain yang pakai camera`;
-                        alert(errorMsg);
-                      }
-                    }}
-                  >
-                    Test Camera
-                  </Button>
-                </div>
-
-                <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#333]">
-                  <h3 className="text-[#8d9c6b] font-medium mb-3">Test Both (Audio + Video)</h3>
-                  <p className="text-gray-400 text-sm mb-4">
-                    Test microphone dan camera sekaligus untuk video call
-                  </p>
-                  <Button 
-                    className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
-                    onClick={async () => {
-                      try {
-                        console.log('[Test] Testing both audio and video permission...');
-                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-                        console.log('[Test] ✅ Both permissions granted');
-                        
-                        // Stop the stream immediately
-                        stream.getTracks().forEach(track => track.stop());
-                        
-                        // Show success message
-                        const result = confirm('✅ AUDIO + VIDEO BERHASIL!\n\nMicrophone dan Camera sudah bisa diakses sekaligus. Video call dengan audio seharusnya berfungsi sempurna.\n\nKlik OK untuk melanjutkan atau Cancel untuk test ulang.');
-                        if (result) {
-                          console.log('[Test] User confirmed both audio and video working');
-                        }
-                      } catch (error: any) {
-                        console.error('[Test] ❌ Both permissions failed:', error);
-                        const errorMsg = `❌ AUDIO/VIDEO GAGAL!\n\nError: ${error.name}\nPesan: ${error.message}\n\nSolusi:\n- Test microphone dan camera satu per satu\n- Refresh halaman di Chrome\n- Izinkan kedua akses saat diminta\n- Pastikan HP tidak dalam mode hemat baterai`;
-                        alert(errorMsg);
-                      }
-                    }}
-                  >
-                    Test Audio + Video
-                  </Button>
-                </div>
-
-                <div className="bg-[#262626] rounded-lg p-4 border border-[#444]">
-                  <h3 className="text-yellow-400 font-medium mb-2">💡 Tips untuk HP:</h3>
-                  <ul className="text-gray-300 text-sm space-y-1">
-                    <li>• Gunakan HTTPS (bukan HTTP)</li>
-                    <li>• Pastikan Chrome/Safari terbaru</li>
-                    <li>• Izinkan permission saat browser meminta</li>
-                    <li>• Refresh halaman jika permission ditolak</li>
-                  </ul>
+              <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+                <div className="text-center p-8 bg-[#1a1a1a] rounded-lg border border-[#333]">
+                  <PhoneIcon className="h-16 w-16 text-[#8d9c6b] mx-auto mb-4 opacity-50" />
+                  <h3 className="text-xl text-white mb-2">Call Center</h3>
+                  <p className="text-gray-400 mb-6">Sistem komunikasi audio dan video tersedia</p>
+                  
+                  <div className="space-y-3">
+                    <p className="text-sm text-gray-500">Audio dan video calling terintegrasi dengan chat. Akses melalui tombol panggilan di setiap chat room.</p>
+                  </div>
                 </div>
 
                 {/* Group Call Section */}
@@ -824,6 +730,16 @@ export default function Chat() {
                     </Button>
                     <p className="text-xs text-gray-500">Create tactical groups, add members, start group video conferences</p>
                   </div>
+                </div>
+
+                <div className="bg-[#262626] rounded-lg p-4 border border-[#444]">
+                  <h3 className="text-yellow-400 font-medium mb-2">💡 Info:</h3>
+                  <ul className="text-gray-300 text-sm space-y-1">
+                    <li>• Individual calls available in each chat room</li>
+                    <li>• Group calls available through tactical operations</li>
+                    <li>• WebRTC technology for secure communications</li>
+                    <li>• Works on both mobile and desktop devices</li>
+                  </ul>
                 </div>
               </div>
             </div>
