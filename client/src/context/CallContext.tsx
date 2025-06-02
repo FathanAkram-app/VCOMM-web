@@ -215,6 +215,17 @@ export function CallProvider({ children }: { children: ReactNode }) {
     websocket.onopen = () => {
       console.log('[CallContext] WebSocket connected successfully for calls');
       setWs(websocket);
+      
+      // Authenticate user with WebSocket
+      if (user?.id) {
+        websocket.send(JSON.stringify({
+          type: 'auth',
+          payload: {
+            userId: user.id
+          }
+        }));
+        console.log(`[CallContext] Authenticated user ${user.id} with WebSocket`);
+      }
     };
 
     websocket.onmessage = (event) => {
@@ -222,28 +233,28 @@ export function CallProvider({ children }: { children: ReactNode }) {
         const message = JSON.parse(event.data);
         console.log('[CallContext] Received message:', message);
         
-        // Handle call-specific messages
+        // Handle call-specific messages - server uses payload wrapper
         switch (message.type) {
           case 'incoming_call':
-            handleIncomingCall(message);
+            handleIncomingCall(message.payload || message);
             break;
           case 'call_accepted':
-            handleCallAccepted(message);
+            handleCallAccepted(message.payload || message);
             break;
           case 'call_rejected':
-            handleCallRejected(message);
+            handleCallRejected(message.payload || message);
             break;
           case 'call_ended':
-            handleCallEnded(message);
+            handleCallEnded(message.payload || message);
             break;
           case 'webrtc_offer':
-            handleWebRTCOffer(message);
+            handleWebRTCOffer(message.payload || message);
             break;
           case 'webrtc_answer':
-            handleWebRTCAnswer(message);
+            handleWebRTCAnswer(message.payload || message);
             break;
           case 'webrtc_ice_candidate':
-            handleWebRTCIceCandidate(message);
+            handleWebRTCIceCandidate(message.payload || message);
             break;
         }
       } catch (error) {
@@ -452,11 +463,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
       // Send call initiation message (ws is guaranteed to be connected at this point)
       ws!.send(JSON.stringify({
         type: 'initiate_call',
-        callId,
-        toUserId: peerUserId,
-        callType,
-        fromUserId: user.id,
-        fromUserName: user.callsign,
+        payload: {
+          callId,
+          toUserId: peerUserId,
+          callType,
+          fromUserId: user.id,
+          fromUserName: user.callsign,
+        }
       }));
 
       // Navigate to call interface with a small delay to ensure state is set
@@ -518,9 +531,11 @@ export function CallProvider({ children }: { children: ReactNode }) {
       // Send call acceptance message
       ws.send(JSON.stringify({
         type: 'accept_call',
-        callId: incomingCall.callId,
-        toUserId: incomingCall.peerUserId,
-        fromUserId: user.id,
+        payload: {
+          callId: incomingCall.callId,
+          toUserId: incomingCall.peerUserId,
+          fromUserId: user.id,
+        }
       }));
 
       // Navigate to call interface with a small delay to ensure state is set
@@ -551,9 +566,11 @@ export function CallProvider({ children }: { children: ReactNode }) {
     // Send call rejection message
     ws.send(JSON.stringify({
       type: 'reject_call',
-      callId: incomingCall.callId,
-      toUserId: incomingCall.peerUserId,
-      fromUserId: user.id,
+      payload: {
+        callId: incomingCall.callId,
+        toUserId: incomingCall.peerUserId,
+        fromUserId: user.id,
+      }
     }));
 
     setIncomingCall(null);
@@ -586,9 +603,11 @@ export function CallProvider({ children }: { children: ReactNode }) {
         try {
           ws.send(JSON.stringify({
             type: 'end_call',
-            callId: activeCall.callId,
-            toUserId: activeCall.peerUserId,
-            fromUserId: user.id,
+            payload: {
+              callId: activeCall.callId,
+              toUserId: activeCall.peerUserId,
+              fromUserId: user.id,
+            }
           }));
         } catch (err) {
           console.warn('[CallContext] Error sending end call message:', err);
