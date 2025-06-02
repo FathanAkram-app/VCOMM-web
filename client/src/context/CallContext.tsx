@@ -985,14 +985,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
       const callId = `call_${Date.now()}_${user.id}_${peerUserId}`;
 
-      // Create RTCPeerConnection with STUN servers for cross-network calls
+      // Create RTCPeerConnection for intranet/offline mode (no internet required)
       const peerConnection = new RTCPeerConnection({
-        iceServers: [
-          // Public STUN servers for NAT traversal between different networks
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' }
-        ],
+        iceServers: [], // Empty array for local network only - no internet connection needed
         iceTransportPolicy: 'all', // Allow both UDP and TCP
         bundlePolicy: 'max-bundle',
         rtcpMuxPolicy: 'require'
