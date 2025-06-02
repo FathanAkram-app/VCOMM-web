@@ -474,6 +474,19 @@ export function CallProvider({ children }: { children: ReactNode }) {
       videoEnabled: message.callType === 'video',
       isMuted: false,
     });
+
+    // Process any pending WebRTC offers for this call
+    setTimeout(() => {
+      const pendingOffer = pendingOffers.current.find(offer => offer.callId === message.callId);
+      if (pendingOffer) {
+        console.log('[CallContext] Processing pending WebRTC offer for callId:', message.callId);
+        handleWebRTCOffer(pendingOffer);
+        
+        // Remove the processed offer from queue
+        pendingOffers.current = pendingOffers.current.filter(offer => offer.callId !== message.callId);
+        console.log('[CallContext] Removed processed offer, remaining pending:', pendingOffers.current.length);
+      }
+    }, 100); // Small delay to ensure incoming call state is set
   };
 
   const handleCallAccepted = async (message: any) => {
