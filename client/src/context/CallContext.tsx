@@ -740,14 +740,39 @@ export function CallProvider({ children }: { children: ReactNode }) {
       await currentCall.peerConnection.setLocalDescription(answer);
       console.log('[CallContext] ✅ Local description (answer) set successfully');
 
-      // Send answer back
+      // Send answer back - try WebSocket first, fallback to HTTP API
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({
           type: 'webrtc_answer',
           callId: currentCall.callId,
           answer: answer
         }));
-        console.log('[CallContext] Sent WebRTC answer');
+        console.log('[CallContext] ✅ Sent WebRTC answer via WebSocket');
+      } else {
+        console.log('[CallContext] ⚠️ WebSocket not ready for answer, using HTTP API fallback');
+        
+        // Use HTTP API as fallback for answer
+        try {
+          const response = await fetch('/api/webrtc/answer', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              callId: currentCall.callId,
+              targetUserId: currentCall.peerUserId,
+              answer: answer
+            })
+          });
+          
+          if (response.ok) {
+            console.log('[CallContext] ✅ Sent WebRTC answer via HTTP API fallback');
+          } else {
+            throw new Error('HTTP API failed for answer');
+          }
+        } catch (error) {
+          console.error('[CallContext] ❌ Failed to send WebRTC answer:', error);
+        }
       }
     } catch (error) {
       console.error('[CallContext] Error handling WebRTC offer:', error);
