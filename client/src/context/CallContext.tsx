@@ -504,7 +504,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     const currentActiveCall = activeCallRef.current || activeCall;
     
     if (currentActiveCall && currentActiveCall.peerConnection) {
-      console.log('[CallContext] Updating call status to connected');
+      console.log('[CallContext] ✅ Call accepted - updating caller status to connected');
       
       // Stop ALL ringtone sources when call is accepted
       console.log('[CallContext] Stopping ALL ringtone sources - call accepted');
@@ -557,15 +557,26 @@ export function CallProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // Update call status first
+      // Update call status to connected for CALLER side
       setActiveCall(prevCall => {
         if (!prevCall) return prevCall;
+        console.log('[CallContext] ✅ CALLER: Updating status from', prevCall.status, 'to connected');
         return {
           ...prevCall,
           status: 'connected' as const,
           startTime: new Date(),
         };
       });
+      
+      // Also update the ref immediately for consistency
+      if (activeCallRef.current) {
+        activeCallRef.current = {
+          ...activeCallRef.current,
+          status: 'connected' as const,
+          startTime: new Date(),
+        };
+        console.log('[CallContext] ✅ CALLER: Updated ref status to connected');
+      }
       
       // Don't create offer here, wait for webrtc_ready signal from receiver
       console.log('[CallContext] Waiting for receiver to be ready for WebRTC...');
