@@ -1,0 +1,26 @@
+[CallContext] Received ICE candidate
+CallContext.tsx:676 [CallContext] Current activeCall for ICE: null
+CallContext.tsx:677 [CallContext] Current incomingCall for ICE: null
+CallContext.tsx:680 [CallContext] No active call or peerConnection for ICE candidate
+CallContext.tsx:186 [CallContext] Received message: {type: 'webrtc_ice_candidate', callId: 'call_1748852872548_3_1', candidate: {…}}
+CallContext.tsx:669 [CallContext] Received ICE candidate
+CallContext.tsx:676 [CallContext] Current activeCall for ICE: null
+CallContext.tsx:677 [CallContext] Current incomingCall for ICE: null
+CallContext.tsx:680 [CallContext] No active call or peerConnection for ICE candidate
+CallContext.tsx:868 [CallContext] Accepting call
+CallContext.tsx:893 [CallContext] Requesting media permissions for mobile (accept call)...
+CallContext.tsx:895 [CallContext] Got local media stream for incoming call
+CallContext.tsx:908 [CallContext] Added local stream to existing peerConnection
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748852872548_3_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 3, …}
+AudioCall.tsx:16 [AudioCall] Setting up call duration timer
+CallContext.tsx:937 [CallContext] 📤 Sending WebRTC ready signal to caller: 3
+CallContext.tsx:945 [CallContext] ✅ WebRTC ready signal sent successfully
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748852872548_3_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 3, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748852872548_3_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 3, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748852872548_3_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 3, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748852872548_3_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 3, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748852872548_3_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 3, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748852872548_3_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 3, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748852872548_3_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 3, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748852872548_3_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 3, …}

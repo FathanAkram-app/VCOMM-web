@@ -591,6 +591,30 @@ export function CallProvider({ children }: { children: ReactNode }) {
     console.log('[CallContext] Current activeCall status:', activeCall?.status);
     console.log('[CallContext] Current incomingCall status:', incomingCall?.status);
     
+    // Stop ALL ringtone sources immediately
+    console.log('[CallContext] Stopping ALL ringtone sources - call ended');
+    try {
+      // Stop HTML5 audio
+      if (ringtoneAudio) {
+        ringtoneAudio.pause();
+        ringtoneAudio.currentTime = 0;
+      }
+      
+      // Stop Web Audio API
+      if ((window as any).__ringtoneSource) {
+        (window as any).__ringtoneSource.stop();
+        (window as any).__ringtoneSource = null;
+      }
+      
+      // Clear fallback timeout
+      if ((window as any).__webrtcFallbackTimeout) {
+        clearTimeout((window as any).__webrtcFallbackTimeout);
+        (window as any).__webrtcFallbackTimeout = null;
+      }
+    } catch (error) {
+      console.log('[CallContext] Error stopping audio sources:', error);
+    }
+    
     setActiveCall(null);
     setIncomingCall(null);
     
@@ -622,18 +646,20 @@ export function CallProvider({ children }: { children: ReactNode }) {
       await currentCall.peerConnection.setRemoteDescription(new RTCSessionDescription(message.offer));
       console.log('[CallContext] ✅ Remote description set successfully');
       
-      // Process any pending ICE candidates now that remote description is set
-      if (pendingIceCandidates.current.length > 0) {
-        console.log('[CallContext] Processing', pendingIceCandidates.current.length, 'pending ICE candidates');
-        for (const candidate of pendingIceCandidates.current) {
+      // Process any pending ICE candidates for this call now that remote description is set
+      const callCandidates = pendingIceCandidates.current.filter(item => item.callId === currentCall.callId);
+      if (callCandidates.length > 0) {
+        console.log('[CallContext] Processing', callCandidates.length, 'pending ICE candidates for callId:', currentCall.callId);
+        for (const item of callCandidates) {
           try {
-            await currentCall.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+            await currentCall.peerConnection.addIceCandidate(new RTCIceCandidate(item.candidate));
             console.log('[CallContext] ✅ Added pending ICE candidate');
           } catch (error) {
             console.error('[CallContext] Error adding pending ICE candidate:', error);
           }
         }
-        pendingIceCandidates.current = []; // Clear the queue
+        // Remove processed candidates from queue
+        pendingIceCandidates.current = pendingIceCandidates.current.filter(item => item.callId !== currentCall.callId);
       }
       
       const answer = await currentCall.peerConnection.createAnswer();
@@ -666,7 +692,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   };
 
   const handleWebRTCIceCandidate = async (message: any) => {
-    console.log('[CallContext] Received ICE candidate');
+    console.log('[CallContext] Received ICE candidate for callId:', message.callId);
     
     // Use ref for more stable reference
     const currentActiveCall = activeCallRef.current || activeCall;
@@ -676,8 +702,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
     console.log('[CallContext] Current activeCall for ICE:', currentActiveCall);
     console.log('[CallContext] Current incomingCall for ICE:', currentIncomingCall);
     
-    if (!currentCall || !currentCall.peerConnection) {
-      console.log('[CallContext] No active call or peerConnection for ICE candidate');
+    // If no current call matches the callId, queue the candidate for later
+    if (!currentCall || !currentCall.peerConnection || currentCall.callId !== message.callId) {
+      console.log('[CallContext] No matching call found, queuing ICE candidate for callId:', message.callId);
+      pendingIceCandidates.current.push({
+        callId: message.callId,
+        candidate: message.candidate
+      });
       return;
     }
 
@@ -906,6 +937,29 @@ export function CallProvider({ children }: { children: ReactNode }) {
       });
 
       console.log('[CallContext] Added local stream to existing peerConnection');
+
+      // Setup remote stream handler for receiver
+      peerConnection.ontrack = (event) => {
+        console.log('[CallContext] Receiver: Received remote stream');
+        const remoteStream = event.streams[0];
+        console.log('[CallContext] Receiver: Remote stream tracks:', remoteStream.getTracks().length);
+        
+        // Find and setup audio element for remote stream
+        setTimeout(() => {
+          const audioElement = document.querySelector('#remoteAudio') as HTMLAudioElement;
+          if (audioElement) {
+            audioElement.srcObject = remoteStream;
+            audioElement.volume = 1.0;
+            audioElement.play().then(() => {
+              console.log('[CallContext] ✅ Receiver: Remote audio playing successfully');
+            }).catch(e => {
+              console.log('[CallContext] Receiver: Remote audio autoplay failed:', e);
+            });
+          } else {
+            console.log('[CallContext] ❌ Receiver: Remote audio element not found');
+          }
+        }, 100);
+      };
 
       // Accept the call
       setActiveCall({

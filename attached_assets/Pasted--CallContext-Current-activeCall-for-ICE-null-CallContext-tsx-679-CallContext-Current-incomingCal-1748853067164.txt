@@ -1,0 +1,47 @@
+[CallContext] Current activeCall for ICE: null
+CallContext.tsx:679 [CallContext] Current incomingCall for ICE: null
+CallContext.tsx:683 [CallContext] No matching call found, queuing ICE candidate for callId: call_1748853037960_3_1
+CallContext.tsx:186 [CallContext] Received message: {type: 'webrtc_ice_candidate', callId: 'call_1748853037960_3_1', candidate: {…}}
+CallContext.tsx:671 [CallContext] Received ICE candidate for callId: call_1748853037960_3_1
+CallContext.tsx:678 [CallContext] Current activeCall for ICE: null
+CallContext.tsx:679 [CallContext] Current incomingCall for ICE: null
+CallContext.tsx:683 [CallContext] No matching call found, queuing ICE candidate for callId: call_1748853037960_3_1
+CallContext.tsx:875 [CallContext] Accepting call
+CallContext.tsx:900 [CallContext] Requesting media permissions for mobile (accept call)...
+CallContext.tsx:902 [CallContext] Got local media stream for incoming call
+CallContext.tsx:915 [CallContext] Added local stream to existing peerConnection
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748853037960_3_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 3, …}
+AudioCall.tsx:16 [AudioCall] Setting up call duration timer
+CallContext.tsx:944 [CallContext] 📤 Sending WebRTC ready signal to caller: 3
+CallContext.tsx:952 [CallContext] ✅ WebRTC ready signal sent successfully
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748853037960_3_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 3, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748853037960_3_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 3, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748853037960_3_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 3, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748853037960_3_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 3, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748853037960_3_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 3, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748853037960_3_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 3, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1748853037960_3_1', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 3, …}
+CallContext.tsx:186 [CallContext] Received message: {type: 'call_ended', payload: {…}}
+CallContext.tsx:590 [CallContext] ❌ Call ended unexpectedly, payload: {callId: 'call_1748853037960_3_1'}
+CallContext.tsx:591 [CallContext] Current activeCall status: undefined
+CallContext.tsx:592 [CallContext] Current incomingCall status: undefined
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: null
+AudioCall.tsx:45 [AudioCall] No active call, showing loading state
+AudioCall.tsx:26 [AudioCall] Cleaning up call duration timer
+AudioCall.tsx:34 [AudioCall] No active call, redirecting to chat
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+ChatList.tsx:94 Contoh data percakapan dari server: {id: 1, createdById: 1, createdAt: '2025-05-20T05:29:09.034Z', updatedAt: '2025-05-22T19:53:13.947Z', isGroup: false, …}
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+ChatList.tsx:94 Contoh data percakapan dari server: {id: 1, createdById: 1, createdAt: '2025-05-20T05:29:09.034Z', updatedAt: '2025-05-22T19:53:13.947Z', isGroup: false, …}
+CallContext.tsx:160 [CallContext] Initializing WebSocket for calls...
+Chat.tsx:79 User data from session: {id: 1, callsign: 'eko', nrp: '123123', fullName: 'eko e', rank: 'PFC', …}
+Chat.tsx:107 Fetching all conversations for user ID: 1
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+CallContext.tsx:221 [CallContext] WebSocket disconnected
+CallContext.tsx:222 [CallContext] Current activeCall when disconnected: null
+CallContext.tsx:223 [CallContext] Current incomingCall when disconnected: null
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+Chat.tsx:230 Fetched 3 users for personnel list
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
