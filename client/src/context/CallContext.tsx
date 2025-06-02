@@ -524,15 +524,25 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
       // Handle incoming remote stream
       peerConnection.ontrack = (event) => {
-        console.log('[CallContext] Received remote stream');
+        console.log('[CallContext] Received remote stream in startCall');
         const remoteStream = event.streams[0];
+        console.log('[CallContext] Remote stream tracks:', remoteStream.getTracks().length);
         
         // Find and setup audio element for remote stream
-        const audioElement = document.querySelector('#remoteAudio') as HTMLAudioElement;
-        if (audioElement) {
-          audioElement.srcObject = remoteStream;
-          audioElement.play().catch(e => console.log('Remote audio autoplay failed:', e));
-        }
+        setTimeout(() => {
+          const audioElement = document.querySelector('#remoteAudio') as HTMLAudioElement;
+          if (audioElement) {
+            audioElement.srcObject = remoteStream;
+            audioElement.volume = 1.0;
+            audioElement.play().then(() => {
+              console.log('[CallContext] ✅ Remote audio playing successfully in startCall');
+            }).catch(e => {
+              console.log('[CallContext] Remote audio autoplay failed in startCall:', e);
+            });
+          } else {
+            console.log('[CallContext] ❌ Remote audio element not found in startCall');
+          }
+        }, 100);
       };
 
       // Handle ICE candidates
@@ -651,15 +661,25 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
       // Handle incoming remote stream
       peerConnection.ontrack = (event) => {
-        console.log('[CallContext] Received remote stream');
+        console.log('[CallContext] Received remote stream in acceptCall');
         const remoteStream = event.streams[0];
+        console.log('[CallContext] Remote stream tracks:', remoteStream.getTracks().length);
         
         // Find and setup audio element for remote stream
-        const audioElement = document.querySelector('#remoteAudio') as HTMLAudioElement;
-        if (audioElement) {
-          audioElement.srcObject = remoteStream;
-          audioElement.play().catch(e => console.log('Remote audio autoplay failed:', e));
-        }
+        setTimeout(() => {
+          const audioElement = document.querySelector('#remoteAudio') as HTMLAudioElement;
+          if (audioElement) {
+            audioElement.srcObject = remoteStream;
+            audioElement.volume = 1.0;
+            audioElement.play().then(() => {
+              console.log('[CallContext] ✅ Remote audio playing successfully in acceptCall');
+            }).catch(e => {
+              console.log('[CallContext] Remote audio autoplay failed in acceptCall:', e);
+            });
+          } else {
+            console.log('[CallContext] ❌ Remote audio element not found in acceptCall');
+          }
+        }, 100);
       };
 
       // Handle ICE candidates
