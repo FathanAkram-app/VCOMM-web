@@ -28,17 +28,64 @@ export default function AudioCall() {
       audioElement.autoplay = true;
       audioElement.muted = false;
       
-      // Force audio to play with multiple attempts
+      // Force audio to play with multiple attempts and debugging
       const tryPlay = async (attempt = 1) => {
         try {
+          console.log(`[AudioCall] 🔊 Attempt ${attempt} - Audio element state:`, {
+            paused: audioElement.paused,
+            muted: audioElement.muted,
+            volume: audioElement.volume,
+            readyState: audioElement.readyState,
+            networkState: audioElement.networkState,
+            currentTime: audioElement.currentTime,
+            srcObject: !!audioElement.srcObject
+          });
+          
+          // Check if stream has audio tracks
+          if (remoteAudioStream) {
+            const audioTracks = remoteAudioStream.getAudioTracks();
+            console.log(`[AudioCall] 🎤 Remote stream audio tracks:`, audioTracks.length);
+            audioTracks.forEach((track, index) => {
+              console.log(`[AudioCall] Track ${index}:`, {
+                enabled: track.enabled,
+                muted: track.muted,
+                readyState: track.readyState,
+                kind: track.kind
+              });
+            });
+          }
+          
           await audioElement.play();
           console.log(`[AudioCall] ✅ Remote audio playing successfully (attempt ${attempt})`);
+          
+          // Additional check after play
+          setTimeout(() => {
+            console.log(`[AudioCall] 📊 Audio status after play:`, {
+              paused: audioElement.paused,
+              currentTime: audioElement.currentTime,
+              volume: audioElement.volume
+            });
+          }, 1000);
+          
         } catch (e) {
           console.log(`[AudioCall] Remote audio play failed attempt ${attempt}:`, e);
-          if (attempt < 3) {
-            setTimeout(() => tryPlay(attempt + 1), 500);
+          if (attempt < 5) {
+            setTimeout(() => tryPlay(attempt + 1), 1000);
           } else {
-            console.log('[AudioCall] ❌ Failed to play remote audio after 3 attempts');
+            console.log('[AudioCall] ❌ Failed to play remote audio after 5 attempts');
+            
+            // Try creating a new audio element as last resort
+            console.log('[AudioCall] 🆘 Trying last resort: new audio element');
+            try {
+              const newAudio = new Audio();
+              newAudio.srcObject = remoteAudioStream;
+              newAudio.autoplay = true;
+              newAudio.volume = 1.0;
+              await newAudio.play();
+              console.log('[AudioCall] ✅ New audio element worked!');
+            } catch (lastError) {
+              console.log('[AudioCall] ❌ Last resort failed:', lastError);
+            }
           }
         }
       };
