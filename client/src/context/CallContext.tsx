@@ -271,13 +271,49 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const handleIncomingCall = (message: any) => {
     console.log('[CallContext] Incoming call from:', message.fromUserName);
     
-    // Play ringtone for incoming call
-    if (ringtoneAudio) {
-      ringtoneAudio.currentTime = 0;
-      ringtoneAudio.play().catch(error => {
-        console.log('[CallContext] Could not play ringtone:', error);
-      });
-    }
+    // Play ringtone for incoming call with multiple fallbacks
+    const playRingtone = async () => {
+      try {
+        if (ringtoneAudio) {
+          ringtoneAudio.currentTime = 0;
+          console.log('[CallContext] Attempting to play ringtone...');
+          await ringtoneAudio.play();
+          console.log('[CallContext] ✅ Ringtone playing successfully');
+        } else {
+          console.log('[CallContext] ❌ Ringtone audio not available');
+          // Fallback: use system notification
+          if ('Notification' in window) {
+            new Notification('Panggilan Masuk', {
+              body: `${message.fromUserName} sedang menelpon`,
+              icon: '/favicon.ico'
+            });
+          }
+        }
+      } catch (error) {
+        console.log('[CallContext] ❌ Could not play ringtone:', error);
+        // Additional fallback: create simple beep
+        try {
+          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+          
+          oscillator.start();
+          oscillator.stop(audioContext.currentTime + 0.5);
+          
+          console.log('[CallContext] ✅ Fallback beep played');
+        } catch (beepError) {
+          console.log('[CallContext] ❌ Fallback beep also failed:', beepError);
+        }
+      }
+    };
+    
+    playRingtone();
     
     setIncomingCall({
       callId: message.callId,
