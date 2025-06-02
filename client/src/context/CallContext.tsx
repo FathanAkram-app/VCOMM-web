@@ -104,6 +104,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   // Initialize ringtone audio with autoplay bypass
   useEffect(() => {
+    if (ringtoneAudio) return; // Prevent creating multiple instances
+    
     const createRingtone = () => {
       try {
         // Create multiple audio sources for better compatibility
@@ -133,16 +135,17 @@ export function CallProvider({ children }: { children: ReactNode }) {
     };
     
     createRingtone();
-    
-    // Set up user interaction handler to enable audio (moved outside useEffect)
+  }, []); // Only run once on mount
+
+  // Separate useEffect for user interaction handling
+  useEffect(() => {
     const enableAudioOnUserInteraction = async () => {
-      const currentRingtone = ringtoneAudio;
-      if (currentRingtone) {
+      if (ringtoneAudio) {
         try {
           // Try to play and immediately pause to enable audio context
-          await currentRingtone.play();
-          currentRingtone.pause();
-          currentRingtone.currentTime = 0;
+          await ringtoneAudio.play();
+          ringtoneAudio.pause();
+          ringtoneAudio.currentTime = 0;
           console.log('[CallContext] Audio context enabled through user interaction');
         } catch (error) {
           console.log('[CallContext] Could not enable audio context:', error);
@@ -165,7 +168,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       document.removeEventListener('touch', enableAudioOnUserInteraction);
       document.removeEventListener('keydown', enableAudioOnUserInteraction);
     };
-  }, []); // Remove ringtoneAudio dependency to prevent infinite loop
+  }, [ringtoneAudio]); // Only run when ringtoneAudio changes
 
   // Simple WebSocket connection for calls - just like in Chat.tsx
   useEffect(() => {
