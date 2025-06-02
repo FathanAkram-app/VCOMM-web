@@ -448,15 +448,41 @@ export function CallProvider({ children }: { children: ReactNode }) {
     if (currentActiveCall && currentActiveCall.peerConnection) {
       console.log('[CallContext] Updating call status to connected');
       
-      // Stop ringtone when call is accepted
+      // Stop ALL ringtone sources when call is accepted
+      console.log('[CallContext] Stopping ALL ringtone sources - call accepted');
+      
+      // Stop HTML5 Audio
       if (ringtoneAudio) {
-        console.log('[CallContext] Stopping ringtone - call accepted');
         ringtoneAudio.pause();
         ringtoneAudio.currentTime = 0;
         ringtoneAudio.loop = false;
-        // Force stop by setting src to empty
         ringtoneAudio.src = '';
         ringtoneAudio.load();
+      }
+      
+      // Stop Web Audio API source
+      if ((window as any).__ringtoneSource) {
+        try {
+          (window as any).__ringtoneSource.stop();
+          (window as any).__ringtoneSource = null;
+          console.log('[CallContext] ✅ Web Audio API ringtone stopped');
+        } catch (e) {
+          console.log('[CallContext] Web Audio API source already stopped');
+        }
+      }
+      
+      // Clear any notifications
+      if ('Notification' in window) {
+        // Clear any existing notifications with our tag
+        try {
+          navigator.serviceWorker?.ready.then(registration => {
+            registration.getNotifications({ tag: 'incoming-call' }).then(notifications => {
+              notifications.forEach(notification => notification.close());
+            });
+          });
+        } catch (e) {
+          console.log('[CallContext] Could not clear notifications');
+        }
       }
 
       // Update call status first
