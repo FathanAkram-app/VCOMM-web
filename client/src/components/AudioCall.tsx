@@ -12,8 +12,9 @@ export default function AudioCall() {
   
   // Setup remote audio stream when component mounts
   useEffect(() => {
+    console.log("[AudioCall] Remote stream effect triggered, remoteAudioStream:", remoteAudioStream);
     if (!remoteAudioStream) {
-      console.log("[AudioCall] ❌ No remote audio stream available");
+      console.log("[AudioCall] ❌ No remote audio stream available, waiting for stream...");
       return;
     }
     
