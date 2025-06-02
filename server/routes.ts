@@ -747,6 +747,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[Call] Sent call ended notification to user ${toUserId}`);
           }
         }
+
+        // Handle WebRTC offer
+        if (data.type === 'webrtc_offer' && ws.userId) {
+          const { callId, offer } = data;
+          console.log(`[WebRTC] Relaying offer for call ${callId}`);
+          
+          // Find the target user based on call participants
+          clients.forEach((client, userId) => {
+            if (userId !== ws.userId && client.readyState === client.OPEN) {
+              client.send(JSON.stringify({
+                type: 'webrtc_offer',
+                callId,
+                offer
+              }));
+            }
+          });
+        }
+
+        // Handle WebRTC answer
+        if (data.type === 'webrtc_answer' && ws.userId) {
+          const { callId, answer } = data;
+          console.log(`[WebRTC] Relaying answer for call ${callId}`);
+          
+          // Find the target user based on call participants
+          clients.forEach((client, userId) => {
+            if (userId !== ws.userId && client.readyState === client.OPEN) {
+              client.send(JSON.stringify({
+                type: 'webrtc_answer',
+                callId,
+                answer
+              }));
+            }
+          });
+        }
+
+        // Handle WebRTC ICE candidate
+        if (data.type === 'webrtc_ice_candidate' && ws.userId) {
+          const { callId, candidate } = data;
+          console.log(`[WebRTC] Relaying ICE candidate for call ${callId}`);
+          
+          // Find the target user based on call participants
+          clients.forEach((client, userId) => {
+            if (userId !== ws.userId && client.readyState === client.OPEN) {
+              client.send(JSON.stringify({
+                type: 'webrtc_ice_candidate',
+                callId,
+                candidate
+              }));
+            }
+          });
+        }
       } catch (error) {
         console.error('WebSocket message error:', error);
       }
