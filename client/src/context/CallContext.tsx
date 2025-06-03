@@ -1232,6 +1232,19 @@ export function CallProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // If it's a group call, use joinGroupCall instead
+    if (incomingCall.isGroupCall) {
+      console.log('[CallContext] Accepting group call - redirecting to joinGroupCall');
+      setIncomingCall(null); // Clear the modal first
+      await joinGroupCall(
+        incomingCall.callId,
+        incomingCall.groupId!,
+        incomingCall.groupName!,
+        incomingCall.callType
+      );
+      return;
+    }
+
     console.log('[CallContext] Accepting call');
     
     // IMMEDIATE ringtone stop - execute before anything else
