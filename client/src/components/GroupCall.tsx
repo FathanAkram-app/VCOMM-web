@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 interface GroupCallProps {
   groupId: number;
   groupName: string;
-  callType: 'audio' | 'video';
+  callType?: 'audio' | 'video';
 }
 
 interface GroupParticipant {
@@ -19,7 +19,7 @@ interface GroupParticipant {
   stream?: MediaStream;
 }
 
-export default function GroupCall({ groupId, groupName, callType }: GroupCallProps) {
+export default function GroupCall({ groupId, groupName, callType = 'audio' }: GroupCallProps) {
   const { user } = useAuth();
   const { hangupCall, activeCall } = useCall();
   
@@ -598,11 +598,11 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
               Participants: {participants.map(p => `${p.userName}(${p.userId})`).join(', ')}
             </div>
 
-            {/* Show all participants for debugging */}
-            {participants.map(participant => (
+            {/* Show participants excluding current user */}
+            {participants.filter(participant => participant.userId !== user?.id).map(participant => (
               <div key={participant.userId} className="flex flex-col items-center space-y-2">
-                <Avatar className="h-20 w-20 bg-[#333333] border-2 border-gray-500">
-                  <AvatarFallback className="bg-[#333333] text-gray-400 text-xl font-bold">
+                <Avatar className="h-20 w-20 bg-[#4a9eff] border-2 border-[#5fb85f]">
+                  <AvatarFallback className="bg-[#4a9eff] text-white text-xl font-bold">
                     {participant.userName.substring(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
@@ -614,6 +614,23 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
                 </div>
               </div>
             ))}
+
+            {/* Show current user */}
+            {user && (
+              <div className="flex flex-col items-center space-y-2">
+                <Avatar className="h-20 w-20 bg-[#5fb85f] border-2 border-[#5fb85f]">
+                  <AvatarFallback className="bg-[#5fb85f] text-white text-xl font-bold">
+                    {user.callsign?.substring(0, 2).toUpperCase() || 'AN'}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="text-center">
+                  <p className="text-white text-sm font-medium">Anda</p>
+                  <p className="text-xs text-gray-400">
+                    {isAudioEnabled ? 'Speaking' : 'Muted'}
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Empty slots */}
             {Array.from({ length: Math.max(0, 8 - participants.length - 1) }).map((_, index) => (
