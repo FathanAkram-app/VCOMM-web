@@ -257,30 +257,90 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
     };
   }, [callType, groupName]);
 
-  // Simple audio system for group calls
+  // Audio system mimicking successful AudioCall pattern
   useEffect(() => {
     if (!localStream) return;
 
-    console.log('[GroupCall] Setting up audio system for group call');
+    console.log('[GroupCall] Setting up audio system for group call using AudioCall pattern');
     
-    // Create audio elements for each participant
+    // Create audio elements for each participant using the same pattern as AudioCall
     participants.forEach(participant => {
       if (participant.userId !== user?.id) {
         // Create audio element for this participant
-        const audioId = `audio-${participant.userId}`;
+        const audioId = `groupAudio-${participant.userId}`;
         let audioElement = document.getElementById(audioId) as HTMLAudioElement;
         
         if (!audioElement) {
           audioElement = document.createElement('audio');
           audioElement.id = audioId;
           audioElement.autoplay = true;
+          audioElement.muted = false;
+          audioElement.volume = 1.0;
           audioElement.controls = false;
-          audioElement.volume = 0.8;
           (audioElement as any).playsInline = true;
           audioElement.style.display = 'none';
           document.body.appendChild(audioElement);
           
-          console.log(`[GroupCall] Created audio element for participant ${participant.userId}`);
+          console.log(`[GroupCall] Created audio element for participant ${participant.userId} using AudioCall pattern`);
+          
+          // Apply the same audio setup logic as AudioCall
+          const setupParticipantAudio = async (attempt = 1) => {
+            try {
+              console.log(`[GroupCall] Setting up audio for participant ${participant.userId} (attempt ${attempt})`);
+              
+              // Check browser environment like AudioCall does
+              console.log(`[GroupCall] Browser environment for participant ${participant.userId}:`, {
+                userAgent: navigator.userAgent,
+                isSecureContext: window.isSecureContext,
+                protocol: window.location.protocol
+              });
+              
+              // Force audio to play with the same error handling as AudioCall
+              const tryPlay = async () => {
+                try {
+                  const testPlay = audioElement.play();
+                  if (testPlay instanceof Promise) {
+                    await testPlay;
+                  }
+                  console.log(`[GroupCall] ✅ Audio playing for participant ${participant.userId}`);
+                } catch (error: any) {
+                  if (error.name === 'NotAllowedError') {
+                    console.log(`[GroupCall] ⚠️ User interaction required for participant ${participant.userId}`);
+                    
+                    // Add user interaction listener like AudioCall
+                    const handleUserInteraction = () => {
+                      console.log(`[GroupCall] 🖱️ User interaction detected for participant ${participant.userId}`);
+                      audioElement.play().then(() => {
+                        console.log(`[GroupCall] ✅ Audio started for participant ${participant.userId} after interaction`);
+                      }).catch(err => {
+                        console.error(`[GroupCall] ❌ Audio failed for participant ${participant.userId}:`, err);
+                      });
+                      // Remove listeners
+                      document.removeEventListener('click', handleUserInteraction);
+                      document.removeEventListener('keydown', handleUserInteraction);
+                      document.removeEventListener('touchstart', handleUserInteraction);
+                    };
+                    
+                    document.addEventListener('click', handleUserInteraction);
+                    document.addEventListener('keydown', handleUserInteraction);
+                    document.addEventListener('touchstart', handleUserInteraction);
+                  } else {
+                    throw error;
+                  }
+                }
+              };
+              
+              await tryPlay();
+              
+            } catch (error) {
+              console.error(`[GroupCall] Error setting up audio for participant ${participant.userId}:`, error);
+              if (attempt < 3) {
+                setTimeout(() => setupParticipantAudio(attempt + 1), 1000);
+              }
+            }
+          };
+          
+          setupParticipantAudio();
         }
       }
     });
@@ -289,7 +349,7 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
       console.log('[GroupCall] Cleaning up audio elements');
       participants.forEach(participant => {
         if (participant.userId !== user?.id) {
-          const audioElement = document.getElementById(`audio-${participant.userId}`);
+          const audioElement = document.getElementById(`groupAudio-${participant.userId}`);
           if (audioElement) {
             audioElement.remove();
           }
@@ -546,6 +606,19 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
           </Button>
         </div>
       </div>
+
+      {/* Hidden audio elements for participants - mimicking AudioCall pattern */}
+      {participants.map(participant => (
+        participant.userId !== user?.id && (
+          <audio
+            key={`audio-${participant.userId}`}
+            id={`groupAudio-${participant.userId}`}
+            autoPlay
+            playsInline
+            style={{ display: 'none' }}
+          />
+        )
+      ))}
     </div>
   );
 }
