@@ -749,19 +749,40 @@ export function CallProvider({ children }: { children: ReactNode }) {
     const { callId, participants, newParticipant } = message.payload;
     
     console.log('[CallContext] Comparing callIds - message:', callId, 'activeCall:', activeCall?.callId);
+    console.log('[CallContext] ActiveCall groupId:', activeCall?.groupId);
     
-    // Update participants in active call if it matches OR if it's the same group
-    if (activeCall && (activeCall.callId === callId || 
-        (activeCall.isGroupCall && callId.includes(`_${activeCall.groupId}_`)))) {
-      console.log('[CallContext] Updating activeCall with participants:', participants);
-      setActiveCall({
-        ...activeCall,
-        participants: participants,
-        callId: callId // Update to the correct callId if needed
-      });
-      console.log('[CallContext] Updated participants in active call:', participants);
+    // For group calls, match by groupId rather than exact callId since the server may use different callIds
+    if (activeCall && activeCall.isGroupCall) {
+      // Extract groupId from the callId (format: group_call_timestamp_groupId_userId)
+      const messageGroupId = callId.split('_')[3];
+      const activeGroupId = String(activeCall.groupId);
+      
+      console.log('[CallContext] Extracted groupIds - message:', messageGroupId, 'active:', activeGroupId);
+      
+      if (messageGroupId === activeGroupId) {
+        console.log('[CallContext] Group IDs match, updating participants:', participants);
+        
+        // Convert participant IDs to participant objects with names
+        const participantObjects = participants.map((userId: number) => ({
+          userId,
+          userName: userId === user?.id ? (user?.callsign || user?.fullName || 'You') : `User ${userId}`,
+          audioEnabled: true,
+          videoEnabled: false,
+          stream: null
+        }));
+        
+        setActiveCall({
+          ...activeCall,
+          participants: participantObjects,
+          callId: callId // Update to the server's active callId
+        });
+        
+        console.log('[CallContext] Updated participants in active call:', participantObjects);
+      } else {
+        console.log('[CallContext] Group IDs do not match');
+      }
     } else {
-      console.log('[CallContext] No matching call found for participant update');
+      console.log('[CallContext] No active group call found for participant update');
     }
   };
 
