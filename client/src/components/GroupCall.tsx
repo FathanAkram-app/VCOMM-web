@@ -56,7 +56,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
               userId,
               userName: userData.callsign || userData.fullName || `User ${userId}`,
               audioEnabled: true,
-              videoEnabled: callType === 'video',
+              videoEnabled: false, // GroupCall is audio-only
               stream: null
             });
           } else {
@@ -64,7 +64,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
               userId,
               userName: `User ${userId}`,
               audioEnabled: true,
-              videoEnabled: callType === 'video',
+              videoEnabled: false, // GroupCall is audio-only
               stream: null
             });
           }
@@ -74,7 +74,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
             userId,
             userName: `User ${userId}`,
             audioEnabled: true,
-            videoEnabled: callType === 'video',
+            videoEnabled: false, // GroupCall is audio-only
             stream: null
           });
         }
@@ -120,7 +120,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
               userId,
               userName: 'Anda',
               audioEnabled: true,
-              videoEnabled: callType === 'video',
+              videoEnabled: false, // GroupCall is audio-only
               stream: undefined
             });
           } else {
@@ -132,7 +132,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
                   userId,
                   userName: userData.callsign || userData.fullName || `User ${userId}`,
                   audioEnabled: true,
-                  videoEnabled: callType === 'video',
+                  videoEnabled: false, // GroupCall is audio-only
                   stream: undefined
                 });
               } else {
@@ -140,7 +140,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
                   userId,
                   userName: `User ${userId}`,
                   audioEnabled: true,
-                  videoEnabled: callType === 'video',
+                  videoEnabled: false, // GroupCall is audio-only
                   stream: undefined
                 });
               }
@@ -567,7 +567,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
             </h3>
             <p className="text-xs text-gray-400 flex items-center">
               <Users className="h-3 w-3 mr-1" />
-              Panggilan Grup {callType === 'video' ? 'Video' : 'Audio'}
+              Panggilan Grup Audio
             </p>
           </div>
         </div>
