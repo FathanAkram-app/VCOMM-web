@@ -787,7 +787,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }
 
     // Clean up active call if it matches
-    if (activeCall?.callId === message.payload.callId) {
+    if (activeCall && activeCall.callId === message.payload.callId) {
       if (activeCall.localStream) {
         activeCall.localStream.getTracks().forEach(track => track.stop());
       }
@@ -1283,7 +1283,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }
 
     // If it's a group call, use joinGroupCall instead
-    if (incomingCall.isGroupCall) {
+    if (incomingCall.isGroupCall && incomingCall.callId) {
       console.log('[CallContext] Accepting group call - redirecting to joinGroupCall');
       setIncomingCall(null); // Clear the modal first
       await joinGroupCall(
