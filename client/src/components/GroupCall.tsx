@@ -490,7 +490,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
       });
     };
     
-  }, [localStream, participants, user?.id, callType]);
+  }, [localStream, participants, user?.id]);
 
   // Participant audio status management
   useEffect(() => {
