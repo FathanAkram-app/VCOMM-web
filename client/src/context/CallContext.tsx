@@ -358,6 +358,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
           case 'group_call_ended':
             handleGroupCallEnded(message.payload || message);
             break;
+          case 'group_call_user_left':
+            handleGroupCallUserLeft(message);
+            break;
           case 'group_call_participants_update':
             handleGroupCallParticipantsUpdate(message);
             break;

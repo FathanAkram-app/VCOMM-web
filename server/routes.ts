@@ -939,37 +939,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (callId.includes('group_call_')) {
             const groupId = data.payload.groupId;
             
-            // Remove user from group call participants
-            if (activeGroupCalls.has(callId)) {
-              activeGroupCalls.get(callId)!.delete(ws.userId);
-              const remainingParticipants = activeGroupCalls.get(callId)!.size;
+            // Find the correct active group call for this groupId
+            let foundCallId = null;
+            for (const [activeCallId, participants] of activeGroupCalls.entries()) {
+              if (activeCallId.includes(`_${groupId}_`) && participants.has(ws.userId)) {
+                foundCallId = activeCallId;
+                break;
+              }
+            }
+            
+            if (foundCallId) {
+              // Remove user from group call participants
+              activeGroupCalls.get(foundCallId)!.delete(ws.userId);
+              const remainingParticipants = activeGroupCalls.get(foundCallId)!.size;
+              
+              console.log(`[Group Call] User ${ws.userId} left call ${foundCallId}, ${remainingParticipants} participants remaining`);
               
               if (remainingParticipants === 0) {
                 // No participants left, end the entire call
-                activeGroupCalls.delete(callId);
-                console.log(`[Group Call] Removed empty group call ${callId}`);
+                activeGroupCalls.delete(foundCallId);
+                console.log(`[Group Call] Removed empty group call ${foundCallId}`);
                 
                 broadcastToAll({
                   type: 'group_call_ended',
                   payload: { 
-                    callId,
+                    callId: foundCallId,
                     endedByUserId: ws.userId
                   }
                 });
-                console.log(`[Group Call] Broadcasted group call end for ${callId}`);
+                console.log(`[Group Call] Broadcasted group call end for ${foundCallId}`);
               } else {
                 // Some participants still remain, just notify user left
-                console.log(`[Group Call] User ${ws.userId} left call ${callId}, ${remainingParticipants} participants remaining`);
-                
-                // Notify remaining participants that this user left
                 broadcastToAll({
                   type: 'group_call_user_left',
                   userId: ws.userId,
                   roomId: groupId,
                   callType: data.payload.callType || 'audio'
                 });
-                console.log(`[Group Call] Broadcasted user ${ws.userId} left group call ${callId}`);
+                console.log(`[Group Call] Broadcasted user ${ws.userId} left group call ${foundCallId}`);
               }
+            } else {
+              console.log(`[Group Call] No active group call found for user ${ws.userId} in group ${groupId}`);
             }
           } else {
             // For individual calls, notify specific user

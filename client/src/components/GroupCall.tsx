@@ -170,23 +170,29 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
   const participantRefs = useRef<{ [userId: number]: HTMLVideoElement }>({});
   const audioRefs = useRef<{ [userId: number]: HTMLAudioElement }>({});
 
-  // Initialize local media stream
+  // Initialize local media stream with mobile optimization
   useEffect(() => {
     const initializeMedia = async () => {
       try {
+        // Detect mobile device
+        const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        console.log(`[GroupCall] Initializing media for ${isMobile ? 'mobile' : 'desktop'} device`);
+        
         const constraints = {
           audio: {
             echoCancellation: true,
             noiseSuppression: true,
             autoGainControl: true,
-            sampleRate: 48000,
-            channelCount: 1
+            // Mobile-optimized audio settings
+            sampleRate: isMobile ? 16000 : 48000,
+            channelCount: 1,
+            latency: isMobile ? 0.02 : 0.01
           },
           video: callType === 'video' ? {
             facingMode: 'user',
-            width: { ideal: 640, max: 1280 },
-            height: { ideal: 480, max: 720 },
-            frameRate: { ideal: 15, max: 30 }
+            width: { ideal: isMobile ? 480 : 640, max: isMobile ? 640 : 1280 },
+            height: { ideal: isMobile ? 360 : 480, max: isMobile ? 480 : 720 },
+            frameRate: { ideal: isMobile ? 10 : 15, max: isMobile ? 15 : 30 }
           } : false
         };
 
@@ -195,6 +201,43 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
 
         if (localVideoRef.current && callType === 'video') {
           localVideoRef.current.srcObject = stream;
+          localVideoRef.current.playsInline = true; // Critical for iOS
+          localVideoRef.current.muted = true;
+        }
+
+        // Mobile audio context initialization
+        if (isMobile) {
+          const initMobileAudio = () => {
+            try {
+              if (!(window as any).mobileAudioContext) {
+                (window as any).mobileAudioContext = new ((window as any).AudioContext || (window as any).webkitAudioContext)();
+              }
+              
+              if ((window as any).mobileAudioContext.state === 'suspended') {
+                (window as any).mobileAudioContext.resume().then(() => {
+                  console.log('[GroupCall] Mobile audio context resumed');
+                });
+              }
+              
+              // Create audio elements for participants with proper mobile settings
+              const audioElement = document.createElement('audio');
+              audioElement.autoplay = true;
+              (audioElement as any).playsInline = true;
+              audioElement.muted = false;
+              audioElement.volume = 1.0;
+              audioElement.controls = false;
+              audioElement.style.display = 'none';
+              document.body.appendChild(audioElement);
+              
+              console.log('[GroupCall] Mobile audio elements configured');
+            } catch (error) {
+              console.error('[GroupCall] Mobile audio setup error:', error);
+            }
+          };
+          
+          // Initialize on user interaction for mobile
+          document.addEventListener('touchstart', initMobileAudio, { once: true });
+          document.addEventListener('click', initMobileAudio, { once: true });
         }
 
         console.log('[GroupCall] Local media initialized for group:', groupName);
