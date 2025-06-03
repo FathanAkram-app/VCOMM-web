@@ -591,13 +591,15 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
               </div>
             </div>
 
-            {/* DEBUG: Show participant count */}
-            <div className="col-span-full text-center text-white text-sm mb-4 bg-red-500 p-2">
+            {/* DEBUG: Show participant count - ALWAYS VISIBLE */}
+            <div className="fixed top-4 left-4 z-50 bg-red-500 text-white p-4 rounded">
               DEBUG - Total: {participants.length} | Filtered: {participants.filter(participant => participant.userId !== user?.id).length} | UserID: {user?.id}
+              <br />
+              Participants: {participants.map(p => `${p.userName}(${p.userId})`).join(', ')}
             </div>
 
-            {/* Participants (exclude current user to avoid duplication) */}
-            {participants.filter(participant => participant.userId !== user?.id).map(participant => (
+            {/* Show all participants for debugging */}
+            {participants.map(participant => (
               <div key={participant.userId} className="flex flex-col items-center space-y-2">
                 <Avatar className="h-20 w-20 bg-[#333333] border-2 border-gray-500">
                   <AvatarFallback className="bg-[#333333] text-gray-400 text-xl font-bold">
