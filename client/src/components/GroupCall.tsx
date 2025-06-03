@@ -155,6 +155,10 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
         
         console.log('[GroupCall] Final participant list:', participantList);
         console.log('[GroupCall] Setting participants count:', participantList.length);
+        console.log('[GroupCall] Participant details:');
+        participantList.forEach((p, index) => {
+          console.log(`[GroupCall] ${index}: ID=${p.userId}, Name="${p.userName}", IsCurrentUser=${p.userId === user?.id}`);
+        });
         setParticipants(participantList);
       };
       
