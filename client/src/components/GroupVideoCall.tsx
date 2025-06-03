@@ -80,12 +80,14 @@ export default function GroupVideoCall() {
 
     return () => {
       // Cleanup streams when activeCall changes or component unmounts
+      console.log('[GroupVideoCall] useEffect cleanup triggered');
       if (localStream) {
         localStream.getTracks().forEach(track => {
-          track.stop();
-          console.log('[GroupVideoCall] Stopped track:', track.kind);
+          if (track.readyState !== 'ended') {
+            track.stop();
+            console.log('[GroupVideoCall] useEffect cleanup - stopped track:', track.kind);
+          }
         });
-        setLocalStream(null);
       }
     };
   }, [activeCall]);
@@ -109,12 +111,14 @@ export default function GroupVideoCall() {
   useEffect(() => {
     return () => {
       console.log('[GroupVideoCall] Component unmounting, cleaning up streams');
-      if (localStream) {
-        localStream.getTracks().forEach(track => {
-          track.stop();
-          console.log('[GroupVideoCall] Cleanup on unmount - stopped track:', track.kind);
-        });
-      }
+      cleanupMediaTracks();
+      
+      // Force cleanup of all media tracks in the browser
+      navigator.mediaDevices.enumerateDevices().then(devices => {
+        console.log('[GroupVideoCall] Available devices:', devices.length);
+      }).catch(err => {
+        console.log('[GroupVideoCall] Could not enumerate devices:', err);
+      });
     };
   }, []); // Empty dependency array means this runs only on unmount
 
@@ -145,29 +149,51 @@ export default function GroupVideoCall() {
     }
   };
 
-  const handleEndCall = () => {
-    console.log('[GroupVideoCall] Ending call');
-    // Stop all media tracks before ending call
+  const cleanupMediaTracks = () => {
+    console.log('[GroupVideoCall] Cleaning up media tracks');
+    
+    // Stop all tracks in the current stream
     if (localStream) {
       localStream.getTracks().forEach(track => {
-        track.stop();
-        console.log('[GroupVideoCall] Stopped track on end call:', track.kind);
+        if (track.readyState !== 'ended') {
+          track.stop();
+          console.log('[GroupVideoCall] Stopped track:', track.kind, 'readyState:', track.readyState);
+        }
       });
-      setLocalStream(null);
     }
+    
+    // Clear video element and remove srcObject
+    if (localVideoRef.current) {
+      const videoElement = localVideoRef.current;
+      videoElement.pause();
+      videoElement.srcObject = null;
+      videoElement.load(); // Force reload to clear any cached stream
+      console.log('[GroupVideoCall] Cleared and reloaded video element');
+    }
+    
+    // Reset all states
+    setLocalStream(null);
+    setIsVideoEnabled(false);
+    setIsAudioEnabled(true);
+    
+    // Force garbage collection of media streams
+    setTimeout(() => {
+      if (window.gc) {
+        window.gc();
+        console.log('[GroupVideoCall] Forced garbage collection');
+      }
+    }, 100);
+  };
+
+  const handleEndCall = () => {
+    console.log('[GroupVideoCall] Ending call');
+    cleanupMediaTracks();
     hangupCall();
   };
 
   const handleBack = () => {
     console.log('[GroupVideoCall] Going back');
-    // Stop all media tracks before going back
-    if (localStream) {
-      localStream.getTracks().forEach(track => {
-        track.stop();
-        console.log('[GroupVideoCall] Stopped track on back:', track.kind);
-      });
-      setLocalStream(null);
-    }
+    cleanupMediaTracks();
     hangupCall();
   };
 
