@@ -1,0 +1,90 @@
+[CallContext] Received message: {type: 'incoming_group_call', payload: {…}}
+CallContext.tsx:809 [CallContext] Incoming group call received: {callId: 'group_call_1748958313822_37_5', groupId: 37, groupName: 'Alpha', callType: 'audio', fromUserId: 5, …}
+CallContext.tsx:812 [CallContext] Extracted call details: {callId: 'group_call_1748958313822_37_5', groupId: 37, groupName: 'Alpha', callType: 'audio'}
+CallContext.tsx:813 [CallContext] Current activeCall: undefined
+CallContext.tsx:840 [CallContext] Set incoming group call modal for: Alpha
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: {callId: 'group_call_1748958313822_37_5', callType: 'audio', status: 'ringing', isIncoming: true, peerUserId: 5, …}
+CallContext.tsx:339 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:339 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:1401 [CallContext] acceptCall function called
+CallContext.tsx:1402 [CallContext] incomingCall: {callId: 'group_call_1748958313822_37_5', callType: 'audio', status: 'ringing', isIncoming: true, peerUserId: 5, …}
+CallContext.tsx:1403 [CallContext] ws connected: true
+CallContext.tsx:1404 [CallContext] user: {id: 2, callsign: 'eko', nrp: '12345', fullName: 'eko a', rank: 'SPC', …}
+CallContext.tsx:1413 [CallContext] Accepting group call - redirecting to joinGroupCall
+CallContext.tsx:1919 [CallContext] Joining existing group call: {callId: 'group_call_1748958313822_37_5', groupId: 37, groupName: 'Alpha', callType: 'audio'}
+CallContext.tsx:1942 [CallContext] Requesting media permissions for joining group call...
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+CallContext.tsx:1944 [CallContext] Got local media stream for joining group call
+CallContext.tsx:1980 [CallContext] Active call state set for group: 37 callId: group_call_1748958313822_37_5
+CallContext.tsx:2015 [CallContext] Joined group call successfully
+CallContext.tsx:2016 [CallContext] Active call state after joining: {callId: 'group_call_1748958313822_37_5', callType: 'audio', status: 'connected', isIncoming: false, localStream: MediaStream, …}
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+GroupCall.tsx:92 [GroupCall] No participants in active call
+GroupCall.tsx:179 [GroupCall] Initializing media for desktop device
+CallContext.tsx:339 [CallContext] Received message: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:904 [CallContext] Group call participants update: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:909 [CallContext] Comparing callIds - message: group_call_1748958313822_37_5 activeCall: group_call_1748958313822_37_5
+CallContext.tsx:910 [CallContext] ActiveCall groupId: 37
+CallContext.tsx:949 [CallContext] Extracted groupIds - message: 37 active: 37
+CallContext.tsx:950 [CallContext] CallId parts: (5) ['group', 'call', '1748958313822', '37', '5']
+CallContext.tsx:953 [CallContext] Group IDs match, updating participants: (2) [5, 2]
+CallContext.tsx:957 [CallContext] Unique participants after deduplication: (2) [5, 2]
+CallContext.tsx:966 [CallContext] Updated participants in active call: (2) [5, 2]
+GroupCall.tsx:97 [GroupCall] Processing participants from activeCall: (2) [5, 2]
+GroupCall.tsx:104 [GroupCall] Unique participant IDs: (2) [5, 2]
+GroupCall.tsx:112 [GroupCall] Participant list changed, updating...
+GroupCall.tsx:243 [GroupCall] Local media initialized for group: 
+GroupCall.tsx:264 [GroupCall] Setting up stable audio system for group call
+GroupCall.tsx:279 [GroupCall] Audio monitoring system initialized
+CallContext.tsx:307 [CallContext] Creating stable WebSocket for calls...
+GroupCall.tsx:161 [GroupCall] Final participant list: (2) [{…}, {…}]
+GroupCall.tsx:320 [GroupCall] Managing participant audio status
+CallContext.tsx:388 [CallContext] WebSocket disconnected
+GroupCall.tsx:328 [GroupCall] Enabling audio for hari
+CallContext.tsx:314 [CallContext] WebSocket connected successfully for calls
+CallContext.tsx:325 [CallContext] Authenticated user 2 with WebSocket
+CallContext.tsx:339 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:339 [CallContext] Received message: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:904 [CallContext] Group call participants update: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:909 [CallContext] Comparing callIds - message: group_call_1748958313822_37_5 activeCall: group_call_1748958313822_37_5
+CallContext.tsx:910 [CallContext] ActiveCall groupId: 37
+CallContext.tsx:949 [CallContext] Extracted groupIds - message: 37 active: 37
+CallContext.tsx:950 [CallContext] CallId parts: (5) ['group', 'call', '1748958313822', '37', '5']
+CallContext.tsx:953 [CallContext] Group IDs match, updating participants: (3) [5, 2, 3]
+CallContext.tsx:957 [CallContext] Unique participants after deduplication: (3) [5, 2, 3]
+CallContext.tsx:966 [CallContext] Updated participants in active call: (3) [5, 2, 3]
+GroupCall.tsx:97 [GroupCall] Processing participants from activeCall: (3) [5, 2, 3]
+GroupCall.tsx:104 [GroupCall] Unique participant IDs: (3) [5, 2, 3]
+GroupCall.tsx:112 [GroupCall] Participant list changed, updating...
+GroupCall.tsx:291 [GroupCall] Local audio activity: 15
+GroupCall.tsx:161 [GroupCall] Final participant list: (3) [{…}, {…}, {…}]
+GroupCall.tsx:320 [GroupCall] Managing participant audio status
+CallContext.tsx:339 [CallContext] Received message: {type: 'user_status', payload: {…}}
+GroupCall.tsx:328 [GroupCall] Enabling audio for aji
+GroupCall.tsx:328 [GroupCall] Enabling audio for hari
+CallContext.tsx:339 [CallContext] Received message: {type: 'user_status', payload: {…}}
+GroupCall.tsx:291 [GroupCall] Local audio activity: 27
+GroupCall.tsx:291 [GroupCall] Local audio activity: 92
+CallContext.tsx:339 [CallContext] Received message: {type: 'group_call_user_left', userId: 3, roomId: 37, callType: 'audio'}
+CallContext.tsx:872 [CallContext] User left group call: {type: 'group_call_user_left', userId: 3, roomId: 37, callType: 'audio'}
+CallContext.tsx:879 [CallContext] Removing user 3 from group call participants
+CallContext.tsx:891 [CallContext] Updated participants after user 3 left: (2) [5, 2]
+GroupCall.tsx:97 [GroupCall] Processing participants from activeCall: (2) [5, 2]
+GroupCall.tsx:104 [GroupCall] Unique participant IDs: (2) [5, 2]
+GroupCall.tsx:112 [GroupCall] Participant list changed, updating...
+GroupCall.tsx:291 [GroupCall] Local audio activity: 89
+GroupCall.tsx:161 [GroupCall] Final participant list: (2) [{…}, {…}]
+GroupCall.tsx:320 [GroupCall] Managing participant audio status
+CallContext.tsx:339 [CallContext] Received message: {type: 'user_status', payload: {…}}
+GroupCall.tsx:328 [GroupCall] Enabling audio for hari
+CallContext.tsx:339 [CallContext] Received message: {type: 'user_status', payload: {…}}
+GroupCall.tsx:291 [GroupCall] Local audio activity: 82
+GroupCall.tsx:291 [GroupCall] Local audio activity: 77
+GroupCall.tsx:291 [GroupCall] Local audio activity: 71
+CallContext.tsx:339 [CallContext] Received message: {type: 'group_call_user_left', userId: 5, roomId: 37, callType: 'audio'}
+CallContext.tsx:872 [CallContext] User left group call: {type: 'group_call_user_left', userId: 5, roomId: 37, callType: 'audio'}
+CallContext.tsx:879 [CallContext] Removing user 5 from group call participants
+CallContext.tsx:891 [CallContext] Updated participants after user 5 left: [2]
+CallContext.tsx:895 [CallContext] Only current user left, ending group call
+CallContext.tsx:844 [CallContext] Group call ended: {payload: {…}}
+CallContext.tsx:868 [CallContext] Cleared group call data from localStorage

@@ -890,10 +890,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
       setActiveCall(updatedCall);
       console.log(`[CallContext] Updated participants after user ${userId} left:`, updatedParticipants);
       
-      // If no participants left except current user, end the call
-      if (updatedParticipants.length <= 1) {
-        console.log('[CallContext] Only current user left, ending group call');
+      // Don't end call if current user is still in it - let them decide when to hang up
+      // Only end if there are literally no participants (shouldn't happen in normal flow)
+      if (updatedParticipants.length === 0) {
+        console.log('[CallContext] No participants left, ending group call');
         handleGroupCallEnded({ payload: { callId: currentActiveCall.callId } });
+      } else {
+        console.log(`[CallContext] ${updatedParticipants.length} participant(s) remaining, call continues`);
       }
     } else {
       console.log('[CallContext] No matching active group call found for user left event');

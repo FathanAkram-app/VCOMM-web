@@ -257,61 +257,46 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
     };
   }, [callType, groupName]);
 
-  // Stable audio system for group calls
+  // Simple audio system for group calls
   useEffect(() => {
     if (!localStream) return;
 
-    console.log('[GroupCall] Setting up stable audio system for group call');
+    console.log('[GroupCall] Setting up audio system for group call');
     
-    let audioContext: AudioContext | null = null;
-    let analyser: AnalyserNode | null = null;
-    let audioLevelInterval: NodeJS.Timeout | null = null;
-    
-    const setupAudioSystem = async () => {
-      try {
-        // Create audio context for monitoring
-        audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-        const source = audioContext.createMediaStreamSource(localStream);
-        analyser = audioContext.createAnalyser();
-        analyser.fftSize = 256;
-        source.connect(analyser);
+    // Create audio elements for each participant
+    participants.forEach(participant => {
+      if (participant.userId !== user?.id) {
+        // Create audio element for this participant
+        const audioId = `audio-${participant.userId}`;
+        let audioElement = document.getElementById(audioId) as HTMLAudioElement;
         
-        console.log('[GroupCall] Audio monitoring system initialized');
-        
-        // Monitor audio levels consistently
-        const dataArray = new Uint8Array(analyser.frequencyBinCount);
-        
-        audioLevelInterval = setInterval(() => {
-          if (analyser) {
-            analyser.getByteFrequencyData(dataArray);
-            const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
-            
-            // Update audio indicator based on actual audio levels
-            if (average > 5) {
-              console.log(`[GroupCall] Local audio activity: ${Math.round(average)}`);
-            }
-          }
-        }, 2000);
-        
-      } catch (error) {
-        console.error('[GroupCall] Error setting up audio system:', error);
+        if (!audioElement) {
+          audioElement = document.createElement('audio');
+          audioElement.id = audioId;
+          audioElement.autoplay = true;
+          audioElement.controls = false;
+          audioElement.volume = 0.8;
+          (audioElement as any).playsInline = true;
+          audioElement.style.display = 'none';
+          document.body.appendChild(audioElement);
+          
+          console.log(`[GroupCall] Created audio element for participant ${participant.userId}`);
+        }
       }
-    };
-    
-    setupAudioSystem();
+    });
     
     return () => {
-      console.log('[GroupCall] Cleaning up audio system');
-      
-      if (audioLevelInterval) {
-        clearInterval(audioLevelInterval);
-      }
-      
-      if (audioContext && audioContext.state !== 'closed') {
-        audioContext.close();
-      }
+      console.log('[GroupCall] Cleaning up audio elements');
+      participants.forEach(participant => {
+        if (participant.userId !== user?.id) {
+          const audioElement = document.getElementById(`audio-${participant.userId}`);
+          if (audioElement) {
+            audioElement.remove();
+          }
+        }
+      });
     };
-  }, [localStream]);
+  }, [localStream, participants, user?.id]);
 
   // Participant audio status management
   useEffect(() => {
