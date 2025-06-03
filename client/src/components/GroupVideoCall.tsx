@@ -4,327 +4,193 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Users, ChevronDown } from 'lucide-react';
 import { useCall } from '@/hooks/useCall';
 
-interface Participant {
+interface GroupParticipant {
   userId: number;
   userName: string;
   audioEnabled: boolean;
   videoEnabled: boolean;
-  stream: MediaStream | null;
+  stream?: MediaStream;
 }
 
 export default function GroupVideoCall() {
   const { activeCall, user, hangupCall, toggleCallAudio, toggleCallVideo, isAudioEnabled, isVideoEnabled } = useCall();
-  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [participants, setParticipants] = useState<GroupParticipant[]>([]);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
-  const participantRefs = useRef<{ [key: number]: HTMLVideoElement }>({});
-
-  console.log('[GroupVideoCall] Component rendering with activeCall:', activeCall);
+  const participantVideoRefs = useRef<{ [userId: number]: HTMLVideoElement }>({});
 
   // Extract group info
   const groupName = activeCall?.groupName || 'Unknown Group';
   const callType = activeCall?.callType || 'video';
 
+  console.log('[GroupVideoCall] Component rendering with activeCall:', activeCall);
+  console.log('[GroupVideoCall] user?.id:', user?.id);
+  console.log('[GroupVideoCall] localStream:', localStream);
+
+  // Initialize local video stream
+  useEffect(() => {
+    const initializeLocalVideo = async () => {
+      try {
+        console.log('[GroupVideoCall] Initializing local video stream');
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true
+        });
+        
+        console.log('[GroupVideoCall] Got local video stream:', stream);
+        setLocalStream(stream);
+        
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream;
+          console.log('[GroupVideoCall] Set local video stream to video element');
+        }
+      } catch (error) {
+        console.error('[GroupVideoCall] Error getting local video stream:', error);
+      }
+    };
+
+    if (activeCall && callType === 'video' && !localStream) {
+      initializeLocalVideo();
+    }
+
+    return () => {
+      if (localStream) {
+        console.log('[GroupVideoCall] Cleaning up local stream');
+        localStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [activeCall, callType]);
+
   // Process participants from activeCall
   useEffect(() => {
-    if (!activeCall?.participants) {
-      console.log('[GroupVideoCall] No participants in active call');
+    console.log('[GroupVideoCall] useEffect triggered');
+    console.log('[GroupVideoCall] activeCall:', activeCall);
+    console.log('[GroupVideoCall] activeCall?.participants:', activeCall?.participants);
+    console.log('[GroupVideoCall] user?.id:', user?.id);
+    
+    if (!activeCall?.participants || activeCall.participants.length === 0) {
+      console.log('[GroupVideoCall] No participants in active call, setting empty array');
       setParticipants([]);
       return;
     }
 
     console.log('[GroupVideoCall] Processing participants from activeCall:', activeCall.participants);
     
-    // Convert participant IDs to participant objects with unique IDs
-    const uniqueParticipantIds = [...new Set(activeCall.participants)];
+    // Get unique participant IDs only
+    const uniqueParticipantIds = [...new Set(
+      activeCall.participants.map((p: any) => typeof p === 'object' ? p.userId : p)
+    )];
+    
     console.log('[GroupVideoCall] Unique participant IDs:', uniqueParticipantIds);
     
-    // Only update if participant list has changed
-    const currentParticipantIds = participants.map(p => p.userId).sort();
-    const newParticipantIds = uniqueParticipantIds.sort();
+    // Create participant signature to prevent unnecessary re-processing
+    const participantSignature = uniqueParticipantIds.sort().join(',');
+    const currentSignature = participants.map(p => p.userId).sort().join(',');
     
-    if (JSON.stringify(currentParticipantIds) !== JSON.stringify(newParticipantIds)) {
+    // Only process if participant list actually changed
+    if (participantSignature !== currentSignature) {
       console.log('[GroupVideoCall] Participant list changed, updating...');
       
-      const newParticipants: Participant[] = uniqueParticipantIds.map(participantId => ({
-        userId: participantId,
-        userName: `User ${participantId}`, // In real app, fetch from user data
-        audioEnabled: true,
-        videoEnabled: true,
-        stream: null
-      }));
+      // Build final participant list
+      const buildParticipantList = async () => {
+        const participantList: GroupParticipant[] = [];
+        
+        for (const userId of uniqueParticipantIds) {
+          try {
+            const response = await fetch(`/api/users/${userId}`);
+            if (response.ok) {
+              const userData = await response.json();
+              participantList.push({
+                userId,
+                userName: userData.callsign || userData.fullName || `User ${userId}`,
+                audioEnabled: true,
+                videoEnabled: callType === 'video',
+                stream: undefined
+              });
+            } else {
+              participantList.push({
+                userId,
+                userName: `User ${userId}`,
+                audioEnabled: true,
+                videoEnabled: callType === 'video',
+                stream: undefined
+              });
+            }
+          } catch (error) {
+            console.error('[GroupVideoCall] Error fetching user data:', error);
+            participantList.push({
+              userId,
+              userName: `User ${userId}`,
+              audioEnabled: true,
+              videoEnabled: callType === 'video',
+              stream: undefined
+            });
+          }
+        }
+        
+        console.log('[GroupVideoCall] Final participant list:', participantList);
+        console.log('[GroupVideoCall] Setting participants count:', participantList.length);
+        console.log('[GroupVideoCall] Participant details:');
+        participantList.forEach((p, index) => {
+          console.log(`[GroupVideoCall] ${index}: ID=${p.userId}, Name="${p.userName}", IsCurrentUser=${p.userId === user?.id}`);
+        });
+        setParticipants(participantList);
+      };
       
-      setParticipants(newParticipants);
-      console.log('[GroupVideoCall] Final participant list:', newParticipants);
+      buildParticipantList();
     }
-  }, [activeCall?.participants]);
+  }, [activeCall, user?.id, callType]);
 
-  // Initialize local video stream
+  // Setup video streams for participants (simulated for now)
   useEffect(() => {
-    if (!activeCall?.localStream) return;
-
-    console.log('[GroupVideoCall] Setting up local video stream');
-    setLocalStream(activeCall.localStream);
-
-    // Set local video
-    if (localVideoRef.current) {
-      localVideoRef.current.srcObject = activeCall.localStream;
-      console.log('[GroupVideoCall] Local video stream connected');
-    }
-  }, [activeCall?.localStream]);
-
-  // Setup video streams for remote participants
-  useEffect(() => {
-    if (!localStream || participants.length === 0) return;
-
     console.log('[GroupVideoCall] Setting up video streams for participants');
     
-    const videoElements: HTMLVideoElement[] = [];
-    const audioElements: HTMLAudioElement[] = [];
-    const audioContexts: AudioContext[] = [];
-    
     participants.forEach(participant => {
-      if (participant.userId !== user?.id) {
-        console.log(`[GroupVideoCall] Setting up video stream for participant ${participant.userName} (${participant.userId})`);
+      if (participant.userId !== user?.id && participant.videoEnabled) {
+        console.log('[GroupVideoCall] Setting up video stream for participant:', participant.userName, participant.userId);
         
-        // Create hidden audio element for audio processing
-        const audioElement = document.createElement('audio');
-        audioElement.id = `groupVideoAudio-${participant.userId}`;
-        audioElement.autoplay = true;
-        audioElement.muted = false;
-        audioElement.volume = 0.8;
-        audioElement.controls = false;
-        audioElement.style.display = 'none';
-        document.body.appendChild(audioElement);
-        audioElements.push(audioElement);
-        
-        // Create hidden video element for video processing
-        const videoElement = document.createElement('video');
-        videoElement.id = `groupVideoVideo-${participant.userId}`;
-        videoElement.autoplay = true;
-        videoElement.muted = true; // Muted to avoid echo
-        videoElement.controls = false;
-        (videoElement as any).playsInline = true;
-        videoElement.style.display = 'none';
-        document.body.appendChild(videoElement);
-        videoElements.push(videoElement);
-        
-        console.log(`[GroupVideoCall] Created media elements for participant ${participant.userId}`);
-
-        // Create real media stream for this participant
-        const createVideoStream = async () => {
-          try {
-            console.log(`[GroupVideoCall] Creating video stream for participant ${participant.userId}`);
-            
-            // Get user's camera and microphone (simulating remote participant stream)
-            const mediaStream = await navigator.mediaDevices.getUserMedia({
-              audio: {
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl: true
-              },
-              video: {
-                width: { ideal: 640 },
-                height: { ideal: 480 },
-                facingMode: 'user'
-              }
-            });
-            
-            console.log(`[GroupVideoCall] Got video stream for participant ${participant.userId}`);
-            
-            // Process audio stream
-            const audioTracks = mediaStream.getAudioTracks();
-            if (audioTracks.length > 0) {
-              const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-              audioContexts.push(audioContext);
-              
-              // Resume audio context if suspended (mobile requirement)
-              if (audioContext.state === 'suspended') {
-                const resumeAudio = async () => {
-                  try {
-                    await audioContext.resume();
-                    console.log(`[GroupVideoCall] Audio context resumed for participant ${participant.userId}`);
-                  } catch (err) {
-                    console.error(`[GroupVideoCall] Failed to resume audio context:`, err);
-                  }
-                };
-                
-                document.addEventListener('touchstart', resumeAudio, { once: true });
-                document.addEventListener('click', resumeAudio, { once: true });
-                resumeAudio();
-              }
-              
-              const source = audioContext.createMediaStreamSource(new MediaStream([audioTracks[0]]));
-              const gainNode = audioContext.createGain();
-              const mediaStreamDest = audioContext.createMediaStreamDestination();
-              
-              gainNode.gain.setValueAtTime(0.7, audioContext.currentTime);
-              source.connect(gainNode);
-              gainNode.connect(mediaStreamDest);
-              
-              audioElement.srcObject = mediaStreamDest.stream;
-              
-              try {
-                await audioElement.play();
-                console.log(`[GroupVideoCall] ✅ Audio playing for participant ${participant.userId}`);
-              } catch (playError) {
-                console.warn(`[GroupVideoCall] ⚠️ Audio play failed for participant ${participant.userId}:`, playError);
-              }
-            }
-            
-            // Process video stream
-            const videoTracks = mediaStream.getVideoTracks();
-            if (videoTracks.length > 0) {
-              const videoStream = new MediaStream([videoTracks[0]]);
-              
-              // Set video stream to hidden video element
-              videoElement.srcObject = videoStream;
-              
-              // Update participant ref for UI display
-              if (participantRefs.current[participant.userId]) {
-                participantRefs.current[participant.userId].srcObject = videoStream;
-                console.log(`[GroupVideoCall] Set video stream to participant ref for ${participant.userId}`);
-              }
-              
-              // Update participant state with stream
-              setParticipants(currentParticipants => 
-                currentParticipants.map(p => 
-                  p.userId === participant.userId 
-                    ? { ...p, stream: videoStream }
-                    : p
-                )
-              );
-              
-              try {
-                await videoElement.play();
-                console.log(`[GroupVideoCall] ✅ Video playing for participant ${participant.userId}`);
-                
-                // Try to play the participant ref video as well
-                if (participantRefs.current[participant.userId]) {
-                  try {
-                    await participantRefs.current[participant.userId].play();
-                    console.log(`[GroupVideoCall] ✅ Participant ref video playing for ${participant.userId}`);
-                  } catch (refPlayError) {
-                    console.warn(`[GroupVideoCall] ⚠️ Participant ref video play failed for ${participant.userId}:`, refPlayError);
-                  }
-                }
-              } catch (playError) {
-                console.warn(`[GroupVideoCall] ⚠️ Video play failed for participant ${participant.userId}:`, playError);
-              }
-            }
-            
-          } catch (error) {
-            console.error(`[GroupVideoCall] Failed to create video stream for participant ${participant.userId}:`, error);
-          }
-        };
-        
-        createVideoStream();
-      }
-    });
-    
-    return () => {
-      console.log('[GroupVideoCall] Cleaning up video streams');
-      
-      // Clean up audio elements
-      audioElements.forEach(element => {
-        try {
-          if (element.parentNode) {
-            element.parentNode.removeChild(element);
-          }
-          if (element.srcObject) {
-            const stream = element.srcObject as MediaStream;
-            stream.getTracks().forEach(track => track.stop());
-          }
-        } catch (error) {
-          console.warn('[GroupVideoCall] Error cleaning up audio element:', error);
-        }
-      });
-      
-      // Clean up video elements
-      videoElements.forEach(element => {
-        try {
-          if (element.parentNode) {
-            element.parentNode.removeChild(element);
-          }
-          if (element.srcObject) {
-            const stream = element.srcObject as MediaStream;
-            stream.getTracks().forEach(track => track.stop());
-          }
-        } catch (error) {
-          console.warn('[GroupVideoCall] Error cleaning up video element:', error);
-        }
-      });
-      
-      // Clean up audio contexts
-      audioContexts.forEach(context => {
-        try {
-          if (context.state !== 'closed') {
-            context.close();
-          }
-        } catch (error) {
-          console.warn('[GroupVideoCall] Error closing audio context:', error);
-        }
-      });
-    };
-    
-  }, [localStream, participants, user?.id]);
-
-  // Update video refs when participants change
-  useEffect(() => {
-    if (participants.length === 0) return;
-
-    console.log('[GroupVideoCall] Managing participant video refs');
-    participants.forEach(participant => {
-      if (participant.userId !== user?.id && participant.stream) {
-        const participantVideoRef = participantRefs.current[participant.userId];
-        if (participantVideoRef && participantVideoRef.srcObject !== participant.stream) {
-          console.log(`[GroupVideoCall] Updating video ref for participant ${participant.userId}`);
-          participantVideoRef.srcObject = participant.stream;
-          
-          participantVideoRef.play().then(() => {
-            console.log(`[GroupVideoCall] ✅ Participant ${participant.userId} video playing in UI`);
+        // Get video element for this participant
+        const videoElement = participantVideoRefs.current[participant.userId];
+        if (videoElement) {
+          // Create a simulated video stream (in real implementation, this would come from WebRTC)
+          navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false
+          }).then(stream => {
+            console.log('[GroupVideoCall] Got simulated video stream for participant:', participant.userId);
+            videoElement.srcObject = stream;
+            videoElement.play().catch(e => console.log('[GroupVideoCall] Video play error:', e));
           }).catch(error => {
-            console.warn(`[GroupVideoCall] ⚠️ Failed to play participant ${participant.userId} video:`, error);
+            console.error('[GroupVideoCall] Error getting video stream for participant:', error);
           });
         }
       }
     });
   }, [participants, user?.id]);
 
-  const leaveCall = () => {
-    hangupCall();
-  };
+  if (!activeCall) {
+    return null;
+  }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-[#1a1a1a] to-[#2a2a2a] flex flex-col text-white relative">
+    <div className="fixed inset-0 bg-black z-50 flex flex-col">
       {/* Header */}
-      <div className="bg-[#2a2a2a] border-b border-[#333333] px-4 py-3 flex items-center justify-between">
+      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-[#2a4d3a] to-[#1e3a28] text-white">
         <div className="flex items-center space-x-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-[#a6c455] hover:bg-[#333333]"
-            onClick={leaveCall}
-          >
-            <ChevronDown className="h-5 w-5" />
-          </Button>
-          <div className="flex-1">
-            <h3 className="text-white font-bold text-lg uppercase tracking-wide">
-              GROUP VIDEO CALL
-            </h3>
-            <p className="text-xs text-[#a6c455] font-medium">
-              {groupName} • {participants.length} participant{participants.length !== 1 ? 's' : ''}
-            </p>
+          <Users className="h-6 w-6 text-[#a6c455]" />
+          <div>
+            <h3 className="font-semibold text-lg">{groupName}</h3>
+            <p className="text-sm text-gray-300">Group Video Call • {participants.length} peserta</p>
           </div>
         </div>
       </div>
 
       {/* Video Grid */}
-      <div className="flex-1 p-4">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 h-full">
-          {/* Local user video */}
-          <div className="relative bg-[#2a2a2a] rounded-lg overflow-hidden border border-[#333333]">
-            {isVideoEnabled && localStream ? (
+      <div className="flex-1 p-4 bg-black">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-full max-w-6xl mx-auto">
+          {/* Current user video - always visible when in call */}
+          {user && activeCall && (
+            <div className="relative bg-gray-900 rounded-lg overflow-hidden border-2 border-[#5fb85f]">
               <video
                 ref={localVideoRef}
                 autoPlay
@@ -332,95 +198,137 @@ export default function GroupVideoCall() {
                 playsInline
                 className="w-full h-full object-cover"
               />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <Avatar className="h-20 w-20 bg-[#333333] border border-[#a6c455]">
-                  <AvatarFallback className="bg-[#333333] text-[#a6c455] text-xl font-bold">
-                    {user?.callsign?.substring(0, 2).toUpperCase() || 'ME'}
-                  </AvatarFallback>
-                </Avatar>
+              <div className="absolute bottom-4 left-4 bg-black/70 px-3 py-1 rounded-full">
+                <p className="text-white text-sm font-medium">Anda</p>
               </div>
-            )}
-            <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-              Anda {!isAudioEnabled && '(Muted)'} {!isVideoEnabled && '(Video Off)'}
+              <div className="absolute top-4 right-4 flex space-x-2">
+                {isAudioEnabled ? (
+                  <div className="bg-[#5fb85f] p-2 rounded-full">
+                    <Mic className="h-4 w-4 text-white" />
+                  </div>
+                ) : (
+                  <div className="bg-red-600 p-2 rounded-full">
+                    <MicOff className="h-4 w-4 text-white" />
+                  </div>
+                )}
+                {isVideoEnabled ? (
+                  <div className="bg-[#5fb85f] p-2 rounded-full">
+                    <Video className="h-4 w-4 text-white" />
+                  </div>
+                ) : (
+                  <div className="bg-red-600 p-2 rounded-full">
+                    <VideoOff className="h-4 w-4 text-white" />
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Participant videos */}
-          {participants.map(participant => (
-            <div key={participant.userId} className="relative bg-[#2a2a2a] rounded-lg overflow-hidden border border-[#333333]">
-              {participant.videoEnabled && participant.stream ? (
-                <video
-                  ref={el => {
-                    if (el) participantRefs.current[participant.userId] = el;
-                  }}
-                  autoPlay
-                  playsInline
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Avatar className="h-20 w-20 bg-[#333333] border border-[#a6c455]">
-                    <AvatarFallback className="bg-[#333333] text-[#a6c455] text-xl font-bold">
-                      {participant.userName.substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+          {/* Other participants videos (excluding current user) */}
+          {participants
+            .filter(participant => participant.userId !== user?.id)
+            .map(participant => (
+              <div 
+                key={participant.userId} 
+                className="relative bg-gray-900 rounded-lg overflow-hidden border-2 border-[#4a9eff]"
+              >
+                {participant.videoEnabled ? (
+                  <video
+                    ref={el => {
+                      if (el) participantVideoRefs.current[participant.userId] = el;
+                    }}
+                    autoPlay
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Avatar className="h-24 w-24 bg-[#4a9eff]">
+                      <AvatarFallback className="bg-[#4a9eff] text-white text-2xl font-bold">
+                        {participant.userName.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                )}
+                <div className="absolute bottom-4 left-4 bg-black/70 px-3 py-1 rounded-full">
+                  <p className="text-white text-sm font-medium">{participant.userName}</p>
                 </div>
-              )}
-              <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-                {participant.userName} {!participant.audioEnabled && '(Muted)'} {!participant.videoEnabled && '(Video Off)'}
+                <div className="absolute top-4 right-4 flex space-x-2">
+                  {participant.audioEnabled ? (
+                    <div className="bg-[#4a9eff] p-2 rounded-full">
+                      <Mic className="h-4 w-4 text-white" />
+                    </div>
+                  ) : (
+                    <div className="bg-red-600 p-2 rounded-full">
+                      <MicOff className="h-4 w-4 text-white" />
+                    </div>
+                  )}
+                  {participant.videoEnabled ? (
+                    <div className="bg-[#4a9eff] p-2 rounded-full">
+                      <Video className="h-4 w-4 text-white" />
+                    </div>
+                  ) : (
+                    <div className="bg-red-600 p-2 rounded-full">
+                      <VideoOff className="h-4 w-4 text-white" />
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
 
-          {/* Empty slots to show waiting for participants */}
-          {Array.from({ length: Math.max(0, 6 - participants.length - 1) }).map((_, index) => (
-            <div key={`empty-${index}`} className="bg-[#2a2a2a] rounded-lg border border-[#333333] border-dashed flex items-center justify-center">
-              <div className="text-gray-500 text-center">
-                <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">Menunggu peserta...</p>
+          {/* Empty slots for more participants */}
+          {Array.from({ 
+            length: Math.max(0, 6 - participants.length) 
+          }).map((_, index) => (
+            <div 
+              key={`empty-${index}`} 
+              className="bg-gray-800 rounded-lg border-2 border-dashed border-gray-600 flex items-center justify-center opacity-50"
+            >
+              <div className="text-center">
+                <Users className="h-12 w-12 text-gray-600 mx-auto mb-2" />
+                <p className="text-gray-600 text-sm">Waiting for participant...</p>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Controls */}
-      <div className="bg-[#2a2a2a] border-t border-[#333333] px-6 py-4">
-        <div className="flex justify-center space-x-6">
-          <Button
-            variant="ghost"
-            size="lg"
-            className={`${isAudioEnabled 
-              ? 'bg-[#333333] hover:bg-[#444444] text-white' 
-              : 'bg-red-600 hover:bg-red-700 text-white'
-            } border-2 ${isAudioEnabled ? 'border-[#a6c455]' : 'border-red-600'}`}
-            onClick={toggleCallAudio}
-          >
-            {isAudioEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="lg"
-            className={`${isVideoEnabled 
-              ? 'bg-[#333333] hover:bg-[#444444] text-white' 
-              : 'bg-red-600 hover:bg-red-700 text-white'
-            } border-2 ${isVideoEnabled ? 'border-[#a6c455]' : 'border-red-600'}`}
-            onClick={toggleCallVideo}
-          >
-            {isVideoEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="lg"
-            className="bg-red-600 hover:bg-red-700 text-white border-2 border-red-600"
-            onClick={leaveCall}
-          >
-            <PhoneOff className="h-5 w-5" />
-          </Button>
-        </div>
+      {/* Control buttons */}
+      <div className="flex items-center justify-center space-x-6 p-6 bg-gradient-to-r from-[#2a4d3a] to-[#1e3a28]">
+        <Button
+          onClick={toggleCallAudio}
+          variant={isAudioEnabled ? "default" : "destructive"}
+          size="lg"
+          className="h-12 w-12 rounded-full"
+        >
+          {isAudioEnabled ? (
+            <Mic className="h-5 w-5" />
+          ) : (
+            <MicOff className="h-5 w-5" />
+          )}
+        </Button>
+
+        <Button
+          onClick={toggleCallVideo}
+          variant={isVideoEnabled ? "default" : "destructive"}
+          size="lg"
+          className="h-12 w-12 rounded-full"
+        >
+          {isVideoEnabled ? (
+            <Video className="h-5 w-5" />
+          ) : (
+            <VideoOff className="h-5 w-5" />
+          )}
+        </Button>
+
+        <Button
+          onClick={hangupCall}
+          variant="destructive"
+          size="lg"
+          className="h-14 w-14 rounded-full bg-red-600 hover:bg-red-700"
+        >
+          <PhoneOff className="h-6 w-6" />
+        </Button>
       </div>
     </div>
   );
