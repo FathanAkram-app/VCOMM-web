@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 interface GroupCallProps {
   groupId: number;
   groupName: string;
+  callType: 'audio' | 'video';
 }
 
 interface GroupParticipant {
@@ -18,13 +19,13 @@ interface GroupParticipant {
   stream?: MediaStream;
 }
 
-export default function GroupCall({ groupId, groupName }: GroupCallProps) {
+export default function GroupCall({ groupId, groupName, callType }: GroupCallProps) {
   const { user } = useAuth();
   const { hangupCall, activeCall } = useCall();
   
   const [participants, setParticipants] = useState<GroupParticipant[]>([]);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
-  const [isVideoEnabled, setIsVideoEnabled] = useState(false); // Audio-only GroupCall
+  const [isVideoEnabled, setIsVideoEnabled] = useState(callType === 'video');
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [peerConnections, setPeerConnections] = useState<{ [userId: number]: RTCPeerConnection }>({});
 
@@ -158,14 +159,12 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
         }
         
         console.log('[GroupCall] Final participant list:', participantList);
-        console.log('[GroupCall] Number of participants (excluding self):', participantList.filter(p => p.userId !== user?.id).length);
-        console.log('[GroupCall] Current user ID:', user?.id);
         setParticipants(participantList);
       };
       
       buildParticipantList();
     }
-  }, [activeCall?.participants, user?.id]); // Removed callType dependency
+  }, [activeCall?.participants, user?.id, callType]);
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const participantRefs = useRef<{ [userId: number]: HTMLVideoElement }>({});
@@ -189,7 +188,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
             channelCount: 1,
             latency: isMobile ? 0.02 : 0.01
           },
-          video: false ? { // Audio-only GroupCall
+          video: callType === 'video' ? {
             facingMode: 'user',
             width: { ideal: isMobile ? 480 : 640, max: isMobile ? 640 : 1280 },
             height: { ideal: isMobile ? 360 : 480, max: isMobile ? 480 : 720 },
@@ -499,8 +498,8 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
         </div>
       </div>
 
-      {/* Video Grid for Video Calls - Hidden in audio-only GroupCall */}
-      {false && (
+      {/* Video Grid for Video Calls */}
+      {callType === 'video' && (
         <div className="flex-1 p-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-full">
             {/* Local video */}
@@ -567,8 +566,8 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
         </div>
       )}
 
-      {/* Audio-only view - Always shown in GroupCall */}
-      {true && (
+      {/* Audio-only view */}
+      {callType === 'audio' && (
         <div className="flex-1 p-4 flex flex-col items-center justify-center">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-4xl">
             {/* Local user */}
