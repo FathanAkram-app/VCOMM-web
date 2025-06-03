@@ -1703,15 +1703,60 @@ export function CallProvider({ children }: { children: ReactNode }) {
     try {
       // Stop local media stream safely
       if (activeCall?.localStream) {
-        console.log('[CallContext] Stopping media tracks');
+        console.log('[CallContext] Stopping local media tracks');
         activeCall.localStream.getTracks().forEach(track => {
           try {
             track.stop();
+            console.log('[CallContext] Stopped local track:', track.kind);
           } catch (err) {
-            console.warn('[CallContext] Error stopping track:', err);
+            console.warn('[CallContext] Error stopping local track:', err);
           }
         });
       }
+
+      // Clean up all remote audio elements for group calls
+      if (activeCall?.isGroupCall && activeCall?.participants) {
+        console.log('[CallContext] Cleaning up group call audio elements');
+        activeCall.participants.forEach(participant => {
+          const audioElement = document.getElementById(`groupAudio-${participant.userId}`);
+          if (audioElement) {
+            try {
+              const audioEl = audioElement as HTMLAudioElement;
+              // Stop the audio stream
+              if (audioEl.srcObject) {
+                const stream = audioEl.srcObject as MediaStream;
+                stream.getTracks().forEach(track => {
+                  track.stop();
+                  console.log('[CallContext] Stopped remote audio track for participant:', participant.userId);
+                });
+                audioEl.srcObject = null;
+              }
+              // Remove the audio element
+              audioElement.remove();
+              console.log('[CallContext] Removed audio element for participant:', participant.userId);
+            } catch (err) {
+              console.warn('[CallContext] Error cleaning up audio for participant:', participant.userId, err);
+            }
+          }
+        });
+      }
+
+      // Clean up any remaining group audio elements
+      const allGroupAudioElements = document.querySelectorAll('[id^="groupAudio-"]');
+      allGroupAudioElements.forEach(element => {
+        try {
+          const audioEl = element as HTMLAudioElement;
+          if (audioEl.srcObject) {
+            const stream = audioEl.srcObject as MediaStream;
+            stream.getTracks().forEach(track => track.stop());
+            audioEl.srcObject = null;
+          }
+          element.remove();
+          console.log('[CallContext] Cleaned up remaining group audio element');
+        } catch (err) {
+          console.warn('[CallContext] Error cleaning up remaining audio element:', err);
+        }
+      });
 
       // Send call end message safely
       if (ws && ws.readyState === WebSocket.OPEN && activeCall && user) {
@@ -1748,7 +1793,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       setActiveCall(null);
       setLocation('/chat');
       
-      console.log('[CallContext] Call ended successfully, navigated back to chat');
+      console.log('[CallContext] Call ended successfully, all audio streams stopped, navigated back to chat');
       
     } catch (error) {
       console.error('[CallContext] Error during hangup:', error);
