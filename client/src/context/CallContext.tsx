@@ -256,10 +256,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
     console.log('[CallContext] Starting waiting tone sequence');
     playWaitingTone(); // Play immediately
     
-    // Then play every 1600ms (0.8s tone + 0.8s silence)
+    // Then play every 2400ms (0.8s tone + 1.6s silence)
     const interval = setInterval(() => {
       playWaitingTone();
-    }, 1600);
+    }, 2400);
     
     setWaitingToneInterval(interval);
   };
