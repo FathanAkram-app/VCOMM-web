@@ -12,6 +12,9 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '../hooks/useAuth';
 import ChatRoom from '../components/ChatRoom';
 import IncomingCallModal from '../components/IncomingCallModal';
+import GroupCall from '../components/GroupCall';
+import GroupVideoCall from '../components/GroupVideoCall';
+import { useCall } from '../hooks/useCall';
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 export default function Chat() {
   const [user, setUser] = useState<any>(null);
   const [, navigate] = useLocation();
+  const { activeCall } = useCall();
   const [activeChat, setActiveChat] = useState<{ id: number; isGroup: boolean } | null>(null);
   const [chats, setChats] = useState<any[]>([]);
   const [databaseMessages, setDatabaseMessages] = useState<any[]>([]);
@@ -1143,6 +1147,18 @@ export default function Chat() {
 
       {/* Incoming Call Modal */}
       <IncomingCallModal />
+      
+      {/* Group Call Components - Dynamic routing based on call type */}
+      {activeCall && activeCall.callType === 'audio' && activeCall.groupId && (
+        <GroupCall 
+          groupId={activeCall.groupId} 
+          groupName={activeCall.groupName || 'Unknown Group'} 
+        />
+      )}
+      
+      {activeCall && activeCall.callType === 'video' && activeCall.groupId && (
+        <GroupVideoCall />
+      )}
     </div>
   );
 }
