@@ -1,0 +1,27 @@
+[CallContext] Received message: {type: 'incoming_group_call', payload: {…}}
+CallContext.tsx:242 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:242 [CallContext] Received message: {type: 'user_status', payload: {…}}
+ChatRoom.tsx:843 Starting group audio call for group: Beta
+CallContext.tsx:1602 [CallContext] Starting group call: {groupId: 31, groupName: 'Beta', callType: 'audio'}
+CallContext.tsx:11 [CallContext] Mobile compatibility check: {isMobile: false, isHTTPS: true, userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWeb…KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36', hasMediaDevices: ƒ}
+CallContext.tsx:1613 [CallContext] Mobile compatibility check for group call: {isMobile: false, isHTTPS: true, hasMediaDevices: ƒ}
+CallContext.tsx:1636 [CallContext] Requesting media permissions for group call...
+CallContext.tsx:1638 [CallContext] Got local media stream for group call
+CallContext.tsx:1689 [CallContext] Group call invitation sent
+ChatRoom.tsx:634 Processing message data for grouping: (8) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:635 Total messages to process: 8
+ChatRoom.tsx:707 Grouped messages: [{…}]
+ChatRoom.tsx:708 Total date groups: 1
+ChatRoom.tsx:710 Total messages in first group: 8
+SimpleAudioPlayer.tsx:189 Trying to play audio from URL: /uploads/f5a09bac-74c8-4688-a8fe-9eab60540a32.webm
+SimpleAudioPlayer.tsx:190 File name extracted: f5a09bac-74c8-4688-a8fe-9eab60540a32.webm
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+GroupCall.tsx:34 [GroupCall] Updating participants from activeCall: []
+GroupCall.tsx:75 [GroupCall] Local media initialized for group: 
+CallContext.tsx:242 [CallContext] Received message: {type: 'group_call_participants_update', payload: {…}}
+GroupCall.tsx:34 [GroupCall] Updating participants from activeCall: []
+CallContext.tsx:210 [CallContext] Creating stable WebSocket for calls...
+CallContext.tsx:279 [CallContext] WebSocket disconnected
+CallContext.tsx:217 [CallContext] WebSocket connected successfully for calls
+CallContext.tsx:228 [CallContext] Authenticated user 4 with WebSocket
+CallContext.tsx:242 [CallContext] Received message: {type: 'user_status', payload: {…}}

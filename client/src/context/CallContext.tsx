@@ -246,6 +246,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
           case 'incoming_call':
             handleIncomingCall(message.payload || message);
             break;
+          case 'incoming_group_call':
+            handleIncomingGroupCall(message.payload || message);
+            break;
           case 'call_accepted':
             handleCallAccepted(message.payload || message);
             break;
@@ -254,6 +257,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
             break;
           case 'call_ended':
             handleCallEnded(message.payload || message);
+            break;
+          case 'group_call_ended':
+            handleGroupCallEnded(message.payload || message);
+            break;
+          case 'group_call_participants_update':
+            handleGroupCallParticipantsUpdate(message);
             break;
           case 'webrtc_ready':
             handleWebRTCReady(message.payload || message);
