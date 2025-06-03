@@ -78,6 +78,11 @@ interface CallState {
   videoEnabled: boolean;
   isMuted: boolean;
   startTime?: Date;
+  // Group call specific fields
+  isGroupCall?: boolean;
+  groupId?: number;
+  groupName?: string;
+  participants?: number[];
 }
 
 interface CallContextType {
@@ -85,6 +90,7 @@ interface CallContextType {
   incomingCall: CallState | null;
   remoteAudioStream: MediaStream | null;
   startCall: (peerUserId: number, peerName: string, callType: 'audio' | 'video') => void;
+  startGroupCall: (groupId: number, groupName: string, callType: 'audio' | 'video') => void;
   acceptCall: () => void;
   rejectCall: () => void;
   hangupCall: () => void;
@@ -1467,12 +1473,115 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Start group call function
+  const startGroupCall = async (groupId: number, groupName: string, callType: 'audio' | 'video') => {
+    console.log('[CallContext] Starting group call:', { groupId, groupName, callType });
+    
+    if (!user || !ws) {
+      console.error('[CallContext] Cannot start group call - user not authenticated or WebSocket not connected');
+      alert('Tidak dapat memulai panggilan grup. Pastikan Anda terhubung ke server.');
+      return;
+    }
+
+    try {
+      // Check mobile compatibility
+      const { isMobile, isHTTPS, hasMediaDevices } = checkMobileCompatibility();
+      console.log('[CallContext] Mobile compatibility check for group call:', { isMobile, isHTTPS, hasMediaDevices });
+
+      if (!hasMediaDevices) {
+        throw new Error('Media devices not supported');
+      }
+
+      // Enhanced mobile-friendly media constraints for group calls
+      const constraints = {
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 48000,
+          channelCount: 1
+        },
+        video: callType === 'video' ? {
+          facingMode: 'user',
+          width: { ideal: 640, max: 1280 },
+          height: { ideal: 480, max: 720 },
+          frameRate: { ideal: 15, max: 30 }
+        } : false
+      };
+
+      console.log('[CallContext] Requesting media permissions for group call...');
+      const localStream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log('[CallContext] Got local media stream for group call');
+
+      const callId = `group_call_${Date.now()}_${groupId}_${user.id}`;
+
+      // Create RTCPeerConnection for intranet/offline mode (no internet required)
+      const peerConnection = new RTCPeerConnection({
+        iceServers: [], // Empty array for local network only - no internet connection needed
+        iceTransportPolicy: 'all', // Allow both UDP and TCP
+        bundlePolicy: 'max-bundle',
+        rtcpMuxPolicy: 'require'
+      });
+
+      // Add local stream to peer connection
+      localStream.getTracks().forEach(track => {
+        peerConnection.addTrack(track, localStream);
+      });
+
+      // Set up group call state
+      const groupCallState: CallState = {
+        callId,
+        callType,
+        status: 'calling',
+        isIncoming: false,
+        localStream,
+        remoteStreams: new Map(),
+        peerConnection,
+        audioEnabled: true,
+        videoEnabled: callType === 'video',
+        isMuted: false,
+        startTime: new Date(),
+        isGroupCall: true,
+        groupId,
+        groupName,
+        participants: []
+      };
+
+      setActiveCall(groupCallState);
+
+      // Send group call invitation to server
+      ws.send(JSON.stringify({
+        type: 'start_group_call',
+        payload: {
+          callId,
+          groupId,
+          groupName,
+          callType,
+          fromUserId: user.id,
+          fromUserName: user.callsign || user.fullName || 'Unknown'
+        }
+      }));
+
+      console.log('[CallContext] Group call invitation sent');
+
+      // Navigate to group call interface
+      setTimeout(() => {
+        setLocation('/group-call');
+      }, 100);
+
+    } catch (error: any) {
+      console.error('[CallContext] Error starting group call:', error);
+      alert(getMobileErrorMessage(error).replace('Gagal memulai panggilan', 'Gagal memulai panggilan grup'));
+    }
+  };
+
   return (
     <CallContext.Provider value={{
       activeCall,
       incomingCall,
       remoteAudioStream,
       startCall,
+      startGroupCall,
       acceptCall,
       rejectCall,
       hangupCall,

@@ -71,7 +71,7 @@ interface ChatRoomProps {
 
 export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   const { user } = useAuth();
-  const { startCall } = useCall();
+  const { startCall, startGroupCall } = useCall();
   const [message, setMessage] = useState('');
   const [chatData, setChatData] = useState<ChatData | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -839,10 +839,10 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                 size="icon"
                 className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
                 onClick={() => {
-                  // TODO: Implement group audio call functionality
-                  console.log('Starting group audio call for group:', chatData?.name);
-                  // For now, show an alert that this feature is coming
-                  alert('Fitur panggilan grup audio akan segera tersedia!');
+                  if (chatData && isGroup) {
+                    console.log('Starting group audio call for group:', chatData.name);
+                    startGroupCall(chatId, chatData.name, 'audio');
+                  }
                 }}
                 title="Group Audio Call"
               >
@@ -853,10 +853,10 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                 size="icon"
                 className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
                 onClick={() => {
-                  // TODO: Implement group video call functionality
-                  console.log('Starting group video call for group:', chatData?.name);
-                  // For now, show an alert that this feature is coming
-                  alert('Fitur panggilan grup video akan segera tersedia!');
+                  if (chatData && isGroup) {
+                    console.log('Starting group video call for group:', chatData.name);
+                    startGroupCall(chatId, chatData.name, 'video');
+                  }
                 }}
                 title="Group Video Call"
               >
