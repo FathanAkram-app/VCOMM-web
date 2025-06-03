@@ -20,6 +20,7 @@ export default function GroupVideoCall() {
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [isVideoEnabled, setIsVideoEnabled] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const participantVideoRefs = useRef<{ [userId: number]: HTMLVideoElement }>({});
 
@@ -165,45 +166,56 @@ export default function GroupVideoCall() {
         </div>
       </div>
 
-      {/* Video Layout - 2 Rows Layout */}
-      <div className="flex-1 flex flex-col p-4 bg-black gap-4">
-        {/* First Row - Current User (40% of screen height) */}
-        <div className="flex-[2] min-h-0">
-          {user && activeCall && (
-            <div className="relative bg-gray-900 rounded-lg overflow-hidden border-2 border-[#5fb85f] h-full w-full">
-              {isVideoEnabled ? (
-                <video
-                  ref={localVideoRef}
-                  autoPlay
-                  muted
-                  playsInline
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Avatar className="h-32 w-32 bg-[#5fb85f]">
-                    <AvatarFallback className="bg-[#5fb85f] text-white text-4xl font-bold">
-                      {(user.callsign || user.fullName || 'A').substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+      {/* Video Layout - 2 Columns for Mobile */}
+      <div className="flex-1 flex p-2 bg-black gap-2">
+        {!isMaximized ? (
+          <>
+            {/* Left Column - Current User (Smaller) */}
+            <div className="w-1/3 flex flex-col gap-2">
+              {user && activeCall && (
+                <div className="relative bg-gray-900 rounded-lg overflow-hidden border-2 border-[#5fb85f] aspect-[3/4] min-h-[200px]">
+                  {isVideoEnabled ? (
+                    <video
+                      ref={localVideoRef}
+                      autoPlay
+                      muted
+                      playsInline
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Avatar className="h-16 w-16 bg-[#5fb85f]">
+                        <AvatarFallback className="bg-[#5fb85f] text-white text-lg font-bold">
+                          {(user.callsign || user.fullName || 'A').substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+                  )}
+                  <div className="absolute bottom-2 left-2 bg-black/70 px-2 py-1 rounded-full">
+                    <p className="text-white text-xs font-medium">Anda</p>
+                  </div>
+                  {/* Toggle maximize button */}
+                  <button
+                    onClick={() => setIsMaximized(true)}
+                    className="absolute top-2 right-2 bg-black/70 p-1 rounded-full hover:bg-black/90"
+                  >
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    </svg>
+                  </button>
                 </div>
               )}
-              <div className="absolute bottom-4 left-4 bg-black/70 px-3 py-1 rounded-full">
-                <p className="text-white text-lg font-medium">Anda</p>
-              </div>
             </div>
-          )}
-        </div>
 
-        {/* Second Row - Other Participants (60% of screen height with scroll) */}
-        <div className="flex-[3] min-h-0 overflow-y-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-fr min-h-full">
+            {/* Right Column - Other Participants */}
+            <div className="w-2/3 overflow-y-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 h-full">
             {participants
               .filter(participant => participant.userId !== user?.id)
               .map(participant => (
                 <div 
                   key={participant.userId} 
-                  className="relative bg-gray-900 rounded-lg overflow-hidden border-2 border-[#4a9eff] aspect-video min-h-[150px]"
+                  className="relative bg-gray-900 rounded-lg overflow-hidden border-2 border-[#4a9eff] aspect-[3/4] min-h-[120px]"
                 >
                   {participant.videoEnabled ? (
                     <video
@@ -223,29 +235,70 @@ export default function GroupVideoCall() {
                       </Avatar>
                     </div>
                   )}
-                  <div className="absolute bottom-4 left-4 bg-black/70 px-3 py-1 rounded-full">
-                    <p className="text-white text-sm font-medium">{participant.userName}</p>
+                  <div className="absolute bottom-1 left-1 bg-black/70 px-1 py-0.5 rounded">
+                    <p className="text-white text-xs font-medium">{participant.userName}</p>
                   </div>
-
                 </div>
               ))}
 
-            {/* Empty slots for more participants */}
-            {Array.from({ 
-              length: Math.max(0, 3 - participants.filter(p => p.userId !== user?.id).length) 
-            }).map((_, index) => (
-              <div 
-                key={`empty-${index}`} 
-                className="bg-gray-800 rounded-lg border-2 border-dashed border-gray-600 flex items-center justify-center opacity-50"
-              >
-                <div className="text-center">
-                  <Users className="h-10 w-10 text-gray-600 mx-auto mb-2" />
-                  <p className="text-gray-600 text-sm">Waiting...</p>
-                </div>
-              </div>
-            ))}
+              {/* Show placeholder when no other participants */}
+              {participants.filter(p => p.userId !== user?.id).length === 0 && (
+                <>
+                  <div className="relative bg-gray-800 rounded-lg overflow-hidden border-2 border-dashed border-gray-600 aspect-[3/4] min-h-[120px] flex items-center justify-center">
+                    <div className="text-gray-400 text-center">
+                      <Users className="h-8 w-8 mx-auto mb-1" />
+                      <p className="text-xs">Waiting...</p>
+                    </div>
+                  </div>
+                  <div className="relative bg-gray-800 rounded-lg overflow-hidden border-2 border-dashed border-gray-600 aspect-[3/4] min-h-[120px] flex items-center justify-center">
+                    <div className="text-gray-400 text-center">
+                      <Users className="h-8 w-8 mx-auto mb-1" />
+                      <p className="text-xs">Waiting...</p>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-        </div>
+        </>
+        ) : (
+          /* Maximized Mode - Full Screen Current User */
+          <div className="w-full h-full relative">
+            {user && activeCall && (
+              <div className="relative bg-gray-900 rounded-lg overflow-hidden border-2 border-[#5fb85f] h-full w-full">
+                {isVideoEnabled ? (
+                  <video
+                    ref={localVideoRef}
+                    autoPlay
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Avatar className="h-32 w-32 bg-[#5fb85f]">
+                      <AvatarFallback className="bg-[#5fb85f] text-white text-4xl font-bold">
+                        {(user.callsign || user.fullName || 'A').substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                )}
+                <div className="absolute bottom-4 left-4 bg-black/70 px-3 py-1 rounded-full">
+                  <p className="text-white text-lg font-medium">Anda</p>
+                </div>
+                {/* Toggle minimize button */}
+                <button
+                  onClick={() => setIsMaximized(false)}
+                  className="absolute top-2 right-2 bg-black/70 p-2 rounded-full hover:bg-black/90"
+                >
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Control buttons */}
