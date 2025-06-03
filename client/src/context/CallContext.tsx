@@ -848,7 +848,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     if (groupCallToUpdate && groupCallToUpdate.isGroupCall) {
       // Extract groupId from the callId (format: group_call_timestamp_groupId_userId)
       const callIdParts = callId.split('_');
-      const messageGroupId = callIdParts[2]; // Third part is groupId
+      const messageGroupId = callIdParts[3]; // Fourth part is groupId (index 3)
       const activeGroupId = String(groupCallToUpdate.groupId);
       
       console.log('[CallContext] Extracted groupIds - message:', messageGroupId, 'active:', activeGroupId);
