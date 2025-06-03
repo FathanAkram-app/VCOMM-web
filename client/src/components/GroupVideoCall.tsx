@@ -45,13 +45,24 @@ export default function GroupVideoCall() {
       try {
         console.log('[GroupVideoCall] Getting local media stream...');
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
+          video: { width: 640, height: 480 },
           audio: true
         });
         
         console.log('[GroupVideoCall] Got local media stream:', stream);
+        console.log('[GroupVideoCall] Video tracks:', stream.getVideoTracks().length);
+        console.log('[GroupVideoCall] Audio tracks:', stream.getAudioTracks().length);
+        
+        // Initially disable video (default behavior)
+        const videoTrack = stream.getVideoTracks()[0];
+        if (videoTrack) {
+          videoTrack.enabled = false;
+          console.log('[GroupVideoCall] Video track disabled by default');
+        }
+        
         setLocalStream(stream);
         
+        // Attach stream to video element
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
           console.log('[GroupVideoCall] Set local video source');
@@ -68,7 +79,10 @@ export default function GroupVideoCall() {
     return () => {
       // Cleanup streams
       if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
+        localStream.getTracks().forEach(track => {
+          track.stop();
+          console.log('[GroupVideoCall] Stopped track:', track.kind);
+        });
       }
     };
   }, [activeCall]);
@@ -77,6 +91,14 @@ export default function GroupVideoCall() {
   useEffect(() => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
+      console.log('[GroupVideoCall] Local video stream attached to element');
+      
+      // Set initial video state based on track
+      const videoTrack = localStream.getVideoTracks()[0];
+      if (videoTrack) {
+        setIsVideoEnabled(videoTrack.enabled);
+        console.log('[GroupVideoCall] Initial video state:', videoTrack.enabled);
+      }
     }
   }, [localStream]);
 
@@ -96,6 +118,13 @@ export default function GroupVideoCall() {
       if (videoTrack) {
         videoTrack.enabled = !videoTrack.enabled;
         setIsVideoEnabled(videoTrack.enabled);
+        console.log('[GroupVideoCall] Video toggled:', videoTrack.enabled);
+        
+        // Force video element update
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = localStream;
+          console.log('[GroupVideoCall] Video element updated');
+        }
       }
     }
   };
@@ -152,12 +181,12 @@ export default function GroupVideoCall() {
       <div className="flex-1 flex flex-col p-1 bg-black">
         {!isMaximized ? (
           <>
-            {/* Main 2x3 Grid - Compact for Mobile */}
+            {/* Main 2x3 Grid - Flexible for Mobile */}
             <div className="flex-1 mb-2">
-              <div className="grid grid-cols-2 gap-1.5 h-full">
+              <div className="grid grid-cols-2 gap-2 h-full">
                 {/* Current User - Always first position */}
                 {user && activeCall && (
-                  <div className="relative bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] rounded-md overflow-hidden border border-[#4a7c59] aspect-[4/3] max-h-28">
+                  <div className="relative bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] rounded-lg overflow-hidden border-2 border-[#4a7c59] aspect-[4/3] min-h-[120px] max-h-[160px]">
                     {isVideoEnabled ? (
                       <video
                         ref={localVideoRef}
@@ -168,22 +197,22 @@ export default function GroupVideoCall() {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#2d4a2d] to-[#1e3a1e]">
-                        <Avatar className="h-8 w-8 bg-[#4a7c59] border border-[#a6c455]">
-                          <AvatarFallback className="bg-[#4a7c59] text-white text-xs font-bold">
+                        <Avatar className="h-12 w-12 bg-[#4a7c59] border-2 border-[#a6c455]">
+                          <AvatarFallback className="bg-[#4a7c59] text-white text-sm font-bold">
                             {(user.callsign || user.fullName || 'A').substring(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                       </div>
                     )}
-                    <div className="absolute bottom-0.5 left-0.5 bg-black/80 px-1.5 py-0.5 rounded text-[9px] border border-[#4a7c59]/50">
-                      <p className="text-[#a6c455] font-bold">Anda</p>
+                    <div className="absolute bottom-1 left-1 bg-black/80 px-2 py-1 rounded border border-[#4a7c59]/50">
+                      <p className="text-[#a6c455] text-xs font-bold">Anda</p>
                     </div>
                     {/* Maximize button */}
                     <button
                       onClick={() => setIsMaximized(true)}
-                      className="absolute top-0.5 right-0.5 bg-black/70 p-0.5 rounded hover:bg-[#4a7c59]/30 transition-colors border border-[#4a7c59]/30"
+                      className="absolute top-1 right-1 bg-black/70 p-1 rounded hover:bg-[#4a7c59]/30 transition-colors border border-[#4a7c59]/30"
                     >
-                      <svg className="w-2.5 h-2.5 text-[#a6c455]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3 h-3 text-[#a6c455]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                       </svg>
                     </button>
@@ -194,7 +223,7 @@ export default function GroupVideoCall() {
                 {currentPageParticipants.map(participant => (
                   <div 
                     key={participant.userId} 
-                    className="relative bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] rounded-md overflow-hidden border border-[#7d9f7d] aspect-[4/3] max-h-28"
+                    className="relative bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] rounded-lg overflow-hidden border-2 border-[#7d9f7d] aspect-[4/3] min-h-[120px] max-h-[160px]"
                   >
                     {participant.videoEnabled && participant.stream ? (
                       <video
@@ -207,15 +236,15 @@ export default function GroupVideoCall() {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#2d4a2d] to-[#1e3a1e]">
-                        <Avatar className="h-8 w-8 bg-[#7d9f7d] border border-[#a6c455]">
-                          <AvatarFallback className="bg-[#7d9f7d] text-white text-xs font-bold">
+                        <Avatar className="h-12 w-12 bg-[#7d9f7d] border-2 border-[#a6c455]">
+                          <AvatarFallback className="bg-[#7d9f7d] text-white text-sm font-bold">
                             {participant.userName.substring(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                       </div>
                     )}
-                    <div className="absolute bottom-0.5 left-0.5 bg-black/80 px-1.5 py-0.5 rounded text-[9px] border border-[#7d9f7d]/50">
-                      <p className="text-[#a6c455] font-medium">{participant.userName}</p>
+                    <div className="absolute bottom-1 left-1 bg-black/80 px-2 py-1 rounded border border-[#7d9f7d]/50">
+                      <p className="text-[#a6c455] text-xs font-medium">{participant.userName}</p>
                     </div>
                   </div>
                 ))}
@@ -226,11 +255,11 @@ export default function GroupVideoCall() {
                 }).map((_, index) => (
                   <div 
                     key={`waiting-${index}`} 
-                    className="relative bg-gradient-to-br from-[#0a1a0a] to-[#0f1f0f] rounded-md overflow-hidden border border-dashed border-[#4a7c59]/40 aspect-[4/3] max-h-28 flex items-center justify-center opacity-50"
+                    className="relative bg-gradient-to-br from-[#0a1a0a] to-[#0f1f0f] rounded-lg overflow-hidden border-2 border-dashed border-[#4a7c59]/40 aspect-[4/3] min-h-[120px] max-h-[160px] flex items-center justify-center opacity-50"
                   >
                     <div className="text-[#7d9f7d] text-center">
-                      <Users className="h-4 w-4 mx-auto mb-0.5" />
-                      <p className="text-[8px] font-medium">Waiting...</p>
+                      <Users className="h-6 w-6 mx-auto mb-1" />
+                      <p className="text-xs font-medium">Waiting...</p>
                     </div>
                   </div>
                 ))}
