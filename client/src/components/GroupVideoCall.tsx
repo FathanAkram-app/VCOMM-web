@@ -72,8 +72,8 @@ export default function GroupVideoCall() {
         processedParticipants.push({
           userId: user.id,
           userName: user.callsign || user.fullName || 'Anda',
-          audioEnabled: true,
-          videoEnabled: false,
+          audioEnabled: isAudioEnabled,
+          videoEnabled: isVideoEnabled,
           stream: localStream || undefined
         });
         console.log('[GroupVideoCall] Added current user to participants');
