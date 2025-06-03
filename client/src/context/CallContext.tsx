@@ -1817,11 +1817,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
       }));
 
       console.log('[CallContext] Joined group call successfully');
+      console.log('[CallContext] Active call state after joining:', groupCallState);
 
       // Navigate to group call interface
       setTimeout(() => {
         setLocation('/group-call');
-      }, 100);
+      }, 500); // Increased delay to ensure state is properly set
 
     } catch (error: any) {
       console.error('[CallContext] Error joining group call:', error);
