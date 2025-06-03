@@ -264,7 +264,7 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
         </div>
         
         <div className="text-white text-sm">
-          {participants.length + 1} peserta
+          {participants.length} peserta
         </div>
       </div>
 
@@ -355,8 +355,8 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
               </div>
             </div>
 
-            {/* Participants */}
-            {participants.map(participant => (
+            {/* Participants (exclude current user to avoid duplication) */}
+            {participants.filter(participant => participant.userId !== user?.id).map(participant => (
               <div key={participant.userId} className="flex flex-col items-center space-y-2">
                 <Avatar className="h-20 w-20 bg-[#333333] border-2 border-gray-500">
                   <AvatarFallback className="bg-[#333333] text-gray-400 text-xl font-bold">
