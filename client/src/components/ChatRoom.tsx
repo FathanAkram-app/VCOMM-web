@@ -791,43 +791,94 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
           </div>
         </div>
         
-        {/* Call buttons - only show for direct chats */}
-        {!isGroup && (
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
-              onClick={() => {
-                if (chatData && chatMembers) {
-                  // Get the other user's ID from chat members
-                  const otherMember = chatMembers.find((member: any) => member.userId !== user?.id);
-                  if (otherMember) {
-                    startCall(otherMember.userId, chatData.name, 'audio');
+        {/* Call buttons for both direct chats and group chats */}
+        <div className="flex items-center space-x-2">
+          {!isGroup ? (
+            // Direct chat - call specific user
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
+                onClick={() => {
+                  if (chatData && chatMembers) {
+                    // Get the other user's ID from chat members
+                    const otherMember = chatMembers.find((member: any) => member.userId !== user?.id);
+                    if (otherMember) {
+                      startCall(otherMember.userId, chatData.name, 'audio');
+                    }
                   }
-                }
-              }}
-            >
-              <Phone className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
-              onClick={() => {
-                if (chatData && chatMembers) {
-                  // Get the other user's ID from chat members
-                  const otherMember = chatMembers.find((member: any) => member.userId !== user?.id);
-                  if (otherMember) {
-                    startCall(otherMember.userId, chatData.name, 'video');
+                }}
+                title="Audio Call"
+              >
+                <Phone className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
+                onClick={() => {
+                  if (chatData && chatMembers) {
+                    // Get the other user's ID from chat members
+                    const otherMember = chatMembers.find((member: any) => member.userId !== user?.id);
+                    if (otherMember) {
+                      startCall(otherMember.userId, chatData.name, 'video');
+                    }
                   }
-                }
-              }}
-            >
-              <Video className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
+                }}
+                title="Video Call"
+              >
+                <Video className="h-4 w-4" />
+              </Button>
+            </>
+          ) : (
+            // Group chat - start group calls
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
+                onClick={() => {
+                  // TODO: Implement group audio call functionality
+                  console.log('Starting group audio call for group:', chatData?.name);
+                  // For now, show an alert that this feature is coming
+                  alert('Fitur panggilan grup audio akan segera tersedia!');
+                }}
+                title="Group Audio Call"
+              >
+                <Phone className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
+                onClick={() => {
+                  // TODO: Implement group video call functionality
+                  console.log('Starting group video call for group:', chatData?.name);
+                  // For now, show an alert that this feature is coming
+                  alert('Fitur panggilan grup video akan segera tersedia!');
+                }}
+                title="Group Video Call"
+              >
+                <Video className="h-4 w-4" />
+              </Button>
+              {/* Group members button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
+                onClick={() => {
+                  // TODO: Show group members dialog
+                  console.log('Show group members for:', chatData?.name);
+                  alert('Dialog anggota grup akan segera tersedia!');
+                }}
+                title="Group Members"
+              >
+                <Users className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+        </div>
       </div>
       
       {/* Delete Message Dialog */}
