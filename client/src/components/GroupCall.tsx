@@ -30,13 +30,19 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
 
   // Function to fetch participant data from server
   const fetchParticipantData = async (participantIds: number[]) => {
-    const participantData: GroupParticipant[] = [];
+    // Create a Map to ensure unique participants by userId
+    const participantMap = new Map<number, GroupParticipant>();
     
     for (const userId of participantIds) {
+      // Skip if we already processed this user
+      if (participantMap.has(userId)) {
+        continue;
+      }
+      
       if (userId === user?.id) {
-        participantData.push({
+        participantMap.set(userId, {
           userId,
-          userName: user.callsign || user.fullName || 'You',
+          userName: 'Anda',
           audioEnabled: true,
           videoEnabled: callType === 'video',
           stream: null
@@ -46,7 +52,7 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
           const response = await fetch(`/api/users/${userId}`);
           if (response.ok) {
             const userData = await response.json();
-            participantData.push({
+            participantMap.set(userId, {
               userId,
               userName: userData.callsign || userData.fullName || `User ${userId}`,
               audioEnabled: true,
@@ -54,7 +60,7 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
               stream: null
             });
           } else {
-            participantData.push({
+            participantMap.set(userId, {
               userId,
               userName: `User ${userId}`,
               audioEnabled: true,
@@ -64,7 +70,7 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
           }
         } catch (error) {
           console.error('[GroupCall] Error fetching user data:', error);
-          participantData.push({
+          participantMap.set(userId, {
             userId,
             userName: `User ${userId}`,
             audioEnabled: true,
@@ -75,8 +81,12 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
       }
     }
     
-    return participantData;
+    // Convert Map back to array
+    return Array.from(participantMap.values());
   };
+
+  // Track the last processed participant list to prevent duplicates
+  const [lastProcessedParticipants, setLastProcessedParticipants] = useState<string>('');
 
   // Update participants from activeCall
   useEffect(() => {
@@ -90,21 +100,24 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
       
       console.log('[GroupCall] Unique participant IDs:', uniqueParticipantIds);
       
-      // Check if participant list has actually changed to prevent unnecessary updates
-      const currentParticipantIds = participants.map(p => p.userId).sort();
-      const newParticipantIds = uniqueParticipantIds.sort();
+      // Create a signature of current participants to track changes
+      const participantSignature = uniqueParticipantIds.sort().join(',');
       
-      if (JSON.stringify(currentParticipantIds) !== JSON.stringify(newParticipantIds)) {
+      // Only update if the participant list has actually changed
+      if (participantSignature !== lastProcessedParticipants && uniqueParticipantIds.length > 0) {
+        console.log('[GroupCall] Participant list changed, updating...');
+        setLastProcessedParticipants(participantSignature);
+        
         // Fetch participant data with proper names
         fetchParticipantData(uniqueParticipantIds).then(participantData => {
           console.log('[GroupCall] Setting participants with proper names:', participantData);
           setParticipants(participantData);
         });
       } else {
-        console.log('[GroupCall] Participant list unchanged, skipping update');
+        console.log('[GroupCall] Participant list unchanged or empty, skipping update');
       }
     }
-  }, [activeCall?.participants, user, callType]);
+  }, [activeCall?.participants, user?.id, lastProcessedParticipants]);
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const participantRefs = useRef<{ [userId: number]: HTMLVideoElement }>({});
