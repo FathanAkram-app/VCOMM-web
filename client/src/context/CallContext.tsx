@@ -707,7 +707,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   const handleIncomingGroupCall = (message: any) => {
     console.log('[CallContext] Incoming group call received:', message);
-    const { callId, groupId, groupName, callType, fromUserId, fromUserName } = message.payload;
+    const { callId, groupId, groupName, callType, fromUserId, fromUserName } = message.payload || message;
+
+    console.log('[CallContext] Extracted call details:', { callId, groupId, groupName, callType });
+    console.log('[CallContext] Current activeCall:', activeCall?.callId);
+    console.log('[CallContext] WebSocket connected:', !!ws);
+    console.log('[CallContext] User authenticated:', !!user?.id);
 
     // Skip if user is already in an active call
     if (activeCall) {
