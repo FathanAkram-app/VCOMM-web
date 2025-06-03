@@ -104,12 +104,49 @@ const CallContext = createContext<CallContextType | undefined>(undefined);
 
 export function CallProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const [activeCall, setActiveCall] = useState<CallState | null>(null);
   const [incomingCall, setIncomingCall] = useState<CallState | null>(null);
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [ringtoneAudio, setRingtoneAudio] = useState<HTMLAudioElement | null>(null);
   const [remoteAudioStream, setRemoteAudioStream] = useState<MediaStream | null>(null);
+
+  // Restore group call state from localStorage when on group-call page
+  useEffect(() => {
+    if (location === '/group-call' && !activeCall && user) {
+      const storedCall = localStorage.getItem('activeGroupCall');
+      if (storedCall) {
+        try {
+          const callData = JSON.parse(storedCall);
+          console.log('[CallContext] Restoring group call state from localStorage:', callData);
+          
+          // Recreate the call state for group call page
+          const restoredCall: CallState = {
+            callId: callData.callId,
+            callType: callData.callType,
+            status: 'connected',
+            isIncoming: false,
+            localStream: undefined,
+            remoteStreams: new Map(),
+            audioEnabled: true,
+            videoEnabled: callData.callType === 'video',
+            isMuted: false,
+            startTime: new Date(),
+            isGroupCall: true,
+            groupId: callData.groupId,
+            groupName: callData.groupName,
+            participants: []
+          };
+          
+          setActiveCall(restoredCall);
+          console.log('[CallContext] Group call state restored successfully');
+        } catch (error) {
+          console.error('[CallContext] Error restoring group call state:', error);
+          localStorage.removeItem('activeGroupCall');
+        }
+      }
+    }
+  }, [location, activeCall, user]);
 
   // Message handler function for WebSocket messages
   const handleWebSocketMessage = (message: any) => {
@@ -762,6 +799,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
     if (incomingCall?.callId === message.payload.callId) {
       setIncomingCall(null);
     }
+
+    // Clear localStorage when group call ends
+    localStorage.removeItem('activeGroupCall');
+    console.log('[CallContext] Cleared group call data from localStorage');
   };
 
   const handleGroupCallParticipantsUpdate = (message: any) => {
@@ -1819,10 +1860,18 @@ export function CallProvider({ children }: { children: ReactNode }) {
       console.log('[CallContext] Joined group call successfully');
       console.log('[CallContext] Active call state after joining:', groupCallState);
 
+      // Store the call state in localStorage to persist through navigation
+      localStorage.setItem('activeGroupCall', JSON.stringify({
+        callId: groupCallState.callId,
+        groupId: groupCallState.groupId,
+        groupName: groupCallState.groupName,
+        callType: groupCallState.callType
+      }));
+
       // Navigate to group call interface
       setTimeout(() => {
         setLocation('/group-call');
-      }, 500); // Increased delay to ensure state is properly set
+      }, 200);
 
     } catch (error: any) {
       console.error('[CallContext] Error joining group call:', error);
