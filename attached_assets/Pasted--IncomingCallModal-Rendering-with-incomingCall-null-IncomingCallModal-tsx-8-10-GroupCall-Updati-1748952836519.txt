@@ -1,0 +1,85 @@
+[IncomingCallModal] Rendering with incomingCall: null IncomingCallModal.tsx:8:10
+[GroupCall] Updating participants from activeCall: 
+Array []
+GroupCall.tsx:34:14
+[GroupCall] Local media initialized for group: <empty string> GroupCall.tsx:75:16
+[GroupCall] Updating participants from activeCall: 
+Array []
+GroupCall.tsx:34:14
+[CallContext] Creating stable WebSocket for calls... CallContext.tsx:210:12
+[CallContext] WebSocket disconnected CallContext.tsx:288:14
+[CallContext] WebSocket connected successfully for calls CallContext.tsx:217:14
+[CallContext] Authenticated user 3 with WebSocket CallContext.tsx:228:16
+[CallContext] Received message: 
+Object { type: "user_status", payload: {…} }
+CallContext.tsx:242:16
+[CallContext] Received message: 
+Object { type: "user_status", payload: {…} }
+CallContext.tsx:242:16
+[CallContext] Received message: 
+Object { type: "user_status", payload: {…} }
+CallContext.tsx:242:16
+[CallContext] Received message: 
+Object { type: "user_status", payload: {…} }
+CallContext.tsx:242:16
+[CallContext] Received message: 
+Object { type: "user_status", payload: {…} }
+CallContext.tsx:242:16
+[CallContext] Received message: 
+Object { type: "user_status", payload: {…} }
+CallContext.tsx:242:16
+[CallContext] Received message: 
+Object { type: "user_status", payload: {…} }
+CallContext.tsx:242:16
+[CallContext] Received message: 
+Object { type: "group_call_participants_update", payload: {…} }
+CallContext.tsx:242:16
+[CallContext] Group call participants update: 
+Object { type: "group_call_participants_update", payload: {…} }
+CallContext.tsx:748:12
+[CallContext] Comparing callIds - message: group_call_1748952749306_31_3 activeCall: group_call_1748952749306_31_3 CallContext.tsx:751:12
+[CallContext] ActiveCall groupId: 31 CallContext.tsx:752:12
+[CallContext] Extracted groupIds - message: 31 active: 31 CallContext.tsx:760:14
+[CallContext] Group IDs match, updating participants: 
+Array [ 3, 4 ]
+CallContext.tsx:763:16
+[CallContext] Updated participants in active call: 
+Array [ {…}, {…} ]
+CallContext.tsx:780:16
+[GroupCall] Updating participants from activeCall: 
+Array [ {…}, {…} ]
+GroupCall.tsx:34:14
+Warning: Encountered two children with the same key, `[object Object]`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+div
+div
+div
+GroupCall@https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/src/components/GroupCall.tsx:24:34
+AuthCheck@https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/src/App.tsx?v=UtoOndGsEt2i7JsqwCRIF:31:19
+Route@https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=768c3251:323:13
+Switch@https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=768c3251:379:14
+Router
+CallProvider@https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/src/context/CallContext.tsx:67:29
+QueryClientProvider@https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=768c3251:2804:27
+App react-dom.development.js:86:29
+[CallContext] Received message: 
+Object { type: "user_status", payload: {…} }
+CallContext.tsx:242:16
+[CallContext] Received message: 
+Object { type: "user_status", payload: {…} }
+CallContext.tsx:242:16
+Warning: Encountered two children with the same key, `[object Object]`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+div
+div
+div
+GroupCall@https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/src/components/GroupCall.tsx:24:34
+AuthCheck@https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/src/App.tsx?v=UtoOndGsEt2i7JsqwCRIF:31:19
+Route@https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=768c3251:323:13
+Switch@https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=768c3251:379:14
+Router
+CallProvider@https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/src/context/CallContext.tsx:67:29
+QueryClientProvider@https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=768c3251:2804:27
+App react-dom.development.js:86:29
+[GroupCall] Updating participants from activeCall: 
+Array [ {…}, {…} ]
+GroupCall.tsx:34:14
+[CallContext] Creating stable WebSocket for calls... CallContext.tsx:210:12

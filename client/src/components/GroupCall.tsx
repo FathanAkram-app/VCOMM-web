@@ -32,12 +32,34 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
   useEffect(() => {
     if (activeCall && activeCall.participants) {
       console.log('[GroupCall] Updating participants from activeCall:', activeCall.participants);
-      const groupParticipants: GroupParticipant[] = activeCall.participants.map((userId: number) => ({
-        userId,
-        userName: userId === user?.id ? user.callsign : `User ${userId}`,
-        audioEnabled: true,
-        videoEnabled: callType === 'video'
-      }));
+      
+      // Handle both formats: array of numbers or array of participant objects
+      const groupParticipants: GroupParticipant[] = activeCall.participants
+        .map((participant: any) => {
+          // If participant is already an object with userId
+          if (typeof participant === 'object' && participant.userId) {
+            return {
+              userId: participant.userId,
+              userName: participant.userName || `User ${participant.userId}`,
+              audioEnabled: participant.audioEnabled !== undefined ? participant.audioEnabled : true,
+              videoEnabled: participant.videoEnabled !== undefined ? participant.videoEnabled : callType === 'video',
+              stream: participant.stream || null
+            };
+          }
+          // If participant is just a number (userId)
+          else if (typeof participant === 'number') {
+            return {
+              userId: participant,
+              userName: participant === user?.id ? user.callsign : `User ${participant}`,
+              audioEnabled: true,
+              videoEnabled: callType === 'video',
+              stream: null
+            };
+          }
+          return null;
+        })
+        .filter(Boolean); // Remove null values
+      
       setParticipants(groupParticipants);
     }
   }, [activeCall?.participants, user, callType]);
