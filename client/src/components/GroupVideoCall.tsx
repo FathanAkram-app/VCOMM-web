@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Users } from 'lucide-react';
-import { useCall } from '@/hooks/useCall';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useCall } from '@/hooks/useCall';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { PhoneOff, Mic, MicOff, Video, VideoOff, Users, ArrowLeft } from 'lucide-react';
 
 interface GroupParticipant {
   userId: number;
@@ -14,253 +14,260 @@ interface GroupParticipant {
 }
 
 export default function GroupVideoCall() {
-  const { activeCall, hangupCall, toggleCallAudio, toggleCallVideo } = useCall();
+  const { activeCall, endCall } = useCall();
   const { user } = useAuth();
   const [participants, setParticipants] = useState<GroupParticipant[]>([]);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [isVideoEnabled, setIsVideoEnabled] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const participantVideoRefs = useRef<{ [userId: number]: HTMLVideoElement }>({});
 
   // Extract group info
   const groupName = activeCall?.groupName || 'Unknown Group';
+  
+  // Pagination constants
+  const PARTICIPANTS_PER_PAGE = 7; // 7 participants + 1 current user = 8 total per page
+  const otherParticipants = participants.filter(p => p.userId !== user?.id);
+  const totalPages = Math.ceil(otherParticipants.length / PARTICIPANTS_PER_PAGE);
+  const startIndex = currentPage * PARTICIPANTS_PER_PAGE;
+  const endIndex = startIndex + PARTICIPANTS_PER_PAGE;
+  const currentPageParticipants = otherParticipants.slice(startIndex, endIndex);
 
   console.log('[GroupVideoCall] Component rendering with activeCall:', activeCall);
   console.log('[GroupVideoCall] user?.id:', user?.id);
 
-  // Initialize local audio stream only (video will be added when camera is enabled)
+  // Get user media when component mounts
   useEffect(() => {
-    const initializeLocalStream = async () => {
+    const getLocalMedia = async () => {
       try {
-        console.log('[GroupVideoCall] Initializing local audio stream');
+        console.log('[GroupVideoCall] Getting local media stream...');
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: false,
+          video: true,
           audio: true
         });
         
-        console.log('[GroupVideoCall] Got local audio stream:', stream);
+        console.log('[GroupVideoCall] Got local media stream:', stream);
         setLocalStream(stream);
+        
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream;
+          console.log('[GroupVideoCall] Set local video source');
+        }
       } catch (error) {
-        console.error('[GroupVideoCall] Error getting local audio stream:', error);
+        console.error('[GroupVideoCall] Error getting local media:', error);
       }
     };
 
-    if (activeCall && user) {
-      initializeLocalStream();
+    if (activeCall) {
+      getLocalMedia();
     }
 
     return () => {
+      // Cleanup streams
       if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
       }
     };
-  }, [activeCall, user]);
+  }, [activeCall]);
 
-  // Update participants based on activeCall
+  // Update local video ref when stream changes
   useEffect(() => {
-    if (activeCall?.participants && user?.id) {
-      console.log('[GroupVideoCall] Processing participants from activeCall:', activeCall.participants);
-      
-      // Unique participants using Set to avoid duplicates
-      const uniqueParticipants = new Set();
-      const processedParticipants: GroupParticipant[] = [];
-      
-      // Add current user first
-      if (!uniqueParticipants.has(user.id)) {
-        uniqueParticipants.add(user.id);
-        processedParticipants.push({
-          userId: user.id,
-          userName: user.callsign || user.fullName || 'Anda',
-          audioEnabled: isAudioEnabled,
-          videoEnabled: isVideoEnabled,
-          stream: localStream || undefined
-        });
-        console.log('[GroupVideoCall] Added current user to participants');
-      }
-
-      // Add other participants
-      activeCall.participants.forEach(participant => {
-        if (participant.userId !== user.id && !uniqueParticipants.has(participant.userId)) {
-          uniqueParticipants.add(participant.userId);
-          processedParticipants.push({
-            userId: participant.userId,
-            userName: participant.userName,
-            audioEnabled: participant.audioEnabled,
-            videoEnabled: participant.videoEnabled,
-            stream: participant.stream || undefined
-          });
-          console.log('[GroupVideoCall] Added participant:', participant.userName);
-        }
-      });
-
-      console.log('[GroupVideoCall] Final participants list:', processedParticipants);
-      setParticipants(processedParticipants);
+    if (localVideoRef.current && localStream) {
+      localVideoRef.current.srcObject = localStream;
     }
-  }, [activeCall?.participants, user?.id, localStream]);
+  }, [localStream]);
 
-  // Handle control button clicks
-  const handleToggleAudio = () => {
-    setIsAudioEnabled(!isAudioEnabled);
-    toggleCallAudio();
-  };
-
-  const handleToggleVideo = async () => {
-    const newVideoState = !isVideoEnabled;
-    setIsVideoEnabled(newVideoState);
-
-    if (newVideoState && localStream) {
-      // Enable video - add video track to existing stream
-      try {
-        console.log('[GroupVideoCall] Enabling video');
-        const videoStream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: false
-        });
-        
-        const videoTrack = videoStream.getVideoTracks()[0];
-        if (videoTrack) {
-          localStream.addTrack(videoTrack);
-          if (localVideoRef.current) {
-            localVideoRef.current.srcObject = localStream;
-            console.log('[GroupVideoCall] Video enabled and added to stream');
-          }
-        }
-      } catch (error) {
-        console.error('[GroupVideoCall] Error enabling video:', error);
-        setIsVideoEnabled(false);
-      }
-    } else if (!newVideoState && localStream) {
-      // Disable video - remove video tracks
-      console.log('[GroupVideoCall] Disabling video');
-      const videoTracks = localStream.getVideoTracks();
-      videoTracks.forEach(track => {
-        track.stop();
-        localStream.removeTrack(track);
-      });
-      
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = localStream;
-        console.log('[GroupVideoCall] Video disabled and removed from stream');
+  const toggleAudio = () => {
+    if (localStream) {
+      const audioTrack = localStream.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        setIsAudioEnabled(audioTrack.enabled);
       }
     }
-
-    toggleCallVideo();
   };
 
-  if (!activeCall) {
+  const toggleVideo = () => {
+    if (localStream) {
+      const videoTrack = localStream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = !videoTrack.enabled;
+        setIsVideoEnabled(videoTrack.enabled);
+      }
+    }
+  };
+
+  const handleEndCall = () => {
+    console.log('[GroupVideoCall] Ending call');
+    endCall();
+  };
+
+  const handleBack = () => {
+    console.log('[GroupVideoCall] Going back');
+    endCall();
+  };
+
+  if (!activeCall || !user) {
     return null;
   }
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
+    <div className="h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-[#2a4d3a] to-[#1e3a28] text-white">
-        <div className="flex items-center space-x-3">
-          <Users className="h-6 w-6 text-[#a6c455]" />
-          <div>
-            <h3 className="font-semibold text-lg">{groupName}</h3>
-            <p className="text-sm text-gray-300">Group Video Call • {participants.length} peserta</p>
+      <div className="bg-gradient-to-r from-[#2a4a3a] to-[#1e3a2e] border-b border-[#5fb85f]/20 p-4 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={handleBack}
+            className="p-2 rounded-full bg-black/20 hover:bg-black/40 transition-colors"
+          >
+            <ArrowLeft className="h-5 w-5 text-white" />
+          </button>
+          
+          <div className="flex items-center space-x-3">
+            <Users className="h-6 w-6 text-[#a6c455]" />
+            <div>
+              <h3 className="font-semibold text-lg text-white">{groupName}</h3>
+              <p className="text-sm text-gray-300">Group Video Call • {participants.length} peserta</p>
+            </div>
           </div>
+          
+          <div className="w-10" /> {/* Spacer for centering */}
         </div>
       </div>
 
-      {/* Video Layout - 2 Columns for Mobile */}
-      <div className="flex-1 flex p-2 bg-black gap-2">
+      {/* Video Layout - 2x4 Grid with Pagination for Mobile */}
+      <div className="flex-1 flex flex-col p-2 bg-black">
         {!isMaximized ? (
           <>
-            {/* Left Column - Current User (Smaller) */}
-            <div className="w-1/3 flex flex-col gap-2">
-              {user && activeCall && (
-                <div className="relative bg-gray-900 rounded-lg overflow-hidden border-2 border-[#5fb85f] aspect-[3/4] min-h-[200px]">
-                  {isVideoEnabled ? (
-                    <video
-                      ref={localVideoRef}
-                      autoPlay
-                      muted
-                      playsInline
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Avatar className="h-16 w-16 bg-[#5fb85f]">
-                        <AvatarFallback className="bg-[#5fb85f] text-white text-lg font-bold">
-                          {(user.callsign || user.fullName || 'A').substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
+            {/* Main 2x4 Grid */}
+            <div className="flex-1 mb-3">
+              <div className="grid grid-cols-2 gap-2 h-full auto-rows-fr">
+                {/* Current User - Always first position */}
+                {user && activeCall && (
+                  <div className="relative bg-gray-900 rounded-lg overflow-hidden border-2 border-[#5fb85f] aspect-[3/4]">
+                    {isVideoEnabled ? (
+                      <video
+                        ref={localVideoRef}
+                        autoPlay
+                        muted
+                        playsInline
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Avatar className="h-12 w-12 bg-[#5fb85f]">
+                          <AvatarFallback className="bg-[#5fb85f] text-white text-sm font-bold">
+                            {(user.callsign || user.fullName || 'A').substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
+                    )}
+                    <div className="absolute bottom-1 left-1 bg-black/70 px-2 py-1 rounded">
+                      <p className="text-white text-xs font-medium">Anda</p>
                     </div>
-                  )}
-                  <div className="absolute bottom-2 left-2 bg-black/70 px-2 py-1 rounded-full">
-                    <p className="text-white text-xs font-medium">Anda</p>
+                    {/* Maximize button */}
+                    <button
+                      onClick={() => setIsMaximized(true)}
+                      className="absolute top-1 right-1 bg-black/70 p-1 rounded hover:bg-black/90"
+                    >
+                      <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                      </svg>
+                    </button>
                   </div>
-                  {/* Toggle maximize button */}
-                  <button
-                    onClick={() => setIsMaximized(true)}
-                    className="absolute top-2 right-2 bg-black/70 p-1 rounded-full hover:bg-black/90"
+                )}
+
+                {/* Current Page Participants */}
+                {currentPageParticipants.map(participant => (
+                  <div 
+                    key={participant.userId} 
+                    className="relative bg-gray-900 rounded-lg overflow-hidden border-2 border-[#4a9eff] aspect-[3/4]"
                   >
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                    </svg>
-                  </button>
-                </div>
-              )}
+                    {participant.videoEnabled && participant.stream ? (
+                      <video
+                        ref={el => {
+                          if (el) participantVideoRefs.current[participant.userId] = el;
+                        }}
+                        autoPlay
+                        playsInline
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Avatar className="h-12 w-12 bg-[#4a9eff]">
+                          <AvatarFallback className="bg-[#4a9eff] text-white text-sm font-bold">
+                            {participant.userName.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
+                    )}
+                    <div className="absolute bottom-1 left-1 bg-black/70 px-2 py-1 rounded">
+                      <p className="text-white text-xs font-medium">{participant.userName}</p>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Fill remaining slots for current page (up to 7 additional slots) */}
+                {Array.from({ 
+                  length: Math.max(0, PARTICIPANTS_PER_PAGE - currentPageParticipants.length) 
+                }).map((_, index) => (
+                  <div 
+                    key={`waiting-${index}`} 
+                    className="relative bg-gray-800 rounded-lg overflow-hidden border-2 border-dashed border-gray-600 aspect-[3/4] flex items-center justify-center opacity-50"
+                  >
+                    <div className="text-gray-400 text-center">
+                      <Users className="h-6 w-6 mx-auto mb-1" />
+                      <p className="text-xs">Waiting...</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* Right Column - Other Participants */}
-            <div className="w-2/3 overflow-y-auto">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 h-full">
-            {participants
-              .filter(participant => participant.userId !== user?.id)
-              .map(participant => (
-                <div 
-                  key={participant.userId} 
-                  className="relative bg-gray-900 rounded-lg overflow-hidden border-2 border-[#4a9eff] aspect-[3/4] min-h-[120px]"
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center space-x-4 py-2 bg-gray-900/50 rounded-lg">
+                <button
+                  onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                  disabled={currentPage === 0}
+                  className="p-2 rounded-full bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600 transition-colors"
                 >
-                  {participant.videoEnabled ? (
-                    <video
-                      ref={el => {
-                        if (el) participantVideoRefs.current[participant.userId] = el;
-                      }}
-                      autoPlay
-                      playsInline
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Avatar className="h-20 w-20 bg-[#4a9eff]">
-                        <AvatarFallback className="bg-[#4a9eff] text-white text-2xl font-bold">
-                          {participant.userName.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                    </div>
-                  )}
-                  <div className="absolute bottom-1 left-1 bg-black/70 px-1 py-0.5 rounded">
-                    <p className="text-white text-xs font-medium">{participant.userName}</p>
-                  </div>
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                
+                <div className="flex space-x-2">
+                  {Array.from({ length: totalPages }).map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentPage(index)}
+                      className={`w-8 h-8 rounded-full text-xs font-medium transition-colors ${
+                        currentPage === index 
+                          ? 'bg-[#5fb85f] text-white' 
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      }`}
+                    >
+                      {index + 1}
+                    </button>
+                  ))}
                 </div>
-              ))}
-
-              {/* Show placeholder when no other participants */}
-              {participants.filter(p => p.userId !== user?.id).length === 0 && (
-                <>
-                  <div className="relative bg-gray-800 rounded-lg overflow-hidden border-2 border-dashed border-gray-600 aspect-[3/4] min-h-[120px] flex items-center justify-center">
-                    <div className="text-gray-400 text-center">
-                      <Users className="h-8 w-8 mx-auto mb-1" />
-                      <p className="text-xs">Waiting...</p>
-                    </div>
-                  </div>
-                  <div className="relative bg-gray-800 rounded-lg overflow-hidden border-2 border-dashed border-gray-600 aspect-[3/4] min-h-[120px] flex items-center justify-center">
-                    <div className="text-gray-400 text-center">
-                      <Users className="h-8 w-8 mx-auto mb-1" />
-                      <p className="text-xs">Waiting...</p>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </>
+                
+                <button
+                  onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+                  disabled={currentPage === totalPages - 1}
+                  className="p-2 rounded-full bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600 transition-colors"
+                >
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            )}
+          </>
         ) : (
           /* Maximized Mode - Full Screen Current User */
           <div className="w-full h-full relative">
@@ -301,42 +308,49 @@ export default function GroupVideoCall() {
         )}
       </div>
 
-      {/* Control buttons */}
-      <div className="flex items-center justify-center space-x-8 p-6 bg-gradient-to-r from-[#2a4d3a] to-[#1e3a28]">
+      {/* Controls */}
+      <div className="bg-gray-900/80 backdrop-blur-sm p-4 flex justify-center space-x-6 flex-shrink-0">
         <Button
-          onClick={handleToggleAudio}
+          onClick={toggleAudio}
           variant={isAudioEnabled ? "default" : "destructive"}
           size="lg"
-          className="h-14 w-14 rounded-full bg-[#5fb85f] hover:bg-[#4a9eff] text-white"
+          className={`rounded-full w-14 h-14 ${
+            isAudioEnabled 
+              ? 'bg-gray-700 hover:bg-gray-600' 
+              : 'bg-red-600 hover:bg-red-700'
+          }`}
         >
           {isAudioEnabled ? (
-            <Mic className="h-6 w-6" />
+            <Mic className="h-6 w-6 text-white" />
           ) : (
-            <MicOff className="h-6 w-6" />
+            <MicOff className="h-6 w-6 text-white" />
           )}
         </Button>
 
         <Button
-          onClick={handleToggleVideo}
+          onClick={toggleVideo}
           variant={isVideoEnabled ? "default" : "destructive"}
           size="lg"
-          className="h-14 w-14 rounded-full bg-[#5fb85f] hover:bg-[#4a9eff] text-white"
+          className={`rounded-full w-14 h-14 ${
+            isVideoEnabled 
+              ? 'bg-gray-700 hover:bg-gray-600' 
+              : 'bg-red-600 hover:bg-red-700'
+          }`}
         >
           {isVideoEnabled ? (
-            <Video className="h-6 w-6" />
+            <Video className="h-6 w-6 text-white" />
           ) : (
-            <VideoOff className="h-6 w-6" />
+            <VideoOff className="h-6 w-6 text-white" />
           )}
         </Button>
 
-        {/* End Call Button */}
         <Button
-          onClick={hangupCall}
+          onClick={handleEndCall}
           variant="destructive"
           size="lg"
-          className="h-12 w-12 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-lg"
+          className="rounded-full w-14 h-14 bg-red-600 hover:bg-red-700"
         >
-          <PhoneOff className="h-5 w-5" />
+          <PhoneOff className="h-6 w-6 text-white" />
         </Button>
       </div>
     </div>
