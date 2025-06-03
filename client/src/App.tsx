@@ -11,6 +11,7 @@ import NotFound from "@/pages/not-found";
 import AudioCall from "@/components/AudioCall";
 import VideoCall from "@/components/VideoCall";
 import GroupCall from "@/components/GroupCall";
+import GroupVideoCall from "@/components/GroupVideoCall";
 import { CallProvider } from "@/context/CallContext";
 // import { usePWA } from "@/hooks/usePWA"; // Removed PWA install prompts
 
@@ -80,7 +81,12 @@ function Router() {
       </Route>
       <Route path="/group-call">
         <AuthCheck>
-          <GroupCall groupId={0} groupName="" callType="audio" />
+          <GroupCall groupId={0} groupName="" />
+        </AuthCheck>
+      </Route>
+      <Route path="/group-video-call">
+        <AuthCheck>
+          <GroupVideoCall />
         </AuthCheck>
       </Route>
       <Route path="/">

@@ -8,7 +8,6 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 interface GroupCallProps {
   groupId: number;
   groupName: string;
-  callType: 'audio' | 'video';
 }
 
 interface GroupParticipant {
@@ -19,7 +18,7 @@ interface GroupParticipant {
   stream?: MediaStream;
 }
 
-export default function GroupCall({ groupId, groupName, callType }: GroupCallProps) {
+export default function GroupCall({ groupId, groupName }: GroupCallProps) {
   const { user } = useAuth();
   const { hangupCall, activeCall } = useCall();
   
@@ -396,17 +395,39 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
             if (callType === 'video' && videoElement) {
               const videoTracks = mediaStream.getVideoTracks();
               if (videoTracks.length > 0) {
-                // Set video stream directly to video element
-                videoElement.srcObject = new MediaStream([videoTracks[0]]);
+                const videoStream = new MediaStream([videoTracks[0]]);
                 
-                // Update participant ref if it exists
+                // Set video stream to hidden video element
+                videoElement.srcObject = videoStream;
+                
+                // Update participant ref for UI display
                 if (participantRefs.current[participant.userId]) {
-                  participantRefs.current[participant.userId].srcObject = videoElement.srcObject;
+                  participantRefs.current[participant.userId].srcObject = videoStream;
+                  console.log(`[GroupCall] Set video stream to participant ref for ${participant.userId}`);
                 }
+                
+                // Update participant state with stream
+                setParticipants(currentParticipants => 
+                  currentParticipants.map(p => 
+                    p.userId === participant.userId 
+                      ? { ...p, stream: videoStream }
+                      : p
+                  )
+                );
                 
                 try {
                   await videoElement.play();
                   console.log(`[GroupCall] ✅ Video playing for participant ${participant.userId}`);
+                  
+                  // Try to play the participant ref video as well
+                  if (participantRefs.current[participant.userId]) {
+                    try {
+                      await participantRefs.current[participant.userId].play();
+                      console.log(`[GroupCall] ✅ Participant ref video playing for ${participant.userId}`);
+                    } catch (refPlayError) {
+                      console.warn(`[GroupCall] ⚠️ Participant ref video play failed for ${participant.userId}:`, refPlayError);
+                    }
+                  }
                 } catch (playError) {
                   console.warn(`[GroupCall] ⚠️ Video play failed for participant ${participant.userId}:`, playError);
                 }
