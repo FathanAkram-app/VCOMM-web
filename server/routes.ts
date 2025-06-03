@@ -622,6 +622,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Store active connections
   const clients = new Map<number, AuthenticatedWebSocket>();
   
+  // Store active group calls and their participants
+  const activeGroupCalls = new Map<string, Set<number>>();
+  
   wss.on('connection', (ws: AuthenticatedWebSocket, req) => {
     console.log("WebSocket connection received");
     
@@ -781,8 +784,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }
             console.log(`[Group Call] Sent ${invitationsSent} group call invitations for call ${callId}`);
+            
+            // Add the initiator to the group call participants
+            if (!activeGroupCalls.has(callId)) {
+              activeGroupCalls.set(callId, new Set());
+            }
+            activeGroupCalls.get(callId)!.add(fromUserId);
+            console.log(`[Group Call] Added initiator ${fromUserId} to call ${callId}`);
           } catch (error) {
             console.error(`[Group Call] Error getting group members for group ${groupId}:`, error);
+          }
+        }
+
+        // Handle group call join
+        if (data.type === 'join_group_call' && ws.userId) {
+          const { callId, groupId, userId } = data.payload;
+          console.log(`[Group Call] User ${userId} joining group call ${callId}`);
+          
+          // Add user to the group call participants
+          if (!activeGroupCalls.has(callId)) {
+            activeGroupCalls.set(callId, new Set());
+          }
+          activeGroupCalls.get(callId)!.add(userId);
+          
+          // Get current participants list
+          const participants = Array.from(activeGroupCalls.get(callId) || []);
+          console.log(`[Group Call] Current participants in ${callId}:`, participants);
+          
+          try {
+            // Get group members to notify
+            const members = await storage.getConversationMembers(groupId);
+            
+            // Broadcast participant update to all group members
+            for (const member of members) {
+              const targetClient = clients.get(member.userId);
+              if (targetClient && targetClient.readyState === targetClient.OPEN) {
+                targetClient.send(JSON.stringify({
+                  type: 'group_call_participants_update',
+                  payload: {
+                    callId,
+                    participants,
+                    newParticipant: userId
+                  }
+                }));
+              }
+            }
+            console.log(`[Group Call] Broadcasted participant update for call ${callId}`);
+          } catch (error) {
+            console.error(`[Group Call] Error broadcasting participant update:`, error);
           }
         }
 

@@ -129,6 +129,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
       case 'group_call_ended':
         handleGroupCallEnded(message);
         break;
+      case 'group_call_participants_update':
+        handleGroupCallParticipantsUpdate(message);
+        break;
       case 'webrtc_ready':
         handleWebRTCReady(message);
         break;
@@ -757,6 +760,20 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const handleGroupCallParticipantsUpdate = (message: any) => {
+    console.log('[CallContext] Group call participants update:', message);
+    const { callId, participants, newParticipant } = message.payload;
+    
+    // Update participants in active call if it matches
+    if (activeCall?.callId === callId) {
+      setActiveCall({
+        ...activeCall,
+        participants: participants
+      });
+      console.log('[CallContext] Updated participants in active call:', participants);
+    }
+  };
+
   const handleCallEnded = (message: any) => {
     console.log('[CallContext] ❌ Call ended unexpectedly, payload:', message);
     console.log('[CallContext] Current activeCall status:', activeCall?.status);
@@ -1357,6 +1374,19 @@ export function CallProvider({ children }: { children: ReactNode }) {
           fromUserId: user.id,
         }
       }));
+
+      // If it's a group call, send join notification
+      if (incomingCall.isGroupCall) {
+        console.log('[CallContext] Joining group call:', incomingCall.callId);
+        ws.send(JSON.stringify({
+          type: 'join_group_call',
+          payload: {
+            callId: incomingCall.callId,
+            groupId: incomingCall.groupId,
+            userId: user.id
+          }
+        }));
+      }
 
       // Store callId and peerUserId before clearing incomingCall
       const callId = incomingCall.callId;
