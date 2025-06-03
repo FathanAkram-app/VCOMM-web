@@ -117,11 +117,17 @@ export function CallProvider({ children }: { children: ReactNode }) {
       case 'incoming_call':
         handleIncomingCall(message);
         break;
+      case 'incoming_group_call':
+        handleIncomingGroupCall(message);
+        break;
       case 'call_accepted':
         handleCallAccepted(message);
         break;
       case 'call_ended':
         handleCallEnded(message);
+        break;
+      case 'group_call_ended':
+        handleGroupCallEnded(message);
         break;
       case 'webrtc_ready':
         handleWebRTCReady(message);
@@ -685,6 +691,70 @@ export function CallProvider({ children }: { children: ReactNode }) {
     console.log('[CallContext] Call rejected');
     setActiveCall(null);
     alert('Panggilan ditolak');
+  };
+
+  const handleIncomingGroupCall = (message: any) => {
+    console.log('[CallContext] Incoming group call received:', message);
+    const { callId, groupId, groupName, callType, fromUserId, fromUserName } = message.payload;
+
+    // Create incoming group call state
+    const incomingGroupCall: CallState = {
+      callId,
+      callType,
+      status: 'ringing',
+      isIncoming: true,
+      localStream: undefined,
+      remoteStreams: new Map(),
+      audioEnabled: true,
+      videoEnabled: callType === 'video',
+      isMuted: false,
+      isGroupCall: true,
+      groupId,
+      groupName,
+      peerUserId: fromUserId,
+      peerName: fromUserName,
+      participants: []
+    };
+
+    setIncomingCall(incomingGroupCall);
+    
+    // Play ringtone for group calls
+    try {
+      if (ringtoneAudio) {
+        ringtoneAudio.currentTime = 0;
+        ringtoneAudio.volume = 0.7;
+        ringtoneAudio.loop = true;
+        ringtoneAudio.play().catch(e => {
+          console.log('[CallContext] Group call ringtone autoplay failed:', e);
+        });
+      }
+    } catch (error) {
+      console.log('[CallContext] Group call ringtone error:', error);
+    }
+  };
+
+  const handleGroupCallEnded = (message: any) => {
+    console.log('[CallContext] Group call ended:', message);
+    
+    // Stop ringtone
+    if (ringtoneAudio) {
+      ringtoneAudio.pause();
+      ringtoneAudio.currentTime = 0;
+    }
+
+    // Clean up active call if it matches
+    if (activeCall?.callId === message.payload.callId) {
+      if (activeCall.localStream) {
+        activeCall.localStream.getTracks().forEach(track => track.stop());
+      }
+      setActiveCall(null);
+      setLocation('/chat');
+    }
+
+    // Clean up incoming call if it matches
+    if (incomingCall?.callId === message.payload.callId) {
+      setIncomingCall(null);
+    }
   };
 
   const handleCallEnded = (message: any) => {
@@ -1375,28 +1445,45 @@ export function CallProvider({ children }: { children: ReactNode }) {
       // Send call end message safely
       if (ws && ws.readyState === WebSocket.OPEN && activeCall && user) {
         try {
-          ws.send(JSON.stringify({
-            type: 'end_call',
-            payload: {
-              callId: activeCall.callId,
-              toUserId: activeCall.peerUserId,
-              fromUserId: user.id,
-            }
-          }));
+          // Check if it's a group call
+          if (activeCall.isGroupCall) {
+            console.log('[CallContext] Ending group call:', activeCall.callId);
+            ws.send(JSON.stringify({
+              type: 'end_call',
+              payload: {
+                callId: activeCall.callId,
+                fromUserId: user.id,
+                isGroupCall: true,
+                groupId: activeCall.groupId
+              }
+            }));
+          } else {
+            // Regular 1-on-1 call
+            ws.send(JSON.stringify({
+              type: 'end_call',
+              payload: {
+                callId: activeCall.callId,
+                toUserId: activeCall.peerUserId,
+                fromUserId: user.id,
+              }
+            }));
+          }
         } catch (err) {
           console.warn('[CallContext] Error sending end call message:', err);
         }
       }
 
-      // Clear call state
+      // Clear call state and navigate back to chat
       setActiveCall(null);
+      setLocation('/chat');
       
-      console.log('[CallContext] Call ended successfully, staying on current page');
+      console.log('[CallContext] Call ended successfully, navigated back to chat');
       
     } catch (error) {
       console.error('[CallContext] Error during hangup:', error);
       // Still clear the call state even if there's an error
       setActiveCall(null);
+      setLocation('/chat');
     }
   };
 

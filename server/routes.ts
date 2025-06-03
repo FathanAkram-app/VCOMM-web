@@ -748,18 +748,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
+        // Handle group call initiation
+        if (data.type === 'start_group_call' && ws.userId) {
+          const { callId, groupId, groupName, callType, fromUserId, fromUserName } = data.payload;
+          console.log(`[Group Call] User ${fromUserId} (${fromUserName}) starting ${callType} group call in group ${groupId} (${groupName})`);
+          
+          try {
+            // Get group members
+            const members = await storage.getConversationMembers(groupId);
+            console.log(`[Group Call] Found ${members.length} members in group ${groupId}`);
+            
+            // Send group call invitation to all members except the initiator
+            let invitationsSent = 0;
+            for (const member of members) {
+              if (member.userId !== fromUserId) {
+                const targetClient = clients.get(member.userId);
+                if (targetClient && targetClient.readyState === targetClient.OPEN) {
+                  targetClient.send(JSON.stringify({
+                    type: 'incoming_group_call',
+                    payload: {
+                      callId,
+                      groupId,
+                      groupName,
+                      callType,
+                      fromUserId,
+                      fromUserName
+                    }
+                  }));
+                  invitationsSent++;
+                  console.log(`[Group Call] Sent group call invitation to user ${member.userId}`);
+                }
+              }
+            }
+            console.log(`[Group Call] Sent ${invitationsSent} group call invitations for call ${callId}`);
+          } catch (error) {
+            console.error(`[Group Call] Error getting group members for group ${groupId}:`, error);
+          }
+        }
+
         // Handle call end
         if (data.type === 'end_call' && ws.userId) {
           const { callId, toUserId } = data.payload;
           console.log(`[Call] User ${ws.userId} ended call ${callId}`);
           
-          const targetClient = clients.get(toUserId);
-          if (targetClient && targetClient.readyState === targetClient.OPEN) {
-            targetClient.send(JSON.stringify({
-              type: 'call_ended',
-              payload: { callId }
-            }));
-            console.log(`[Call] Sent call ended notification to user ${toUserId}`);
+          // Check if it's a group call
+          if (callId.includes('group_call_')) {
+            // For group calls, notify all connected clients
+            broadcastToAll({
+              type: 'group_call_ended',
+              payload: { 
+                callId,
+                endedByUserId: ws.userId
+              }
+            });
+            console.log(`[Group Call] Broadcasted group call end for ${callId}`);
+          } else {
+            // For individual calls, notify specific user
+            const targetClient = clients.get(toUserId);
+            if (targetClient && targetClient.readyState === targetClient.OPEN) {
+              targetClient.send(JSON.stringify({
+                type: 'call_ended',
+                payload: { callId }
+              }));
+              console.log(`[Call] Sent call ended notification to user ${toUserId}`);
+            }
           }
         }
 
