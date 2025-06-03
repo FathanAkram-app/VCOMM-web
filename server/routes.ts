@@ -778,22 +778,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Get group members to notify
               const members = await storage.getConversationMembers(groupId);
               
-              // Send incoming group call notification to the new joiner to trigger auto-join
-              const joinerClient = clients.get(fromUserId);
-              if (joinerClient && joinerClient.readyState === joinerClient.OPEN) {
-                joinerClient.send(JSON.stringify({
-                  type: 'incoming_group_call',
-                  payload: {
-                    callId: existingCallId,
-                    groupId,
-                    groupName,
-                    callType,
-                    fromUserId: participants[0], // Use first participant as the "caller"
-                    fromUserName: `User ${participants[0]}`
+              // Send incoming group call notifications to ALL members (not just the joiner)
+              // This allows members to see the incoming call modal and choose to join
+              let invitationsSent = 0;
+              for (const member of members) {
+                if (member.userId !== fromUserId) { // Don't send to the person starting the call
+                  const targetClient = clients.get(member.userId);
+                  if (targetClient && targetClient.readyState === targetClient.OPEN) {
+                    targetClient.send(JSON.stringify({
+                      type: 'incoming_group_call',
+                      payload: {
+                        callId: existingCallId,
+                        groupId,
+                        groupName,
+                        callType,
+                        fromUserId,
+                        fromUserName
+                      }
+                    }));
+                    invitationsSent++;
+                    console.log(`[Group Call] Sent group call invitation to user ${member.userId}`);
                   }
-                }));
-                console.log(`[Group Call] Sent incoming call notification to joining user ${fromUserId}`);
+                }
               }
+              console.log(`[Group Call] Sent ${invitationsSent} group call invitations for existing call ${existingCallId}`);
               
               // Broadcast participant update to all group members
               for (const member of members) {
