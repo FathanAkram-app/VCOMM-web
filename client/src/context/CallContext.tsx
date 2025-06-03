@@ -197,6 +197,63 @@ export function CallProvider({ children }: { children: ReactNode }) {
   // Queue for WebRTC offers that arrive before incoming call is created
   const pendingOffers = useRef<any[]>([]);
 
+  // Function to fetch participant names asynchronously
+  const fetchParticipantNames = async (participantIds: number[], currentCall: CallState) => {
+    try {
+      const updatedParticipants = await Promise.all(
+        participantIds.map(async (userId: number) => {
+          if (userId === user?.id) {
+            return {
+              userId,
+              userName: user?.callsign || user?.fullName || 'You',
+              audioEnabled: true,
+              videoEnabled: false,
+              stream: null
+            };
+          } else {
+            try {
+              const response = await fetch(`/api/users/${userId}`);
+              if (response.ok) {
+                const userData = await response.json();
+                return {
+                  userId,
+                  userName: userData.callsign || userData.fullName || `User ${userId}`,
+                  audioEnabled: true,
+                  videoEnabled: false,
+                  stream: null
+                };
+              }
+            } catch (error) {
+              console.error('[CallContext] Error fetching user data:', error);
+            }
+            return {
+              userId,
+              userName: `User ${userId}`,
+              audioEnabled: true,
+              videoEnabled: false,
+              stream: null
+            };
+          }
+        })
+      );
+
+      // Update the call with proper names
+      setActiveCall(prev => {
+        if (prev && prev.callId === currentCall.callId) {
+          return {
+            ...prev,
+            participants: updatedParticipants
+          };
+        }
+        return prev;
+      });
+
+      console.log('[CallContext] Updated participant names:', updatedParticipants);
+    } catch (error) {
+      console.error('[CallContext] Error fetching participant names:', error);
+    }
+  };
+
   // Keep refs in sync with state
   useEffect(() => {
     activeCallRef.current = activeCall;
@@ -857,8 +914,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
       if (messageGroupId === activeGroupId) {
         console.log('[CallContext] Group IDs match, updating participants:', participants);
         
-        // Convert participant IDs to participant objects with names
-        const participantObjects = participants.map((userId: number) => ({
+        // Remove duplicates from participants list
+        const uniqueParticipants = [...new Set(participants)];
+        console.log('[CallContext] Unique participants after deduplication:', uniqueParticipants);
+        
+        // Update participants immediately with local data, then fetch names asynchronously
+        const participantObjects = uniqueParticipants.map((userId: number) => ({
           userId,
           userName: userId === user?.id ? (user?.callsign || user?.fullName || 'You') : `User ${userId}`,
           audioEnabled: true,
@@ -874,6 +935,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
         
         setActiveCall(updatedCall);
         console.log('[CallContext] Updated participants in active call:', participantObjects);
+        
+        // Fetch user names asynchronously and update
+        fetchParticipantNames(uniqueParticipants, updatedCall);
         
         // Clear any pending updates since we processed this one
         localStorage.removeItem('pendingParticipantUpdate');

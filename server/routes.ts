@@ -97,6 +97,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get specific user by ID (for group call participant names)
+  app.get('/api/users/:userId', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: 'Invalid user ID' });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Return only safe user data for group calls
+      res.json({
+        id: user.id,
+        callsign: user.callsign,
+        fullName: user.fullName,
+        rank: user.rank
+      });
+    } catch (error) {
+      console.error('Error getting user by ID:', error);
+      res.status(500).json({ message: 'Failed to get user' });
+    }
+  });
+
   // Conversations routes (both group chats and direct chats)
   app.get('/api/conversations', isAuthenticated, async (req: AuthRequest, res) => {
     try {
