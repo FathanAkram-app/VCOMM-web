@@ -1407,6 +1407,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
         console.log('[CallContext] 📡 CALLER: Storing remote stream globally');
         setRemoteAudioStream(remoteStream);
         
+        // Stop waiting tone when remote audio stream is received
+        console.log('[CallContext] Remote audio received - stopping waiting tone');
+        stopWaitingTone();
+        
         // Find and setup audio element for remote stream
         setTimeout(() => {
           const audioElement = document.querySelector('#remoteAudio') as HTMLAudioElement;
@@ -1656,6 +1660,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
         console.log('[CallContext] 📡 RECEIVER: Storing remote stream globally');
         setRemoteAudioStream(remoteStream);
         
+        // Stop waiting tone when remote audio stream is received
+        console.log('[CallContext] Remote audio received - stopping waiting tone');
+        stopWaitingTone();
+        
         // Find and setup audio element for remote stream
         setTimeout(() => {
           const audioElement = document.querySelector('#remoteAudio') as HTMLAudioElement;
@@ -1748,6 +1756,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }
 
     console.log('[CallContext] Rejecting call');
+    
+    // Stop waiting tone when call is rejected
+    stopWaitingTone();
 
     // Stop ringtone when call is rejected
     if (ringtoneAudio) {
@@ -1770,6 +1781,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   const hangupCall = () => {
     console.log('[CallContext] Hanging up call - start');
+    
+    // Stop waiting tone when hanging up
+    stopWaitingTone();
     
     // Stop ringtone when call is ended
     if (ringtoneAudio) {
