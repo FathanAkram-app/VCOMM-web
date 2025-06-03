@@ -775,8 +775,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[Group Call] User ${fromUserId} joined existing call, participants:`, participants);
             
             try {
-              // Get group members to notify about participant update
+              // Get group members to notify
               const members = await storage.getConversationMembers(groupId);
+              
+              // Send incoming group call notification to the new joiner to trigger auto-join
+              const joinerClient = clients.get(fromUserId);
+              if (joinerClient && joinerClient.readyState === joinerClient.OPEN) {
+                joinerClient.send(JSON.stringify({
+                  type: 'incoming_group_call',
+                  payload: {
+                    callId: existingCallId,
+                    groupId,
+                    groupName,
+                    callType,
+                    fromUserId: participants[0], // Use first participant as the "caller"
+                    fromUserName: `User ${participants[0]}`
+                  }
+                }));
+                console.log(`[Group Call] Sent incoming call notification to joining user ${fromUserId}`);
+              }
               
               // Broadcast participant update to all group members
               for (const member of members) {
