@@ -1842,7 +1842,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
         participants: []
       };
 
+      // Set active call state immediately for immediate participant sync
       setActiveCall(groupCallState);
+      console.log('[CallContext] Active call state set for group:', groupId, 'callId:', callId);
 
       // Send join message to server
       ws.send(JSON.stringify({
