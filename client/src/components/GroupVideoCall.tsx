@@ -19,7 +19,7 @@ export default function GroupVideoCall() {
   const [participants, setParticipants] = useState<GroupParticipant[]>([]);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
-  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+  const [isVideoEnabled, setIsVideoEnabled] = useState(false);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const participantVideoRefs = useRef<{ [userId: number]: HTMLVideoElement }>({});
 
@@ -29,30 +29,25 @@ export default function GroupVideoCall() {
   console.log('[GroupVideoCall] Component rendering with activeCall:', activeCall);
   console.log('[GroupVideoCall] user?.id:', user?.id);
 
-  // Initialize local video stream
+  // Initialize local audio stream only (video will be added when camera is enabled)
   useEffect(() => {
-    const initializeLocalVideo = async () => {
+    const initializeLocalStream = async () => {
       try {
-        console.log('[GroupVideoCall] Initializing local video stream');
+        console.log('[GroupVideoCall] Initializing local audio stream');
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
+          video: false,
           audio: true
         });
         
-        console.log('[GroupVideoCall] Got local video stream:', stream);
+        console.log('[GroupVideoCall] Got local audio stream:', stream);
         setLocalStream(stream);
-        
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = stream;
-          console.log('[GroupVideoCall] Set local video stream to video element');
-        }
       } catch (error) {
-        console.error('[GroupVideoCall] Error getting local video stream:', error);
+        console.error('[GroupVideoCall] Error getting local audio stream:', error);
       }
     };
 
     if (activeCall && user) {
-      initializeLocalVideo();
+      initializeLocalStream();
     }
 
     return () => {
@@ -78,7 +73,7 @@ export default function GroupVideoCall() {
           userId: user.id,
           userName: user.callsign || user.fullName || 'Anda',
           audioEnabled: true,
-          videoEnabled: true,
+          videoEnabled: false,
           stream: localStream || undefined
         });
         console.log('[GroupVideoCall] Added current user to participants');
@@ -110,8 +105,46 @@ export default function GroupVideoCall() {
     toggleCallAudio();
   };
 
-  const handleToggleVideo = () => {
-    setIsVideoEnabled(!isVideoEnabled);
+  const handleToggleVideo = async () => {
+    const newVideoState = !isVideoEnabled;
+    setIsVideoEnabled(newVideoState);
+
+    if (newVideoState && localStream) {
+      // Enable video - add video track to existing stream
+      try {
+        console.log('[GroupVideoCall] Enabling video');
+        const videoStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false
+        });
+        
+        const videoTrack = videoStream.getVideoTracks()[0];
+        if (videoTrack) {
+          localStream.addTrack(videoTrack);
+          if (localVideoRef.current) {
+            localVideoRef.current.srcObject = localStream;
+            console.log('[GroupVideoCall] Video enabled and added to stream');
+          }
+        }
+      } catch (error) {
+        console.error('[GroupVideoCall] Error enabling video:', error);
+        setIsVideoEnabled(false);
+      }
+    } else if (!newVideoState && localStream) {
+      // Disable video - remove video tracks
+      console.log('[GroupVideoCall] Disabling video');
+      const videoTracks = localStream.getVideoTracks();
+      videoTracks.forEach(track => {
+        track.stop();
+        localStream.removeTrack(track);
+      });
+      
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = localStream;
+        console.log('[GroupVideoCall] Video disabled and removed from stream');
+      }
+    }
+
     toggleCallVideo();
   };
 
@@ -138,13 +171,23 @@ export default function GroupVideoCall() {
         <div className="h-1/2 mb-4">
           {user && activeCall && (
             <div className="relative bg-gray-900 rounded-lg overflow-hidden border-2 border-[#5fb85f] h-full">
-              <video
-                ref={localVideoRef}
-                autoPlay
-                muted
-                playsInline
-                className="w-full h-full object-cover"
-              />
+              {isVideoEnabled ? (
+                <video
+                  ref={localVideoRef}
+                  autoPlay
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Avatar className="h-32 w-32 bg-[#5fb85f]">
+                    <AvatarFallback className="bg-[#5fb85f] text-white text-4xl font-bold">
+                      {(user.callsign || user.fullName || 'A').substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+              )}
               <div className="absolute bottom-4 left-4 bg-black/70 px-3 py-1 rounded-full">
                 <p className="text-white text-lg font-medium">Anda</p>
               </div>
