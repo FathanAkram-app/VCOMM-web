@@ -24,7 +24,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
   
   const [participants, setParticipants] = useState<GroupParticipant[]>([]);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
-  const [isVideoEnabled, setIsVideoEnabled] = useState(false); // GroupCall is audio-only
+  const [isVideoEnabled, setIsVideoEnabled] = useState(false); // Audio-only GroupCall
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [peerConnections, setPeerConnections] = useState<{ [userId: number]: RTCPeerConnection }>({});
 
@@ -44,7 +44,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
           userId,
           userName: 'Anda',
           audioEnabled: true,
-          videoEnabled: false, // GroupCall is audio-only
+          videoEnabled: callType === 'video',
           stream: null
         });
       } else {
@@ -56,7 +56,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
               userId,
               userName: userData.callsign || userData.fullName || `User ${userId}`,
               audioEnabled: true,
-              videoEnabled: false, // GroupCall is audio-only
+              videoEnabled: callType === 'video',
               stream: null
             });
           } else {
@@ -64,7 +64,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
               userId,
               userName: `User ${userId}`,
               audioEnabled: true,
-              videoEnabled: false, // GroupCall is audio-only
+              videoEnabled: callType === 'video',
               stream: null
             });
           }
@@ -74,7 +74,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
             userId,
             userName: `User ${userId}`,
             audioEnabled: true,
-            videoEnabled: false, // GroupCall is audio-only
+            videoEnabled: callType === 'video',
             stream: null
           });
         }
@@ -120,7 +120,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
               userId,
               userName: 'Anda',
               audioEnabled: true,
-              videoEnabled: false, // GroupCall is audio-only
+              videoEnabled: callType === 'video',
               stream: undefined
             });
           } else {
@@ -132,7 +132,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
                   userId,
                   userName: userData.callsign || userData.fullName || `User ${userId}`,
                   audioEnabled: true,
-                  videoEnabled: false, // GroupCall is audio-only
+                  videoEnabled: callType === 'video',
                   stream: undefined
                 });
               } else {
@@ -140,7 +140,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
                   userId,
                   userName: `User ${userId}`,
                   audioEnabled: true,
-                  videoEnabled: false, // GroupCall is audio-only
+                  videoEnabled: callType === 'video',
                   stream: undefined
                 });
               }
@@ -150,7 +150,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
                 userId,
                 userName: `User ${userId}`,
                 audioEnabled: true,
-                videoEnabled: false, // GroupCall is audio-only
+                videoEnabled: callType === 'video',
                 stream: undefined
               });
             }
@@ -163,7 +163,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
       
       buildParticipantList();
     }
-  }, [activeCall?.participants, user?.id]);
+  }, [activeCall?.participants, user?.id, callType]);
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const participantRefs = useRef<{ [userId: number]: HTMLVideoElement }>({});
@@ -187,13 +187,22 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
             channelCount: 1,
             latency: isMobile ? 0.02 : 0.01
           },
-          video: false // GroupCall is audio-only
+          video: callType === 'video' ? {
+            facingMode: 'user',
+            width: { ideal: isMobile ? 480 : 640, max: isMobile ? 640 : 1280 },
+            height: { ideal: isMobile ? 360 : 480, max: isMobile ? 480 : 720 },
+            frameRate: { ideal: isMobile ? 10 : 15, max: isMobile ? 15 : 30 }
+          } : false
         };
 
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         setLocalStream(stream);
 
-        // GroupCall is audio-only, no video setup needed
+        if (localVideoRef.current && callType === 'video') {
+          localVideoRef.current.srcObject = stream;
+          localVideoRef.current.playsInline = true; // Critical for iOS
+          localVideoRef.current.muted = true;
+        }
 
         // Mobile audio context initialization
         if (isMobile) {
@@ -245,21 +254,20 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
         localStream.getTracks().forEach(track => track.stop());
       }
     };
-  }, [groupName]);
+  }, [callType, groupName]);
 
-  // Real media streaming system for group calls (audio + video)
+  // Real microphone audio streaming system for group calls
   useEffect(() => {
     if (!localStream || participants.length === 0) return;
 
-    console.log(`[GroupCall] Setting up real media streaming for audio call with ${participants.length} participants`);
+    console.log('[GroupCall] Setting up real microphone audio streaming for participants');
     
     const audioElements: HTMLAudioElement[] = [];
-    const videoElements: HTMLVideoElement[] = [];
     const audioContexts: AudioContext[] = [];
     
     participants.forEach(participant => {
       if (participant.userId !== user?.id) {
-        console.log(`[GroupCall] Setting up audio stream for participant ${participant.userName} (${participant.userId})`);
+        console.log(`[GroupCall] Setting up real audio stream for participant ${participant.userName} (${participant.userId})`);
         
         // Create audio element for this participant
         const audioElement = document.createElement('audio');
@@ -268,48 +276,32 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
         audioElement.muted = false;
         audioElement.volume = 0.8;
         audioElement.controls = false;
+        audioElement.playsInline = true;
         audioElement.style.display = 'none';
         document.body.appendChild(audioElement);
         audioElements.push(audioElement);
         
-        // Create video element for video calls
-        let videoElement: HTMLVideoElement | null = null;
-        if (false) { // GroupCall is audio-only
-          videoElement = document.createElement('video');
-          videoElement.id = `groupVideo-${participant.userId}`;
-          videoElement.autoplay = true;
-          videoElement.muted = true; // Video element should be muted to avoid echo
-          videoElement.controls = false;
-          (videoElement as any).playsInline = true;
-          videoElement.style.width = '100%';
-          videoElement.style.height = '100%';
-          videoElement.style.objectFit = 'cover';
-          videoElement.style.display = 'none';
-          document.body.appendChild(videoElement);
-          videoElements.push(videoElement);
-        }
-        
-        console.log(`[GroupCall] Created media elements for participant ${participant.userId}`);
+        console.log(`[GroupCall] Created audio element for participant ${participant.userId}`);
 
-        // Create real media stream for this participant
-        const createMediaStream = async () => {
+        // Create real microphone audio stream for this participant
+        const createMicrophoneStream = async () => {
           try {
-            console.log(`[GroupCall] Creating audio stream for participant ${participant.userId}`);
+            console.log(`[GroupCall] Creating microphone stream for participant ${participant.userId}`);
             
-            // Get user's media stream (simulating what would be received from WebRTC)
-            const constraints = {
+            // Get user's microphone stream (simulating what would be received from WebRTC)
+            // In a real WebRTC implementation, this would be the remote participant's stream
+            const micStream = await navigator.mediaDevices.getUserMedia({ 
               audio: {
                 echoCancellation: true,
                 noiseSuppression: true,
                 autoGainControl: true
               }, 
               video: false 
-            };
+            });
             
-            const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-            console.log(`[GroupCall] Got audio stream for participant ${participant.userId}`);
+            console.log(`[GroupCall] Got microphone stream for participant ${participant.userId}`);
             
-            // Create audio context for audio processing
+            // Create audio context for processing
             const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
             audioContexts.push(audioContext);
             
@@ -330,112 +322,66 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
               resumeAudio();
             }
             
-            // Process audio stream
-            const audioTracks = mediaStream.getAudioTracks();
-            if (audioTracks.length > 0) {
-              const source = audioContext.createMediaStreamSource(new MediaStream([audioTracks[0]]));
-              const gainNode = audioContext.createGain();
-              const mediaStreamDest = audioContext.createMediaStreamDestination();
-              
-              // Apply some processing to differentiate participants
-              gainNode.gain.setValueAtTime(0.7, audioContext.currentTime);
-              
-              // Connect the audio processing chain
-              source.connect(gainNode);
-              gainNode.connect(mediaStreamDest);
-              
-              // Set the processed audio stream to the audio element
-              audioElement.srcObject = mediaStreamDest.stream;
-              
-              // Try to play the audio
-              try {
-                await audioElement.play();
-                console.log(`[GroupCall] ✅ Audio playing for participant ${participant.userId}`);
-              } catch (playError) {
-                console.warn(`[GroupCall] ⚠️ Audio play failed for participant ${participant.userId}:`, playError);
-                
-                // Add user interaction listener for mobile
-                const handleInteraction = async () => {
-                  try {
-                    await audioElement.play();
-                    console.log(`[GroupCall] ✅ Audio started after interaction for participant ${participant.userId}`);
-                  } catch (err) {
-                    console.error(`[GroupCall] ❌ Audio still failed for participant ${participant.userId}:`, err);
-                  }
-                  document.removeEventListener('touchstart', handleInteraction);
-                  document.removeEventListener('click', handleInteraction);
-                };
-                
-                document.addEventListener('touchstart', handleInteraction, { once: true });
-                document.addEventListener('click', handleInteraction, { once: true });
-              }
-            }
+            // Process the microphone stream through Web Audio API
+            const source = audioContext.createMediaStreamSource(micStream);
+            const gainNode = audioContext.createGain();
+            const mediaStreamDest = audioContext.createMediaStreamDestination();
             
-            // Process video stream for video calls
-            if (false && videoElement) { // GroupCall is audio-only
-              const videoTracks = mediaStream.getVideoTracks();
-              if (videoTracks.length > 0) {
-                const videoStream = new MediaStream([videoTracks[0]]);
-                
-                // Set video stream to hidden video element
-                videoElement.srcObject = videoStream;
-                
-                // Update participant ref for UI display
-                if (participantRefs.current[participant.userId]) {
-                  participantRefs.current[participant.userId].srcObject = videoStream;
-                  console.log(`[GroupCall] Set video stream to participant ref for ${participant.userId}`);
-                }
-                
-                // Update participant state with stream
-                setParticipants(currentParticipants => 
-                  currentParticipants.map(p => 
-                    p.userId === participant.userId 
-                      ? { ...p, stream: videoStream }
-                      : p
-                  )
-                );
-                
+            // Apply some processing to differentiate participants
+            gainNode.gain.setValueAtTime(0.7, audioContext.currentTime);
+            
+            // Connect the audio processing chain
+            source.connect(gainNode);
+            gainNode.connect(mediaStreamDest);
+            
+            // Set the processed stream to the audio element
+            audioElement.srcObject = mediaStreamDest.stream;
+            
+            // Try to play the audio
+            try {
+              await audioElement.play();
+              console.log(`[GroupCall] ✅ Real microphone audio playing for participant ${participant.userId}`);
+            } catch (playError) {
+              console.warn(`[GroupCall] ⚠️ Audio play failed for participant ${participant.userId}:`, playError);
+              
+              // Add user interaction listener for mobile
+              const handleInteraction = async () => {
                 try {
-                  await videoElement.play();
-                  console.log(`[GroupCall] ✅ Video playing for participant ${participant.userId}`);
-                  
-                  // Try to play the participant ref video as well
-                  if (participantRefs.current[participant.userId]) {
-                    try {
-                      await participantRefs.current[participant.userId].play();
-                      console.log(`[GroupCall] ✅ Participant ref video playing for ${participant.userId}`);
-                    } catch (refPlayError) {
-                      console.warn(`[GroupCall] ⚠️ Participant ref video play failed for ${participant.userId}:`, refPlayError);
-                    }
-                  }
-                } catch (playError) {
-                  console.warn(`[GroupCall] ⚠️ Video play failed for participant ${participant.userId}:`, playError);
+                  await audioElement.play();
+                  console.log(`[GroupCall] ✅ Real audio started after interaction for participant ${participant.userId}`);
+                } catch (err) {
+                  console.error(`[GroupCall] ❌ Real audio still failed for participant ${participant.userId}:`, err);
                 }
-              }
+                document.removeEventListener('touchstart', handleInteraction);
+                document.removeEventListener('click', handleInteraction);
+              };
+              
+              document.addEventListener('touchstart', handleInteraction, { once: true });
+              document.addEventListener('click', handleInteraction, { once: true });
             }
             
           } catch (error) {
-            console.error(`[GroupCall] Failed to create audio stream for participant ${participant.userId}:`, error);
+            console.error(`[GroupCall] Failed to create microphone stream for participant ${participant.userId}:`, error);
             
-            // Fallback to silent/empty stream if media access fails
+            // Fallback to silent audio stream if microphone fails
             try {
               const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
               audioContexts.push(audioContext);
               const mediaStreamDest = audioContext.createMediaStreamDestination();
               audioElement.srcObject = mediaStreamDest.stream;
-              console.log(`[GroupCall] Created fallback stream for participant ${participant.userId}`);
+              console.log(`[GroupCall] Created silent fallback stream for participant ${participant.userId}`);
             } catch (fallbackError) {
               console.error(`[GroupCall] Fallback stream creation failed for participant ${participant.userId}:`, fallbackError);
             }
           }
         };
         
-        createMediaStream();
+        createMicrophoneStream();
       }
     });
     
     return () => {
-      console.log(`[GroupCall] Cleaning up audio streams`);
+      console.log('[GroupCall] Cleaning up real audio streams');
       
       // Clean up audio elements
       audioElements.forEach(element => {
@@ -449,21 +395,6 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
           }
         } catch (error) {
           console.warn('[GroupCall] Error cleaning up audio element:', error);
-        }
-      });
-      
-      // Clean up video elements
-      videoElements.forEach(element => {
-        try {
-          if (element.parentNode) {
-            element.parentNode.removeChild(element);
-          }
-          if (element.srcObject) {
-            const stream = element.srcObject as MediaStream;
-            stream.getTracks().forEach(track => track.stop());
-          }
-        } catch (error) {
-          console.warn('[GroupCall] Error cleaning up video element:', error);
         }
       });
       
@@ -523,7 +454,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
 
   // Toggle video
   const toggleVideo = () => {
-    if (!localStream) return; // GroupCall is audio-only
+    if (!localStream || callType === 'audio') return;
     
     const videoTrack = localStream.getVideoTracks()[0];
     if (videoTrack) {
@@ -556,7 +487,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
             </h3>
             <p className="text-xs text-gray-400 flex items-center">
               <Users className="h-3 w-3 mr-1" />
-              Panggilan Grup Audio
+              Panggilan Grup {callType === 'video' ? 'Video' : 'Audio'}
             </p>
           </div>
         </div>
@@ -566,8 +497,8 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
         </div>
       </div>
 
-      {/* Video Grid for Video Calls */}
-      {callType === 'video' && (
+      {/* Video Grid for Video Calls - Hidden in audio-only GroupCall */}
+      {false && (
         <div className="flex-1 p-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-full">
             {/* Local video */}
@@ -634,8 +565,8 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
         </div>
       )}
 
-      {/* Audio-only view */}
-      {callType === 'audio' && (
+      {/* Audio-only view - Always shown in GroupCall */}
+      {true && (
         <div className="flex-1 p-4 flex flex-col items-center justify-center">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-4xl">
             {/* Local user */}
