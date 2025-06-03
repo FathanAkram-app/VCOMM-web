@@ -85,79 +85,85 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
     return Array.from(participantMap.values());
   };
 
-  // Use useMemo to prevent duplicate processing and ensure stable participant list
-  const processedParticipants = useMemo(() => {
+  // Simple and direct participant processing
+  useEffect(() => {
     if (!activeCall?.participants || activeCall.participants.length === 0) {
       console.log('[GroupCall] No participants in active call');
-      return [];
+      setParticipants([]);
+      return;
     }
 
     console.log('[GroupCall] Processing participants from activeCall:', activeCall.participants);
     
-    // Remove duplicates and get unique participant IDs
-    const uniqueParticipantIds = Array.from(new Set(
+    // Get unique participant IDs only
+    const uniqueParticipantIds = [...new Set(
       activeCall.participants.map((p: any) => typeof p === 'object' ? p.userId : p)
-    ));
+    )];
     
     console.log('[GroupCall] Unique participant IDs:', uniqueParticipantIds);
     
-    // Build participant data synchronously first with basic info
-    const participantData: GroupParticipant[] = [];
-    const participantMap = new Map<number, GroupParticipant>();
+    // Create participant signature to prevent unnecessary re-processing
+    const participantSignature = uniqueParticipantIds.sort().join(',');
+    const currentSignature = participants.map(p => p.userId).sort().join(',');
     
-    for (const userId of uniqueParticipantIds) {
-      if (!participantMap.has(userId)) {
-        participantMap.set(userId, {
-          userId,
-          userName: userId === user?.id ? 'Anda' : `Loading...`,
-          audioEnabled: true,
-          videoEnabled: callType === 'video',
-          stream: undefined
-        });
-      }
-    }
-    
-    return Array.from(participantMap.values());
-  }, [activeCall?.participants, user?.id, callType]);
-
-  // Update participants state when processedParticipants changes
-  useEffect(() => {
-    if (processedParticipants.length > 0) {
-      console.log('[GroupCall] Updating participants state:', processedParticipants);
+    // Only process if participant list actually changed
+    if (participantSignature !== currentSignature) {
+      console.log('[GroupCall] Participant list changed, updating...');
       
-      // Fetch real names for non-current users
-      const fetchRealNames = async () => {
-        const updatedParticipants = await Promise.all(
-          processedParticipants.map(async (participant) => {
-            if (participant.userId === user?.id) {
-              return { ...participant, userName: 'Anda' };
-            } else {
-              try {
-                const response = await fetch(`/api/users/${participant.userId}`);
-                if (response.ok) {
-                  const userData = await response.json();
-                  return { 
-                    ...participant, 
-                    userName: userData.callsign || userData.fullName || `User ${participant.userId}` 
-                  };
-                }
-              } catch (error) {
-                console.error('[GroupCall] Error fetching user data:', error);
-              }
-              return { ...participant, userName: `User ${participant.userId}` };
-            }
-          })
-        );
+      // Build final participant list
+      const buildParticipantList = async () => {
+        const participantList: GroupParticipant[] = [];
         
-        console.log('[GroupCall] Setting final participants with real names:', updatedParticipants);
-        setParticipants(updatedParticipants);
+        for (const userId of uniqueParticipantIds) {
+          if (userId === user?.id) {
+            participantList.push({
+              userId,
+              userName: 'Anda',
+              audioEnabled: true,
+              videoEnabled: callType === 'video',
+              stream: undefined
+            });
+          } else {
+            try {
+              const response = await fetch(`/api/users/${userId}`);
+              if (response.ok) {
+                const userData = await response.json();
+                participantList.push({
+                  userId,
+                  userName: userData.callsign || userData.fullName || `User ${userId}`,
+                  audioEnabled: true,
+                  videoEnabled: callType === 'video',
+                  stream: undefined
+                });
+              } else {
+                participantList.push({
+                  userId,
+                  userName: `User ${userId}`,
+                  audioEnabled: true,
+                  videoEnabled: callType === 'video',
+                  stream: undefined
+                });
+              }
+            } catch (error) {
+              console.error('[GroupCall] Error fetching user data:', error);
+              participantList.push({
+                userId,
+                userName: `User ${userId}`,
+                audioEnabled: true,
+                videoEnabled: callType === 'video',
+                stream: undefined
+              });
+            }
+          }
+        }
+        
+        console.log('[GroupCall] Final participant list:', participantList);
+        setParticipants(participantList);
       };
       
-      fetchRealNames();
-    } else {
-      setParticipants([]);
+      buildParticipantList();
     }
-  }, [processedParticipants, user?.id]);
+  }, [activeCall?.participants, user?.id, callType]);
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const participantRefs = useRef<{ [userId: number]: HTMLVideoElement }>({});
