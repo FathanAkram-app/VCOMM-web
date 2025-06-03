@@ -121,37 +121,18 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
         const participantList: GroupParticipant[] = [];
         
         for (const userId of uniqueParticipantIds) {
-          if (userId === user?.id) {
-            participantList.push({
-              userId,
-              userName: 'Anda',
-              audioEnabled: true,
-              videoEnabled: callType === 'video',
-              stream: undefined
-            });
-          } else {
-            try {
-              const response = await fetch(`/api/users/${userId}`);
-              if (response.ok) {
-                const userData = await response.json();
-                participantList.push({
-                  userId,
-                  userName: userData.callsign || userData.fullName || `User ${userId}`,
-                  audioEnabled: true,
-                  videoEnabled: callType === 'video',
-                  stream: undefined
-                });
-              } else {
-                participantList.push({
-                  userId,
-                  userName: `User ${userId}`,
-                  audioEnabled: true,
-                  videoEnabled: callType === 'video',
-                  stream: undefined
-                });
-              }
-            } catch (error) {
-              console.error('[GroupCall] Error fetching user data:', error);
+          try {
+            const response = await fetch(`/api/users/${userId}`);
+            if (response.ok) {
+              const userData = await response.json();
+              participantList.push({
+                userId,
+                userName: userData.callsign || userData.fullName || `User ${userId}`,
+                audioEnabled: true,
+                videoEnabled: callType === 'video',
+                stream: undefined
+              });
+            } else {
               participantList.push({
                 userId,
                 userName: `User ${userId}`,
@@ -160,6 +141,15 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
                 stream: undefined
               });
             }
+          } catch (error) {
+            console.error('[GroupCall] Error fetching user data:', error);
+            participantList.push({
+              userId,
+              userName: `User ${userId}`,
+              audioEnabled: true,
+              videoEnabled: callType === 'video',
+              stream: undefined
+            });
           }
         }
         
