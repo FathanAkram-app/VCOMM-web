@@ -28,39 +28,73 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
   const [isVideoEnabled, setIsVideoEnabled] = useState(callType === 'video');
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
 
+  // Function to fetch participant data from server
+  const fetchParticipantData = async (participantIds: number[]) => {
+    const participantData: GroupParticipant[] = [];
+    
+    for (const userId of participantIds) {
+      if (userId === user?.id) {
+        participantData.push({
+          userId,
+          userName: user.callsign || user.fullName || 'You',
+          audioEnabled: true,
+          videoEnabled: callType === 'video',
+          stream: null
+        });
+      } else {
+        try {
+          const response = await fetch(`/api/users/${userId}`);
+          if (response.ok) {
+            const userData = await response.json();
+            participantData.push({
+              userId,
+              userName: userData.callsign || userData.fullName || `User ${userId}`,
+              audioEnabled: true,
+              videoEnabled: callType === 'video',
+              stream: null
+            });
+          } else {
+            participantData.push({
+              userId,
+              userName: `User ${userId}`,
+              audioEnabled: true,
+              videoEnabled: callType === 'video',
+              stream: null
+            });
+          }
+        } catch (error) {
+          console.error('[GroupCall] Error fetching user data:', error);
+          participantData.push({
+            userId,
+            userName: `User ${userId}`,
+            audioEnabled: true,
+            videoEnabled: callType === 'video',
+            stream: null
+          });
+        }
+      }
+    }
+    
+    return participantData;
+  };
+
   // Update participants from activeCall
   useEffect(() => {
     if (activeCall && activeCall.participants) {
       console.log('[GroupCall] Updating participants from activeCall:', activeCall.participants);
       
-      // Handle both formats: array of numbers or array of participant objects
-      const groupParticipants: GroupParticipant[] = activeCall.participants
-        .map((participant: any) => {
-          // If participant is already an object with userId
-          if (typeof participant === 'object' && participant.userId) {
-            return {
-              userId: participant.userId,
-              userName: participant.userName || `User ${participant.userId}`,
-              audioEnabled: participant.audioEnabled !== undefined ? participant.audioEnabled : true,
-              videoEnabled: participant.videoEnabled !== undefined ? participant.videoEnabled : callType === 'video',
-              stream: participant.stream || null
-            };
-          }
-          // If participant is just a number (userId)
-          else if (typeof participant === 'number') {
-            return {
-              userId: participant,
-              userName: participant === user?.id ? user.callsign : `User ${participant}`,
-              audioEnabled: true,
-              videoEnabled: callType === 'video',
-              stream: null
-            };
-          }
-          return null;
-        })
-        .filter(Boolean); // Remove null values
+      // Remove duplicates and get unique participant IDs
+      const uniqueParticipantIds = Array.from(new Set(
+        activeCall.participants.map((p: any) => typeof p === 'object' ? p.userId : p)
+      ));
       
-      setParticipants(groupParticipants);
+      console.log('[GroupCall] Unique participant IDs:', uniqueParticipantIds);
+      
+      // Fetch participant data with proper names
+      fetchParticipantData(uniqueParticipantIds).then(participantData => {
+        console.log('[GroupCall] Setting participants with proper names:', participantData);
+        setParticipants(participantData);
+      });
     }
   }, [activeCall?.participants, user, callType]);
   
