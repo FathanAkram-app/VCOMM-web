@@ -163,7 +163,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
       
       buildParticipantList();
     }
-  }, [activeCall?.participants, user?.id, callType]);
+  }, [activeCall?.participants, user?.id]);
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const participantRefs = useRef<{ [userId: number]: HTMLVideoElement }>({});
@@ -187,22 +187,13 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
             channelCount: 1,
             latency: isMobile ? 0.02 : 0.01
           },
-          video: callType === 'video' ? {
-            facingMode: 'user',
-            width: { ideal: isMobile ? 480 : 640, max: isMobile ? 640 : 1280 },
-            height: { ideal: isMobile ? 360 : 480, max: isMobile ? 480 : 720 },
-            frameRate: { ideal: isMobile ? 10 : 15, max: isMobile ? 15 : 30 }
-          } : false
+          video: false // GroupCall is audio-only
         };
 
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         setLocalStream(stream);
 
-        if (localVideoRef.current && callType === 'video') {
-          localVideoRef.current.srcObject = stream;
-          localVideoRef.current.playsInline = true; // Critical for iOS
-          localVideoRef.current.muted = true;
-        }
+        // GroupCall is audio-only, no video setup needed
 
         // Mobile audio context initialization
         if (isMobile) {
@@ -254,13 +245,13 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
         localStream.getTracks().forEach(track => track.stop());
       }
     };
-  }, [callType, groupName]);
+  }, [groupName]);
 
   // Real media streaming system for group calls (audio + video)
   useEffect(() => {
     if (!localStream || participants.length === 0) return;
 
-    console.log(`[GroupCall] Setting up real media streaming for ${callType} call with ${participants.length} participants`);
+    console.log(`[GroupCall] Setting up real media streaming for audio call with ${participants.length} participants`);
     
     const audioElements: HTMLAudioElement[] = [];
     const videoElements: HTMLVideoElement[] = [];
