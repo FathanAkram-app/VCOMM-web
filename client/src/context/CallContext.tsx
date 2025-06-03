@@ -846,6 +846,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
       }
     } else {
       console.log('[CallContext] No active group call found for participant update');
+      // Store pending participant update for processing when activeCall becomes available
+      localStorage.setItem('pendingParticipantUpdate', JSON.stringify({
+        callId,
+        participants,
+        timestamp: Date.now()
+      }));
+      console.log('[CallContext] Stored pending participant update for later processing');
     }
   };
 
@@ -1845,6 +1852,26 @@ export function CallProvider({ children }: { children: ReactNode }) {
       // Set active call state immediately for immediate participant sync
       setActiveCall(groupCallState);
       console.log('[CallContext] Active call state set for group:', groupId, 'callId:', callId);
+      
+      // Check for pending participant updates that arrived before activeCall was set
+      setTimeout(() => {
+        const pendingUpdate = localStorage.getItem('pendingParticipantUpdate');
+        if (pendingUpdate) {
+          try {
+            const updateData = JSON.parse(pendingUpdate);
+            const updateParts = updateData.callId.split('_');
+            const updateGroupId = updateParts[2];
+            
+            if (updateGroupId === String(groupId)) {
+              console.log('[CallContext] Processing pending participant update:', updateData);
+              handleGroupCallParticipantsUpdate({ payload: updateData });
+              localStorage.removeItem('pendingParticipantUpdate');
+            }
+          } catch (error) {
+            console.error('[CallContext] Error processing pending participant update:', error);
+          }
+        }
+      }, 100);
 
       // Send join message to server
       ws.send(JSON.stringify({
