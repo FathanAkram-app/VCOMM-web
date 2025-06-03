@@ -1,0 +1,47 @@
+[CallContext] Received message: {type: 'incoming_group_call', payload: {…}}
+CallContext.tsx:746 [CallContext] Incoming group call received: {callId: 'group_call_1748955378936_31_3', groupId: 31, groupName: 'Beta', callType: 'audio', fromUserId: 3, …}
+CallContext.tsx:749 [CallContext] Extracted call details: {callId: 'group_call_1748955378936_31_3', groupId: 31, groupName: 'Beta', callType: 'audio'}
+CallContext.tsx:750 [CallContext] Current activeCall: undefined
+CallContext.tsx:777 [CallContext] Set incoming group call modal for: Beta
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: {callId: 'group_call_1748955378936_31_3', callType: 'audio', status: 'ringing', isIncoming: true, peerUserId: 3, …}
+CallContext.tsx:279 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:279 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:1275 [CallContext] acceptCall function called
+CallContext.tsx:1276 [CallContext] incomingCall: {callId: 'group_call_1748955378936_31_3', callType: 'audio', status: 'ringing', isIncoming: true, peerUserId: 3, …}
+CallContext.tsx:1277 [CallContext] ws connected: true
+CallContext.tsx:1278 [CallContext] user: {id: 4, callsign: 'dino', nrp: '222222', fullName: 'dino a', rank: 'SGM', …}
+CallContext.tsx:1287 [CallContext] Accepting group call - redirecting to joinGroupCall
+CallContext.tsx:1793 [CallContext] Joining existing group call: {callId: 'group_call_1748955378936_31_3', groupId: 31, groupName: 'Beta', callType: 'audio'}
+CallContext.tsx:1816 [CallContext] Requesting media permissions for joining group call...
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+CallContext.tsx:1818 [CallContext] Got local media stream for joining group call
+CallContext.tsx:1854 [CallContext] Active call state set for group: 31 callId: group_call_1748955378936_31_3
+CallContext.tsx:1889 [CallContext] Joined group call successfully
+CallContext.tsx:1890 [CallContext] Active call state after joining: {callId: 'group_call_1748955378936_31_3', callType: 'audio', status: 'connected', isIncoming: false, localStream: MediaStream, …}
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+GroupCall.tsx:34 [GroupCall] Updating participants from activeCall: []
+GroupCall.tsx:97 [GroupCall] Local media initialized for group: 
+CallContext.tsx:279 [CallContext] Received message: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:809 [CallContext] Group call participants update: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:812 [CallContext] Comparing callIds - message: group_call_1748955378936_31_3 activeCall: undefined
+CallContext.tsx:813 [CallContext] ActiveCall groupId: undefined
+CallContext.tsx:848 [CallContext] No active group call found for participant update
+CallContext.tsx:855 [CallContext] Stored pending participant update for later processing
+GroupCall.tsx:34 [GroupCall] Updating participants from activeCall: []
+CallContext.tsx:247 [CallContext] Creating stable WebSocket for calls...
+CallContext.tsx:325 [CallContext] WebSocket disconnected
+CallContext.tsx:254 [CallContext] WebSocket connected successfully for calls
+CallContext.tsx:265 [CallContext] Authenticated user 4 with WebSocket
+CallContext.tsx:279 [CallContext] Received message: {type: 'user_status', payload: {…}}
+GroupCall.tsx:34 [GroupCall] Updating participants from activeCall: []
+CallContext.tsx:247 [CallContext] Creating stable WebSocket for calls...
+CallContext.tsx:325 [CallContext] WebSocket disconnected
+CallContext.tsx:254 [CallContext] WebSocket connected successfully for calls
+CallContext.tsx:265 [CallContext] Authenticated user 4 with WebSocket
+CallContext.tsx:279 [CallContext] Received message: {type: 'user_status', payload: {…}}
+GroupCall.tsx:34 [GroupCall] Updating participants from activeCall: []
+CallContext.tsx:247 [CallContext] Creating stable WebSocket for calls...
+CallContext.tsx:325 [CallContext] WebSocket disconnected
+CallContext.tsx:254 [CallContext] WebSocket connected successfully for calls
+CallContext.tsx:265 [CallContext] Authenticated user 4 with WebSocket
+CallContext.tsx:279 [CallContext] Received message: {type: 'user_status', payload: {…}}

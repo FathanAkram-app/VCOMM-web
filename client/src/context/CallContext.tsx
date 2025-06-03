@@ -809,15 +809,47 @@ export function CallProvider({ children }: { children: ReactNode }) {
     console.log('[CallContext] Group call participants update:', message);
     const { callId, participants, newParticipant } = message.payload;
     
-    console.log('[CallContext] Comparing callIds - message:', callId, 'activeCall:', activeCall?.callId);
-    console.log('[CallContext] ActiveCall groupId:', activeCall?.groupId);
+    // Use ref to get current activeCall state to avoid race conditions
+    const currentActiveCall = activeCallRef.current;
+    console.log('[CallContext] Comparing callIds - message:', callId, 'activeCall:', currentActiveCall?.callId);
+    console.log('[CallContext] ActiveCall groupId:', currentActiveCall?.groupId);
+    
+    // Also check localStorage for active group call if activeCall is null
+    let groupCallToUpdate = currentActiveCall;
+    if (!groupCallToUpdate || !groupCallToUpdate.isGroupCall) {
+      const storedCall = localStorage.getItem('activeGroupCall');
+      if (storedCall) {
+        try {
+          const storedData = JSON.parse(storedCall);
+          console.log('[CallContext] Using stored group call data:', storedData);
+          
+          // Create a minimal call state from localStorage
+          groupCallToUpdate = {
+            callId: storedData.callId,
+            callType: storedData.callType,
+            status: 'connected',
+            isIncoming: false,
+            groupId: storedData.groupId,
+            groupName: storedData.groupName,
+            isGroupCall: true,
+            participants: [],
+            remoteStreams: new Map(),
+            audioEnabled: true,
+            videoEnabled: storedData.callType === 'video',
+            isMuted: false
+          };
+        } catch (error) {
+          console.error('[CallContext] Error parsing stored call data:', error);
+        }
+      }
+    }
     
     // For group calls, match by groupId rather than exact callId since the server may use different callIds
-    if (activeCall && activeCall.isGroupCall) {
+    if (groupCallToUpdate && groupCallToUpdate.isGroupCall) {
       // Extract groupId from the callId (format: group_call_timestamp_groupId_userId)
       const callIdParts = callId.split('_');
       const messageGroupId = callIdParts[2]; // Third part is groupId
-      const activeGroupId = String(activeCall.groupId);
+      const activeGroupId = String(groupCallToUpdate.groupId);
       
       console.log('[CallContext] Extracted groupIds - message:', messageGroupId, 'active:', activeGroupId);
       console.log('[CallContext] CallId parts:', callIdParts);
@@ -834,13 +866,17 @@ export function CallProvider({ children }: { children: ReactNode }) {
           stream: null
         }));
         
-        setActiveCall({
-          ...activeCall,
+        const updatedCall = {
+          ...groupCallToUpdate,
           participants: participantObjects,
           callId: callId // Update to the server's active callId
-        });
+        };
         
+        setActiveCall(updatedCall);
         console.log('[CallContext] Updated participants in active call:', participantObjects);
+        
+        // Clear any pending updates since we processed this one
+        localStorage.removeItem('pendingParticipantUpdate');
       } else {
         console.log('[CallContext] Group IDs do not match');
       }
