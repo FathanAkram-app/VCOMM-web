@@ -372,7 +372,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
             }
             
             // Process video stream for video calls
-            if (callType === 'video' && videoElement) {
+            if (false && videoElement) { // GroupCall is audio-only
               const videoTracks = mediaStream.getVideoTracks();
               if (videoTracks.length > 0) {
                 const videoStream = new MediaStream([videoTracks[0]]);
@@ -415,7 +415,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
             }
             
           } catch (error) {
-            console.error(`[GroupCall] Failed to create ${callType} stream for participant ${participant.userId}:`, error);
+            console.error(`[GroupCall] Failed to create audio stream for participant ${participant.userId}:`, error);
             
             // Fallback to silent/empty stream if media access fails
             try {
@@ -435,7 +435,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
     });
     
     return () => {
-      console.log(`[GroupCall] Cleaning up ${callType} streams`);
+      console.log(`[GroupCall] Cleaning up audio streams`);
       
       // Clean up audio elements
       audioElements.forEach(element => {
@@ -523,7 +523,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
 
   // Toggle video
   const toggleVideo = () => {
-    if (!localStream || callType === 'audio') return;
+    if (!localStream) return; // GroupCall is audio-only
     
     const videoTrack = localStream.getVideoTracks()[0];
     if (videoTrack) {
