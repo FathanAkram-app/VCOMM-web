@@ -866,7 +866,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Handle group call join
         if (data.type === 'join_group_call' && ws.userId) {
-          const { callId, groupId, userId } = data.payload;
+          const { callId, groupId, fromUserId } = data.payload;
+          const userId = fromUserId || ws.userId; // Use fromUserId from payload or fallback to ws.userId
           console.log(`[Group Call] User ${userId} joining group call ${callId}`);
           
           // Add user to the group call participants
