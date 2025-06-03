@@ -166,6 +166,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
       case 'group_call_ended':
         handleGroupCallEnded(message);
         break;
+      case 'group_call_user_left':
+        handleGroupCallUserLeft(message);
+        break;
       case 'group_call_participants_update':
         handleGroupCallParticipantsUpdate(message);
         break;
@@ -860,6 +863,38 @@ export function CallProvider({ children }: { children: ReactNode }) {
     // Clear localStorage when group call ends
     localStorage.removeItem('activeGroupCall');
     console.log('[CallContext] Cleared group call data from localStorage');
+  };
+
+  const handleGroupCallUserLeft = (message: any) => {
+    console.log('[CallContext] User left group call:', message);
+    const { userId, roomId, callType } = message;
+    
+    // Get current active call
+    const currentActiveCall = activeCallRef.current;
+    
+    if (currentActiveCall && currentActiveCall.isGroupCall && currentActiveCall.groupId === roomId) {
+      console.log(`[CallContext] Removing user ${userId} from group call participants`);
+      
+      // Remove the user from participants list  
+      const currentParticipants = currentActiveCall.participants || [];
+      const updatedParticipants = currentParticipants.filter((participantId: any) => participantId !== userId);
+      
+      const updatedCall = {
+        ...currentActiveCall,
+        participants: updatedParticipants
+      };
+      
+      setActiveCall(updatedCall);
+      console.log(`[CallContext] Updated participants after user ${userId} left:`, updatedParticipants);
+      
+      // If no participants left except current user, end the call
+      if (updatedParticipants.length <= 1) {
+        console.log('[CallContext] Only current user left, ending group call');
+        handleGroupCallEnded({ payload: { callId: currentActiveCall.callId } });
+      }
+    } else {
+      console.log('[CallContext] No matching active group call found for user left event');
+    }
   };
 
   const handleGroupCallParticipantsUpdate = (message: any) => {
