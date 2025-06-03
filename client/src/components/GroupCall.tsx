@@ -24,7 +24,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
   
   const [participants, setParticipants] = useState<GroupParticipant[]>([]);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
-  const [isVideoEnabled, setIsVideoEnabled] = useState(callType === 'video');
+  const [isVideoEnabled, setIsVideoEnabled] = useState(false); // GroupCall is audio-only
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [peerConnections, setPeerConnections] = useState<{ [userId: number]: RTCPeerConnection }>({});
 
