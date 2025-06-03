@@ -1,0 +1,72 @@
+Starting group audio call for group: Alpha
+CallContext.tsx:1901 [CallContext] Starting group call: {groupId: 37, groupName: 'Alpha', callType: 'audio'}
+CallContext.tsx:11 [CallContext] Mobile compatibility check: {isMobile: false, isHTTPS: true, userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWeb…KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36', hasMediaDevices: ƒ}
+CallContext.tsx:1912 [CallContext] Mobile compatibility check for group call: {isMobile: false, isHTTPS: true, hasMediaDevices: ƒ}
+CallContext.tsx:1935 [CallContext] Requesting media permissions for group call...
+CallContext.tsx:1937 [CallContext] Got local media stream for group call
+CallContext.tsx:1988 [CallContext] Group call invitation sent
+ChatRoom.tsx:634 Processing message data for grouping: (3) [{…}, {…}, {…}]
+ChatRoom.tsx:635 Total messages to process: 3
+ChatRoom.tsx:707 Grouped messages: [{…}]
+ChatRoom.tsx:708 Total date groups: 1
+ChatRoom.tsx:710 Total messages in first group: 3
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+GroupCall.tsx:91 [GroupCall] useEffect triggered
+GroupCall.tsx:92 [GroupCall] activeCall: {callId: 'group_call_1748961036088_37_5', callType: 'audio', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupCall.tsx:93 [GroupCall] activeCall?.participants: []
+GroupCall.tsx:94 [GroupCall] user?.id: 5
+GroupCall.tsx:97 [GroupCall] No participants in active call, setting empty array
+GroupCall.tsx:184 [GroupCall] Initializing media for desktop device
+ChatRoom.tsx:634 Processing message data for grouping: (3) [{…}, {…}, {…}]
+ChatRoom.tsx:635 Total messages to process: 3
+ChatRoom.tsx:707 Grouped messages: [{…}]
+ChatRoom.tsx:708 Total date groups: 1
+ChatRoom.tsx:710 Total messages in first group: 3
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+GroupCall.tsx:91 [GroupCall] useEffect triggered
+GroupCall.tsx:92 [GroupCall] activeCall: {callId: 'group_call_1748961036088_37_5', callType: 'audio', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupCall.tsx:93 [GroupCall] activeCall?.participants: []
+GroupCall.tsx:94 [GroupCall] user?.id: 5
+GroupCall.tsx:97 [GroupCall] No participants in active call, setting empty array
+GroupCall.tsx:184 [GroupCall] Initializing media for desktop device
+GroupCall.tsx:248 [GroupCall] Local media initialized for group: Alpha
+GroupCall.tsx:248 [GroupCall] Local media initialized for group: 
+CallContext.tsx:313 [CallContext] Creating stable WebSocket for calls...
+CallContext.tsx:394 [CallContext] WebSocket disconnected
+CallContext.tsx:320 [CallContext] WebSocket connected successfully for calls
+CallContext.tsx:331 [CallContext] Authenticated user 5 with WebSocket
+CallContext.tsx:345 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:345 [CallContext] Received message: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:915 [CallContext] Group call participants update: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:920 [CallContext] Comparing callIds - message: group_call_1748961036088_37_5 activeCall: group_call_1748961036088_37_5
+CallContext.tsx:921 [CallContext] ActiveCall groupId: 37
+CallContext.tsx:960 [CallContext] Extracted groupIds - message: 37 active: 37
+CallContext.tsx:961 [CallContext] CallId parts: (5) ['group', 'call', '1748961036088', '37', '5']
+CallContext.tsx:964 [CallContext] Group IDs match, updating participants: (2) [5, 2]
+CallContext.tsx:968 [CallContext] Unique participants after deduplication: (2) [5, 2]
+CallContext.tsx:986 [CallContext] Updated participants in active call: (2) [5, 2]
+GroupCall.tsx:91 [GroupCall] useEffect triggered
+GroupCall.tsx:92 [GroupCall] activeCall: {callId: 'group_call_1748961036088_37_5', callType: 'audio', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupCall.tsx:93 [GroupCall] activeCall?.participants: (2) [{…}, {…}]
+GroupCall.tsx:94 [GroupCall] user?.id: 5
+GroupCall.tsx:102 [GroupCall] Processing participants from activeCall: (2) [{…}, {…}]
+GroupCall.tsx:109 [GroupCall] Unique participant IDs: (2) [5, 2]
+GroupCall.tsx:117 [GroupCall] Participant list changed, updating...
+GroupCall.tsx:166 [GroupCall] Final participant list: (2) [{…}, {…}]
+GroupCall.tsx:269 [GroupCall] Setting up real microphone audio streaming for participants
+GroupCall.tsx:276 [GroupCall] Setting up real audio stream for participant eko (2)
+GroupCall.tsx:290 [GroupCall] Created audio element for participant 2
+GroupCall.tsx:295 [GroupCall] Creating microphone stream for participant 2
+GroupCall.tsx:425 [GroupCall] Managing participant audio status
+GroupCall.tsx:308 [GroupCall] Got microphone stream for participant 2
+CallContext.tsx:345 [CallContext] Received message: {type: 'user_status', payload: {…}}
+GroupCall.tsx:349 [GroupCall] ✅ Real microphone audio playing for participant 2
+GroupCall.tsx:433 [GroupCall] Enabling audio for eko
+GroupCall.tsx:390 [GroupCall] Cleaning up real audio streams
+GroupCall.tsx:269 [GroupCall] Setting up real microphone audio streaming for participants
+GroupCall.tsx:276 [GroupCall] Setting up real audio stream for participant eko (2)
+GroupCall.tsx:290 [GroupCall] Created audio element for participant 2
+GroupCall.tsx:295 [GroupCall] Creating microphone stream for participant 2
+GroupCall.tsx:308 [GroupCall] Got microphone stream for participant 2
+GroupCall.tsx:349 [GroupCall] ✅ Real microphone audio playing for participant 2
+CallContext.tsx:345 [CallContext] Received message: {type: 'user_status', payload: {…}}

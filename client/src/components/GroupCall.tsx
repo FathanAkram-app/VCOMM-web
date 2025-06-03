@@ -164,6 +164,7 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
         }
         
         console.log('[GroupCall] Final participant list:', participantList);
+        console.log('[GroupCall] Setting participants count:', participantList.length);
         setParticipants(participantList);
       };
       
@@ -591,11 +592,9 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
             </div>
 
             {/* DEBUG: Show participant count */}
-            {participants.length > 0 && (
-              <div className="col-span-full text-center text-white text-sm mb-4">
-                Participants: {participants.length} | Filtered: {participants.filter(participant => participant.userId !== user?.id).length}
-              </div>
-            )}
+            <div className="col-span-full text-center text-white text-sm mb-4 bg-red-500 p-2">
+              DEBUG - Total: {participants.length} | Filtered: {participants.filter(participant => participant.userId !== user?.id).length} | UserID: {user?.id}
+            </div>
 
             {/* Participants (exclude current user to avoid duplication) */}
             {participants.filter(participant => participant.userId !== user?.id).map(participant => (
