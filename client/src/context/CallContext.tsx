@@ -1987,9 +1987,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
       console.log('[CallContext] Group call invitation sent');
 
-      // Navigate to group call interface
+      // Navigate to appropriate group call interface based on call type
       setTimeout(() => {
-        setLocation('/group-call');
+        if (callType === 'video') {
+          setLocation('/group-video-call');
+        } else {
+          setLocation('/group-call');
+        }
       }, 100);
 
     } catch (error: any) {
@@ -2108,9 +2112,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
         callType: groupCallState.callType
       }));
 
-      // Navigate to group call interface
+      // Navigate to appropriate group call interface based on call type
       setTimeout(() => {
-        setLocation('/group-call');
+        if (callType === 'video') {
+          setLocation('/group-video-call');
+        } else {
+          setLocation('/group-call');
+        }
       }, 200);
 
     } catch (error: any) {
