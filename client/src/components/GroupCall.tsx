@@ -591,12 +591,7 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
               </div>
             </div>
 
-            {/* DEBUG: Show participant count - ALWAYS VISIBLE */}
-            <div className="fixed top-4 left-4 z-50 bg-red-500 text-white p-4 rounded">
-              DEBUG - Total: {participants.length} | Filtered: {participants.filter(participant => participant.userId !== user?.id).length} | UserID: {user?.id}
-              <br />
-              Participants: {participants.map(p => `${p.userName}(${p.userId})`).join(', ')}
-            </div>
+
 
             {/* Show all participants with different colors */}
             {participants.map(participant => (
