@@ -709,40 +709,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
     console.log('[CallContext] Incoming group call received:', message);
     const { callId, groupId, groupName, callType, fromUserId, fromUserName } = message.payload;
 
-    // Create incoming group call state
-    const incomingGroupCall: CallState = {
-      callId,
-      callType,
-      status: 'ringing',
-      isIncoming: true,
-      localStream: undefined,
-      remoteStreams: new Map(),
-      audioEnabled: true,
-      videoEnabled: callType === 'video',
-      isMuted: false,
-      isGroupCall: true,
-      groupId,
-      groupName,
-      peerUserId: fromUserId,
-      peerName: fromUserName,
-      participants: []
-    };
-
-    setIncomingCall(incomingGroupCall);
-    
-    // Play ringtone for group calls
-    try {
-      if (ringtoneAudio) {
-        ringtoneAudio.currentTime = 0;
-        ringtoneAudio.volume = 0.7;
-        ringtoneAudio.loop = true;
-        ringtoneAudio.play().catch(e => {
-          console.log('[CallContext] Group call ringtone autoplay failed:', e);
-        });
-      }
-    } catch (error) {
-      console.log('[CallContext] Group call ringtone error:', error);
+    // Skip if user is already in an active call
+    if (activeCall) {
+      console.log('[CallContext] User already in active call, ignoring incoming group call');
+      return;
     }
+
+    // For group calls, automatically join instead of showing incoming call modal
+    console.log('[CallContext] Auto-joining group call:', callId);
+    joinGroupCall(callId, groupId, groupName, callType);
   };
 
   const handleGroupCallEnded = (message: any) => {
@@ -1705,6 +1680,96 @@ export function CallProvider({ children }: { children: ReactNode }) {
     } catch (error: any) {
       console.error('[CallContext] Error starting group call:', error);
       alert(getMobileErrorMessage(error).replace('Gagal memulai panggilan', 'Gagal memulai panggilan grup'));
+    }
+  };
+
+  // Join an existing group call
+  const joinGroupCall = async (callId: string, groupId: number, groupName: string, callType: 'audio' | 'video') => {
+    try {
+      console.log('[CallContext] Joining existing group call:', { callId, groupId, groupName, callType });
+      
+      if (!user?.id || !ws) {
+        throw new Error('User not authenticated or WebSocket not connected');
+      }
+
+      // Enhanced mobile-friendly media constraints for group calls
+      const constraints = {
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 48000,
+          channelCount: 1
+        },
+        video: callType === 'video' ? {
+          facingMode: 'user',
+          width: { ideal: 640, max: 1280 },
+          height: { ideal: 480, max: 720 },
+          frameRate: { ideal: 15, max: 30 }
+        } : false
+      };
+
+      console.log('[CallContext] Requesting media permissions for joining group call...');
+      const localStream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log('[CallContext] Got local media stream for joining group call');
+
+      // Create RTCPeerConnection for intranet/offline mode (no internet required)
+      const peerConnection = new RTCPeerConnection({
+        iceServers: [], // Empty array for local network only - no internet connection needed
+        iceTransportPolicy: 'all', // Allow both UDP and TCP
+        bundlePolicy: 'max-bundle',
+        rtcpMuxPolicy: 'require'
+      });
+
+      // Add local stream to peer connection
+      localStream.getTracks().forEach(track => {
+        peerConnection.addTrack(track, localStream);
+      });
+
+      // Set up group call state
+      const groupCallState: CallState = {
+        callId,
+        callType,
+        status: 'connected',
+        isIncoming: false,
+        localStream,
+        remoteStreams: new Map(),
+        peerConnection,
+        audioEnabled: true,
+        videoEnabled: callType === 'video',
+        isMuted: false,
+        startTime: new Date(),
+        isGroupCall: true,
+        groupId,
+        groupName,
+        participants: []
+      };
+
+      setActiveCall(groupCallState);
+
+      // Send join message to server
+      ws.send(JSON.stringify({
+        type: 'join_group_call',
+        payload: {
+          callId,
+          groupId,
+          groupName,
+          callType,
+          fromUserId: user.id,
+          fromUserName: user.callsign || user.fullName || 'Unknown'
+        }
+      }));
+
+      console.log('[CallContext] Joined group call successfully');
+
+      // Navigate to group call interface
+      setTimeout(() => {
+        setLocation('/group-call');
+      }, 100);
+
+    } catch (error: any) {
+      console.error('[CallContext] Error joining group call:', error);
+      alert(getMobileErrorMessage(error).replace('Gagal memulai panggilan', 'Gagal bergabung ke panggilan grup'));
     }
   };
 

@@ -1,0 +1,61 @@
+[CallContext] Incoming group call received: 
+Object { callId: "group_call_1748952193113_31_4", groupId: 31, groupName: "Beta", callType: "audio", fromUserId: 4, fromUserName: "dino" }
+CallContext.tsx:709:12
+[CallContext] Received message: 
+Object { type: "user_status", payload: {…} }
+CallContext.tsx:242:16
+[CallContext] Received message: 
+Object { type: "user_status", payload: {…} }
+CallContext.tsx:242:16
+[IncomingCallModal] Rendering with incomingCall: null IncomingCallModal.tsx:8:10
+Contoh data percakapan dari server: 
+Object { id: 35, createdById: 1, createdAt: "2025-06-02T15:31:27.620Z", updatedAt: "2025-06-02T15:31:27.620Z", isGroup: false, name: "Direct Chat 3-6", description: null, classification: null, lastMessage: null, lastMessageTime: null, … }
+ChatList.tsx:94:14
+[CallContext] Creating stable WebSocket for calls... CallContext.tsx:210:12
+[CallContext] WebSocket disconnected CallContext.tsx:288:14
+[IncomingCallModal] Rendering with incomingCall: null IncomingCallModal.tsx:8:10
+[CallContext] WebSocket connected successfully for calls CallContext.tsx:217:14
+[CallContext] Authenticated user 3 with WebSocket CallContext.tsx:228:16
+[IncomingCallModal] Rendering with incomingCall: null IncomingCallModal.tsx:8:10
+[CallContext] Received message: 
+Object { type: "user_status", payload: {…} }
+CallContext.tsx:242:16
+Selecting chat: id=31, isGroup=true Chat.tsx:382:12
+Fetching messages for chat ID: 31, isGroup: true Chat.tsx:396:14
+Processing message data for grouping: 
+Array []
+ChatRoom.tsx:634:12
+Total messages to process: 0 ChatRoom.tsx:635:12
+Grouped messages: 
+Array []
+ChatRoom.tsx:707:12
+Total date groups: 0 ChatRoom.tsx:708:12
+[IncomingCallModal] Rendering with incomingCall: null IncomingCallModal.tsx:8:10
+Messages data received: 
+Array []
+ChatRoom.tsx:131:12
+Fetched 0 messages for chat 31 ChatRoom.tsx:133:14
+Processing message data for grouping: 
+Array []
+ChatRoom.tsx:634:12
+Total messages to process: 0 ChatRoom.tsx:635:12
+Grouped messages: 
+Array []
+ChatRoom.tsx:707:12
+Total date groups: 0 ChatRoom.tsx:708:12
+Messages data received: 
+Array []
+ChatRoom.tsx:131:12
+Fetched 0 messages for chat 31 ChatRoom.tsx:133:14
+Processing message data for grouping: 
+Array []
+ChatRoom.tsx:634:12
+Total messages to process: 0 ChatRoom.tsx:635:12
+Grouped messages: 
+Array []
+ChatRoom.tsx:707:12
+Total date groups: 0 ChatRoom.tsx:708:12
+[IncomingCallModal] Rendering with incomingCall: null IncomingCallModal.tsx:8:10
+Messages data received: 
+Array []
+ChatRoom.tsx:131:12
