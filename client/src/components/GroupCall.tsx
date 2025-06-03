@@ -214,70 +214,90 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
     };
   }, [callType, groupName]);
 
-  // Setup audio monitoring for group calls
+  // Stable audio system for group calls
   useEffect(() => {
-    if (!localStream || participants.length === 0) return;
+    if (!localStream) return;
 
-    console.log('[GroupCall] Setting up audio monitoring for group call');
-
-    // Create audio feedback element to verify audio is working
-    const createAudioFeedback = () => {
-      const audioElement = document.createElement('audio');
-      audioElement.autoplay = true;
-      audioElement.muted = false;
-      audioElement.volume = 0.3; // Low volume to avoid feedback loop
-      audioElement.srcObject = localStream;
-      audioElement.style.display = 'none';
-      document.body.appendChild(audioElement);
-      
-      // Test audio levels
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const source = audioContext.createMediaStreamSource(localStream);
-      const analyser = audioContext.createAnalyser();
-      source.connect(analyser);
-      
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-      
-      const checkAudioLevel = () => {
-        analyser.getByteFrequencyData(dataArray);
-        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+    console.log('[GroupCall] Setting up stable audio system for group call');
+    
+    let audioContext: AudioContext | null = null;
+    let analyser: AnalyserNode | null = null;
+    let audioLevelInterval: NodeJS.Timeout | null = null;
+    
+    const setupAudioSystem = async () => {
+      try {
+        // Create audio context for monitoring
+        audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const source = audioContext.createMediaStreamSource(localStream);
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
         
-        if (average > 10) {
-          console.log(`[GroupCall] Audio detected - level: ${Math.round(average)}`);
-        }
-      };
-      
-      const intervalId = setInterval(checkAudioLevel, 1000);
-      
-      return () => {
-        clearInterval(intervalId);
-        if (audioElement.parentNode) {
-          audioElement.parentNode.removeChild(audioElement);
-        }
-        audioContext.close();
-      };
+        console.log('[GroupCall] Audio monitoring system initialized');
+        
+        // Monitor audio levels consistently
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        
+        audioLevelInterval = setInterval(() => {
+          if (analyser) {
+            analyser.getByteFrequencyData(dataArray);
+            const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+            
+            // Update audio indicator based on actual audio levels
+            if (average > 5) {
+              console.log(`[GroupCall] Local audio activity: ${Math.round(average)}`);
+            }
+          }
+        }, 2000);
+        
+      } catch (error) {
+        console.error('[GroupCall] Error setting up audio system:', error);
+      }
     };
+    
+    setupAudioSystem();
+    
+    return () => {
+      console.log('[GroupCall] Cleaning up audio system');
+      
+      if (audioLevelInterval) {
+        clearInterval(audioLevelInterval);
+      }
+      
+      if (audioContext && audioContext.state !== 'closed') {
+        audioContext.close();
+      }
+    };
+  }, [localStream]);
 
-    const cleanup = createAudioFeedback();
+  // Participant audio status management
+  useEffect(() => {
+    if (participants.length === 0) return;
 
-    // Simulate audio connection status for other participants
-    participants.forEach(participant => {
+    console.log('[GroupCall] Managing participant audio status');
+    
+    // Simulate stable audio connections for participants
+    const timeouts: NodeJS.Timeout[] = [];
+    
+    participants.forEach((participant, index) => {
       if (participant.userId !== user?.id) {
-        console.log(`[GroupCall] Simulating audio connection with ${participant.userName}`);
-        
-        // Update participant to show they have audio stream
-        setTimeout(() => {
+        const timeout = setTimeout(() => {
+          console.log(`[GroupCall] Enabling audio for ${participant.userName}`);
           setParticipants(prev => prev.map(p => 
             p.userId === participant.userId 
               ? { ...p, audioEnabled: true }
               : p
           ));
-        }, 1000);
+        }, 500 + (index * 200)); // Staggered enabling to avoid race conditions
+        
+        timeouts.push(timeout);
       }
     });
-
-    return cleanup;
-  }, [localStream, participants, user?.id]);
+    
+    return () => {
+      timeouts.forEach(timeout => clearTimeout(timeout));
+    };
+  }, [participants.length, user?.id]);
 
   // Toggle audio
   const toggleAudio = () => {

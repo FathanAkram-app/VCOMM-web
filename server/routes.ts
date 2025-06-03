@@ -937,28 +937,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Check if it's a group call
           if (callId.includes('group_call_')) {
+            const groupId = data.payload.groupId;
+            
             // Remove user from group call participants
             if (activeGroupCalls.has(callId)) {
               activeGroupCalls.get(callId)!.delete(ws.userId);
+              const remainingParticipants = activeGroupCalls.get(callId)!.size;
               
-              // If no participants left, remove the call entirely
-              if (activeGroupCalls.get(callId)!.size === 0) {
+              if (remainingParticipants === 0) {
+                // No participants left, end the entire call
                 activeGroupCalls.delete(callId);
                 console.log(`[Group Call] Removed empty group call ${callId}`);
+                
+                broadcastToAll({
+                  type: 'group_call_ended',
+                  payload: { 
+                    callId,
+                    endedByUserId: ws.userId
+                  }
+                });
+                console.log(`[Group Call] Broadcasted group call end for ${callId}`);
               } else {
-                console.log(`[Group Call] User ${ws.userId} left call ${callId}, ${activeGroupCalls.get(callId)!.size} participants remaining`);
+                // Some participants still remain, just notify user left
+                console.log(`[Group Call] User ${ws.userId} left call ${callId}, ${remainingParticipants} participants remaining`);
+                
+                // Notify remaining participants that this user left
+                broadcastToAll({
+                  type: 'group_call_user_left',
+                  userId: ws.userId,
+                  roomId: groupId,
+                  callType: data.payload.callType || 'audio'
+                });
+                console.log(`[Group Call] Broadcasted user ${ws.userId} left group call ${callId}`);
               }
             }
-            
-            // For group calls, notify all connected clients
-            broadcastToAll({
-              type: 'group_call_ended',
-              payload: { 
-                callId,
-                endedByUserId: ws.userId
-              }
-            });
-            console.log(`[Group Call] Broadcasted group call end for ${callId}`);
           } else {
             // For individual calls, notify specific user
             const targetClient = clients.get(toUserId);
