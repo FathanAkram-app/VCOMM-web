@@ -237,9 +237,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
       // Set volume
       gainNode.gain.value = 0.3;
       
-      // Start and stop the tone (0.4 seconds on, 0.4 seconds off)
+      // Start and stop the tone (0.8 seconds on, 0.8 seconds off)
       oscillator.start();
-      oscillator.stop(ctx.currentTime + 0.4);
+      oscillator.stop(ctx.currentTime + 0.8);
       
       console.log('[CallContext] Playing waiting tone - tuuutt');
     } catch (error) {
@@ -256,10 +256,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
     console.log('[CallContext] Starting waiting tone sequence');
     playWaitingTone(); // Play immediately
     
-    // Then play every 800ms (0.4s tone + 0.4s silence)
+    // Then play every 1600ms (0.8s tone + 0.8s silence)
     const interval = setInterval(() => {
       playWaitingTone();
-    }, 800);
+    }, 1600);
     
     setWaitingToneInterval(interval);
   };
