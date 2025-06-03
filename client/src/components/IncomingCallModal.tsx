@@ -16,7 +16,7 @@ export default function IncomingCallModal() {
           {/* Incoming Call Header */}
           <div className="mb-6">
             <h2 className="text-lg font-bold text-[#a6c455] uppercase tracking-wide mb-2">
-              INCOMING {incomingCall.callType?.toUpperCase()} TRANSMISSION
+              {incomingCall.isGroupCall ? 'INCOMING GROUP' : 'INCOMING'} {incomingCall.callType?.toUpperCase()} TRANSMISSION
             </h2>
             <div className="h-px bg-[#a6c455] mx-8"></div>
           </div>
@@ -24,17 +24,26 @@ export default function IncomingCallModal() {
           {/* Caller Avatar */}
           <div className="w-24 h-24 rounded-none bg-[#333333] border-4 border-[#a6c455] flex items-center justify-center mx-auto mb-4">
             <span className="text-2xl font-bold text-[#a6c455]">
-              {incomingCall.peerName ? incomingCall.peerName.substring(0, 2).toUpperCase() : '??'}
+              {incomingCall.isGroupCall 
+                ? (incomingCall.groupName ? incomingCall.groupName.substring(0, 2).toUpperCase() : 'GR')
+                : (incomingCall.peerName ? incomingCall.peerName.substring(0, 2).toUpperCase() : '??')
+              }
             </span>
           </div>
           
           {/* Caller Information */}
           <div className="mb-6">
             <h3 className="text-xl font-bold text-white uppercase tracking-wider mb-1">
-              {incomingCall.peerName || 'UNKNOWN OPERATOR'}
+              {incomingCall.isGroupCall 
+                ? `GRUP ${incomingCall.groupName || 'UNKNOWN'}`
+                : (incomingCall.peerName || 'UNKNOWN OPERATOR')
+              }
             </h3>
             <p className="text-sm text-[#a6c455] font-medium">
-              REQUESTING {incomingCall.callType?.toUpperCase()} CONNECTION
+              {incomingCall.isGroupCall 
+                ? `${incomingCall.peerName} MEMULAI PANGGILAN GRUP`
+                : `REQUESTING ${incomingCall.callType?.toUpperCase()} CONNECTION`
+              }
             </p>
           </div>
           

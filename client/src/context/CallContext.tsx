@@ -711,8 +711,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     console.log('[CallContext] Extracted call details:', { callId, groupId, groupName, callType });
     console.log('[CallContext] Current activeCall:', activeCall?.callId);
-    console.log('[CallContext] WebSocket connected:', !!ws);
-    console.log('[CallContext] User authenticated:', !!user?.id);
 
     // Skip if user is already in an active call
     if (activeCall) {
@@ -720,9 +718,26 @@ export function CallProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // For group calls, automatically join instead of showing incoming call modal
-    console.log('[CallContext] Auto-joining group call:', callId);
-    joinGroupCall(callId, groupId, groupName, callType);
+    // Show incoming group call modal instead of auto-joining
+    const incomingGroupCall: CallState = {
+      callId,
+      callType,
+      status: 'ringing',
+      isIncoming: true,
+      peerUserId: fromUserId,
+      peerName: fromUserName,
+      remoteStreams: new Map(),
+      audioEnabled: true,
+      videoEnabled: callType === 'video',
+      isMuted: false,
+      isGroupCall: true,
+      groupId,
+      groupName,
+      participants: []
+    };
+
+    setIncomingCall(incomingGroupCall);
+    console.log('[CallContext] Set incoming group call modal for:', groupName);
   };
 
   const handleGroupCallEnded = (message: any) => {
