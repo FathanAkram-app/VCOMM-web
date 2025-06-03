@@ -756,7 +756,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const { callId, groupId, groupName, callType, fromUserId, fromUserName } = data.payload;
           console.log(`[Group Call] User ${fromUserId} (${fromUserName}) starting ${callType} group call in group ${groupId} (${groupName})`);
           
+          // Check if there's already an active group call for this group
+          let existingCallId = null;
+          for (const [activeCallId, participants] of activeGroupCalls.entries()) {
+            if (activeCallId.includes(`_${groupId}_`) && participants.size > 0) {
+              existingCallId = activeCallId;
+              break;
+            }
+          }
+          
+          if (existingCallId) {
+            console.log(`[Group Call] Found existing group call ${existingCallId} for group ${groupId}`);
+            // Join existing call instead of creating new one
+            activeGroupCalls.get(existingCallId)!.add(fromUserId);
+            
+            // Get current participants list
+            const participants = Array.from(activeGroupCalls.get(existingCallId) || []);
+            console.log(`[Group Call] User ${fromUserId} joined existing call, participants:`, participants);
+            
+            try {
+              // Get group members to notify about participant update
+              const members = await storage.getConversationMembers(groupId);
+              
+              // Broadcast participant update to all group members
+              for (const member of members) {
+                const targetClient = clients.get(member.userId);
+                if (targetClient && targetClient.readyState === targetClient.OPEN) {
+                  targetClient.send(JSON.stringify({
+                    type: 'group_call_participants_update',
+                    payload: {
+                      callId: existingCallId,
+                      participants,
+                      newParticipant: fromUserId
+                    }
+                  }));
+                }
+              }
+            } catch (error) {
+              console.error(`[Group Call] Error broadcasting participant update:`, error);
+            }
+            return;
+          }
+          
           try {
+            // Create new group call
             // Get group members
             const members = await storage.getConversationMembers(groupId);
             console.log(`[Group Call] Found ${members.length} members in group ${groupId}`);
@@ -842,6 +885,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Check if it's a group call
           if (callId.includes('group_call_')) {
+            // Remove user from group call participants
+            if (activeGroupCalls.has(callId)) {
+              activeGroupCalls.get(callId)!.delete(ws.userId);
+              
+              // If no participants left, remove the call entirely
+              if (activeGroupCalls.get(callId)!.size === 0) {
+                activeGroupCalls.delete(callId);
+                console.log(`[Group Call] Removed empty group call ${callId}`);
+              } else {
+                console.log(`[Group Call] User ${ws.userId} left call ${callId}, ${activeGroupCalls.get(callId)!.size} participants remaining`);
+              }
+            }
+            
             // For group calls, notify all connected clients
             broadcastToAll({
               type: 'group_call_ended',
