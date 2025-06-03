@@ -764,13 +764,20 @@ export function CallProvider({ children }: { children: ReactNode }) {
     console.log('[CallContext] Group call participants update:', message);
     const { callId, participants, newParticipant } = message.payload;
     
-    // Update participants in active call if it matches
-    if (activeCall?.callId === callId) {
+    console.log('[CallContext] Comparing callIds - message:', callId, 'activeCall:', activeCall?.callId);
+    
+    // Update participants in active call if it matches OR if it's the same group
+    if (activeCall && (activeCall.callId === callId || 
+        (activeCall.isGroupCall && callId.includes(`_${activeCall.groupId}_`)))) {
+      console.log('[CallContext] Updating activeCall with participants:', participants);
       setActiveCall({
         ...activeCall,
-        participants: participants
+        participants: participants,
+        callId: callId // Update to the correct callId if needed
       });
       console.log('[CallContext] Updated participants in active call:', participants);
+    } else {
+      console.log('[CallContext] No matching call found for participant update');
     }
   };
 
