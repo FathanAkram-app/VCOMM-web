@@ -574,8 +574,8 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
 
 
 
-            {/* Show current user first */}
-            {user && participants.find(p => p.userId === user.id) && (
+            {/* Show current user first - always visible when in call */}
+            {user && activeCall && (
               <div className="flex flex-col items-center space-y-2">
                 <Avatar className="h-20 w-20 bg-[#5fb85f] border-2 border-[#5fb85f]">
                   <AvatarFallback className="bg-[#5fb85f] text-white text-xl font-bold">
