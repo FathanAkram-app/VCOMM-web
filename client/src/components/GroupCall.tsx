@@ -44,7 +44,7 @@ export default function GroupCall({ groupId, groupName }: GroupCallProps) {
           userId,
           userName: 'Anda',
           audioEnabled: true,
-          videoEnabled: callType === 'video',
+          videoEnabled: false, // GroupCall is audio-only
           stream: null
         });
       } else {
