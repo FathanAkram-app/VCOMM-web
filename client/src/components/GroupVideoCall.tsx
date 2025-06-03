@@ -38,6 +38,8 @@ export default function GroupVideoCall() {
 
   console.log('[GroupVideoCall] Component rendering with activeCall:', activeCall);
   console.log('[GroupVideoCall] user?.id:', user?.id);
+  console.log('[GroupVideoCall] isVideoEnabled:', isVideoEnabled);
+  console.log('[GroupVideoCall] localStream:', localStream);
 
   // Get user media when component mounts
   useEffect(() => {
@@ -77,12 +79,13 @@ export default function GroupVideoCall() {
     }
 
     return () => {
-      // Cleanup streams
+      // Cleanup streams when activeCall changes or component unmounts
       if (localStream) {
         localStream.getTracks().forEach(track => {
           track.stop();
           console.log('[GroupVideoCall] Stopped track:', track.kind);
         });
+        setLocalStream(null);
       }
     };
   }, [activeCall]);
@@ -101,6 +104,19 @@ export default function GroupVideoCall() {
       }
     }
   }, [localStream]);
+
+  // Cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      console.log('[GroupVideoCall] Component unmounting, cleaning up streams');
+      if (localStream) {
+        localStream.getTracks().forEach(track => {
+          track.stop();
+          console.log('[GroupVideoCall] Cleanup on unmount - stopped track:', track.kind);
+        });
+      }
+    };
+  }, []); // Empty dependency array means this runs only on unmount
 
   const toggleAudio = () => {
     if (localStream) {
@@ -131,11 +147,27 @@ export default function GroupVideoCall() {
 
   const handleEndCall = () => {
     console.log('[GroupVideoCall] Ending call');
+    // Stop all media tracks before ending call
+    if (localStream) {
+      localStream.getTracks().forEach(track => {
+        track.stop();
+        console.log('[GroupVideoCall] Stopped track on end call:', track.kind);
+      });
+      setLocalStream(null);
+    }
     hangupCall();
   };
 
   const handleBack = () => {
     console.log('[GroupVideoCall] Going back');
+    // Stop all media tracks before going back
+    if (localStream) {
+      localStream.getTracks().forEach(track => {
+        track.stop();
+        console.log('[GroupVideoCall] Stopped track on back:', track.kind);
+      });
+      setLocalStream(null);
+    }
     hangupCall();
   };
 
@@ -187,16 +219,18 @@ export default function GroupVideoCall() {
                 {/* Current User - Always first position */}
                 {user && activeCall && (
                   <div className="relative bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] rounded-lg overflow-hidden border-2 border-[#4a7c59] aspect-[4/3] min-h-[120px] max-h-[160px]">
-                    {isVideoEnabled ? (
-                      <video
-                        ref={localVideoRef}
-                        autoPlay
-                        muted
-                        playsInline
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#2d4a2d] to-[#1e3a1e]">
+                    {/* Video element - always present */}
+                    <video
+                      ref={localVideoRef}
+                      autoPlay
+                      muted
+                      playsInline
+                      className="w-full h-full object-cover"
+                      style={{ display: isVideoEnabled ? 'block' : 'none' }}
+                    />
+                    {/* Avatar overlay when video is disabled */}
+                    {!isVideoEnabled && (
+                      <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-[#2d4a2d] to-[#1e3a1e]">
                         <Avatar className="h-12 w-12 bg-[#4a7c59] border-2 border-[#a6c455]">
                           <AvatarFallback className="bg-[#4a7c59] text-white text-sm font-bold">
                             {(user.callsign || user.fullName || 'A').substring(0, 2).toUpperCase()}
@@ -308,16 +342,18 @@ export default function GroupVideoCall() {
           <div className="w-full h-full relative">
             {user && activeCall && (
               <div className="relative bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] rounded-lg overflow-hidden border-2 border-[#4a7c59] h-full w-full">
-                {isVideoEnabled ? (
-                  <video
-                    ref={localVideoRef}
-                    autoPlay
-                    muted
-                    playsInline
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#2d4a2d] to-[#1e3a1e]">
+                {/* Video element - always present in maximized mode */}
+                <video
+                  ref={localVideoRef}
+                  autoPlay
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover"
+                  style={{ display: isVideoEnabled ? 'block' : 'none' }}
+                />
+                {/* Avatar overlay when video is disabled */}
+                {!isVideoEnabled && (
+                  <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-[#2d4a2d] to-[#1e3a1e]">
                     <Avatar className="h-32 w-32 bg-[#4a7c59] border-4 border-[#a6c455]">
                       <AvatarFallback className="bg-[#4a7c59] text-white text-4xl font-bold">
                         {(user.callsign || user.fullName || 'A').substring(0, 2).toUpperCase()}
