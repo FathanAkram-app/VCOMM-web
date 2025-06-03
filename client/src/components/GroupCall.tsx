@@ -570,20 +570,7 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
       {callType === 'audio' && (
         <div className="flex-1 p-4 flex flex-col items-center justify-center">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-4xl">
-            {/* Local user */}
-            <div className="flex flex-col items-center space-y-2">
-              <Avatar className="h-20 w-20 bg-[#333333] border-2 border-[#a6c455]">
-                <AvatarFallback className="bg-[#333333] text-[#a6c455] text-xl font-bold">
-                  {user?.callsign?.substring(0, 2).toUpperCase() || 'ME'}
-                </AvatarFallback>
-              </Avatar>
-              <div className="text-center">
-                <p className="text-white text-sm font-medium">Anda</p>
-                <p className="text-xs text-gray-400">
-                  {isAudioEnabled ? 'Speaking' : 'Muted'}
-                </p>
-              </div>
-            </div>
+
 
 
 
