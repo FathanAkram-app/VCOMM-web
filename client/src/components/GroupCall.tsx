@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Mic, MicOff, Video, VideoOff, PhoneOff, Users } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -85,39 +85,79 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
     return Array.from(participantMap.values());
   };
 
-  // Track the last processed participant list to prevent duplicates
-  const [lastProcessedParticipants, setLastProcessedParticipants] = useState<string>('');
+  // Use useMemo to prevent duplicate processing and ensure stable participant list
+  const processedParticipants = useMemo(() => {
+    if (!activeCall?.participants || activeCall.participants.length === 0) {
+      console.log('[GroupCall] No participants in active call');
+      return [];
+    }
 
-  // Update participants from activeCall
-  useEffect(() => {
-    if (activeCall && activeCall.participants) {
-      console.log('[GroupCall] Updating participants from activeCall:', activeCall.participants);
-      
-      // Remove duplicates and get unique participant IDs
-      const uniqueParticipantIds = Array.from(new Set(
-        activeCall.participants.map((p: any) => typeof p === 'object' ? p.userId : p)
-      ));
-      
-      console.log('[GroupCall] Unique participant IDs:', uniqueParticipantIds);
-      
-      // Create a signature of current participants to track changes
-      const participantSignature = uniqueParticipantIds.sort().join(',');
-      
-      // Only update if the participant list has actually changed
-      if (participantSignature !== lastProcessedParticipants && uniqueParticipantIds.length > 0) {
-        console.log('[GroupCall] Participant list changed, updating...');
-        setLastProcessedParticipants(participantSignature);
-        
-        // Fetch participant data with proper names
-        fetchParticipantData(uniqueParticipantIds).then(participantData => {
-          console.log('[GroupCall] Setting participants with proper names:', participantData);
-          setParticipants(participantData);
+    console.log('[GroupCall] Processing participants from activeCall:', activeCall.participants);
+    
+    // Remove duplicates and get unique participant IDs
+    const uniqueParticipantIds = Array.from(new Set(
+      activeCall.participants.map((p: any) => typeof p === 'object' ? p.userId : p)
+    ));
+    
+    console.log('[GroupCall] Unique participant IDs:', uniqueParticipantIds);
+    
+    // Build participant data synchronously first with basic info
+    const participantData: GroupParticipant[] = [];
+    const participantMap = new Map<number, GroupParticipant>();
+    
+    for (const userId of uniqueParticipantIds) {
+      if (!participantMap.has(userId)) {
+        participantMap.set(userId, {
+          userId,
+          userName: userId === user?.id ? 'Anda' : `Loading...`,
+          audioEnabled: true,
+          videoEnabled: callType === 'video',
+          stream: undefined
         });
-      } else {
-        console.log('[GroupCall] Participant list unchanged or empty, skipping update');
       }
     }
-  }, [activeCall?.participants, user?.id, lastProcessedParticipants]);
+    
+    return Array.from(participantMap.values());
+  }, [activeCall?.participants, user?.id, callType]);
+
+  // Update participants state when processedParticipants changes
+  useEffect(() => {
+    if (processedParticipants.length > 0) {
+      console.log('[GroupCall] Updating participants state:', processedParticipants);
+      
+      // Fetch real names for non-current users
+      const fetchRealNames = async () => {
+        const updatedParticipants = await Promise.all(
+          processedParticipants.map(async (participant) => {
+            if (participant.userId === user?.id) {
+              return { ...participant, userName: 'Anda' };
+            } else {
+              try {
+                const response = await fetch(`/api/users/${participant.userId}`);
+                if (response.ok) {
+                  const userData = await response.json();
+                  return { 
+                    ...participant, 
+                    userName: userData.callsign || userData.fullName || `User ${participant.userId}` 
+                  };
+                }
+              } catch (error) {
+                console.error('[GroupCall] Error fetching user data:', error);
+              }
+              return { ...participant, userName: `User ${participant.userId}` };
+            }
+          })
+        );
+        
+        console.log('[GroupCall] Setting final participants with real names:', updatedParticipants);
+        setParticipants(updatedParticipants);
+      };
+      
+      fetchRealNames();
+    } else {
+      setParticipants([]);
+    }
+  }, [processedParticipants, user?.id]);
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const participantRefs = useRef<{ [userId: number]: HTMLVideoElement }>({});
