@@ -1758,6 +1758,26 @@ export function CallProvider({ children }: { children: ReactNode }) {
         }
       });
 
+      // Clean up any remaining group video elements
+      const allGroupVideoElements = document.querySelectorAll('[id^="groupVideo-"]');
+      allGroupVideoElements.forEach(element => {
+        try {
+          const videoEl = element as HTMLVideoElement;
+          if (videoEl.srcObject) {
+            const stream = videoEl.srcObject as MediaStream;
+            stream.getTracks().forEach(track => {
+              track.stop();
+              console.log('[CallContext] Stopped video track:', track.kind);
+            });
+            videoEl.srcObject = null;
+          }
+          element.remove();
+          console.log('[CallContext] Cleaned up remaining group video element');
+        } catch (err) {
+          console.warn('[CallContext] Error cleaning up remaining video element:', err);
+        }
+      });
+
       // Send call end message safely
       if (ws && ws.readyState === WebSocket.OPEN && activeCall && user) {
         try {

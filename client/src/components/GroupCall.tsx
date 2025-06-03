@@ -257,18 +257,19 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
     };
   }, [callType, groupName]);
 
-  // Real microphone audio streaming system for group calls
+  // Real media streaming system for group calls (audio + video)
   useEffect(() => {
     if (!localStream || participants.length === 0) return;
 
-    console.log('[GroupCall] Setting up real microphone audio streaming for participants');
+    console.log(`[GroupCall] Setting up real media streaming for ${callType} call with ${participants.length} participants`);
     
     const audioElements: HTMLAudioElement[] = [];
+    const videoElements: HTMLVideoElement[] = [];
     const audioContexts: AudioContext[] = [];
     
     participants.forEach(participant => {
       if (participant.userId !== user?.id) {
-        console.log(`[GroupCall] Setting up real audio stream for participant ${participant.userName} (${participant.userId})`);
+        console.log(`[GroupCall] Setting up ${callType} stream for participant ${participant.userName} (${participant.userId})`);
         
         // Create audio element for this participant
         const audioElement = document.createElement('audio');
@@ -277,32 +278,59 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
         audioElement.muted = false;
         audioElement.volume = 0.8;
         audioElement.controls = false;
-        audioElement.playsInline = true;
         audioElement.style.display = 'none';
         document.body.appendChild(audioElement);
         audioElements.push(audioElement);
         
-        console.log(`[GroupCall] Created audio element for participant ${participant.userId}`);
+        // Create video element for video calls
+        let videoElement: HTMLVideoElement | null = null;
+        if (callType === 'video') {
+          videoElement = document.createElement('video');
+          videoElement.id = `groupVideo-${participant.userId}`;
+          videoElement.autoplay = true;
+          videoElement.muted = true; // Video element should be muted to avoid echo
+          videoElement.controls = false;
+          (videoElement as any).playsInline = true;
+          videoElement.style.width = '100%';
+          videoElement.style.height = '100%';
+          videoElement.style.objectFit = 'cover';
+          videoElement.style.display = 'none';
+          document.body.appendChild(videoElement);
+          videoElements.push(videoElement);
+        }
+        
+        console.log(`[GroupCall] Created media elements for participant ${participant.userId}`);
 
-        // Create real microphone audio stream for this participant
-        const createMicrophoneStream = async () => {
+        // Create real media stream for this participant
+        const createMediaStream = async () => {
           try {
-            console.log(`[GroupCall] Creating microphone stream for participant ${participant.userId}`);
+            console.log(`[GroupCall] Creating ${callType} stream for participant ${participant.userId}`);
             
-            // Get user's microphone stream (simulating what would be received from WebRTC)
-            // In a real WebRTC implementation, this would be the remote participant's stream
-            const micStream = await navigator.mediaDevices.getUserMedia({ 
+            // Get user's media stream (simulating what would be received from WebRTC)
+            const constraints = callType === 'video' ? {
+              audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+              },
+              video: {
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+                facingMode: 'user'
+              }
+            } : {
               audio: {
                 echoCancellation: true,
                 noiseSuppression: true,
                 autoGainControl: true
               }, 
               video: false 
-            });
+            };
             
-            console.log(`[GroupCall] Got microphone stream for participant ${participant.userId}`);
+            const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+            console.log(`[GroupCall] Got ${callType} stream for participant ${participant.userId}`);
             
-            // Create audio context for processing
+            // Create audio context for audio processing
             const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
             audioContexts.push(audioContext);
             
@@ -323,66 +351,90 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
               resumeAudio();
             }
             
-            // Process the microphone stream through Web Audio API
-            const source = audioContext.createMediaStreamSource(micStream);
-            const gainNode = audioContext.createGain();
-            const mediaStreamDest = audioContext.createMediaStreamDestination();
-            
-            // Apply some processing to differentiate participants
-            gainNode.gain.setValueAtTime(0.7, audioContext.currentTime);
-            
-            // Connect the audio processing chain
-            source.connect(gainNode);
-            gainNode.connect(mediaStreamDest);
-            
-            // Set the processed stream to the audio element
-            audioElement.srcObject = mediaStreamDest.stream;
-            
-            // Try to play the audio
-            try {
-              await audioElement.play();
-              console.log(`[GroupCall] ✅ Real microphone audio playing for participant ${participant.userId}`);
-            } catch (playError) {
-              console.warn(`[GroupCall] ⚠️ Audio play failed for participant ${participant.userId}:`, playError);
+            // Process audio stream
+            const audioTracks = mediaStream.getAudioTracks();
+            if (audioTracks.length > 0) {
+              const source = audioContext.createMediaStreamSource(new MediaStream([audioTracks[0]]));
+              const gainNode = audioContext.createGain();
+              const mediaStreamDest = audioContext.createMediaStreamDestination();
               
-              // Add user interaction listener for mobile
-              const handleInteraction = async () => {
-                try {
-                  await audioElement.play();
-                  console.log(`[GroupCall] ✅ Real audio started after interaction for participant ${participant.userId}`);
-                } catch (err) {
-                  console.error(`[GroupCall] ❌ Real audio still failed for participant ${participant.userId}:`, err);
+              // Apply some processing to differentiate participants
+              gainNode.gain.setValueAtTime(0.7, audioContext.currentTime);
+              
+              // Connect the audio processing chain
+              source.connect(gainNode);
+              gainNode.connect(mediaStreamDest);
+              
+              // Set the processed audio stream to the audio element
+              audioElement.srcObject = mediaStreamDest.stream;
+              
+              // Try to play the audio
+              try {
+                await audioElement.play();
+                console.log(`[GroupCall] ✅ Audio playing for participant ${participant.userId}`);
+              } catch (playError) {
+                console.warn(`[GroupCall] ⚠️ Audio play failed for participant ${participant.userId}:`, playError);
+                
+                // Add user interaction listener for mobile
+                const handleInteraction = async () => {
+                  try {
+                    await audioElement.play();
+                    console.log(`[GroupCall] ✅ Audio started after interaction for participant ${participant.userId}`);
+                  } catch (err) {
+                    console.error(`[GroupCall] ❌ Audio still failed for participant ${participant.userId}:`, err);
+                  }
+                  document.removeEventListener('touchstart', handleInteraction);
+                  document.removeEventListener('click', handleInteraction);
+                };
+                
+                document.addEventListener('touchstart', handleInteraction, { once: true });
+                document.addEventListener('click', handleInteraction, { once: true });
+              }
+            }
+            
+            // Process video stream for video calls
+            if (callType === 'video' && videoElement) {
+              const videoTracks = mediaStream.getVideoTracks();
+              if (videoTracks.length > 0) {
+                // Set video stream directly to video element
+                videoElement.srcObject = new MediaStream([videoTracks[0]]);
+                
+                // Update participant ref if it exists
+                if (participantRefs.current[participant.userId]) {
+                  participantRefs.current[participant.userId].srcObject = videoElement.srcObject;
                 }
-                document.removeEventListener('touchstart', handleInteraction);
-                document.removeEventListener('click', handleInteraction);
-              };
-              
-              document.addEventListener('touchstart', handleInteraction, { once: true });
-              document.addEventListener('click', handleInteraction, { once: true });
+                
+                try {
+                  await videoElement.play();
+                  console.log(`[GroupCall] ✅ Video playing for participant ${participant.userId}`);
+                } catch (playError) {
+                  console.warn(`[GroupCall] ⚠️ Video play failed for participant ${participant.userId}:`, playError);
+                }
+              }
             }
             
           } catch (error) {
-            console.error(`[GroupCall] Failed to create microphone stream for participant ${participant.userId}:`, error);
+            console.error(`[GroupCall] Failed to create ${callType} stream for participant ${participant.userId}:`, error);
             
-            // Fallback to silent audio stream if microphone fails
+            // Fallback to silent/empty stream if media access fails
             try {
               const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
               audioContexts.push(audioContext);
               const mediaStreamDest = audioContext.createMediaStreamDestination();
               audioElement.srcObject = mediaStreamDest.stream;
-              console.log(`[GroupCall] Created silent fallback stream for participant ${participant.userId}`);
+              console.log(`[GroupCall] Created fallback stream for participant ${participant.userId}`);
             } catch (fallbackError) {
               console.error(`[GroupCall] Fallback stream creation failed for participant ${participant.userId}:`, fallbackError);
             }
           }
         };
         
-        createMicrophoneStream();
+        createMediaStream();
       }
     });
     
     return () => {
-      console.log('[GroupCall] Cleaning up real audio streams');
+      console.log(`[GroupCall] Cleaning up ${callType} streams`);
       
       // Clean up audio elements
       audioElements.forEach(element => {
@@ -399,6 +451,21 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
         }
       });
       
+      // Clean up video elements
+      videoElements.forEach(element => {
+        try {
+          if (element.parentNode) {
+            element.parentNode.removeChild(element);
+          }
+          if (element.srcObject) {
+            const stream = element.srcObject as MediaStream;
+            stream.getTracks().forEach(track => track.stop());
+          }
+        } catch (error) {
+          console.warn('[GroupCall] Error cleaning up video element:', error);
+        }
+      });
+      
       // Clean up audio contexts
       audioContexts.forEach(context => {
         try {
@@ -411,7 +478,7 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
       });
     };
     
-  }, [localStream, participants, user?.id]);
+  }, [localStream, participants, user?.id, callType]);
 
   // Participant audio status management
   useEffect(() => {
