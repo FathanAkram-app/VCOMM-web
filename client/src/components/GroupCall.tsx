@@ -90,11 +90,19 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
       
       console.log('[GroupCall] Unique participant IDs:', uniqueParticipantIds);
       
-      // Fetch participant data with proper names
-      fetchParticipantData(uniqueParticipantIds).then(participantData => {
-        console.log('[GroupCall] Setting participants with proper names:', participantData);
-        setParticipants(participantData);
-      });
+      // Check if participant list has actually changed to prevent unnecessary updates
+      const currentParticipantIds = participants.map(p => p.userId).sort();
+      const newParticipantIds = uniqueParticipantIds.sort();
+      
+      if (JSON.stringify(currentParticipantIds) !== JSON.stringify(newParticipantIds)) {
+        // Fetch participant data with proper names
+        fetchParticipantData(uniqueParticipantIds).then(participantData => {
+          console.log('[GroupCall] Setting participants with proper names:', participantData);
+          setParticipants(participantData);
+        });
+      } else {
+        console.log('[GroupCall] Participant list unchanged, skipping update');
+      }
     }
   }, [activeCall?.participants, user, callType]);
   
