@@ -774,10 +774,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
     // For group calls, match by groupId rather than exact callId since the server may use different callIds
     if (activeCall && activeCall.isGroupCall) {
       // Extract groupId from the callId (format: group_call_timestamp_groupId_userId)
-      const messageGroupId = callId.split('_')[3];
+      const callIdParts = callId.split('_');
+      const messageGroupId = callIdParts[2]; // Third part is groupId
       const activeGroupId = String(activeCall.groupId);
       
       console.log('[CallContext] Extracted groupIds - message:', messageGroupId, 'active:', activeGroupId);
+      console.log('[CallContext] CallId parts:', callIdParts);
       
       if (messageGroupId === activeGroupId) {
         console.log('[CallContext] Group IDs match, updating participants:', participants);
