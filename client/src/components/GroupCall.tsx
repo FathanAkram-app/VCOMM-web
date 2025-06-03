@@ -257,105 +257,57 @@ export default function GroupCall({ groupId, groupName, callType }: GroupCallPro
     };
   }, [callType, groupName]);
 
-  // Audio system mimicking successful AudioCall pattern
+  // Direct mobile audio test system
   useEffect(() => {
-    if (!localStream) return;
+    if (!localStream || participants.length === 0) return;
 
-    console.log('[GroupCall] Setting up audio system for group call using AudioCall pattern');
+    console.log('[GroupCall] Setting up direct mobile audio test');
     
-    // Create audio elements for each participant using the same pattern as AudioCall
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    // Create simple test audio for mobile devices
     participants.forEach(participant => {
       if (participant.userId !== user?.id) {
-        // Create audio element for this participant
-        const audioId = `groupAudio-${participant.userId}`;
-        let audioElement = document.getElementById(audioId) as HTMLAudioElement;
+        console.log(`[GroupCall] Creating test audio for participant ${participant.userName} (${participant.userId})`);
         
-        if (!audioElement) {
-          audioElement = document.createElement('audio');
-          audioElement.id = audioId;
-          audioElement.autoplay = true;
-          audioElement.muted = false;
-          audioElement.volume = 1.0;
-          audioElement.controls = false;
-          (audioElement as any).playsInline = true;
-          audioElement.style.display = 'none';
-          document.body.appendChild(audioElement);
-          
-          console.log(`[GroupCall] Created audio element for participant ${participant.userId} using AudioCall pattern`);
-          
-          // Apply the same audio setup logic as AudioCall
-          const setupParticipantAudio = async (attempt = 1) => {
+        // Test mobile audio with notification sound
+        if (isMobile) {
+          const testAudio = () => {
             try {
-              console.log(`[GroupCall] Setting up audio for participant ${participant.userId} (attempt ${attempt})`);
+              // Create a simple beep sound for mobile test
+              const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+              const oscillator = audioContext.createOscillator();
+              const gainNode = audioContext.createGain();
               
-              // Check browser environment like AudioCall does
-              console.log(`[GroupCall] Browser environment for participant ${participant.userId}:`, {
-                userAgent: navigator.userAgent,
-                isSecureContext: window.isSecureContext,
-                protocol: window.location.protocol
-              });
+              oscillator.connect(gainNode);
+              gainNode.connect(audioContext.destination);
               
-              // Force audio to play with the same error handling as AudioCall
-              const tryPlay = async () => {
-                try {
-                  const testPlay = audioElement.play();
-                  if (testPlay instanceof Promise) {
-                    await testPlay;
-                  }
-                  console.log(`[GroupCall] ✅ Audio playing for participant ${participant.userId}`);
-                } catch (error: any) {
-                  if (error.name === 'NotAllowedError') {
-                    console.log(`[GroupCall] ⚠️ User interaction required for participant ${participant.userId}`);
-                    
-                    // Add user interaction listener like AudioCall
-                    const handleUserInteraction = () => {
-                      console.log(`[GroupCall] 🖱️ User interaction detected for participant ${participant.userId}`);
-                      audioElement.play().then(() => {
-                        console.log(`[GroupCall] ✅ Audio started for participant ${participant.userId} after interaction`);
-                      }).catch(err => {
-                        console.error(`[GroupCall] ❌ Audio failed for participant ${participant.userId}:`, err);
-                      });
-                      // Remove listeners
-                      document.removeEventListener('click', handleUserInteraction);
-                      document.removeEventListener('keydown', handleUserInteraction);
-                      document.removeEventListener('touchstart', handleUserInteraction);
-                    };
-                    
-                    document.addEventListener('click', handleUserInteraction);
-                    document.addEventListener('keydown', handleUserInteraction);
-                    document.addEventListener('touchstart', handleUserInteraction);
-                  } else {
-                    throw error;
-                  }
-                }
-              };
+              oscillator.frequency.value = 800; // High pitched beep
+              gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+              gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
               
-              await tryPlay();
+              oscillator.start();
+              oscillator.stop(audioContext.currentTime + 0.3);
               
+              console.log(`[GroupCall] Mobile test beep played for participant ${participant.userId}`);
             } catch (error) {
-              console.error(`[GroupCall] Error setting up audio for participant ${participant.userId}:`, error);
-              if (attempt < 3) {
-                setTimeout(() => setupParticipantAudio(attempt + 1), 1000);
-              }
+              console.error(`[GroupCall] Mobile audio test failed for participant ${participant.userId}:`, error);
             }
           };
           
-          setupParticipantAudio();
+          // Play test sound after user interaction
+          const handleMobileInteraction = () => {
+            testAudio();
+            document.removeEventListener('touchstart', handleMobileInteraction);
+            document.removeEventListener('click', handleMobileInteraction);
+          };
+          
+          document.addEventListener('touchstart', handleMobileInteraction, { once: true });
+          document.addEventListener('click', handleMobileInteraction, { once: true });
         }
       }
     });
     
-    return () => {
-      console.log('[GroupCall] Cleaning up audio elements');
-      participants.forEach(participant => {
-        if (participant.userId !== user?.id) {
-          const audioElement = document.getElementById(`groupAudio-${participant.userId}`);
-          if (audioElement) {
-            audioElement.remove();
-          }
-        }
-      });
-    };
   }, [localStream, participants, user?.id]);
 
   // Participant audio status management

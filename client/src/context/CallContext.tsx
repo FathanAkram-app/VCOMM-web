@@ -82,7 +82,13 @@ interface CallState {
   isGroupCall?: boolean;
   groupId?: number;
   groupName?: string;
-  participants?: number[];
+  participants?: Array<{
+    userId: number;
+    userName: string;
+    audioEnabled: boolean;
+    videoEnabled: boolean;
+    stream: MediaStream | null;
+  }>;
 }
 
 interface CallContextType {
@@ -880,7 +886,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
       
       // Remove the user from participants list  
       const currentParticipants = currentActiveCall.participants || [];
-      const updatedParticipants = currentParticipants.filter((participantId: any) => participantId !== userId);
+      const updatedParticipants = currentParticipants.filter((participant: any) => 
+        typeof participant === 'object' ? participant.userId !== userId : participant !== userId
+      );
       
       const updatedCall = {
         ...currentActiveCall,
@@ -959,9 +967,18 @@ export function CallProvider({ children }: { children: ReactNode }) {
         const uniqueParticipants = Array.from(new Set(participants));
         console.log('[CallContext] Unique participants after deduplication:', uniqueParticipants);
         
+        // Convert participant IDs to participant objects
+        const participantObjects = uniqueParticipants.map((participantId: number) => ({
+          userId: participantId,
+          userName: `User ${participantId}`, // Placeholder - should be fetched from user data
+          audioEnabled: true,
+          videoEnabled: groupCallToUpdate.callType === 'video',
+          stream: null
+        }));
+        
         const updatedCall = {
           ...groupCallToUpdate,
-          participants: uniqueParticipants, // Keep as number array for now
+          participants: participantObjects,
           callId: callId // Update to the server's active callId
         };
         
