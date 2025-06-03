@@ -21,12 +21,26 @@ interface GroupParticipant {
 
 export default function GroupCall({ groupId, groupName, callType }: GroupCallProps) {
   const { user } = useAuth();
-  const { hangupCall } = useCall();
+  const { hangupCall, activeCall } = useCall();
   
   const [participants, setParticipants] = useState<GroupParticipant[]>([]);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [isVideoEnabled, setIsVideoEnabled] = useState(callType === 'video');
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+
+  // Update participants from activeCall
+  useEffect(() => {
+    if (activeCall && activeCall.participants) {
+      console.log('[GroupCall] Updating participants from activeCall:', activeCall.participants);
+      const groupParticipants: GroupParticipant[] = activeCall.participants.map((userId: number) => ({
+        userId,
+        userName: userId === user?.id ? user.callsign : `User ${userId}`,
+        audioEnabled: true,
+        videoEnabled: callType === 'video'
+      }));
+      setParticipants(groupParticipants);
+    }
+  }, [activeCall?.participants, user, callType]);
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const participantRefs = useRef<{ [userId: number]: HTMLVideoElement }>({});
