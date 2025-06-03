@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Users, ChevronDown } from 'lucide-react';
 import { useCall } from '@/hooks/useCall';
+import { useAuth } from '@/hooks/useAuth';
 
 interface GroupParticipant {
   userId: number;
@@ -13,7 +14,8 @@ interface GroupParticipant {
 }
 
 export default function GroupVideoCall() {
-  const { activeCall, user, hangupCall, toggleCallAudio, toggleCallVideo, isAudioEnabled, isVideoEnabled } = useCall();
+  const { activeCall, hangupCall, toggleCallAudio, toggleCallVideo, isAudioEnabled, isVideoEnabled } = useCall();
+  const { user } = useAuth();
   const [participants, setParticipants] = useState<GroupParticipant[]>([]);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
