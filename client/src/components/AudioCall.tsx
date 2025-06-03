@@ -197,6 +197,37 @@ export default function AudioCall() {
     }
   }, [remoteAudioStream]);
 
+  // Cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      console.log('[AudioCall] Component unmounting, cleaning up streams');
+      
+      // Stop any active media streams
+      if (activeCall?.localStream) {
+        activeCall.localStream.getTracks().forEach(track => {
+          if (track.readyState !== 'ended') {
+            track.stop();
+            console.log('[AudioCall] Cleanup on unmount - stopped track:', track.kind);
+          }
+        });
+      }
+      
+      // Clean up audio element
+      const audioElement = document.querySelector('#remoteAudio') as HTMLAudioElement;
+      if (audioElement) {
+        audioElement.pause();
+        audioElement.srcObject = null;
+        console.log('[AudioCall] Cleaned up audio element');
+      }
+      
+      // Clean up Web Audio API if it was used
+      if ((window as any).currentAudioContext) {
+        (window as any).currentAudioContext.close();
+        console.log('[AudioCall] Closed Web Audio Context');
+      }
+    };
+  }, []);
+
   // Update call duration timer
   useEffect(() => {
     if (!activeCall || activeCall.status !== 'connected') return;

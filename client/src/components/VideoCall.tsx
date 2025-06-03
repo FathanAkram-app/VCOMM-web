@@ -59,19 +59,21 @@ export default function VideoCall() {
       }).catch(error => {
         console.error("[VideoCall] ❌ Remote video play failed:", error);
         // Try muted autoplay as fallback
-        remoteVideoRef.current.muted = true;
-        remoteVideoRef.current.play().then(() => {
-          console.log("[VideoCall] ✅ Remote video playing (muted fallback)");
-          // Unmute after starting
-          setTimeout(() => {
-            if (remoteVideoRef.current) {
-              remoteVideoRef.current.muted = false;
-              console.log("[VideoCall] 🔊 Unmuted remote video after autoplay");
-            }
-          }, 100);
-        }).catch(err => {
-          console.error("[VideoCall] ❌ Even muted autoplay failed:", err);
-        });
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.muted = true;
+          remoteVideoRef.current.play().then(() => {
+            console.log("[VideoCall] ✅ Remote video playing (muted fallback)");
+            // Unmute after starting
+            setTimeout(() => {
+              if (remoteVideoRef.current) {
+                remoteVideoRef.current.muted = false;
+                console.log("[VideoCall] 🔊 Unmuted remote video after autoplay");
+              }
+            }, 100);
+          }).catch(err => {
+            console.error("[VideoCall] ❌ Even muted autoplay failed:", err);
+          });
+        }
       });
     } else if (!remoteAudioStream) {
       console.log("[VideoCall] ⏳ Waiting for remote stream...");
@@ -99,14 +101,62 @@ export default function VideoCall() {
     };
   }, [activeCall]);
   
+  // Cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      console.log('[VideoCall] Component unmounting, cleaning up streams');
+      if (activeCall?.localStream) {
+        activeCall.localStream.getTracks().forEach(track => {
+          if (track.readyState !== 'ended') {
+            track.stop();
+            console.log('[VideoCall] Cleanup on unmount - stopped track:', track.kind);
+          }
+        });
+      }
+    };
+  }, []);
+
+  const cleanupMediaTracks = () => {
+    console.log('[VideoCall] Cleaning up media tracks');
+    
+    // Stop local stream tracks
+    if (activeCall?.localStream) {
+      activeCall.localStream.getTracks().forEach(track => {
+        if (track.readyState !== 'ended') {
+          track.stop();
+          console.log('[VideoCall] Stopped local track:', track.kind, 'readyState:', track.readyState);
+        }
+      });
+    }
+    
+    // Clear video elements
+    if (localVideoRef.current) {
+      const videoElement = localVideoRef.current;
+      videoElement.pause();
+      videoElement.srcObject = null;
+      videoElement.load();
+      console.log('[VideoCall] Cleared local video element');
+    }
+    
+    if (remoteVideoRef.current) {
+      const videoElement = remoteVideoRef.current;
+      videoElement.pause();
+      videoElement.srcObject = null;
+      videoElement.load();
+      console.log('[VideoCall] Cleared remote video element');
+    }
+  };
+
   const handleEndCall = () => {
+    console.log('[VideoCall] Ending call');
+    cleanupMediaTracks();
     hangupCall();
-    // Navigate back to chat page instead of login
     setLocation('/chat');
   };
-  
+
   const handleBackButton = () => {
-    // Navigate to chat page
+    console.log('[VideoCall] Going back');
+    cleanupMediaTracks();
     setLocation('/chat');
   };
   
