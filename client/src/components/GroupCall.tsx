@@ -574,35 +574,43 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
 
 
 
-            {/* Show all participants with different colors */}
-            {participants.map(participant => (
-              <div key={participant.userId} className="flex flex-col items-center space-y-2">
-                <Avatar className={`h-20 w-20 border-2 ${
-                  participant.userId === user?.id 
-                    ? 'bg-[#5fb85f] border-[#5fb85f]' 
-                    : 'bg-[#4a9eff] border-[#4a9eff]'
-                }`}>
-                  <AvatarFallback className={`text-white text-xl font-bold ${
-                    participant.userId === user?.id 
-                      ? 'bg-[#5fb85f]' 
-                      : 'bg-[#4a9eff]'
-                  }`}>
-                    {participant.userName.substring(0, 2).toUpperCase()}
+            {/* Show current user first */}
+            {user && participants.find(p => p.userId === user.id) && (
+              <div className="flex flex-col items-center space-y-2">
+                <Avatar className="h-20 w-20 bg-[#5fb85f] border-2 border-[#5fb85f]">
+                  <AvatarFallback className="bg-[#5fb85f] text-white text-xl font-bold">
+                    {user.callsign?.substring(0, 2).toUpperCase() || 'AN'}
                   </AvatarFallback>
                 </Avatar>
                 <div className="text-center">
-                  <p className="text-white text-sm font-medium">
-                    {participant.userId === user?.id ? 'Anda' : participant.userName}
-                  </p>
+                  <p className="text-white text-sm font-medium">Anda</p>
                   <p className="text-xs text-gray-400">
-                    {participant.userId === user?.id 
-                      ? (isAudioEnabled ? 'Speaking' : 'Muted')
-                      : (participant.audioEnabled ? 'Speaking' : 'Muted')
-                    }
+                    {isAudioEnabled ? 'Speaking' : 'Muted'}
                   </p>
                 </div>
               </div>
-            ))}
+            )}
+
+            {/* Show other participants (excluding current user) */}
+            {participants
+              .filter(participant => participant.userId !== user?.id)
+              .map(participant => (
+                <div key={participant.userId} className="flex flex-col items-center space-y-2">
+                  <Avatar className="h-20 w-20 bg-[#4a9eff] border-2 border-[#4a9eff]">
+                    <AvatarFallback className="bg-[#4a9eff] text-white text-xl font-bold">
+                      {participant.userName.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="text-center">
+                    <p className="text-white text-sm font-medium">
+                      {participant.userName}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {participant.audioEnabled ? 'Speaking' : 'Muted'}
+                    </p>
+                  </div>
+                </div>
+              ))}
 
             {/* Empty slots */}
             {Array.from({ length: Math.max(0, 8 - participants.length) }).map((_, index) => (
