@@ -1,0 +1,143 @@
+[GroupCall] Processing participants from activeCall: [{…}]
+GroupCall.tsx:104 [GroupCall] Unique participant IDs: [2]
+GroupCall.tsx:112 [GroupCall] Participant list changed, updating...
+GroupCall.tsx:161 [GroupCall] Final participant list: [{…}]
+chunk-RPCDYKBN.js?v=768c3251:8456 Uncaught NotFoundError: Failed to execute 'removeChild' on 'Node': The node to be removed is not a child of this node.
+    at removeChild (chunk-RPCDYKBN.js?v=768c3251:8456:26)
+    at commitDeletionEffectsOnFiber (chunk-RPCDYKBN.js?v=768c3251:17510:21)
+    at commitDeletionEffects (chunk-RPCDYKBN.js?v=768c3251:17477:13)
+    at recursivelyTraverseMutationEffects (chunk-RPCDYKBN.js?v=768c3251:17674:17)
+    at commitMutationEffectsOnFiber (chunk-RPCDYKBN.js?v=768c3251:17896:15)
+    at recursivelyTraverseMutationEffects (chunk-RPCDYKBN.js?v=768c3251:17685:15)
+    at commitMutationEffectsOnFiber (chunk-RPCDYKBN.js?v=768c3251:17737:15)
+    at recursivelyTraverseMutationEffects (chunk-RPCDYKBN.js?v=768c3251:17685:15)
+    at commitMutationEffectsOnFiber (chunk-RPCDYKBN.js?v=768c3251:17699:15)
+    at recursivelyTraverseMutationEffects (chunk-RPCDYKBN.js?v=768c3251:17685:15)
+removeChild @ chunk-RPCDYKBN.js?v=768c3251:8456
+commitDeletionEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17510
+commitDeletionEffects @ chunk-RPCDYKBN.js?v=768c3251:17477
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17674
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17896
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17685
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17737
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17685
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17699
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17685
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17699
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17685
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17896
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17685
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17699
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17685
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17699
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17685
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17699
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17685
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17896
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17685
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17699
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17685
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17896
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17685
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17699
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17685
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17699
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17685
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17794
+commitMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17663
+commitRootImpl @ chunk-RPCDYKBN.js?v=768c3251:19347
+commitRoot @ chunk-RPCDYKBN.js?v=768c3251:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=768c3251:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=768c3251:18718
+workLoop @ chunk-RPCDYKBN.js?v=768c3251:197
+flushWork @ chunk-RPCDYKBN.js?v=768c3251:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=768c3251:384Understand this error
+GroupCall.tsx:386 [GroupCall] Cleaning up audio streams
+GroupCall.tsx:264 [GroupCall] Setting up WebRTC audio streaming for participants
+GroupCall.tsx:403 [GroupCall] Managing participant audio status
+chunk-RPCDYKBN.js?v=768c3251:14032 The above error occurred in the <audio> component:
+
+    at audio
+    at div
+    at GroupCall (https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/src/components/GroupCall.tsx:24:37)
+    at AuthCheck (https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/src/App.tsx?v=jap4pKloHxWQSNlEcPkBr:31:22)
+    at Route (https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=768c3251:323:16)
+    at Switch (https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=768c3251:379:17)
+    at Router
+    at CallProvider (https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/src/context/CallContext.tsx:67:32)
+    at QueryClientProvider (https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=768c3251:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ chunk-RPCDYKBN.js?v=768c3251:14032
+update.callback @ chunk-RPCDYKBN.js?v=768c3251:14052
+callCallback @ chunk-RPCDYKBN.js?v=768c3251:11248
+commitUpdateQueue @ chunk-RPCDYKBN.js?v=768c3251:11265
+commitLayoutEffectOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17093
+commitLayoutMountEffects_complete @ chunk-RPCDYKBN.js?v=768c3251:17980
+commitLayoutEffects_begin @ chunk-RPCDYKBN.js?v=768c3251:17969
+commitLayoutEffects @ chunk-RPCDYKBN.js?v=768c3251:17920
+commitRootImpl @ chunk-RPCDYKBN.js?v=768c3251:19353
+commitRoot @ chunk-RPCDYKBN.js?v=768c3251:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=768c3251:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=768c3251:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=768c3251:19432
+commitRoot @ chunk-RPCDYKBN.js?v=768c3251:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=768c3251:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=768c3251:18718
+workLoop @ chunk-RPCDYKBN.js?v=768c3251:197
+flushWork @ chunk-RPCDYKBN.js?v=768c3251:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=768c3251:384Understand this error
+chunk-RPCDYKBN.js?v=768c3251:8456 Uncaught NotFoundError: Failed to execute 'removeChild' on 'Node': The node to be removed is not a child of this node.
+    at removeChild (chunk-RPCDYKBN.js?v=768c3251:8456:26)
+    at commitDeletionEffectsOnFiber (chunk-RPCDYKBN.js?v=768c3251:17510:21)
+    at commitDeletionEffects (chunk-RPCDYKBN.js?v=768c3251:17477:13)
+    at recursivelyTraverseMutationEffects (chunk-RPCDYKBN.js?v=768c3251:17674:17)
+    at commitMutationEffectsOnFiber (chunk-RPCDYKBN.js?v=768c3251:17896:15)
+    at recursivelyTraverseMutationEffects (chunk-RPCDYKBN.js?v=768c3251:17685:15)
+    at commitMutationEffectsOnFiber (chunk-RPCDYKBN.js?v=768c3251:17737:15)
+    at recursivelyTraverseMutationEffects (chunk-RPCDYKBN.js?v=768c3251:17685:15)
+    at commitMutationEffectsOnFiber (chunk-RPCDYKBN.js?v=768c3251:17699:15)
+    at recursivelyTraverseMutationEffects (chunk-RPCDYKBN.js?v=768c3251:17685:15)
+removeChild @ chunk-RPCDYKBN.js?v=768c3251:8456
+commitDeletionEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17510
+commitDeletionEffects @ chunk-RPCDYKBN.js?v=768c3251:17477
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17674
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17896
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17685
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17737
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17685
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17699
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17685
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17699
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17685
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17896
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17685
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17699
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17685
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17699
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17685
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17699
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17685
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17896
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17685
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17699
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17685
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17896
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17685
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17699
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17685
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17699
+recursivelyTraverseMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17685
+commitMutationEffectsOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17794
+commitMutationEffects @ chunk-RPCDYKBN.js?v=768c3251:17663
+commitRootImpl @ chunk-RPCDYKBN.js?v=768c3251:19347
+commitRoot @ chunk-RPCDYKBN.js?v=768c3251:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=768c3251:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=768c3251:18718
+workLoop @ chunk-RPCDYKBN.js?v=768c3251:197
+flushWork @ chunk-RPCDYKBN.js?v=768c3251:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=768c3251:384Understand this error
+GroupCall.tsx:386 [GroupCall] Cleaning up audio streams
+CallContext.tsx:394 [CallContext] WebSocket disconnected
