@@ -965,6 +965,17 @@ export default function Chat() {
                 </div>
                 
                 <div className="bg-[#1a1a1a] rounded-lg p-4 mb-4">
+                  <h3 className="text-lg font-medium text-[#8d9c6b] mb-2">Test Audio & Video</h3>
+                  <p className="text-sm text-gray-400 mb-3">Uji fungsi mikrofon dan speaker Anda</p>
+                  <Button 
+                    className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
+                    onClick={() => navigate('/audio-test')}
+                  >
+                    Buka Test Audio
+                  </Button>
+                </div>
+                
+                <div className="bg-[#1a1a1a] rounded-lg p-4 mb-4">
                   <h3 className="text-lg font-medium text-[#8d9c6b] mb-2">Keamanan</h3>
                   <Button className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]">
                     Ubah Kata Sandi
