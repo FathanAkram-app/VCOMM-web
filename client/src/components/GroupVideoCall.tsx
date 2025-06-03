@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCall } from '@/hooks/useCall';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { PhoneOff, Mic, MicOff, Video, VideoOff, Users, ArrowLeft } from 'lucide-react';
+import { PhoneOff, Mic, MicOff, Video, VideoOff, Users, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface GroupParticipant {
   userId: number;
@@ -14,7 +14,7 @@ interface GroupParticipant {
 }
 
 export default function GroupVideoCall() {
-  const { activeCall, endCall } = useCall();
+  const { activeCall, hangupCall } = useCall();
   const { user } = useAuth();
   const [participants, setParticipants] = useState<GroupParticipant[]>([]);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
@@ -28,10 +28,10 @@ export default function GroupVideoCall() {
   // Extract group info
   const groupName = activeCall?.groupName || 'Unknown Group';
   
-  // Pagination constants
-  const PARTICIPANTS_PER_PAGE = 7; // 7 participants + 1 current user = 8 total per page
+  // Pagination constants - 2x4 grid (8 total slots, 1 for current user + 7 for participants)
+  const PARTICIPANTS_PER_PAGE = 7;
   const otherParticipants = participants.filter(p => p.userId !== user?.id);
-  const totalPages = Math.ceil(otherParticipants.length / PARTICIPANTS_PER_PAGE);
+  const totalPages = Math.max(1, Math.ceil(otherParticipants.length / PARTICIPANTS_PER_PAGE));
   const startIndex = currentPage * PARTICIPANTS_PER_PAGE;
   const endIndex = startIndex + PARTICIPANTS_PER_PAGE;
   const currentPageParticipants = otherParticipants.slice(startIndex, endIndex);
@@ -102,12 +102,20 @@ export default function GroupVideoCall() {
 
   const handleEndCall = () => {
     console.log('[GroupVideoCall] Ending call');
-    endCall();
+    hangupCall();
   };
 
   const handleBack = () => {
     console.log('[GroupVideoCall] Going back');
-    endCall();
+    hangupCall();
+  };
+
+  const nextPage = () => {
+    setCurrentPage(prev => Math.min(totalPages - 1, prev + 1));
+  };
+
+  const prevPage = () => {
+    setCurrentPage(prev => Math.max(0, prev - 1));
   };
 
   if (!activeCall || !user) {
@@ -115,26 +123,28 @@ export default function GroupVideoCall() {
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex flex-col">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-[#2a4a3a] to-[#1e3a2e] border-b border-[#5fb85f]/20 p-4 flex-shrink-0">
+    <div className="h-screen bg-gradient-to-br from-[#1a2f1a] via-[#0f1f0f] to-black flex flex-col">
+      {/* Header - Military Green Theme */}
+      <div className="bg-gradient-to-r from-[#2d4a2d] to-[#1e3a1e] border-b border-[#4a7c59]/30 p-3 flex-shrink-0">
         <div className="flex items-center justify-between">
           <button
             onClick={handleBack}
-            className="p-2 rounded-full bg-black/20 hover:bg-black/40 transition-colors"
+            className="p-2 rounded-full bg-black/20 hover:bg-[#4a7c59]/30 transition-colors"
           >
-            <ArrowLeft className="h-5 w-5 text-white" />
+            <ArrowLeft className="h-5 w-5 text-[#a6c455]" />
           </button>
           
           <div className="flex items-center space-x-3">
-            <Users className="h-6 w-6 text-[#a6c455]" />
-            <div>
-              <h3 className="font-semibold text-lg text-white">{groupName}</h3>
-              <p className="text-sm text-gray-300">Group Video Call • {participants.length} peserta</p>
+            <div className="p-2 rounded-full bg-[#4a7c59]/20">
+              <Users className="h-5 w-5 text-[#a6c455]" />
+            </div>
+            <div className="text-center">
+              <h3 className="font-bold text-lg text-[#a6c455]">{groupName}</h3>
+              <p className="text-xs text-[#7d9f7d]">Group Video Call • {participants.length} peserta</p>
             </div>
           </div>
           
-          <div className="w-10" /> {/* Spacer for centering */}
+          <div className="w-10" />
         </div>
       </div>
 
@@ -143,11 +153,11 @@ export default function GroupVideoCall() {
         {!isMaximized ? (
           <>
             {/* Main 2x4 Grid */}
-            <div className="flex-1 mb-3">
+            <div className="flex-1 mb-2">
               <div className="grid grid-cols-2 gap-2 h-full auto-rows-fr">
                 {/* Current User - Always first position */}
                 {user && activeCall && (
-                  <div className="relative bg-gray-900 rounded-lg overflow-hidden border-2 border-[#5fb85f] aspect-[3/4]">
+                  <div className="relative bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] rounded-lg overflow-hidden border-2 border-[#4a7c59] aspect-[3/4]">
                     {isVideoEnabled ? (
                       <video
                         ref={localVideoRef}
@@ -157,23 +167,23 @@ export default function GroupVideoCall() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Avatar className="h-12 w-12 bg-[#5fb85f]">
-                          <AvatarFallback className="bg-[#5fb85f] text-white text-sm font-bold">
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#2d4a2d] to-[#1e3a1e]">
+                        <Avatar className="h-12 w-12 bg-[#4a7c59] border-2 border-[#a6c455]">
+                          <AvatarFallback className="bg-[#4a7c59] text-white text-sm font-bold">
                             {(user.callsign || user.fullName || 'A').substring(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                       </div>
                     )}
-                    <div className="absolute bottom-1 left-1 bg-black/70 px-2 py-1 rounded">
-                      <p className="text-white text-xs font-medium">Anda</p>
+                    <div className="absolute bottom-1 left-1 bg-black/80 px-2 py-1 rounded border border-[#4a7c59]/50">
+                      <p className="text-[#a6c455] text-xs font-bold">Anda</p>
                     </div>
                     {/* Maximize button */}
                     <button
                       onClick={() => setIsMaximized(true)}
-                      className="absolute top-1 right-1 bg-black/70 p-1 rounded hover:bg-black/90"
+                      className="absolute top-1 right-1 bg-black/70 p-1 rounded hover:bg-[#4a7c59]/30 transition-colors border border-[#4a7c59]/30"
                     >
-                      <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3 h-3 text-[#a6c455]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                       </svg>
                     </button>
@@ -184,7 +194,7 @@ export default function GroupVideoCall() {
                 {currentPageParticipants.map(participant => (
                   <div 
                     key={participant.userId} 
-                    className="relative bg-gray-900 rounded-lg overflow-hidden border-2 border-[#4a9eff] aspect-[3/4]"
+                    className="relative bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] rounded-lg overflow-hidden border-2 border-[#7d9f7d] aspect-[3/4]"
                   >
                     {participant.videoEnabled && participant.stream ? (
                       <video
@@ -196,31 +206,31 @@ export default function GroupVideoCall() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Avatar className="h-12 w-12 bg-[#4a9eff]">
-                          <AvatarFallback className="bg-[#4a9eff] text-white text-sm font-bold">
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#2d4a2d] to-[#1e3a1e]">
+                        <Avatar className="h-12 w-12 bg-[#7d9f7d] border-2 border-[#a6c455]">
+                          <AvatarFallback className="bg-[#7d9f7d] text-white text-sm font-bold">
                             {participant.userName.substring(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                       </div>
                     )}
-                    <div className="absolute bottom-1 left-1 bg-black/70 px-2 py-1 rounded">
-                      <p className="text-white text-xs font-medium">{participant.userName}</p>
+                    <div className="absolute bottom-1 left-1 bg-black/80 px-2 py-1 rounded border border-[#7d9f7d]/50">
+                      <p className="text-[#a6c455] text-xs font-medium">{participant.userName}</p>
                     </div>
                   </div>
                 ))}
 
-                {/* Fill remaining slots for current page (up to 7 additional slots) */}
+                {/* Fill remaining slots for current page */}
                 {Array.from({ 
                   length: Math.max(0, PARTICIPANTS_PER_PAGE - currentPageParticipants.length) 
                 }).map((_, index) => (
                   <div 
                     key={`waiting-${index}`} 
-                    className="relative bg-gray-800 rounded-lg overflow-hidden border-2 border-dashed border-gray-600 aspect-[3/4] flex items-center justify-center opacity-50"
+                    className="relative bg-gradient-to-br from-[#0a1a0a] to-[#0f1f0f] rounded-lg overflow-hidden border-2 border-dashed border-[#4a7c59]/40 aspect-[3/4] flex items-center justify-center opacity-60"
                   >
-                    <div className="text-gray-400 text-center">
+                    <div className="text-[#7d9f7d] text-center">
                       <Users className="h-6 w-6 mx-auto mb-1" />
-                      <p className="text-xs">Waiting...</p>
+                      <p className="text-xs font-medium">Waiting...</p>
                     </div>
                   </div>
                 ))}
@@ -229,15 +239,13 @@ export default function GroupVideoCall() {
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-center space-x-4 py-2 bg-gray-900/50 rounded-lg">
+              <div className="flex items-center justify-center space-x-3 py-2 bg-gradient-to-r from-[#2d4a2d]/50 to-[#1e3a1e]/50 rounded-lg border border-[#4a7c59]/30">
                 <button
-                  onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                  onClick={prevPage}
                   disabled={currentPage === 0}
-                  className="p-2 rounded-full bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600 transition-colors"
+                  className="p-2 rounded-full bg-[#4a7c59]/20 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#4a7c59]/40 transition-colors border border-[#4a7c59]/50"
                 >
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
+                  <ChevronLeft className="w-4 h-4 text-[#a6c455]" />
                 </button>
                 
                 <div className="flex space-x-2">
@@ -245,10 +253,10 @@ export default function GroupVideoCall() {
                     <button
                       key={index}
                       onClick={() => setCurrentPage(index)}
-                      className={`w-8 h-8 rounded-full text-xs font-medium transition-colors ${
+                      className={`w-8 h-8 rounded-full text-xs font-bold transition-colors border ${
                         currentPage === index 
-                          ? 'bg-[#5fb85f] text-white' 
-                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                          ? 'bg-[#4a7c59] text-white border-[#a6c455]' 
+                          : 'bg-[#2d4a2d] text-[#a6c455] border-[#4a7c59]/50 hover:bg-[#4a7c59]/30'
                       }`}
                     >
                       {index + 1}
@@ -257,13 +265,11 @@ export default function GroupVideoCall() {
                 </div>
                 
                 <button
-                  onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+                  onClick={nextPage}
                   disabled={currentPage === totalPages - 1}
-                  className="p-2 rounded-full bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600 transition-colors"
+                  className="p-2 rounded-full bg-[#4a7c59]/20 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#4a7c59]/40 transition-colors border border-[#4a7c59]/50"
                 >
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+                  <ChevronRight className="w-4 h-4 text-[#a6c455]" />
                 </button>
               </div>
             )}
@@ -272,7 +278,7 @@ export default function GroupVideoCall() {
           /* Maximized Mode - Full Screen Current User */
           <div className="w-full h-full relative">
             {user && activeCall && (
-              <div className="relative bg-gray-900 rounded-lg overflow-hidden border-2 border-[#5fb85f] h-full w-full">
+              <div className="relative bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] rounded-lg overflow-hidden border-2 border-[#4a7c59] h-full w-full">
                 {isVideoEnabled ? (
                   <video
                     ref={localVideoRef}
@@ -282,23 +288,23 @@ export default function GroupVideoCall() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Avatar className="h-32 w-32 bg-[#5fb85f]">
-                      <AvatarFallback className="bg-[#5fb85f] text-white text-4xl font-bold">
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#2d4a2d] to-[#1e3a1e]">
+                    <Avatar className="h-32 w-32 bg-[#4a7c59] border-4 border-[#a6c455]">
+                      <AvatarFallback className="bg-[#4a7c59] text-white text-4xl font-bold">
                         {(user.callsign || user.fullName || 'A').substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                   </div>
                 )}
-                <div className="absolute bottom-4 left-4 bg-black/70 px-3 py-1 rounded-full">
-                  <p className="text-white text-lg font-medium">Anda</p>
+                <div className="absolute bottom-4 left-4 bg-black/80 px-4 py-2 rounded-lg border border-[#4a7c59]/50">
+                  <p className="text-[#a6c455] text-lg font-bold">Anda</p>
                 </div>
                 {/* Toggle minimize button */}
                 <button
                   onClick={() => setIsMaximized(false)}
-                  className="absolute top-2 right-2 bg-black/70 p-2 rounded-full hover:bg-black/90"
+                  className="absolute top-3 right-3 bg-black/70 p-2 rounded-full hover:bg-[#4a7c59]/30 transition-colors border border-[#4a7c59]/50"
                 >
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-[#a6c455]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -308,49 +314,49 @@ export default function GroupVideoCall() {
         )}
       </div>
 
-      {/* Controls */}
-      <div className="bg-gray-900/80 backdrop-blur-sm p-4 flex justify-center space-x-6 flex-shrink-0">
+      {/* Controls - Military Style */}
+      <div className="bg-gradient-to-r from-[#2d4a2d] to-[#1e3a1e] backdrop-blur-sm p-4 flex justify-center space-x-4 flex-shrink-0 border-t border-[#4a7c59]/30">
         <Button
           onClick={toggleAudio}
-          variant={isAudioEnabled ? "default" : "destructive"}
+          variant="ghost"
           size="lg"
-          className={`rounded-full w-14 h-14 ${
+          className={`rounded-full w-12 h-12 border-2 transition-all ${
             isAudioEnabled 
-              ? 'bg-gray-700 hover:bg-gray-600' 
-              : 'bg-red-600 hover:bg-red-700'
+              ? 'bg-[#4a7c59]/20 border-[#4a7c59] text-[#a6c455] hover:bg-[#4a7c59]/40' 
+              : 'bg-red-900/30 border-red-600 text-red-400 hover:bg-red-900/50'
           }`}
         >
           {isAudioEnabled ? (
-            <Mic className="h-6 w-6 text-white" />
+            <Mic className="h-5 w-5" />
           ) : (
-            <MicOff className="h-6 w-6 text-white" />
+            <MicOff className="h-5 w-5" />
           )}
         </Button>
 
         <Button
           onClick={toggleVideo}
-          variant={isVideoEnabled ? "default" : "destructive"}
+          variant="ghost"
           size="lg"
-          className={`rounded-full w-14 h-14 ${
+          className={`rounded-full w-12 h-12 border-2 transition-all ${
             isVideoEnabled 
-              ? 'bg-gray-700 hover:bg-gray-600' 
-              : 'bg-red-600 hover:bg-red-700'
+              ? 'bg-[#4a7c59]/20 border-[#4a7c59] text-[#a6c455] hover:bg-[#4a7c59]/40' 
+              : 'bg-red-900/30 border-red-600 text-red-400 hover:bg-red-900/50'
           }`}
         >
           {isVideoEnabled ? (
-            <Video className="h-6 w-6 text-white" />
+            <Video className="h-5 w-5" />
           ) : (
-            <VideoOff className="h-6 w-6 text-white" />
+            <VideoOff className="h-5 w-5" />
           )}
         </Button>
 
         <Button
           onClick={handleEndCall}
-          variant="destructive"
+          variant="ghost"
           size="lg"
-          className="rounded-full w-14 h-14 bg-red-600 hover:bg-red-700"
+          className="rounded-full w-12 h-12 bg-red-900/40 border-2 border-red-600 text-red-400 hover:bg-red-900/60 transition-all"
         >
-          <PhoneOff className="h-6 w-6 text-white" />
+          <PhoneOff className="h-5 w-5" />
         </Button>
       </div>
     </div>
