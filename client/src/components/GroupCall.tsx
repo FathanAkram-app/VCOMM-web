@@ -43,7 +43,7 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
       if (userId === user?.id) {
         participantMap.set(userId, {
           userId,
-          userName: 'Anda',
+          userName: user.callsign || user.fullName || 'Anda',
           audioEnabled: true,
           videoEnabled: callType === 'video',
           stream: null
@@ -614,7 +614,10 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
                     {participant.userId === user?.id ? 'Anda' : participant.userName}
                   </p>
                   <p className="text-xs text-gray-400">
-                    {participant.audioEnabled ? 'Speaking' : 'Muted'}
+                    {participant.userId === user?.id 
+                      ? (isAudioEnabled ? 'Speaking' : 'Muted')
+                      : (participant.audioEnabled ? 'Speaking' : 'Muted')
+                    }
                   </p>
                 </div>
               </div>
