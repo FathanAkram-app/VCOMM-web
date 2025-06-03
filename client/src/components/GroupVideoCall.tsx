@@ -165,12 +165,12 @@ export default function GroupVideoCall() {
         </div>
       </div>
 
-      {/* Video Layout - 2 Rows */}
-      <div className="flex-1 p-4 bg-black">
-        {/* First Row - Current User (Larger) */}
-        <div className="h-1/2 mb-4">
+      {/* Video Layout - 2 Rows Layout */}
+      <div className="flex-1 flex flex-col p-4 bg-black gap-4">
+        {/* First Row - Current User (40% of screen height) */}
+        <div className="flex-[2] min-h-0">
           {user && activeCall && (
-            <div className="relative bg-gray-900 rounded-lg overflow-hidden border-2 border-[#5fb85f] h-full">
+            <div className="relative bg-gray-900 rounded-lg overflow-hidden border-2 border-[#5fb85f] h-full w-full">
               {isVideoEnabled ? (
                 <video
                   ref={localVideoRef}
@@ -191,39 +191,19 @@ export default function GroupVideoCall() {
               <div className="absolute bottom-4 left-4 bg-black/70 px-3 py-1 rounded-full">
                 <p className="text-white text-lg font-medium">Anda</p>
               </div>
-              <div className="absolute top-4 right-4 flex space-x-2">
-                {isAudioEnabled ? (
-                  <div className="bg-[#5fb85f] p-3 rounded-full">
-                    <Mic className="h-5 w-5 text-white" />
-                  </div>
-                ) : (
-                  <div className="bg-red-600 p-3 rounded-full">
-                    <MicOff className="h-5 w-5 text-white" />
-                  </div>
-                )}
-                {isVideoEnabled ? (
-                  <div className="bg-[#5fb85f] p-3 rounded-full">
-                    <Video className="h-5 w-5 text-white" />
-                  </div>
-                ) : (
-                  <div className="bg-red-600 p-3 rounded-full">
-                    <VideoOff className="h-5 w-5 text-white" />
-                  </div>
-                )}
-              </div>
             </div>
           )}
         </div>
 
-        {/* Second Row - Other Participants */}
-        <div className="h-1/2">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-full">
+        {/* Second Row - Other Participants (60% of screen height with scroll) */}
+        <div className="flex-[3] min-h-0 overflow-y-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-fr min-h-full">
             {participants
               .filter(participant => participant.userId !== user?.id)
               .map(participant => (
                 <div 
                   key={participant.userId} 
-                  className="relative bg-gray-900 rounded-lg overflow-hidden border-2 border-[#4a9eff]"
+                  className="relative bg-gray-900 rounded-lg overflow-hidden border-2 border-[#4a9eff] aspect-video min-h-[150px]"
                 >
                   {participant.videoEnabled ? (
                     <video
@@ -246,26 +226,7 @@ export default function GroupVideoCall() {
                   <div className="absolute bottom-4 left-4 bg-black/70 px-3 py-1 rounded-full">
                     <p className="text-white text-sm font-medium">{participant.userName}</p>
                   </div>
-                  <div className="absolute top-4 right-4 flex space-x-2">
-                    {participant.audioEnabled ? (
-                      <div className="bg-[#4a9eff] p-2 rounded-full">
-                        <Mic className="h-4 w-4 text-white" />
-                      </div>
-                    ) : (
-                      <div className="bg-red-600 p-2 rounded-full">
-                        <MicOff className="h-4 w-4 text-white" />
-                      </div>
-                    )}
-                    {participant.videoEnabled ? (
-                      <div className="bg-[#4a9eff] p-2 rounded-full">
-                        <Video className="h-4 w-4 text-white" />
-                      </div>
-                    ) : (
-                      <div className="bg-red-600 p-2 rounded-full">
-                        <VideoOff className="h-4 w-4 text-white" />
-                      </div>
-                    )}
-                  </div>
+
                 </div>
               ))}
 
@@ -315,14 +276,14 @@ export default function GroupVideoCall() {
           )}
         </Button>
 
-        {/* Larger End Call Button */}
+        {/* End Call Button */}
         <Button
           onClick={hangupCall}
           variant="destructive"
           size="lg"
-          className="h-16 w-16 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-lg"
+          className="h-12 w-12 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-lg"
         >
-          <PhoneOff className="h-8 w-8" />
+          <PhoneOff className="h-5 w-5" />
         </Button>
       </div>
     </div>
