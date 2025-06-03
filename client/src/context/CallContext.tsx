@@ -115,6 +115,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const [incomingCall, setIncomingCall] = useState<CallState | null>(null);
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [ringtoneAudio, setRingtoneAudio] = useState<HTMLAudioElement | null>(null);
+  const [waitingToneInterval, setWaitingToneInterval] = useState<NodeJS.Timeout | null>(null);
+  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const [remoteAudioStream, setRemoteAudioStream] = useState<MediaStream | null>(null);
 
   // Restore group call state from localStorage when on group-call page
@@ -205,6 +207,71 @@ export function CallProvider({ children }: { children: ReactNode }) {
   
   // Queue for WebRTC offers that arrive before incoming call is created
   const pendingOffers = useRef<any[]>([]);
+
+  // Function to create waiting tone (tuuutt sound)
+  const createWaitingTone = () => {
+    if (!audioContext) {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      setAudioContext(ctx);
+      return ctx;
+    }
+    return audioContext;
+  };
+
+  // Function to play waiting tone
+  const playWaitingTone = () => {
+    try {
+      const ctx = createWaitingTone();
+      
+      // Create oscillator for the "tuuutt" sound
+      const oscillator = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      
+      // Set frequency for waiting tone (400Hz - typical phone waiting tone)
+      oscillator.frequency.value = 400;
+      oscillator.type = 'sine';
+      
+      // Set volume
+      gainNode.gain.value = 0.3;
+      
+      // Start and stop the tone (0.4 seconds on, 0.4 seconds off)
+      oscillator.start();
+      oscillator.stop(ctx.currentTime + 0.4);
+      
+      console.log('[CallContext] Playing waiting tone - tuuutt');
+    } catch (error) {
+      console.error('[CallContext] Error playing waiting tone:', error);
+    }
+  };
+
+  // Function to start waiting tone interval
+  const startWaitingTone = () => {
+    if (waitingToneInterval) {
+      clearInterval(waitingToneInterval);
+    }
+    
+    console.log('[CallContext] Starting waiting tone sequence');
+    playWaitingTone(); // Play immediately
+    
+    // Then play every 800ms (0.4s tone + 0.4s silence)
+    const interval = setInterval(() => {
+      playWaitingTone();
+    }, 800);
+    
+    setWaitingToneInterval(interval);
+  };
+
+  // Function to stop waiting tone
+  const stopWaitingTone = () => {
+    if (waitingToneInterval) {
+      console.log('[CallContext] Stopping waiting tone');
+      clearInterval(waitingToneInterval);
+      setWaitingToneInterval(null);
+    }
+  };
 
   // Function to fetch participant names asynchronously
   const fetchParticipantNames = async (participantIds: number[], currentCall: CallState) => {
@@ -630,6 +697,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
     console.log('[CallContext] Current activeCall (ref):', activeCallRef.current);
     console.log('[CallContext] Current incomingCall:', incomingCall);
     
+    // Stop waiting tone when call is accepted
+    stopWaitingTone();
+    
     // Use ref for stable call reference
     const currentActiveCall = activeCallRef.current || activeCall;
     
@@ -1007,6 +1077,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
     console.log('[CallContext] Current activeCall status:', activeCall?.status);
     console.log('[CallContext] Current incomingCall status:', incomingCall?.status);
     
+    // Stop waiting tone immediately
+    stopWaitingTone();
+    
     // Stop ALL ringtone sources immediately
     console.log('[CallContext] Stopping ALL ringtone sources - call ended');
     try {
@@ -1378,6 +1451,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
       };
 
       setActiveCall(newCall);
+
+      // Start waiting tone for outgoing call
+      console.log('[CallContext] Starting waiting tone for outgoing call');
+      startWaitingTone();
 
       // Create and send WebRTC offer
       try {
