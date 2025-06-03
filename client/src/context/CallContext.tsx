@@ -915,29 +915,17 @@ export function CallProvider({ children }: { children: ReactNode }) {
         console.log('[CallContext] Group IDs match, updating participants:', participants);
         
         // Remove duplicates from participants list
-        const uniqueParticipants = [...new Set(participants)];
+        const uniqueParticipants = Array.from(new Set(participants));
         console.log('[CallContext] Unique participants after deduplication:', uniqueParticipants);
-        
-        // Update participants immediately with local data, then fetch names asynchronously
-        const participantObjects = uniqueParticipants.map((userId: number) => ({
-          userId,
-          userName: userId === user?.id ? (user?.callsign || user?.fullName || 'You') : `User ${userId}`,
-          audioEnabled: true,
-          videoEnabled: false,
-          stream: null
-        }));
         
         const updatedCall = {
           ...groupCallToUpdate,
-          participants: participantObjects,
+          participants: uniqueParticipants, // Keep as number array for now
           callId: callId // Update to the server's active callId
         };
         
         setActiveCall(updatedCall);
-        console.log('[CallContext] Updated participants in active call:', participantObjects);
-        
-        // Fetch user names asynchronously and update
-        fetchParticipantNames(uniqueParticipants, updatedCall);
+        console.log('[CallContext] Updated participants in active call:', uniqueParticipants);
         
         // Clear any pending updates since we processed this one
         localStorage.removeItem('pendingParticipantUpdate');
