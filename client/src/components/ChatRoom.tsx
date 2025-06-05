@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, MoreVertical, Shield, Trash, Reply, Forward, X, User, Users, ArrowLeft, Mic, Volume2, Play, Pause, CornerDownRight, Phone, Video } from 'lucide-react';
+import { Send, MoreVertical, Shield, Trash, Reply, Forward, X, User, Users, ArrowLeft, Mic, Volume2, Play, Pause, CornerDownRight, Phone, Video, MessageSquare } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -512,6 +512,59 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
       setSelectedMessage(null);
     },
   });
+
+  // Clear chat history mutation
+  const clearChatHistoryMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/conversations/${chatId}/clear`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to clear chat history');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      // Refresh messages after clearing
+      queryClient.invalidateQueries({ queryKey: [`/api/conversations/${chatId}/messages`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+    },
+  });
+
+  // Delete group mutation
+  const deleteGroupMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/conversations/${chatId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete group');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      // Navigate back after deleting group
+      onBack();
+      // Refresh conversations list
+      queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/rooms'] });
+    },
+  });
+
+  // Functions to handle menu actions
+  const clearChatHistory = () => {
+    clearChatHistoryMutation.mutate();
+  };
+
+  const deleteGroup = () => {
+    deleteGroupMutation.mutate();
+  };
   
   // Load conversations for forward dialog
   useEffect(() => {
@@ -827,7 +880,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
           </div>
         </div>
         
-        {/* Call buttons for both direct chats and group chats */}
+        {/* Call buttons and menu */}
         <div className="flex items-center space-x-2">
           {!isGroup ? (
             // Direct chat - call specific user
@@ -913,6 +966,46 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
               </Button>
             </>
           )}
+          
+          {/* Dropdown menu for chat options */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 bg-[#1e1e1e] border-[#3d5040] text-[#e4e6e3]">
+              <DropdownMenuItem 
+                className="hover:bg-[#3d5040] cursor-pointer focus:bg-[#3d5040] focus:text-white"
+                onClick={() => {
+                  if (confirm(`Apakah Anda yakin ingin membersihkan riwayat chat ${chatData?.name || 'ini'}? Semua pesan akan dihapus.`)) {
+                    clearChatHistory();
+                  }
+                }}
+              >
+                <MessageSquare className="mr-2 h-4 w-4" />
+                Bersihkan Chat
+              </DropdownMenuItem>
+              
+              {isGroup && (
+                <DropdownMenuItem 
+                  className="text-red-500 cursor-pointer hover:bg-[#3d5040] focus:bg-[#3d5040] focus:text-red-400"
+                  onClick={() => {
+                    if (confirm(`Apakah Anda yakin ingin menghapus grup ${chatName}?`)) {
+                      deleteGroup();
+                    }
+                  }}
+                >
+                  <Trash className="mr-2 h-4 w-4" />
+                  Hapus Grup
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
       
