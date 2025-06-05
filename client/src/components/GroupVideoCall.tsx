@@ -240,11 +240,13 @@ export default function GroupVideoCall() {
           const peerConnection = new RTCPeerConnection({
             iceServers: [
               { urls: 'stun:stun.l.google.com:19302' },
-              { urls: 'stun:stun1.l.google.com:19302' }
+              { urls: 'stun:stun1.l.google.com:19302' },
+              { urls: 'stun:stun2.l.google.com:19302' }
             ],
             iceCandidatePoolSize: 10,
-            bundlePolicy: 'balanced',
-            rtcpMuxPolicy: 'require'
+            bundlePolicy: 'max-bundle',
+            rtcpMuxPolicy: 'require',
+            iceTransportPolicy: 'all'
           });
 
           // Add local stream tracks to peer connection
@@ -667,13 +669,25 @@ export default function GroupVideoCall() {
         console.error('[GroupVideoCall] Error handling answer:', error);
         
         // Attempt recovery by restarting ICE if SSL role error
-        if (error.message.includes('SSL role') || error.message.includes('transport')) {
-          console.log('[GroupVideoCall] SSL role error detected, restarting ICE for user:', fromUserId);
-          try {
-            peerConnection.restartIce();
-          } catch (restartError) {
-            console.error('[GroupVideoCall] Failed to restart ICE:', restartError);
+        if ((error as Error).message?.includes('SSL role') || (error as Error).message?.includes('transport')) {
+          console.log('[GroupVideoCall] SSL role error detected, recreating connection for user:', fromUserId);
+          
+          // Close current connection and create new one
+          if (peerConnections.current[fromUserId]) {
+            peerConnections.current[fromUserId].close();
+            delete peerConnections.current[fromUserId];
+            createdConnections.current.delete(fromUserId);
           }
+          
+          // Retry after delay to allow cleanup
+          setTimeout(() => {
+            console.log('[GroupVideoCall] Retrying connection setup for user:', fromUserId);
+            if (localStream && activeCall) {
+              // Force re-create connection for this user
+              const retryParticipants = [{ userId: fromUserId, userName: '', audioEnabled: true, videoEnabled: true }];
+              createWebRTCConnections(retryParticipants);
+            }
+          }, 1000);
         }
       }
     };
