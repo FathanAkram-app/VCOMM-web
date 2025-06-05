@@ -192,7 +192,8 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
     return true;
   }) : [];
 
-  if (isLoading) {
+  // Show loading only when actually loading and no data
+  if (isLoading && callHistory.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-gray-500">Memuat riwayat panggilan...</div>

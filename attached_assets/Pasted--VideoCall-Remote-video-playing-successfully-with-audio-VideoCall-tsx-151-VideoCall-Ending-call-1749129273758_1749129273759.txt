@@ -1,0 +1,110 @@
+[VideoCall] ✅ Remote video playing successfully with audio
+VideoCall.tsx:151 [VideoCall] Ending call
+VideoCall.tsx:120 [VideoCall] Cleaning up media tracks
+VideoCall.tsx:127 [VideoCall] Stopped local track: audio readyState: ended
+VideoCall.tsx:127 [VideoCall] Stopped local track: video readyState: ended
+VideoCall.tsx:138 [VideoCall] Cleared local video element
+VideoCall.tsx:146 [VideoCall] Cleared remote video element
+CallContext.tsx:2063 [CallContext] Hanging up call - start
+CallContext.tsx:2066 [CallContext] FORCE STOPPING ALL RINGTONES - hangup call
+CallContext.tsx:214 [CallContext] 🔇 STOPPING ALL RINGTONES - comprehensive cleanup
+CallContext.tsx:269 [CallContext] ✅ Stopped 0 audio elements
+CallContext.tsx:313 [CallContext] ✅ RINGTONE CLEANUP COMPLETED
+CallContext.tsx:391 [CallContext] 🔇 AGGRESSIVE AUDIO CLEANUP - STOPPING ALL AUDIO
+CallContext.tsx:395 [CallContext] Clearing waiting tone interval
+CallContext.tsx:425 [CallContext] 💥 NUCLEAR AUDIO CLEANUP - Closing ALL AudioContext instances
+CallContext.tsx:441 [CallContext] ✅ Closed AudioContext
+CallContext.tsx:471 [CallContext] 💥 NUCLEAR INTERVAL CLEANUP - Clearing ALL intervals
+CallContext.tsx:484 [CallContext] ✅ Nuclear interval cleanup completed
+CallContext.tsx:489 [CallContext] ✅ AGGRESSIVE AUDIO CLEANUP COMPLETED
+CallContext.tsx:2074 [CallContext] ✅ Waiting tone interval cleared on hangup
+CallContext.tsx:2089 [CallContext] ✅ Audio context closed on hangup
+CallContext.tsx:2104 [CallContext] ✅ All page audio elements forcefully stopped on hangup
+CallContext.tsx:2118 [CallContext] Stopping local media tracks
+CallContext.tsx:2122 [CallContext] Stopped local track: audio
+CallContext.tsx:2122 [CallContext] Stopped local track: video
+CallContext.tsx:2263 [CallContext] Call ended successfully, all audio streams stopped, navigated back to chat
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+VideoCall.tsx:99 [VideoCall] Cleaning up call duration timer
+VideoCall.tsx:107 [VideoCall] Component unmounting, cleaning up streams
+ChatList.tsx:94 Contoh data percakapan dari server: {id: 35, createdById: 1, createdAt: '2025-06-02T15:31:27.620Z', updatedAt: '2025-06-02T15:31:27.620Z', isGroup: false, …}
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+CallContext.tsx:2087 Uncaught (in promise) InvalidStateError: Cannot close a closed AudioContext.
+hangupCall @ CallContext.tsx:2087
+handleEndCall @ VideoCall.tsx:153
+callCallback2 @ chunk-RPCDYKBN.js?v=8e2ac425:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=8e2ac425:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=8e2ac425:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=8e2ac425:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=8e2ac425:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=8e2ac425:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=8e2ac425:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=8e2ac425:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=8e2ac425:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=8e2ac425:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=8e2ac425:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=8e2ac425:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=8e2ac425:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=8e2ac425:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=8e2ac425:5449Understand this error
+CallContext.tsx:2254 [CallContext] Requesting media device cleanup
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+ChatList.tsx:94 Contoh data percakapan dari server: {id: 35, createdById: 1, createdAt: '2025-06-02T15:31:27.620Z', updatedAt: '2025-06-02T15:31:27.620Z', isGroup: false, …}
+CallContext.tsx:596 [CallContext] Creating stable WebSocket for calls...
+CallContext.tsx:709 [CallContext] WebSocket disconnected
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+Chat.tsx:85 User data from session: {id: 3, callsign: 'aji', nrp: '123123', fullName: 'aji a', rank: 'SPC', …}
+Chat.tsx:113 Fetching all conversations for user ID: 3
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+Chat.tsx:236 Fetched 7 users for personnel list
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+Chat.tsx:126 All conversations from server: (7) [{…}, {…}, {…}, {…}, {…}, {…}, {…}]
+Chat.tsx:139 Fetching direct chats from server for user ID: 3
+CallContext.tsx:603 [CallContext] WebSocket connected successfully for calls
+CallContext.tsx:617 [CallContext] Authenticated user 3 with WebSocket
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+Chat.tsx:153 Fetched 4 direct chats from server
+Chat.tsx:180 Fetching group chats/rooms for user ID: 3
+CallContext.tsx:636 [CallContext] Received message: {type: 'user_status', payload: {…}}
+Chat.tsx:194 Fetched 3 group chats/rooms
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+CallContext.tsx:636 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallHistory.tsx:109 [CallHistory] Component rendered
+CallHistory.tsx:110 [CallHistory] User: {id: 3, callsign: 'aji', nrp: '123123', fullName: 'aji a', rank: 'SPC', …}
+CallHistory.tsx:111 [CallHistory] Data received: []
+CallHistory.tsx:112 [CallHistory] IsLoading: true
+CallHistory.tsx:113 [CallHistory] Error: null
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+CallHistory.tsx:109 [CallHistory] Component rendered
+CallHistory.tsx:110 [CallHistory] User: {id: 3, callsign: 'aji', nrp: '123123', fullName: 'aji a', rank: 'SPC', …}
+CallHistory.tsx:111 [CallHistory] Data received: []
+CallHistory.tsx:112 [CallHistory] IsLoading: true
+CallHistory.tsx:113 [CallHistory] Error: null
+CallHistory.tsx:109 [CallHistory] Component rendered
+CallHistory.tsx:110 [CallHistory] User: {id: 3, callsign: 'aji', nrp: '123123', fullName: 'aji a', rank: 'SPC', …}
+CallHistory.tsx:111 [CallHistory] Data received: []
+CallHistory.tsx:112 [CallHistory] IsLoading: true
+CallHistory.tsx:113 [CallHistory] Error: null
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+CallContext.tsx:596 [CallContext] Creating stable WebSocket for calls...
+CallHistory.tsx:109 [CallHistory] Component rendered
+CallHistory.tsx:110 [CallHistory] User: {id: 3, callsign: 'aji', nrp: '123123', fullName: 'aji a', rank: 'SPC', …}
+CallHistory.tsx:111 [CallHistory] Data received: (5) [{…}, {…}, {…}, {…}, {…}]
+CallHistory.tsx:112 [CallHistory] IsLoading: false
+CallHistory.tsx:113 [CallHistory] Error: null
+CallContext.tsx:709 [CallContext] WebSocket disconnected
+CallHistory.tsx:109 [CallHistory] Component rendered
+CallHistory.tsx:110 [CallHistory] User: {id: 3, callsign: 'aji', nrp: '123123', fullName: 'aji a', rank: 'SPC', …}
+CallHistory.tsx:111 [CallHistory] Data received: (5) [{…}, {…}, {…}, {…}, {…}]
+CallHistory.tsx:112 [CallHistory] IsLoading: false
+CallHistory.tsx:113 [CallHistory] Error: null
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+CallContext.tsx:603 [CallContext] WebSocket connected successfully for calls
+CallContext.tsx:617 [CallContext] Authenticated user 3 with WebSocket
+CallHistory.tsx:109 [CallHistory] Component rendered
+CallHistory.tsx:110 [CallHistory] User: {id: 3, callsign: 'aji', nrp: '123123', fullName: 'aji a', rank: 'SPC', …}
+CallHistory.tsx:111 [CallHistory] Data received: (5) [{…}, {…}, {…}, {…}, {…}]
+CallHistory.tsx:112 [CallHistory] IsLoading: false
+CallHistory.tsx:113 [CallHistory] Error: null
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+CallContext.tsx:636 [CallContext] Received message: {type: 'user_status', payload: {…}}
