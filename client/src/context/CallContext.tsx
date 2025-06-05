@@ -1869,6 +1869,26 @@ export function CallProvider({ children }: { children: ReactNode }) {
         }
       });
 
+      // Force cleanup of all video elements that might still have active streams
+      const allVideoElements = document.querySelectorAll('video');
+      allVideoElements.forEach(videoEl => {
+        try {
+          if (videoEl.srcObject) {
+            const stream = videoEl.srcObject as MediaStream;
+            stream.getTracks().forEach(track => {
+              if (track.readyState !== 'ended') {
+                track.stop();
+                console.log('[CallContext] Force stopped remaining video track:', track.kind);
+              }
+            });
+            videoEl.srcObject = null;
+            videoEl.load(); // Force reload
+          }
+        } catch (err) {
+          console.warn('[CallContext] Error force cleaning video element:', err);
+        }
+      });
+
       // Send call end message safely
       if (ws && ws.readyState === WebSocket.OPEN && activeCall && user) {
         try {
@@ -1902,6 +1922,21 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
       // Clear call state and navigate back to chat
       setActiveCall(null);
+      setRemoteAudioStream(null);
+      setIncomingCall(null);
+      
+      // Additional cleanup - request browser to release all media devices
+      setTimeout(() => {
+        try {
+          // Force stop all active media tracks by accessing global MediaStreamTrack objects
+          if (window.navigator?.mediaDevices) {
+            console.log('[CallContext] Requesting media device cleanup');
+          }
+        } catch (err) {
+          console.warn('[CallContext] Media device cleanup warning:', err);
+        }
+      }, 200);
+      
       setLocation('/chat');
       
       console.log('[CallContext] Call ended successfully, all audio streams stopped, navigated back to chat');

@@ -81,16 +81,17 @@ export default function GroupVideoCall() {
     return () => {
       // Cleanup streams when activeCall changes or component unmounts
       console.log('[GroupVideoCall] useEffect cleanup triggered');
-      if (localStream) {
-        localStream.getTracks().forEach(track => {
-          if (track.readyState !== 'ended') {
-            track.stop();
-            console.log('[GroupVideoCall] useEffect cleanup - stopped track:', track.kind);
-          }
-        });
-      }
+      cleanupMediaTracks();
     };
   }, [activeCall]);
+
+  // Component unmount cleanup
+  useEffect(() => {
+    return () => {
+      console.log('[GroupVideoCall] Component unmounting - final cleanup');
+      cleanupMediaTracks();
+    };
+  }, []);
 
   // Update local video ref when stream changes
   useEffect(() => {
@@ -154,6 +155,7 @@ export default function GroupVideoCall() {
     
     // Stop all tracks in the current stream
     if (localStream) {
+      console.log('[GroupVideoCall] Stopping localStream tracks');
       localStream.getTracks().forEach(track => {
         if (track.readyState !== 'ended') {
           track.stop();
@@ -165,24 +167,33 @@ export default function GroupVideoCall() {
     // Clear video element and remove srcObject
     if (localVideoRef.current) {
       const videoElement = localVideoRef.current;
+      console.log('[GroupVideoCall] Clearing video element');
       videoElement.pause();
       videoElement.srcObject = null;
       videoElement.load(); // Force reload to clear any cached stream
       console.log('[GroupVideoCall] Cleared and reloaded video element');
     }
     
+    // Clear participant video refs
+    Object.values(participantVideoRefs.current).forEach(videoElement => {
+      if (videoElement && videoElement.srcObject) {
+        console.log('[GroupVideoCall] Clearing participant video element');
+        videoElement.pause();
+        videoElement.srcObject = null;
+        videoElement.load();
+      }
+    });
+    
     // Reset all states
     setLocalStream(null);
     setIsVideoEnabled(false);
     setIsAudioEnabled(true);
+    setParticipants([]);
     
-    // Force garbage collection of media streams
-    setTimeout(() => {
-      if (window.gc) {
-        window.gc();
-        console.log('[GroupVideoCall] Forced garbage collection');
-      }
-    }, 100);
+    // Clear participant refs
+    participantVideoRefs.current = {};
+    
+    console.log('[GroupVideoCall] All media cleanup completed');
   };
 
   const handleEndCall = () => {
