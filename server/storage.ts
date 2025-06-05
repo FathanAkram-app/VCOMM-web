@@ -431,6 +431,16 @@ export class DatabaseStorage implements IStorage {
         .delete(messages)
         .where(eq(messages.conversationId, conversationId));
         
+      // Clear the last message info from the conversation
+      await db
+        .update(conversations)
+        .set({ 
+          lastMessage: null,
+          lastMessageAt: null,
+          updatedAt: new Date()
+        })
+        .where(eq(conversations.id, conversationId));
+        
       console.log(`Successfully cleared messages from conversation ${conversationId}`);
     } catch (error) {
       console.error(`Error clearing messages from conversation ${conversationId}:`, error);
