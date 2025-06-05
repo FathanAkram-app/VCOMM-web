@@ -81,8 +81,8 @@ export default function Settings({ onBack }: SettingsProps) {
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedAudioDevice, setSelectedAudioDevice] = useState<string>('');
   const [isTestingAudio, setIsTestingAudio] = useState(false);
-  const [audioTestMode, setAudioTestMode] = useState<'earpiece' | 'speaker' | 'loudspeaker' | null>(null);
-  const [testAudioElement, setTestAudioElement] = useState<HTMLAudioElement | null>(null);
+  const [audioTestMode, setAudioTestMode] = useState<'speaker' | 'loudspeaker' | null>(null);
+  const [testAudioElement, setTestAudioElement] = useState<any>(null);
   const [isMicTesting, setIsMicTesting] = useState(false);
   const [micStream, setMicStream] = useState<MediaStream | null>(null);
   const [micLevel, setMicLevel] = useState(0);
@@ -170,7 +170,7 @@ export default function Settings({ onBack }: SettingsProps) {
     }
   };
 
-  const startAudioTest = async (mode: 'earpiece' | 'speaker' | 'loudspeaker') => {
+  const startAudioTest = async (mode: 'speaker' | 'loudspeaker') => {
     try {
       setIsTestingAudio(true);
       setAudioTestMode(mode);
@@ -188,26 +188,7 @@ export default function Settings({ onBack }: SettingsProps) {
       audio.preload = 'auto';
       
       // Configure different test tones for each mode
-      if (mode === 'earpiece') {
-        // High frequency tone for earpiece test (simulating voice call)
-        audio.src = generateTestTone(3000, 1); // Higher pitch for earpiece
-        audio.volume = 0.3; // Lower volume
-        
-        // Try to route to earpiece on mobile
-        try {
-          if ('setSinkId' in audio) {
-            await (audio as any).setSinkId('communications');
-          }
-        } catch (e) {
-          console.log('setSinkId not supported or failed');
-        }
-        
-        toast({
-          title: "Test Nada Via Speaker",
-          description: "Nada akan keluar via speaker HP. Untuk test earpiece sebenarnya, lakukan panggilan suara biasa.",
-        });
-        
-      } else if (mode === 'speaker') {
+      if (mode === 'speaker') {
         // Medium frequency for normal speaker
         audio.src = generateTestTone(1000, 1); // Medium pitch
         audio.volume = 0.6; // Medium volume
@@ -866,6 +847,23 @@ export default function Settings({ onBack }: SettingsProps) {
 
             {/* Audio Test Tab */}
             <TabsContent value="audio" className="space-y-6">
+              {/* Important Notice */}
+              <div className="bg-blue-900/20 border border-blue-600 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <Info className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="text-blue-300 font-medium mb-2">Keterbatasan Browser Mobile</h4>
+                    <p className="text-sm text-blue-200 mb-2">
+                      Browser web pada HP tidak dapat mengontrol routing audio ke speaker telepon (earpiece). 
+                      Semua audio akan keluar melalui speaker media HP.
+                    </p>
+                    <p className="text-sm text-blue-200">
+                      <strong>Untuk test earpiece:</strong> Gunakan aplikasi panggilan suara biasa atau WhatsApp call.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <Card className="bg-gray-800 border-gray-700">
                 <CardHeader>
                   <CardTitle className="flex items-center text-white">
@@ -873,7 +871,7 @@ export default function Settings({ onBack }: SettingsProps) {
                     Audio Test Mobile
                   </CardTitle>
                   <CardDescription>
-                    Test audio output dan microphone untuk HP
+                    Test audio output dan microphone melalui speaker media HP
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -905,48 +903,23 @@ export default function Settings({ onBack }: SettingsProps) {
 
                     {/* Audio Test Buttons */}
                     <div className="grid grid-cols-1 gap-3">
-                      {/* Earpiece Test */}
-                      <div className="p-4 bg-gray-700 rounded-lg border border-yellow-600">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center">
-                            <Smartphone className="w-5 h-5 mr-2 text-blue-400" />
-                            <span className="text-white font-medium">Test Earpiece (Speaker Telinga)</span>
-                          </div>
-                          <Badge variant="outline" className="text-yellow-400 border-yellow-400">
-                            Manual Test
-                          </Badge>
+                      {/* Manual Earpiece Test Instructions */}
+                      <div className="p-4 bg-gray-700 rounded-lg border border-orange-600">
+                        <div className="flex items-center mb-3">
+                          <Smartphone className="w-5 h-5 mr-2 text-orange-400" />
+                          <span className="text-white font-medium">Test Earpiece (Speaker Telinga)</span>
                         </div>
-                        <div className="bg-yellow-900/20 border border-yellow-600 rounded p-3 mb-3">
-                          <p className="text-sm text-yellow-200">
-                            ⚠️ <strong>Keterbatasan Browser Mobile:</strong><br/>
-                            Browser tidak dapat langsung routing audio ke earpiece. Untuk test earpiece:
+                        <div className="bg-orange-900/20 border border-orange-600 rounded p-3">
+                          <p className="text-sm text-orange-200 mb-2">
+                            <strong>Cara Test Earpiece Manual:</strong>
                           </p>
-                          <ol className="text-sm text-yellow-200 mt-2 ml-4 list-decimal">
-                            <li>Lakukan panggilan suara biasa</li>
-                            <li>Dengarkan apakah suara keluar dari speaker telinga</li>
-                            <li>Jika tidak terdengar, earpiece mungkin bermasalah</li>
+                          <ol className="text-sm text-orange-200 ml-4 list-decimal space-y-1">
+                            <li>Lakukan panggilan suara biasa ke teman</li>
+                            <li>Pastikan HP dalam posisi normal (tidak speaker)</li>
+                            <li>Dengarkan suara dari speaker telinga</li>
+                            <li>Jika tidak terdengar jelas, earpiece bermasalah</li>
                           </ol>
                         </div>
-                        <Button
-                          onClick={() => isTestingAudio ? stopAudioTest() : startAudioTest('earpiece')}
-                          className={`w-full ${
-                            audioTestMode === 'earpiece' && isTestingAudio 
-                              ? 'bg-red-600 hover:bg-red-700' 
-                              : 'bg-blue-600 hover:bg-blue-700'
-                          }`}
-                        >
-                          {audioTestMode === 'earpiece' && isTestingAudio ? (
-                            <>
-                              <Square className="w-4 h-4 mr-2" />
-                              Stop Test Nada
-                            </>
-                          ) : (
-                            <>
-                              <Play className="w-4 h-4 mr-2" />
-                              Test Nada (Via Speaker)
-                            </>
-                          )}
-                        </Button>
                       </div>
 
                       {/* Speaker Test */}
