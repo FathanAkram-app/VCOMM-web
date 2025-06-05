@@ -595,17 +595,38 @@ export default function GroupVideoCall() {
 
     const handleGroupWebRTCAnswer = async (event: CustomEvent) => {
       const { callId, answer, fromUserId } = event.detail;
-      console.log('[GroupVideoCall] Received WebRTC answer from user:', fromUserId);
+      console.log('[GroupVideoCall] *** RECEIVED WEBRTC ANSWER ***');
+      console.log('[GroupVideoCall] Answer from user:', fromUserId);
+      console.log('[GroupVideoCall] Call ID match:', callId === activeCall?.callId);
+      console.log('[GroupVideoCall] Peer connection exists:', !!peerConnections.current[fromUserId]);
       
       if (!activeCall || activeCall.callId !== callId) {
+        console.warn('[GroupVideoCall] Ignoring answer - call ID mismatch or no active call');
         return;
       }
       
       const peerConnection = peerConnections.current[fromUserId];
       if (peerConnection) {
         try {
+          console.log('[GroupVideoCall] Setting remote description for answer...');
           await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-          console.log('[GroupVideoCall] Set remote description for answer from user:', fromUserId);
+          console.log('[GroupVideoCall] Successfully set remote description for answer from user:', fromUserId);
+          
+          // Check connection state after setting remote description
+          console.log('[GroupVideoCall] Connection state after answer:', peerConnection.connectionState);
+          console.log('[GroupVideoCall] ICE connection state after answer:', peerConnection.iceConnectionState);
+          
+          // Force trigger remote stream check
+          setTimeout(() => {
+            const receivers = peerConnection.getReceivers();
+            console.log('[GroupVideoCall] Receivers after answer:', receivers.length);
+            receivers.forEach((receiver, index) => {
+              if (receiver.track) {
+                console.log(`[GroupVideoCall] Receiver ${index} track:`, receiver.track.kind, receiver.track.enabled, receiver.track.readyState);
+              }
+            });
+          }, 1000);
+          
         } catch (error) {
           console.error('[GroupVideoCall] Error handling answer:', error);
           
@@ -615,6 +636,8 @@ export default function GroupVideoCall() {
             cleanupConnection(fromUserId);
           }
         }
+      } else {
+        console.error('[GroupVideoCall] No peer connection found for user:', fromUserId);
       }
     };
 
