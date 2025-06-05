@@ -785,42 +785,22 @@ export default function GroupVideoCall() {
                         </div>
                       )}
                       
-                      {/* Video activity indicator */}
-                      <div className="absolute inset-0 pointer-events-none">
-                        <div className={`w-full h-full border-2 rounded-lg ${
-                          remoteStreams[participant.userId] ? 'border-green-400/50' : 'border-[#a6c455]/20 animate-pulse'
-                        }`}></div>
-                      </div>
-                      
-                      {/* Audio level indicator */}
-                      <div className="absolute top-3 right-3">
-                        <div className="flex space-x-1 bg-black/70 px-2 py-1 rounded-full">
-                          <div className="w-1 h-2 bg-[#a6c455] rounded-full animate-bounce"></div>
-                          <div className="w-1 h-3 bg-[#a6c455] rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                          <div className="w-1 h-4 bg-[#a6c455] rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                          <div className="w-1 h-2 bg-[#a6c455] rounded-full animate-bounce" style={{animationDelay: '0.3s'}}></div>
-                        </div>
-                      </div>
-                      
-                      {/* Connection status */}
-                      <div className="absolute top-3 left-3">
-                        <div className="bg-black/70 px-2 py-1 rounded-full flex items-center space-x-1">
-                          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                          <span className="text-green-400 text-xs font-medium">AKTIF</span>
-                        </div>
-                      </div>
-                      
-                      {/* Video quality indicator */}
-                      <div className="absolute top-3 right-16">
-                        <div className="bg-black/70 px-2 py-1 rounded-full">
-                          <span className="text-[#a6c455] text-xs font-medium">HD</span>
-                        </div>
-                      </div>
+
                     </div>
                     
                     <div className="absolute bottom-1 left-1 bg-black/80 px-2 py-1 rounded border border-[#7d9f7d]/50">
                       <p className="text-[#a6c455] text-xs font-medium">{participant.userName}</p>
                     </div>
+                    
+                    {/* Maximize button */}
+                    <button
+                      onClick={() => setIsMaximized(true)}
+                      className="absolute top-1 right-1 bg-black/70 p-1 rounded hover:bg-[#4a7c59]/30 transition-colors border border-[#4a7c59]/30"
+                    >
+                      <svg className="w-3 h-3 text-[#a6c455]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                      </svg>
+                    </button>
                     
                     {/* Participant controls indicator */}
                     <div className="absolute bottom-1 right-1 flex space-x-1">
