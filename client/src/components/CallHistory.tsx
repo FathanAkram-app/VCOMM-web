@@ -213,19 +213,30 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
   return (
     <div className="h-full flex flex-col bg-gray-900 text-white">
       {/* Header */}
-      <div className="flex items-center p-4 border-b border-gray-700">
+      <div className="flex items-center justify-between p-4 border-b border-gray-700">
+        <div className="flex items-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onBack}
+            className="mr-3 text-white hover:bg-gray-700"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div className="flex items-center">
+            <PhoneCall className="w-6 h-6 mr-2 text-green-500" />
+            <h1 className="text-xl font-semibold">Riwayat Panggilan</h1>
+          </div>
+        </div>
         <Button
           variant="ghost"
           size="sm"
-          onClick={onBack}
-          className="mr-3 text-white hover:bg-gray-700"
+          onClick={handleForceRefresh}
+          className="text-green-400 hover:text-green-300 hover:bg-gray-700"
+          title="Refresh data"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <RefreshCw className="w-5 h-5" />
         </Button>
-        <div className="flex items-center">
-          <PhoneCall className="w-6 h-6 mr-2 text-green-500" />
-          <h1 className="text-xl font-semibold">Riwayat Panggilan</h1>
-        </div>
       </div>
 
       {/* Filter Buttons */}
