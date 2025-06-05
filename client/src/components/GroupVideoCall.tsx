@@ -183,40 +183,13 @@ export default function GroupVideoCall() {
             const [remoteStream] = event.streams;
             
             if (remoteStream && remoteStream.active) {
+              // Update state first
               setRemoteStreams(prev => ({
                 ...prev,
                 [participant.userId]: remoteStream
               }));
               
-              // Delay attachment to prevent interference
-              setTimeout(() => {
-                const videoElement = participantVideoRefs.current[participant.userId];
-                if (videoElement && remoteStream.active) {
-                  // Clear any existing source
-                  videoElement.srcObject = null;
-                  
-                  // Set new stream
-                  videoElement.srcObject = remoteStream;
-                  videoElement.autoplay = true;
-                  videoElement.playsInline = true;
-                  videoElement.muted = false;
-                  
-                  console.log('[GroupVideoCall] Attached remote stream to video element for user:', participant.userId);
-                  
-                  // Force play with user interaction handling
-                  const playPromise = videoElement.play();
-                  if (playPromise !== undefined) {
-                    playPromise.catch(error => {
-                      console.warn('[GroupVideoCall] Video autoplay failed for user:', participant.userId, 'trying silent play');
-                      // Try muted autoplay as fallback
-                      videoElement.muted = true;
-                      videoElement.play().catch(err => {
-                        console.warn('[GroupVideoCall] Silent autoplay also failed:', err);
-                      });
-                    });
-                  }
-                }
-              }, 100);
+              console.log('[GroupVideoCall] Remote stream added to state for user:', participant.userId);
             }
           };
 
@@ -340,6 +313,38 @@ export default function GroupVideoCall() {
       });
     }
   }, [participants.length, localStream, activeCall?.callId, user?.id]);
+
+  // Attach remote streams to video elements when streams are available
+  useEffect(() => {
+    Object.keys(remoteStreams).forEach(userId => {
+      const stream = remoteStreams[userId];
+      const videoElement = participantVideoRefs.current[userId];
+      
+      if (stream && videoElement && stream.active) {
+        console.log(`[GroupVideoCall] Attaching stream to video element for user ${userId}`);
+        
+        // Prevent multiple attachments
+        if (videoElement.srcObject !== stream) {
+          videoElement.srcObject = stream;
+          videoElement.autoplay = true;
+          videoElement.playsInline = true;
+          videoElement.muted = false;
+          
+          // Try to play with fallback
+          const playPromise = videoElement.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(error => {
+              console.warn(`[GroupVideoCall] Autoplay failed for user ${userId}, trying muted play`);
+              videoElement.muted = true;
+              videoElement.play().catch(muteErr => {
+                console.warn(`[GroupVideoCall] Muted play failed for user ${userId}:`, muteErr);
+              });
+            });
+          }
+        }
+      }
+    });
+  }, [remoteStreams]);
 
   // Handle incoming WebRTC signals for group video call
   useEffect(() => {

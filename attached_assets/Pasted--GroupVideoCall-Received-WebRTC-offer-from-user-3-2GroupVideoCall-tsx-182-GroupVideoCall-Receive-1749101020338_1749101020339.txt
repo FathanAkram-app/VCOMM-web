@@ -1,0 +1,72 @@
+[GroupVideoCall] Received WebRTC offer from user: 3
+2GroupVideoCall.tsx:182 [GroupVideoCall] Received remote stream from user: 3
+GroupVideoCall.tsx:363 [GroupVideoCall] Set remote description from offer
+GroupVideoCall.tsx:48 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749100968712_37_2', callType: 'video', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:49 [GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:50 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:51 [GroupVideoCall] localStream: MediaStream {id: 'e71c9065-38f8-47a4-8519-013791b445ce', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:665 [GroupVideoCall] Attaching stream to video element for user 5
+GroupVideoCall.tsx:665 [GroupVideoCall] Attaching stream to video element for user 3
+GroupVideoCall.tsx:369 [GroupVideoCall] Sending answer to user: 3
+2GroupVideoCall.tsx:226 [GroupVideoCall] Sending ICE candidate to user: 3
+GroupVideoCall.tsx:204 [GroupVideoCall] Attached remote stream to video element for user: 3
+GroupVideoCall.tsx:675 [GroupVideoCall] Auto-play failed for user 3, trying muted: AbortError: The play() request was interrupted by a new load request. https://goo.gl/LdLk22
+(anonymous) @ GroupVideoCall.tsx:675
+Promise.catch
+ref @ GroupVideoCall.tsx:674
+commitAttachRef @ chunk-RPCDYKBN.js?v=768c3251:17279
+commitLayoutEffectOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17168
+commitLayoutMountEffects_complete @ chunk-RPCDYKBN.js?v=768c3251:17980
+commitLayoutEffects_begin @ chunk-RPCDYKBN.js?v=768c3251:17969
+commitLayoutEffects @ chunk-RPCDYKBN.js?v=768c3251:17920
+commitRootImpl @ chunk-RPCDYKBN.js?v=768c3251:19353
+commitRoot @ chunk-RPCDYKBN.js?v=768c3251:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=768c3251:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=768c3251:18718
+workLoop @ chunk-RPCDYKBN.js?v=768c3251:197
+flushWork @ chunk-RPCDYKBN.js?v=768c3251:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=768c3251:384Understand this warning
+GroupVideoCall.tsx:204 [GroupVideoCall] Attached remote stream to video element for user: 3
+GroupVideoCall.tsx:210 [GroupVideoCall] Video autoplay failed for user: 3 trying silent play
+(anonymous) @ GroupVideoCall.tsx:210
+Promise.catch
+(anonymous) @ GroupVideoCall.tsx:209
+setTimeout
+peerConnection.ontrack @ GroupVideoCall.tsx:192Understand this warning
+GroupVideoCall.tsx:678 [GroupVideoCall] Muted play also failed: AbortError: The play() request was interrupted by a new load request. https://goo.gl/LdLk22
+(anonymous) @ GroupVideoCall.tsx:678
+Promise.catch
+(anonymous) @ GroupVideoCall.tsx:677
+Promise.catch
+ref @ GroupVideoCall.tsx:674
+commitAttachRef @ chunk-RPCDYKBN.js?v=768c3251:17279
+commitLayoutEffectOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17168
+commitLayoutMountEffects_complete @ chunk-RPCDYKBN.js?v=768c3251:17980
+commitLayoutEffects_begin @ chunk-RPCDYKBN.js?v=768c3251:17969
+commitLayoutEffects @ chunk-RPCDYKBN.js?v=768c3251:17920
+commitRootImpl @ chunk-RPCDYKBN.js?v=768c3251:19353
+commitRoot @ chunk-RPCDYKBN.js?v=768c3251:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=768c3251:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=768c3251:18718
+workLoop @ chunk-RPCDYKBN.js?v=768c3251:197
+flushWork @ chunk-RPCDYKBN.js?v=768c3251:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=768c3251:384Understand this warning
+GroupVideoCall.tsx:226 [GroupVideoCall] Sending ICE candidate to user: 3
+CallContext.tsx:420 [CallContext] Received message: {type: 'user_status', payload: {…}}
+GroupVideoCall.tsx:322 [GroupVideoCall] Auto-sending offer to participant: 5
+CallContext.tsx:420 [CallContext] Received message: {type: 'group_webrtc_answer', payload: {…}}
+CallContext.tsx:471 [CallContext] Forwarding group WebRTC answer: {callId: 'group_call_1749100968712_37_2', answer: {…}, fromUserId: 5}
+GroupVideoCall.tsx:395 [GroupVideoCall] Received WebRTC answer from user: 5
+GroupVideoCall.tsx:410 [GroupVideoCall] Set remote description from answer
+GroupVideoCall.tsx:322 [GroupVideoCall] Auto-sending offer to participant: 3
+CallContext.tsx:420 [CallContext] Received message: {type: 'group_webrtc_offer', payload: {…}}
+CallContext.tsx:464 [CallContext] Forwarding group WebRTC offer: {callId: 'group_call_1749100968712_37_2', offer: {…}, fromUserId: 5}
+GroupVideoCall.tsx:348 [GroupVideoCall] Received WebRTC offer from user: 5
+GroupVideoCall.tsx:363 [GroupVideoCall] Set remote description from offer
+GroupVideoCall.tsx:369 [GroupVideoCall] Sending answer to user: 5
+CallContext.tsx:420 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:420 [CallContext] Received message: {type: 'group_webrtc_answer', payload: {…}}
+CallContext.tsx:471 [CallContext] Forwarding group WebRTC answer: {callId: 'group_call_1749100968712_37_2', answer: {…}, fromUserId: 3}
+GroupVideoCall.tsx:395 [GroupVideoCall] Received WebRTC answer from user: 3
+GroupVideoCall.tsx:410 [GroupVideoCall] Set remote description from answer
+GroupVideoCall.tsx:244 [GroupVideoCall] Connection state for user 3 : connecting
