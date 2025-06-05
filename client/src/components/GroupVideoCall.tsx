@@ -404,31 +404,33 @@ export default function GroupVideoCall() {
   // Handle incoming WebRTC signals with enhanced SSL role error handling
   useEffect(() => {
     const handleGroupWebRTCOffer = async (event: CustomEvent) => {
-      const { callId, offer, fromUserId } = event.detail;
-      console.log('[GroupVideoCall] *** RECEIVED WEBRTC OFFER ***');
-      console.log('[GroupVideoCall] Offer from user:', fromUserId);
-      console.log('[GroupVideoCall] Call ID match:', callId === activeCall?.callId);
-      console.log('[GroupVideoCall] Active call exists:', !!activeCall);
-      console.log('[GroupVideoCall] Local stream ready:', !!localStream);
-      console.log('[GroupVideoCall] User ID:', user?.id);
-      
-      if (!activeCall || activeCall.callId !== callId) {
-        console.warn('[GroupVideoCall] Ignoring offer - call ID mismatch or no active call');
-        console.log('[GroupVideoCall] Expected callId:', activeCall?.callId, 'Received:', callId);
-        return;
-      }
-      
-      // Check if we need to wait for local stream
-      if (!localStream) {
-        console.warn('[GroupVideoCall] Local stream not ready, cannot process offer from:', fromUserId);
-        return;
-      }
-
-      let peerConnection = peerConnections.current[fromUserId];
-      if (!peerConnection) {
-        console.log('[GroupVideoCall] Creating NEW peer connection for incoming offer from:', fromUserId);
+      try {
+        const { callId, offer, fromUserId } = event.detail;
+        console.log('[GroupVideoCall] *** RECEIVED WEBRTC OFFER ***');
+        console.log('[GroupVideoCall] Offer from user:', fromUserId);
+        console.log('[GroupVideoCall] Call ID match:', callId === activeCall?.callId);
+        console.log('[GroupVideoCall] Active call exists:', !!activeCall);
+        console.log('[GroupVideoCall] Local stream ready:', !!localStream);
+        console.log('[GroupVideoCall] User ID:', user?.id);
+        console.log('[GroupVideoCall] Starting offer processing...');
         
-        try {
+        if (!activeCall || activeCall.callId !== callId) {
+          console.warn('[GroupVideoCall] Ignoring offer - call ID mismatch or no active call');
+          console.log('[GroupVideoCall] Expected callId:', activeCall?.callId, 'Received:', callId);
+          return;
+        }
+      
+        // Check if we need to wait for local stream
+        if (!localStream) {
+          console.warn('[GroupVideoCall] Local stream not ready, cannot process offer from:', fromUserId);
+          return;
+        }
+
+        let peerConnection = peerConnections.current[fromUserId];
+        if (!peerConnection) {
+          console.log('[GroupVideoCall] Creating NEW peer connection for incoming offer from:', fromUserId);
+          
+          try {
           peerConnection = new RTCPeerConnection({
             iceServers: [
               { urls: 'stun:stun.l.google.com:19302' },
@@ -617,6 +619,10 @@ export default function GroupVideoCall() {
             }, 2000);
           }
         }
+      } catch (topLevelError) {
+        console.error('[GroupVideoCall] TOP LEVEL ERROR in handleGroupWebRTCOffer:', topLevelError);
+        console.error('[GroupVideoCall] Error stack:', (topLevelError as Error).stack);
+        console.error('[GroupVideoCall] Error message:', (topLevelError as Error).message);
       }
     };
 
