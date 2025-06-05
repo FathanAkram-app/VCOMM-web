@@ -190,17 +190,16 @@ export default function GroupVideoCall() {
       getLocalMedia();
     }
 
+    // DON'T cleanup on activeCall changes - only when component truly unmounts
     return () => {
-      // Cleanup streams when activeCall changes or component unmounts
-      console.log('[GroupVideoCall] useEffect cleanup triggered');
-      cleanupMediaTracks();
+      console.log('[GroupVideoCall] Effect cleanup - activeCall changed but preserving streams');
     };
   }, [activeCall]);
 
-  // Component unmount cleanup
+  // Only cleanup when component truly unmounts (not on re-renders)
   useEffect(() => {
     return () => {
-      console.log('[GroupVideoCall] Component unmounting - final cleanup');
+      console.log('[GroupVideoCall] Component unmounting - performing final cleanup');
       cleanupMediaTracks();
     };
   }, []);
