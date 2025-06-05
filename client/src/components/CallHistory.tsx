@@ -38,11 +38,19 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
   const { toast } = useToast();
   const [filter, setFilter] = useState<'all' | 'audio' | 'video' | 'group'>('all');
 
-  // Force refresh handler
+  // Force refresh handler - aggressive cache clearing
   const handleForceRefresh = () => {
+    // Clear all cache related to call history
+    queryClient.removeQueries({ queryKey: ['/api/call-history'] });
     queryClient.invalidateQueries({ queryKey: ['/api/call-history'] });
     queryClient.refetchQueries({ queryKey: ['/api/call-history'] });
+    // Force component rerender by calling refetch
     refetch();
+    
+    // Also try window reload as fallback
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
   };
 
   // Delete call history mutation
