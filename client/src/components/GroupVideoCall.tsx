@@ -1008,13 +1008,7 @@ export default function GroupVideoCall() {
             </div>
           </div>
           
-          <button
-            onClick={() => setShowGroupManagement(true)}
-            className="p-1.5 rounded-full bg-black/20 hover:bg-[#4a7c59]/30 transition-colors"
-            title="Kelola Grup"
-          >
-            <Settings className="h-4 w-4 text-[#a6c455]" />
-          </button>
+          {/* Group management button removed from video call interface */}
         </div>
       </div>
 
@@ -1221,15 +1215,7 @@ export default function GroupVideoCall() {
         </Button>
       </div>
 
-      {/* Group Management Modal */}
-      {showGroupManagement && activeCall?.groupId && user?.id && (
-        <GroupManagement
-          groupId={activeCall.groupId}
-          groupName={groupName}
-          onClose={() => setShowGroupManagement(false)}
-          currentUserId={user.id}
-        />
-      )}
+      {/* Group Management removed from video call interface */}
     </div>
   );
 }
