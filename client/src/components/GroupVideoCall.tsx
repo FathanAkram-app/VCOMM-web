@@ -39,47 +39,8 @@ const StableParticipantVideo = memo(({
     // Only clean up when component is truly destroyed
   }, [participant.userId, participantVideoRefs]);
   
-  // Attach stream once and keep it stable - prevent duplicate attachments
-  useEffect(() => {
-    if (videoRef.current && stream && stream.active) {
-      const videoElement = videoRef.current;
-      
-      // Check if stream is already attached to prevent duplicate attachment
-      if (videoElement.srcObject === stream) {
-        console.log(`[StableParticipantVideo] Stream already attached for user ${participant.userId}`);
-        return;
-      }
-      
-      console.log(`[StableParticipantVideo] Attaching stream for user ${participant.userId}:`, {
-        streamId: stream.id,
-        active: stream.active,
-        tracks: stream.getTracks().length,
-        videoTracks: stream.getVideoTracks().length
-      });
-      
-      // Set video element properties before attaching stream
-      videoElement.autoplay = true;
-      videoElement.playsInline = true;
-      videoElement.muted = true; // Start muted to avoid autoplay issues
-      videoElement.controls = false;
-      
-      // Attach stream
-      videoElement.srcObject = stream;
-      
-      // Play with proper error handling
-      const attemptPlay = async () => {
-        try {
-          await videoElement.play();
-          console.log(`[StableParticipantVideo] ✅ Video playing for user ${participant.userId}`);
-        } catch (error: any) {
-          console.warn(`[StableParticipantVideo] Play failed for user ${participant.userId}:`, error);
-        }
-      };
-      
-      // Delay play to ensure stream is ready
-      setTimeout(attemptPlay, 100);
-    }
-  }, [stream, participant.userId]);
+  // Stream attachment is handled by main GroupVideoCall component to prevent conflicts
+  // This component only registers the video ref
   
   return (
     <div className="relative bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] rounded-lg overflow-hidden border-2 border-[#4a7c59] aspect-[4/3] min-h-[120px] max-h-[160px]">
@@ -557,6 +518,12 @@ export default function GroupVideoCall() {
       });
       
       if (stream && videoElement && stream.active) {
+        // Check if stream is already attached to prevent duplicate attachments
+        if (videoElement.srcObject === stream) {
+          console.log(`[GroupVideoCall] Stream already attached for user ${userId}`);
+          return;
+        }
+        
         console.log(`[GroupVideoCall] ✅ Attaching stream to video element for user ${userId}`);
         const videoTracks = stream.getVideoTracks();
         const audioTracks = stream.getAudioTracks();
@@ -575,9 +542,11 @@ export default function GroupVideoCall() {
           }))
         });
         
-        // Force clear and re-attach with comprehensive setup
-        videoElement.srcObject = null;
-        videoElement.load();
+        // Set video element properties
+        videoElement.autoplay = true;
+        videoElement.playsInline = true;
+        videoElement.muted = true; // Start muted to avoid autoplay issues
+        videoElement.controls = false;
         
         setTimeout(() => {
           videoElement.srcObject = stream;
