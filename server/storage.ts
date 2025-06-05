@@ -36,6 +36,11 @@ export interface IStorage {
   // Conversation members operations
   addMemberToConversation(data: InsertConversationMember): Promise<ConversationMember>;
   getConversationMembers(conversationId: number): Promise<ConversationMember[]>;
+  getConversationMembership(userId: number, conversationId: number): Promise<ConversationMember | undefined>;
+  addConversationMember(userId: number, conversationId: number, role: string): Promise<ConversationMember>;
+  removeConversationMember(userId: number, conversationId: number): Promise<void>;
+  updateConversationMemberRole(userId: number, conversationId: number, role: string): Promise<ConversationMember>;
+  updateConversation(conversationId: number, data: Partial<Conversation>): Promise<Conversation>;
   
   // Message operations
   createMessage(data: InsertMessage): Promise<Message>;
@@ -199,6 +204,69 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(conversationMembers)
       .where(eq(conversationMembers.conversationId, conversationId));
+  }
+
+  async getConversationMembership(userId: number, conversationId: number): Promise<ConversationMember | undefined> {
+    const [member] = await db
+      .select()
+      .from(conversationMembers)
+      .where(
+        and(
+          eq(conversationMembers.userId, userId),
+          eq(conversationMembers.conversationId, conversationId)
+        )
+      );
+    return member;
+  }
+
+  async addConversationMember(userId: number, conversationId: number, role: string): Promise<ConversationMember> {
+    const [member] = await db
+      .insert(conversationMembers)
+      .values({
+        userId,
+        conversationId,
+        role,
+        joinedAt: new Date()
+      })
+      .returning();
+    return member;
+  }
+
+  async removeConversationMember(userId: number, conversationId: number): Promise<void> {
+    await db
+      .delete(conversationMembers)
+      .where(
+        and(
+          eq(conversationMembers.userId, userId),
+          eq(conversationMembers.conversationId, conversationId)
+        )
+      );
+  }
+
+  async updateConversationMemberRole(userId: number, conversationId: number, role: string): Promise<ConversationMember> {
+    const [member] = await db
+      .update(conversationMembers)
+      .set({ role })
+      .where(
+        and(
+          eq(conversationMembers.userId, userId),
+          eq(conversationMembers.conversationId, conversationId)
+        )
+      )
+      .returning();
+    return member;
+  }
+
+  async updateConversation(conversationId: number, data: Partial<Conversation>): Promise<Conversation> {
+    const [conversation] = await db
+      .update(conversations)
+      .set({
+        ...data,
+        updatedAt: new Date()
+      })
+      .where(eq(conversations.id, conversationId))
+      .returning();
+    return conversation;
   }
   
   // Message operations

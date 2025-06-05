@@ -18,13 +18,10 @@ interface AuthenticatedWebSocket extends WebSocket {
 
 // Type for requests with authenticated user
 interface AuthRequest extends Request {
-  user?: {
-    id: number;
-    claims?: any;
-  };
-  session?: {
+  user?: any;
+  session?: any & {
     user?: any;
-  }
+  };
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {

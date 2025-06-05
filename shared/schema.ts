@@ -58,6 +58,7 @@ export const conversationMembers = pgTable("conversation_members", {
   id: serial("id").primaryKey(),
   conversationId: integer("conversation_id").references(() => conversations.id).notNull(),
   userId: integer("user_id").references(() => users.id).notNull(),
+  role: varchar("role").default("member"), // 'admin' or 'member'
   joinedAt: timestamp("joined_at").defaultNow(),
 });
 

@@ -208,10 +208,20 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
   // Promote/demote member mutation
   const changeRoleMutation = useMutation({
     mutationFn: async ({ userId, role }: { userId: number; role: 'admin' | 'member' }) => {
-      return await apiRequest(`/api/groups/${groupId}/members/${userId}/role`, {
+      const response = await fetch(`/api/groups/${groupId}/members/${userId}/role`, {
         method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
         body: JSON.stringify({ role })
       });
+      
+      if (!response.ok) {
+        throw new Error(`${response.status}: ${response.statusText}`);
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       toast({
