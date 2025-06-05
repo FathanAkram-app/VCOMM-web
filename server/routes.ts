@@ -1028,7 +1028,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        // Handle WebRTC ICE candidate
+        // Handle WebRTC ICE candidate (both 1-on-1 and group calls)
         if (data.type === 'webrtc_ice_candidate' && ws.userId) {
           const { callId, candidate, targetUserId, fromUserId } = data.payload || data;
           console.log(`[WebRTC] Relaying ICE candidate for call ${callId} from ${fromUserId || ws.userId} to ${targetUserId || 'all'}`);
@@ -1045,9 +1045,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   fromUserId: fromUserId || ws.userId
                 }
               }));
+              console.log(`[WebRTC] ICE candidate sent to user ${targetUserId}`);
+            } else {
+              console.log(`[WebRTC] Target user ${targetUserId} not found or not connected`);
             }
           } else {
             // Broadcast to all participants (fallback for 1-on-1 calls)
+            let sentCount = 0;
             clients.forEach((client, userId) => {
               if (userId !== ws.userId && client.readyState === client.OPEN) {
                 client.send(JSON.stringify({
@@ -1055,8 +1059,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   callId,
                   candidate
                 }));
+                sentCount++;
               }
             });
+            console.log(`[WebRTC] ICE candidate broadcast to ${sentCount} participants`);
           }
         }
 

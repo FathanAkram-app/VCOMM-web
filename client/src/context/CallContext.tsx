@@ -452,10 +452,18 @@ export function CallProvider({ children }: { children: ReactNode }) {
             handleWebRTCIceCandidate(message.payload || message);
             break;
           case 'group_webrtc_offer':
-            handleGroupWebRTCOffer(message.payload || message);
+            // Forward group WebRTC offer to GroupVideoCall component
+            console.log('[CallContext] Forwarding group WebRTC offer:', message.payload || message);
+            window.dispatchEvent(new CustomEvent('group-webrtc-offer', {
+              detail: message.payload || message
+            }));
             break;
           case 'group_webrtc_answer':
-            handleGroupWebRTCAnswer(message.payload || message);
+            // Forward group WebRTC answer to GroupVideoCall component
+            console.log('[CallContext] Forwarding group WebRTC answer:', message.payload || message);
+            window.dispatchEvent(new CustomEvent('group-webrtc-answer', {
+              detail: message.payload || message
+            }));
             break;
         }
       } catch (error) {
