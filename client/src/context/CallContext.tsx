@@ -254,6 +254,11 @@ export function CallProvider({ children }: { children: ReactNode }) {
       clearInterval(waitingToneInterval);
     }
     
+    // Clear any existing global waiting tone interval
+    if ((window as any).__waitingToneIntervalId) {
+      clearInterval((window as any).__waitingToneIntervalId);
+    }
+    
     console.log('[CallContext] Starting waiting tone sequence');
     playWaitingTone(); // Play immediately
     
@@ -263,15 +268,40 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }, 2400);
     
     setWaitingToneInterval(interval);
+    // Store globally for emergency cleanup
+    (window as any).__waitingToneIntervalId = interval;
   };
 
   // Function to stop waiting tone
   const stopWaitingTone = () => {
+    console.log('[CallContext] Stopping waiting tone - comprehensive cleanup');
+    
+    // Clear the main waiting tone interval
     if (waitingToneInterval) {
-      console.log('[CallContext] Stopping waiting tone');
+      console.log('[CallContext] Clearing waiting tone interval');
       clearInterval(waitingToneInterval);
       setWaitingToneInterval(null);
     }
+    
+    // Force close any audio contexts that might be playing waiting tones
+    if (audioContext) {
+      try {
+        console.log('[CallContext] Force closing audio context for waiting tone');
+        audioContext.close();
+        setAudioContext(null);
+      } catch (e) {
+        console.log('[CallContext] Audio context already closed or error:', e);
+      }
+    }
+    
+    // Store interval ID when creating waiting tone to clear it specifically
+    if ((window as any).__waitingToneIntervalId) {
+      console.log('[CallContext] Clearing stored waiting tone interval');
+      clearInterval((window as any).__waitingToneIntervalId);
+      (window as any).__waitingToneIntervalId = null;
+    }
+    
+    console.log('[CallContext] ✅ Waiting tone cleanup completed');
   };
 
   // Function to fetch participant names asynchronously
@@ -1145,8 +1175,27 @@ export function CallProvider({ children }: { children: ReactNode }) {
     console.log('[CallContext] Current activeCall status:', activeCall?.status);
     console.log('[CallContext] Current incomingCall status:', incomingCall?.status);
     
-    // Stop waiting tone immediately
+    // FORCE STOP ALL WAITING TONES AND RINGTONES IMMEDIATELY
+    console.log('[CallContext] FORCE STOPPING ALL RINGTONES - call ended');
     stopWaitingTone();
+    
+    // Additional comprehensive audio cleanup for call ended
+    if (waitingToneInterval) {
+      clearInterval(waitingToneInterval);
+      setWaitingToneInterval(null);
+      console.log('[CallContext] ✅ Waiting tone interval cleared on call ended');
+    }
+    
+    // Stop any running audio contexts or oscillators
+    if (audioContext) {
+      try {
+        audioContext.close();
+        setAudioContext(null);
+        console.log('[CallContext] ✅ Audio context closed on call ended');
+      } catch (e) {
+        console.log('[CallContext] Audio context already closed');
+      }
+    }
     
     // Stop ALL ringtone sources immediately
     console.log('[CallContext] Stopping ALL ringtone sources - call ended');
