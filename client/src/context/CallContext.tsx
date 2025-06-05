@@ -209,11 +209,11 @@ export function CallProvider({ children }: { children: ReactNode }) {
   // Queue for WebRTC offers that arrive before incoming call is created
   const pendingOffers = useRef<any[]>([]);
 
-  // Function to aggressively stop all ringtones
+  // Function to aggressively stop all ringtones (using waiting tone pattern)
   const stopAllRingtones = () => {
-    console.log('[CallContext] 🔇 STOPPING ALL RINGTONES AGGRESSIVELY');
+    console.log('[CallContext] 🔇 STOPPING ALL RINGTONES - comprehensive cleanup');
     
-    // Stop HTML5 ringtone audio
+    // Stop HTML5 ringtone audio - same pattern as waiting tone
     if (ringtoneAudio) {
       try {
         console.log('[CallContext] Stopping HTML5 ringtone audio');
@@ -224,18 +224,38 @@ export function CallProvider({ children }: { children: ReactNode }) {
         ringtoneAudio.src = '';
         ringtoneAudio.srcObject = null;
         ringtoneAudio.load();
-        console.log('[CallContext] ✅ HTML5 ringtone stopped');
+        setRingtoneAudio(null);
+        console.log('[CallContext] ✅ HTML5 ringtone stopped and cleared');
       } catch (e) {
         console.log('[CallContext] Error stopping HTML5 ringtone:', e);
       }
     }
     
-    // Find and stop ALL audio elements with ringtone sources
+    // Stop current global ringtone reference (same pattern as oscillator)
+    if ((window as any).__currentRingtone) {
+      try {
+        console.log('[CallContext] Force stopping current global ringtone');
+        (window as any).__currentRingtone.pause();
+        (window as any).__currentRingtone.currentTime = 0;
+        (window as any).__currentRingtone.volume = 0;
+        (window as any).__currentRingtone.muted = true;
+        (window as any).__currentRingtone.src = '';
+        (window as any).__currentRingtone.load();
+        (window as any).__currentRingtone = null;
+        console.log('[CallContext] ✅ Global ringtone reference stopped');
+      } catch (e) {
+        console.log('[CallContext] Global ringtone already stopped or error:', e);
+      }
+    }
+    
+    // Find and stop ALL audio elements playing ringtones
     try {
       const audioElements = document.querySelectorAll('audio');
+      let stoppedCount = 0;
       audioElements.forEach((audio: HTMLAudioElement, index: number) => {
-        if (audio.src && (audio.src.includes('ringtone') || audio.src.includes('ring') || audio.currentTime > 0)) {
-          console.log(`[CallContext] Stopping audio element ${index}:`, audio.src);
+        // Stop any audio that's currently playing or has ringtone-related source
+        if (!audio.paused || (audio.src && (audio.src.includes('ringtone') || audio.src.includes('ring')))) {
+          console.log(`[CallContext] Force stopping audio element ${index}:`, audio.src || 'no src');
           audio.pause();
           audio.currentTime = 0;
           audio.volume = 0;
@@ -243,23 +263,44 @@ export function CallProvider({ children }: { children: ReactNode }) {
           audio.src = '';
           audio.srcObject = null;
           audio.load();
+          stoppedCount++;
         }
       });
-      console.log('[CallContext] ✅ All potential ringtone audio elements stopped');
+      console.log(`[CallContext] ✅ Stopped ${stoppedCount} audio elements`);
     } catch (e) {
       console.log('[CallContext] Error stopping audio elements:', e);
     }
     
-    // Stop any Web Audio API ringtone sources
-    try {
-      if ((window as any).__ringtoneSource) {
+    // Stop Web Audio API ringtone gain node (same pattern as waiting tone)
+    if ((window as any).__currentRingtoneGainNode) {
+      try {
+        console.log('[CallContext] Force disconnecting current ringtone gain node');
+        (window as any).__currentRingtoneGainNode.disconnect();
+        (window as any).__currentRingtoneGainNode = null;
+        console.log('[CallContext] ✅ Ringtone gain node disconnected');
+      } catch (e) {
+        console.log('[CallContext] Ringtone gain node already disconnected or error:', e);
+      }
+    }
+    
+    // Stop Web Audio API ringtone source (same pattern as waiting tone)
+    if ((window as any).__ringtoneSource) {
+      try {
+        console.log('[CallContext] Force stopping ringtone source');
         (window as any).__ringtoneSource.stop();
         (window as any).__ringtoneSource.disconnect();
         (window as any).__ringtoneSource = null;
-        console.log('[CallContext] ✅ Web Audio API ringtone source stopped');
+        console.log('[CallContext] ✅ Ringtone source stopped');
+      } catch (e) {
+        console.log('[CallContext] Ringtone source already stopped or error:', e);
       }
-    } catch (e) {
-      console.log('[CallContext] Error stopping Web Audio API ringtone:', e);
+    }
+    
+    // Clear any ringtone-related intervals (same pattern as waiting tone)
+    if ((window as any).__ringtoneIntervalId) {
+      console.log('[CallContext] Clearing stored ringtone interval');
+      clearInterval((window as any).__ringtoneIntervalId);
+      (window as any).__ringtoneIntervalId = null;
     }
     
     // Clear any ringtone-related timeouts
@@ -269,7 +310,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       console.log('[CallContext] ✅ Ringtone timeout cleared');
     }
     
-    console.log('[CallContext] ✅ ALL RINGTONES STOPPED');
+    console.log('[CallContext] ✅ RINGTONE CLEANUP COMPLETED');
   };
 
   // Function to create waiting tone (tuuutt sound)
@@ -684,12 +725,14 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const handleIncomingCall = (message: any) => {
     console.log('[CallContext] Incoming call from:', message.fromUserName);
     
-    // Play ringtone for incoming call with advanced autoplay bypass
-    // ENABLED: Ringtone functionality enabled with proper cleanup
+    // Play ringtone for incoming call with global reference pattern (same as waiting tone)
     const playRingtone = async () => {
       console.log('[CallContext] 🔊 Starting ringtone for incoming call');
       try {
         if (ringtoneAudio) {
+          // Store global reference for aggressive cleanup (same pattern as waiting tone)
+          (window as any).__currentRingtone = ringtoneAudio;
+          
           ringtoneAudio.currentTime = 0;
           console.log('[CallContext] Attempting to play ringtone...');
           
@@ -769,8 +812,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
         source.loop = true;
         source.start();
         
-        // Store source for cleanup
+        // Store source for cleanup (same pattern as waiting tone oscillator)
         (window as any).__ringtoneSource = source;
+        (window as any).__currentRingtoneGainNode = gainNode;
         
         console.log('[CallContext] ✅ Web Audio API ringtone playing');
         return;
