@@ -436,13 +436,29 @@ export default function GroupVideoCall() {
           // Handle incoming remote stream
           peerConnection.ontrack = (event) => {
             console.log('[GroupVideoCall] Received remote stream from user:', fromUserId);
+            console.log('[GroupVideoCall] Remote stream tracks:', event.streams[0].getTracks().length);
+            console.log('[GroupVideoCall] Track details:', event.streams[0].getTracks().map(t => `${t.kind}:${t.enabled}`));
+            
             const [remoteStream] = event.streams;
             
             if (remoteStream && remoteStream.active) {
-              setRemoteStreams(prev => ({
-                ...prev,
-                [fromUserId]: remoteStream
-              }));
+              console.log('[GroupVideoCall] Setting remote stream for user:', fromUserId);
+              setRemoteStreams(prev => {
+                const updated = { ...prev, [fromUserId]: remoteStream };
+                console.log('[GroupVideoCall] Updated remoteStreams keys:', Object.keys(updated));
+                return updated;
+              });
+              
+              // Update participants with new stream immediately
+              setParticipants(prevParticipants => {
+                const updated = prevParticipants.map(p => 
+                  p.userId === fromUserId 
+                    ? { ...p, stream: remoteStream }
+                    : p
+                );
+                console.log('[GroupVideoCall] Updated participants with remote stream for user:', fromUserId);
+                return updated;
+              });
               
               setTimeout(() => {
                 const videoElement = participantVideoRefs.current[fromUserId];
