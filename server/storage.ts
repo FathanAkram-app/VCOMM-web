@@ -57,7 +57,7 @@ export interface IStorage {
   // Call history operations
   getCallHistory(userId: number): Promise<any[]>;
   addCallHistory(callData: any): Promise<void>;
-  updateCallHistoryStatus(callId: string, status: string): Promise<void>;
+  updateCallStatus(callId: string, status: string): Promise<void>;
   deleteCallHistory(callId: number, userId: number): Promise<void>;
   
   // Message operations for delete, reply, and forward
@@ -612,7 +612,20 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getCallHistory(callId: string): Promise<any | null> {
+  // Update call status method
+  async updateCallStatus(callId: string, status: string): Promise<void> {
+    try {
+      await db
+        .update(callHistory)
+        .set({ status })
+        .where(eq(callHistory.callId, callId));
+      console.log(`[Storage] Updated call status for ${callId} to ${status}`);
+    } catch (error) {
+      console.error(`Error updating call status for ${callId}:`, error);
+    }
+  }
+
+  async getCallHistoryById(callId: string): Promise<any | null> {
     try {
       const [call] = await db
         .select()

@@ -1020,7 +1020,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`[Call] User ${ws.userId} accepted call ${callId}`);
           
           // Update call history status to accepted
-          await storage.updateCallHistoryStatus(callId, 'accepted');
+          await storage.updateCallStatus(callId, 'accepted');
           
           const targetClient = clients.get(toUserId);
           if (targetClient && targetClient.readyState === targetClient.OPEN) {
@@ -1053,7 +1053,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`[Call] User ${ws.userId} rejected call ${callId}`);
           
           // Update call history status to rejected
-          await storage.updateCallHistoryStatus(callId, 'rejected');
+          await storage.updateCallStatus(callId, 'rejected');
           
           const targetClient = clients.get(toUserId);
           if (targetClient && targetClient.readyState === targetClient.OPEN) {
