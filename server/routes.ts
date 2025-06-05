@@ -727,6 +727,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete call history entry
+  app.delete('/api/call-history/:id', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.session?.user?.id;
+      const callId = parseInt(req.params.id);
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      if (isNaN(callId)) {
+        return res.status(400).json({ message: "Invalid call ID" });
+      }
+      
+      await storage.deleteCallHistory(callId, userId);
+      res.json({ message: "Call history deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting call history:", error);
+      res.status(500).json({ message: "Failed to delete call history" });
+    }
+  });
+
   // Users route
   app.get('/api/users', isAuthenticated, async (_req, res) => {
     try {

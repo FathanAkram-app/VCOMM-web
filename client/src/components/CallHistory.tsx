@@ -27,11 +27,13 @@ interface CallHistoryItem {
   status: string;
   duration: number;
   timestamp: string;
+  startTime?: string;
+  participantNames?: string[];
 }
 
 export default function CallHistory({ onBack }: CallHistoryProps) {
   const { user } = useAuth();
-  const { startVideoCall, startAudioCall, startGroupCall } = useCall();
+  const { startCall, startGroupCall } = useCall();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [filter, setFilter] = useState<'all' | 'audio' | 'video' | 'group'>('all');
@@ -39,9 +41,14 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
   // Delete call history mutation
   const deleteCallMutation = useMutation({
     mutationFn: async (callId: number) => {
-      await apiRequest(`/api/call-history/${callId}`, {
+      const response = await fetch(`/api/call-history/${callId}`, {
         method: 'DELETE',
+        credentials: 'include',
       });
+      if (!response.ok) {
+        throw new Error('Failed to delete call history');
+      }
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/call-history'] });
@@ -350,6 +357,38 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
                       )}
                     </div>
                   )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center space-x-2 ml-4">
+                  {/* Callback Button */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleCallback(call)}
+                    className="p-2 h-8 w-8 text-green-500 hover:text-green-400 hover:bg-green-500/10"
+                    title="Call back"
+                  >
+                    {call.callType?.includes('video') ? (
+                      <VideoIcon className="w-4 h-4" />
+                    ) : call.callType?.startsWith('group_') ? (
+                      <Users className="w-4 h-4" />
+                    ) : (
+                      <Phone className="w-4 h-4" />
+                    )}
+                  </Button>
+
+                  {/* Delete Button */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => deleteCallMutation.mutate(call.id)}
+                    disabled={deleteCallMutation.isPending}
+                    className="p-2 h-8 w-8 text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                    title="Delete call history"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
             ))}

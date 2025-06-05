@@ -492,6 +492,28 @@ export class DatabaseStorage implements IStorage {
       );
   }
 
+  // Delete call history entry
+  async deleteCallHistory(callId: number, userId: number): Promise<void> {
+    try {
+      // Only allow users to delete their own call history entries
+      await db
+        .delete(callHistory)
+        .where(
+          and(
+            eq(callHistory.id, callId),
+            or(
+              eq(callHistory.initiatorId, userId),
+              sql`${callHistory.participants} @> ARRAY[${userId.toString()}]::text[]`
+            )
+          )
+        );
+      console.log(`[Storage] Deleted call history entry ${callId} for user ${userId}`);
+    } catch (error) {
+      console.error(`Error deleting call history ${callId}:`, error);
+      throw error;
+    }
+  }
+
   // Call history using database storage
   async getCallHistory(userId: number): Promise<any[]> {
     try {
