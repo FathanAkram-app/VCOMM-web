@@ -685,7 +685,7 @@ export default function Chat() {
                       onSelectChat={handleSelectChat}
                       onChatDeleted={async (id, isGroup) => {
                         try {
-                          const response = await apiRequest('DELETE', `/api/conversations/${id}`);
+                          const response = await apiRequest('POST', `/api/conversations/${id}/delete`);
                           
                           if (response.ok) {
                             console.log(`Chat ${id} berhasil dihapus`);

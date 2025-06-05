@@ -621,19 +621,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Delete conversation endpoint
-  app.delete('/api/conversations/:id', async (req, res) => {
-    console.log('[DEBUG] DELETE endpoint reached');
-    
-    // Check authentication manually first
-    if (!req.session?.user?.id) {
-      console.log('[DEBUG] No authentication found in session');
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+  // Delete conversation endpoint (changed to POST to handle session properly)
+  app.post('/api/conversations/:id/delete', isAuthenticated, async (req: AuthRequest, res) => {
+    console.log('[DEBUG] DELETE (POST) endpoint reached');
     
     try {
       const conversationId = parseInt(req.params.id);
-      const userId = req.session.user.id;
+      const userId = req.session?.user?.id;
+      
+      if (!userId) {
+        console.log('[DEBUG] No user ID in session');
+        return res.status(401).json({ message: "Authentication required" });
+      }
       
       console.log(`[API] User ${userId} attempting to delete conversation ${conversationId}`);
       
