@@ -1861,86 +1861,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     console.log('[CallContext] Accepting call');
     
-    // IMMEDIATE ringtone stop - execute before anything else
+    // IMMEDIATE ringtone stop - use the comprehensive stopAllRingtones function
     console.log('[CallContext] 🔇 FORCE STOPPING ALL RINGTONES - Call accepted');
-    
-    // Method 1: HTML5 Audio force stop
-    if (ringtoneAudio) {
-      try {
-        console.log('[CallContext] Stopping HTML5 ringtone - current state:', {
-          paused: ringtoneAudio.paused,
-          currentTime: ringtoneAudio.currentTime,
-          volume: ringtoneAudio.volume,
-          muted: ringtoneAudio.muted
-        });
-        ringtoneAudio.pause();
-        ringtoneAudio.currentTime = 0;
-        ringtoneAudio.volume = 0;
-        ringtoneAudio.muted = true;
-        ringtoneAudio.src = '';
-        ringtoneAudio.srcObject = null;
-        ringtoneAudio.load();
-        // Remove from DOM completely
-        if (ringtoneAudio.parentNode) {
-          ringtoneAudio.parentNode.removeChild(ringtoneAudio);
-        }
-        setRingtoneAudio(null);
-        console.log('[CallContext] ✅ HTML5 ringtone completely removed');
-      } catch (e) {
-        console.log('[CallContext] HTML5 stop error:', e);
-      }
-    } else {
-      console.log('[CallContext] ❌ No HTML5 ringtone audio object found');
-    }
-    
-    // Method 2: Stop all audio contexts globally (aggressive approach)
-    try {
-      console.log('[CallContext] 🔇 Force stopping ALL Web Audio API contexts');
-      
-      // Stop any stored audio contexts
-      const audioContexts = (window as any).webAudioContexts || [];
-      audioContexts.forEach((ctx: AudioContext, index: number) => {
-        try {
-          ctx.suspend();
-          ctx.close();
-          console.log(`[CallContext] ✅ Closed AudioContext ${index}`);
-        } catch (e) {
-          console.log(`[CallContext] Failed to close AudioContext ${index}:`, e);
-        }
-      });
-      
-      // Clear the stored contexts
-      (window as any).webAudioContexts = [];
-      
-      // Try to stop any global audio sources
-      if ((window as any).globalAudioSource) {
-        try {
-          (window as any).globalAudioSource.stop();
-          (window as any).globalAudioSource.disconnect();
-          delete (window as any).globalAudioSource;
-          console.log('[CallContext] ✅ Global audio source stopped');
-        } catch (e) {
-          console.log('[CallContext] Error stopping global audio source:', e);
-        }
-      }
-      
-    } catch (e) {
-      console.log('[CallContext] Audio context suspend error:', e);
-    }
-    
-    // Method 3: Stop all audio elements on page
-    try {
-      const audioElements = document.querySelectorAll('audio');
-      audioElements.forEach((audio: HTMLAudioElement) => {
-        audio.pause();
-        audio.currentTime = 0;
-        audio.volume = 0;
-        audio.muted = true;
-      });
-      console.log('[CallContext] ✅ All page audio elements stopped');
-    } catch (e) {
-      console.log('[CallContext] Global audio stop error:', e);
-    }
+    stopAllRingtones();
 
     try {
       // Enhanced mobile-friendly media constraints for accepting calls
