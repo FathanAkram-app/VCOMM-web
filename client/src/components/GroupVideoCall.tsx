@@ -842,73 +842,14 @@ export default function GroupVideoCall() {
                   </div>
                 )}
 
-                {/* Current Page Participants */}
+                {/* Current Page Participants - Using StableParticipantVideo */}
                 {currentPageParticipants.map(participant => (
-                  <div 
-                    key={participant.userId} 
-                    className="relative bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] rounded-lg overflow-hidden border-2 border-[#7d9f7d] aspect-[4/3] min-h-[120px] max-h-[160px]"
-                  >
-                    {/* Participant video display */}
-                    <div className="w-full h-full relative bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] overflow-hidden">
-                      {/* Actual video element for remote stream */}
-                      <video
-                        ref={(el) => {
-                          if (el) {
-                            participantVideoRefs.current[participant.userId] = el;
-                            // Let useEffect handle stream attachment to avoid conflicts
-                          }
-                        }}
-                        className="w-full h-full object-cover"
-                        autoPlay
-                        playsInline
-                        muted={false}
-                        style={{ 
-                          display: 'block'
-                        }}
-                      />
-                      
-                      {/* Fallback avatar when no video stream */}
-                      {!remoteStreams[participant.userId] && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#2d4a2d] via-[#1e3a1e] to-[#0f1f0f]">
-                          <Avatar className="h-20 w-20 bg-[#7d9f7d] border-3 border-[#a6c455] shadow-lg">
-                            <AvatarFallback className="bg-gradient-to-br from-[#7d9f7d] to-[#5d7f5d] text-white text-xl font-bold">
-                              {participant.userName.substring(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                        </div>
-                      )}
-                      
-
-                    </div>
-                    
-                    <div className="absolute bottom-1 left-1 bg-black/80 px-2 py-1 rounded border border-[#7d9f7d]/50">
-                      <p className="text-[#a6c455] text-xs font-medium">{participant.userName}</p>
-                    </div>
-                    
-                    {/* Maximize button */}
-                    <button
-                      onClick={() => setIsMaximized(true)}
-                      className="absolute top-1 right-1 bg-black/70 p-1 rounded hover:bg-[#4a7c59]/30 transition-colors border border-[#4a7c59]/30"
-                    >
-                      <svg className="w-3 h-3 text-[#a6c455]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                      </svg>
-                    </button>
-                    
-                    {/* Participant controls indicator */}
-                    <div className="absolute bottom-1 right-1 flex space-x-1">
-                      <div className="w-4 h-4 bg-black/60 rounded-full flex items-center justify-center border border-[#7d9f7d]/30">
-                        <svg className="w-2 h-2 text-[#a6c455]" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.814L4.75 13.5H2a1 1 0 01-1-1v-5a1 1 0 011-1h2.75l3.633-3.314a1 1 0 01.617-.186z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                      <div className="w-4 h-4 bg-black/60 rounded-full flex items-center justify-center border border-[#7d9f7d]/30">
-                        <svg className="w-2 h-2 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
+                  <StableParticipantVideo
+                    key={participant.userId}
+                    participant={participant}
+                    stream={remoteStreams[participant.userId]}
+                    onMaximize={handleMaximizeParticipant}
+                  />
                 ))}
 
                 {/* Fill remaining slots for current page */}
@@ -966,35 +907,41 @@ export default function GroupVideoCall() {
             )}
           </>
         ) : (
-          /* Maximized Mode - Full Screen Current User */
+          /* Maximized Mode - Full Screen Selected Participant */
           <div className="w-full h-full relative">
-            {user && activeCall && (
+            {maximizedParticipant && (
               <div className="relative bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] rounded-lg overflow-hidden border-2 border-[#4a7c59] h-full w-full">
-                {/* Video element - always present in maximized mode */}
-                <video
-                  ref={localVideoRef}
-                  autoPlay
-                  muted
-                  playsInline
-                  className="w-full h-full object-cover"
-                  style={{ display: isVideoEnabled ? 'block' : 'none' }}
-                />
-                {/* Avatar overlay when video is disabled */}
-                {!isVideoEnabled && (
+                {/* Video element for maximized participant */}
+                {remoteStreams[maximizedParticipant.userId] ? (
+                  <video
+                    ref={(el) => {
+                      if (el && remoteStreams[maximizedParticipant.userId]) {
+                        el.srcObject = remoteStreams[maximizedParticipant.userId];
+                      }
+                    }}
+                    autoPlay
+                    playsInline
+                    muted={false}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  /* Avatar fallback when no video stream */
                   <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-[#2d4a2d] to-[#1e3a1e]">
-                    <Avatar className="h-32 w-32 bg-[#4a7c59] border-4 border-[#a6c455]">
-                      <AvatarFallback className="bg-[#4a7c59] text-white text-4xl font-bold">
-                        {(user.callsign || user.fullName || 'A').substring(0, 2).toUpperCase()}
+                    <Avatar className="h-32 w-32 bg-[#7d9f7d] border-4 border-[#a6c455]">
+                      <AvatarFallback className="bg-gradient-to-br from-[#7d9f7d] to-[#5d7f5d] text-white text-4xl font-bold">
+                        {maximizedParticipant.userName.substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                   </div>
                 )}
-                <div className="absolute bottom-4 left-4 bg-black/80 px-4 py-2 rounded-lg border border-[#4a7c59]/50">
-                  <p className="text-[#a6c455] text-lg font-bold">Anda</p>
+                
+                <div className="absolute bottom-4 left-4 bg-black/80 px-4 py-2 rounded-lg border border-[#7d9f7d]/50">
+                  <p className="text-[#a6c455] text-lg font-bold">{maximizedParticipant.userName}</p>
                 </div>
+                
                 {/* Toggle minimize button */}
                 <button
-                  onClick={() => setIsMaximized(false)}
+                  onClick={handleMinimize}
                   className="absolute top-3 right-3 bg-black/70 p-2 rounded-full hover:bg-[#4a7c59]/30 transition-colors border border-[#4a7c59]/50"
                 >
                   <svg className="w-5 h-5 text-[#a6c455]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
