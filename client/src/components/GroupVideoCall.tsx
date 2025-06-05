@@ -454,29 +454,36 @@ export default function GroupVideoCall() {
       
       if (stream && videoElement && stream.active) {
         console.log(`[GroupVideoCall] Attaching stream to video element for user ${userId}`);
+        console.log(`[GroupVideoCall] Video element exists:`, !!videoElement);
+        console.log(`[GroupVideoCall] Stream active:`, stream.active);
+        console.log(`[GroupVideoCall] Current srcObject:`, videoElement.srcObject);
         
-        // Prevent multiple attachments
-        if (videoElement.srcObject !== stream) {
-          videoElement.srcObject = stream;
-          videoElement.autoplay = true;
-          videoElement.playsInline = true;
-          videoElement.muted = false;
-          
-          // Try to play with fallback
-          const playPromise = videoElement.play();
-          if (playPromise !== undefined) {
-            playPromise.catch((error: any) => {
-              console.warn(`[GroupVideoCall] Autoplay failed for user ${userId}, trying muted play`);
-              videoElement.muted = true;
-              videoElement.play().catch((muteErr: any) => {
-                console.warn(`[GroupVideoCall] Muted play failed for user ${userId}:`, muteErr);
-              });
+        // Always re-attach stream to ensure it's connected properly
+        videoElement.srcObject = stream;
+        videoElement.autoplay = true;
+        videoElement.playsInline = true;
+        videoElement.muted = false;
+        
+        // Try to play with fallback
+        const playPromise = videoElement.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((error: any) => {
+            console.warn(`[GroupVideoCall] Autoplay failed for user ${userId}, trying muted play`);
+            videoElement.muted = true;
+            videoElement.play().catch((muteErr: any) => {
+              console.warn(`[GroupVideoCall] Muted play failed for user ${userId}:`, muteErr);
             });
-          }
+          });
         }
+      } else {
+        console.log(`[GroupVideoCall] Cannot attach stream for user ${userId}:`, {
+          hasStream: !!stream,
+          hasVideoElement: !!videoElement,
+          streamActive: stream?.active
+        });
       }
     });
-  }, [remoteStreams]);
+  }, [remoteStreams, isMaximized, maximizedParticipant]);
 
   // Handle incoming WebRTC signals for group video call
   useEffect(() => {
@@ -685,7 +692,31 @@ export default function GroupVideoCall() {
             if (localStream && activeCall) {
               // Force re-create connection for this user
               const retryParticipants = [{ userId: fromUserId, userName: '', audioEnabled: true, videoEnabled: true }];
-              createWebRTCConnections(retryParticipants);
+              // Re-create the peer connection manually
+              if (!peerConnections.current[fromUserId] && !createdConnections.current.has(fromUserId)) {
+                console.log('[GroupVideoCall] Re-creating peer connection for user:', fromUserId);
+                createdConnections.current.add(fromUserId);
+                
+                const peerConnection = new RTCPeerConnection({
+                  iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' }
+                  ],
+                  iceCandidatePoolSize: 10,
+                  bundlePolicy: 'max-bundle',
+                  rtcpMuxPolicy: 'require',
+                  iceTransportPolicy: 'all'
+                });
+
+                // Add local stream tracks
+                localStream.getTracks().forEach(track => {
+                  console.log('[GroupVideoCall] Adding local track to retried peer connection:', track.kind);
+                  peerConnection.addTrack(track, localStream);
+                });
+
+                peerConnections.current[fromUserId] = peerConnection;
+              }
             }
           }, 1000);
         }
@@ -858,9 +889,29 @@ export default function GroupVideoCall() {
 
   // Handle minimize back to grid
   const handleMinimize = useCallback(() => {
+    console.log('[GroupVideoCall] Minimizing - preserving video streams');
     setIsMaximized(false);
     setMaximizedParticipant(null);
-  }, []);
+    
+    // Force re-attachment of all remote streams after minimize
+    setTimeout(() => {
+      console.log('[GroupVideoCall] Re-attaching streams after minimize');
+      Object.keys(remoteStreams).forEach(userIdStr => {
+        const userId = parseInt(userIdStr);
+        const stream = remoteStreams[userId];
+        const videoElement = participantVideoRefs.current[userId];
+        
+        if (stream && videoElement && stream.active) {
+          console.log(`[GroupVideoCall] Force re-attaching stream for user ${userId} after minimize`);
+          videoElement.srcObject = null;
+          setTimeout(() => {
+            videoElement.srcObject = stream;
+            videoElement.play().catch(console.warn);
+          }, 100);
+        }
+      });
+    }, 200);
+  }, [remoteStreams]);
 
   if (!activeCall || !user) {
     return null;
