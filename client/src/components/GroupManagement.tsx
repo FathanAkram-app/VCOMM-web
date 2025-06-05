@@ -90,8 +90,12 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
         title: "Berhasil",
         description: "Nama grup berhasil diubah",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/group-info', groupId] });
+      // Invalidate all related caches
+      queryClient.invalidateQueries({ queryKey: [`/api/group-info/${groupId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/group-members/${groupId}`] });
       queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/rooms'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/conversations/${groupId}`] });
       setIsEditingName(false);
     },
     onError: () => {
@@ -126,7 +130,12 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
         title: "Berhasil",
         description: "Deskripsi grup berhasil diubah",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/group-info', groupId] });
+      // Invalidate all related caches
+      queryClient.invalidateQueries({ queryKey: [`/api/group-info/${groupId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/group-members/${groupId}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/rooms'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/conversations/${groupId}`] });
       setIsEditingDescription(false);
     },
     onError: () => {
@@ -161,8 +170,13 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
         title: "Berhasil",
         description: "Anggota berhasil ditambahkan",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/group-members', groupId] });
-      queryClient.invalidateQueries({ queryKey: ['/api/group-info', groupId] });
+      // Invalidate all related caches for real-time updates
+      queryClient.invalidateQueries({ queryKey: [`/api/group-members/${groupId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/group-info/${groupId}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/rooms'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/conversations/${groupId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/conversations/${groupId}/members`] });
       setSelectedUsers([]);
     },
     onError: () => {
@@ -193,8 +207,13 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
         title: "Berhasil",
         description: "Anggota berhasil dikeluarkan",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/group-members', groupId] });
-      queryClient.invalidateQueries({ queryKey: ['/api/group-info', groupId] });
+      // Invalidate all related caches for real-time updates
+      queryClient.invalidateQueries({ queryKey: [`/api/group-members/${groupId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/group-info/${groupId}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/rooms'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/conversations/${groupId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/conversations/${groupId}/members`] });
     },
     onError: () => {
       toast({
@@ -228,7 +247,13 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
         title: "Berhasil",
         description: "Role anggota berhasil diubah",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/group-members', groupId] });
+      // Invalidate all related caches for real-time updates
+      queryClient.invalidateQueries({ queryKey: [`/api/group-members/${groupId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/group-info/${groupId}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/rooms'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/conversations/${groupId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/conversations/${groupId}/members`] });
     },
     onError: () => {
       toast({

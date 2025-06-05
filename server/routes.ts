@@ -648,6 +648,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Store active group calls and their participants
   const activeGroupCalls = new Map<string, Set<number>>();
   
+  // Helper function to broadcast group updates to all group members
+  const broadcastGroupUpdate = async (groupId: number, updateType: string, data: any) => {
+    try {
+      const members = await storage.getConversationMembers(groupId);
+      for (const member of members) {
+        const client = clients.get(member.userId);
+        if (client && client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({
+            type: 'group_update',
+            payload: {
+              groupId,
+              updateType,
+              data
+            }
+          }));
+        }
+      }
+      console.log(`[Group Update] Broadcasted ${updateType} to ${members.length} members of group ${groupId}`);
+    } catch (error) {
+      console.error(`[Group Update] Error broadcasting ${updateType}:`, error);
+    }
+  };
+  
   wss.on('connection', (ws: AuthenticatedWebSocket, req) => {
     console.log("WebSocket connection received");
     
