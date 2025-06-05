@@ -615,9 +615,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/conversations/:id', isAuthenticated, async (req: AuthRequest, res) => {
     try {
       const conversationId = parseInt(req.params.id);
+      console.log('[DEBUG DELETE] Full session object:', JSON.stringify(req.session, null, 2));
+      console.log('[DEBUG DELETE] req.session?.user:', req.session?.user);
+      console.log('[DEBUG DELETE] req.user:', req.user);
+      
       const userId = req.session?.user?.id;
       
       if (!userId) {
+        console.log('[DEBUG DELETE] Authentication failed - no user ID found');
         return res.status(400).json({ message: "User ID not found in session" });
       }
       
