@@ -52,8 +52,9 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
 
   // Listen for WebSocket group updates for real-time cache invalidation
   useEffect(() => {
-    const handleGroupUpdate = (event: CustomEvent) => {
-      const { groupId: updatedGroupId, updateType } = event.detail;
+    const handleGroupUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { groupId: updatedGroupId, updateType } = customEvent.detail;
       
       if (updatedGroupId === groupId) {
         console.log(`[GroupManagement] Received real-time update: ${updateType} for group ${groupId}`);
