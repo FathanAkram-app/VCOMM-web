@@ -1048,29 +1048,14 @@ export default function GroupVideoCall() {
 
   // Handle minimize back to grid
   const handleMinimize = useCallback(() => {
-    console.log('[GroupVideoCall] Minimizing - preserving video streams');
+    console.log('[GroupVideoCall] Minimizing to grid view - preserving existing streams');
     setIsMaximized(false);
     setMaximizedParticipant(null);
     
-    // Force re-attachment of all remote streams after minimize
-    setTimeout(() => {
-      console.log('[GroupVideoCall] Re-attaching streams after minimize');
-      Object.keys(remoteStreams).forEach(userIdStr => {
-        const userId = parseInt(userIdStr);
-        const stream = remoteStreams[userId];
-        const videoElement = participantVideoRefs.current[userId];
-        
-        if (stream && videoElement && stream.active) {
-          console.log(`[GroupVideoCall] Force re-attaching stream for user ${userId} after minimize`);
-          videoElement.srcObject = null;
-          setTimeout(() => {
-            videoElement.srcObject = stream;
-            videoElement.play().catch(console.warn);
-          }, 100);
-        }
-      });
-    }, 200);
-  }, [remoteStreams]);
+    // DON'T force re-attachment - let existing streams continue working
+    // The StableParticipantVideo components will handle their own streams
+    console.log('[GroupVideoCall] Minimize completed - streams preserved');
+  }, []);
 
   if (!activeCall || !user) {
     return null;
