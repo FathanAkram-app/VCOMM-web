@@ -72,7 +72,7 @@ interface ChatRoomProps {
 
 export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   const { user } = useAuth();
-  const { startCall, startGroupCall } = useCall();
+  const { startCall, startGroupCall, ws } = useCall();
   const [message, setMessage] = useState('');
   const [chatData, setChatData] = useState<ChatData | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
