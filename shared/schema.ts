@@ -147,7 +147,8 @@ export type WebSocketMessage = {
         'webrtc_offer' | 'webrtc_answer' | 'webrtc_ice_candidate' |
         'group_webrtc_offer' | 'group_webrtc_answer' | 'group_webrtc_ice_candidate' |
         'start_group_call' | 'join_group_call' | 'end_call' | 
-        'incoming_group_call' | 'group_call_participants_update' | 'group_call_ended';
+        'incoming_group_call' | 'group_call_participants_update' | 'group_call_ended' |
+        'group_update';
   payload: any;
 };
 

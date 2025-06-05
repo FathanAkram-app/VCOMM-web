@@ -1172,6 +1172,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
 
+
+
   // Group Management API Routes
   
   // Get group information
@@ -1302,6 +1304,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       await storage.updateConversation(groupId, { description: description?.trim() || null });
       
+      // Broadcast group update to all members
+      await broadcastGroupUpdate(groupId, 'description_updated', { description: description?.trim() || null });
+      
       res.json({ success: true });
     } catch (error) {
       console.error('Error updating group description:', error);
@@ -1327,11 +1332,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Add users to group
+      const addedMembers = [];
       for (const targetUserId of userIds) {
         const existingMembership = await storage.getConversationMembership(targetUserId, groupId);
         if (!existingMembership) {
           await storage.addConversationMember(targetUserId, groupId, 'member');
+          addedMembers.push(targetUserId);
         }
+      }
+      
+      // Broadcast group update to all members
+      if (addedMembers.length > 0) {
+        await broadcastGroupUpdate(groupId, 'members_added', { addedMembers });
       }
       
       res.json({ success: true });
@@ -1365,6 +1377,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       await storage.removeConversationMember(memberId, groupId);
       
+      // Broadcast group update to all members
+      await broadcastGroupUpdate(groupId, 'member_removed', { removedMemberId: memberId });
+      
       res.json({ success: true });
     } catch (error) {
       console.error('Error removing group member:', error);
@@ -1396,6 +1411,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       await storage.updateConversationMemberRole(memberId, groupId, role);
+      
+      // Broadcast group update to all members
+      await broadcastGroupUpdate(groupId, 'member_role_changed', { memberId, newRole: role });
       
       res.json({ success: true });
     } catch (error) {
