@@ -405,15 +405,28 @@ export default function GroupVideoCall() {
   useEffect(() => {
     const handleGroupWebRTCOffer = async (event: CustomEvent) => {
       const { callId, offer, fromUserId } = event.detail;
-      console.log('[GroupVideoCall] Received WebRTC offer from user:', fromUserId);
+      console.log('[GroupVideoCall] *** RECEIVED WEBRTC OFFER ***');
+      console.log('[GroupVideoCall] Offer from user:', fromUserId);
+      console.log('[GroupVideoCall] Call ID match:', callId === activeCall?.callId);
+      console.log('[GroupVideoCall] Active call exists:', !!activeCall);
+      console.log('[GroupVideoCall] Local stream ready:', !!localStream);
+      console.log('[GroupVideoCall] User ID:', user?.id);
       
       if (!activeCall || activeCall.callId !== callId) {
+        console.warn('[GroupVideoCall] Ignoring offer - call ID mismatch or no active call');
+        console.log('[GroupVideoCall] Expected callId:', activeCall?.callId, 'Received:', callId);
         return;
       }
       
+      // Check if we need to wait for local stream
+      if (!localStream) {
+        console.warn('[GroupVideoCall] Local stream not ready, cannot process offer from:', fromUserId);
+        return;
+      }
+
       let peerConnection = peerConnections.current[fromUserId];
-      if (!peerConnection && localStream) {
-        console.log('[GroupVideoCall] Creating peer connection for incoming offer from:', fromUserId);
+      if (!peerConnection) {
+        console.log('[GroupVideoCall] Creating NEW peer connection for incoming offer from:', fromUserId);
         
         try {
           peerConnection = new RTCPeerConnection({
@@ -555,7 +568,9 @@ export default function GroupVideoCall() {
 
           peerConnections.current[fromUserId] = peerConnection;
           
+          console.log('[GroupVideoCall] Setting remote description with offer...');
           await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+          console.log('[GroupVideoCall] Remote description set successfully');
           
           const answer = await peerConnection.createAnswer();
           await peerConnection.setLocalDescription(answer);
