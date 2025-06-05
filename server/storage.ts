@@ -3,6 +3,7 @@ import {
   conversations,
   conversationMembers,
   messages,
+  callHistory,
   type User,
   type UpsertUser,
   type Message,
@@ -15,7 +16,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
-import { eq, and, or, inArray, desc } from "drizzle-orm";
+import { eq, and, or, inArray, desc, exists } from "drizzle-orm";
 
 // Storage interface
 export interface IStorage {
@@ -491,50 +492,91 @@ export class DatabaseStorage implements IStorage {
       );
   }
 
-  // In-memory call history storage (temporary until database table is added)
-  private callHistory: any[] = [];
-
+  // Call history using database storage
   async getCallHistory(userId: number): Promise<any[]> {
-    const userCalls = this.callHistory.filter(call => 
-      call.fromUserId === userId || call.toUserId === userId
-    ).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    try {
+      // Get calls where user is either initiator or in a conversation
+      const calls = await db
+        .select()
+        .from(callHistory)
+        .where(
+          or(
+            eq(callHistory.initiatorId, userId),
+            exists(
+              db.select().from(conversationMembers)
+                .where(
+                  and(
+                    eq(conversationMembers.userId, userId),
+                    eq(conversationMembers.conversationId, callHistory.conversationId!)
+                  )
+                )
+            )
+          )
+        )
+        .orderBy(desc(callHistory.startTime));
 
-    // Enrich with user names
-    const enrichedCalls = await Promise.all(userCalls.map(async (call) => {
-      let contactName = 'Unknown';
-      
-      if (call.fromUserId === userId) {
-        // Outgoing call - get target user name or group name
-        if (call.toUserName) {
-          contactName = call.toUserName; // For group calls, use group name directly
+      // Enrich with contact names
+      const enrichedCalls = await Promise.all(calls.map(async (call) => {
+        let contactName = 'Unknown';
+        let isOutgoing = call.initiatorId === userId;
+
+        if (call.conversationId) {
+          // Group call - get conversation name
+          const [conversation] = await db
+            .select()
+            .from(conversations)
+            .where(eq(conversations.id, call.conversationId));
+          contactName = conversation?.name || 'Group Call';
         } else {
-          const targetUser = await this.getUser(call.toUserId);
-          contactName = targetUser ? (targetUser.callsign || targetUser.fullName || 'Unknown') : 'Unknown';
+          // Individual call - get other user's name
+          const otherUserId = call.initiatorId === userId ? null : call.initiatorId;
+          if (otherUserId) {
+            const [otherUser] = await db
+              .select()
+              .from(users)
+              .where(eq(users.id, otherUserId));
+            contactName = otherUser ? (otherUser.callsign || otherUser.fullName || 'Unknown') : 'Unknown';
+          }
         }
-      } else {
-        // Incoming call - get caller name
-        const callerUser = await this.getUser(call.fromUserId);
-        contactName = callerUser ? (callerUser.callsign || callerUser.fullName || 'Unknown') : 'Unknown';
-      }
 
-      return {
-        ...call,
-        contactName,
-        isOutgoing: call.fromUserId === userId,
-        toUserName: call.fromUserId === userId ? contactName : undefined,
-        fromUserName: call.fromUserId !== userId ? contactName : undefined
-      };
-    }));
+        return {
+          id: call.id,
+          callId: call.callId,
+          callType: call.callType,
+          fromUserId: call.initiatorId,
+          toUserId: call.conversationId || null,
+          contactName,
+          isOutgoing,
+          status: call.status,
+          duration: call.duration || 0,
+          timestamp: call.startTime.toISOString(),
+          toUserName: isOutgoing ? contactName : undefined,
+          fromUserName: !isOutgoing ? contactName : undefined
+        };
+      }));
 
-    return enrichedCalls;
+      return enrichedCalls;
+    } catch (error) {
+      console.error('Error getting call history:', error);
+      return [];
+    }
   }
 
   async addCallHistory(callData: any): Promise<void> {
-    this.callHistory.push({
-      id: this.callHistory.length + 1,
-      ...callData,
-      timestamp: new Date().toISOString()
-    });
+    try {
+      await db.insert(callHistory).values({
+        callId: callData.callId,
+        callType: callData.callType,
+        initiatorId: callData.fromUserId,
+        conversationId: callData.callType?.startsWith('group_') ? callData.toUserId : null,
+        participants: callData.participants || [],
+        status: callData.status,
+        startTime: new Date(),
+        duration: callData.duration || 0
+      });
+    } catch (error) {
+      console.error('Error adding call history:', error);
+    }
   }
 }
 
