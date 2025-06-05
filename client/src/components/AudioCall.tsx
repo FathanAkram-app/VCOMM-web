@@ -6,11 +6,25 @@ import { ChevronDown, Mic, MicOff, Phone, Volume2, VolumeX, MessageSquare, Speak
 export default function AudioCall() {
   const { activeCall, remoteAudioStream, hangupCall, toggleCallAudio, toggleMute } = useCall();
   const [callDuration, setCallDuration] = useState("00:00:00");
+  const [isLoudspeaker, setIsLoudspeaker] = useState(false);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
   
   console.log("[AudioCall] Component rendering with activeCall:", activeCall);
   console.log("[AudioCall] remoteAudioStream:", remoteAudioStream);
   
-  // Setup remote audio stream when component mounts
+  // Detect mobile device on component mount
+  useEffect(() => {
+    const checkMobileDevice = () => {
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/.test(userAgent);
+      setIsMobileDevice(isMobile);
+      console.log("[AudioCall] Mobile device detected:", isMobile);
+    };
+    
+    checkMobileDevice();
+  }, []);
+
+  // Setup remote audio stream with mobile optimization
   useEffect(() => {
     console.log("[AudioCall] Remote stream effect triggered, remoteAudioStream:", remoteAudioStream);
     if (!remoteAudioStream) {
@@ -27,6 +41,23 @@ export default function AudioCall() {
       audioElement.volume = 1.0;
       audioElement.autoplay = true;
       audioElement.muted = false;
+      
+      // Mobile-specific audio routing
+      if (isMobileDevice) {
+        // Start with earpiece (phone speaker) for mobile calls
+        audioElement.setAttribute('playsinline', 'true');
+        
+        // Apply mobile audio settings
+        if (!isLoudspeaker) {
+          // Earpiece mode - lower volume for phone speaker
+          audioElement.volume = 0.8;
+          console.log("[AudioCall] 📱 Mobile earpiece mode enabled");
+        } else {
+          // Loudspeaker mode - full volume for external speaker
+          audioElement.volume = 1.0;
+          console.log("[AudioCall] 🔊 Mobile loudspeaker mode enabled");
+        }
+      }
       
       // Force audio to play with multiple attempts and debugging
       const tryPlay = async (attempt = 1) => {
@@ -195,7 +226,25 @@ export default function AudioCall() {
     } else {
       console.log("[AudioCall] ❌ Remote audio element not found");
     }
-  }, [remoteAudioStream]);
+  }, [remoteAudioStream, isLoudspeaker, isMobileDevice]);
+
+  // Toggle loudspeaker function for mobile devices
+  const toggleLoudspeaker = () => {
+    setIsLoudspeaker(!isLoudspeaker);
+    
+    const audioElement = document.querySelector('#remoteAudio') as HTMLAudioElement;
+    if (audioElement && isMobileDevice) {
+      if (!isLoudspeaker) {
+        // Switching to loudspeaker
+        audioElement.volume = 1.0;
+        console.log("[AudioCall] 🔊 Switching to loudspeaker mode");
+      } else {
+        // Switching to earpiece
+        audioElement.volume = 0.8;
+        console.log("[AudioCall] 📱 Switching to earpiece mode");
+      }
+    }
+  };
 
   // Cleanup on component unmount
   useEffect(() => {
@@ -352,8 +401,19 @@ export default function AudioCall() {
               <div className={`w-3 h-3 rounded-full ${
                 !activeCall.isMuted ? 'bg-green-500' : 'bg-red-500'
               } mb-1`}></div>
-              <span className="text-xs text-gray-400">SPEAKER</span>
+              <span className="text-xs text-gray-400">VOLUME</span>
             </div>
+            {/* Speaker Mode Indicator - Only show on mobile */}
+            {isMobileDevice && (
+              <div className="flex flex-col items-center">
+                <div className={`w-3 h-3 rounded-full ${
+                  isLoudspeaker ? 'bg-[#a6c455]' : 'bg-blue-500'
+                } mb-1`}></div>
+                <span className="text-xs text-gray-400">
+                  {isLoudspeaker ? 'LOUD' : 'EAR'}
+                </span>
+              </div>
+            )}
           </div>
         </div>
         
@@ -393,6 +453,23 @@ export default function AudioCall() {
           >
             {!activeCall.isMuted ? <Volume2 className="h-7 w-7" /> : <VolumeX className="h-7 w-7" />}
           </Button>
+
+          {/* Speaker Toggle Button - Only show on mobile */}
+          {isMobileDevice && (
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className={`w-16 h-16 rounded-sm ${
+                isLoudspeaker 
+                  ? 'bg-[#a6c455] border-[#a6c455] text-black' 
+                  : 'bg-[#333333] border-[#a6c455] text-[#a6c455]'
+              }`}
+              onClick={toggleLoudspeaker}
+              title={isLoudspeaker ? "Switch to Earpiece" : "Switch to Loudspeaker"}
+            >
+              <Speaker className="h-7 w-7" />
+            </Button>
+          )}
         </div>
         
         {/* Bottom Actions */}
