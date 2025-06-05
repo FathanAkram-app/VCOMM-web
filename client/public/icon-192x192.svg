@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="192" height="192" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="192" height="192" rx="24" fill="#0a0a0a"/>
+  
+  <!-- Military Badge Shape -->
+  <path d="M96 32L120 56V136L96 160L72 136V56L96 32Z" fill="#8d9c6b" stroke="#a3b472" stroke-width="2"/>
+  
+  <!-- Inner Shield -->
+  <path d="M96 48L112 64V128L96 144L80 128V64L96 48Z" fill="#2a2a2a"/>
+  
+  <!-- Communication Symbol -->
+  <circle cx="96" cy="80" r="12" fill="#8d9c6b"/>
+  <rect x="90" y="96" width="12" height="24" rx="2" fill="#8d9c6b"/>
+  <rect x="84" y="104" width="24" height="3" fill="#a3b472"/>
+  <rect x="84" y="110" width="24" height="3" fill="#a3b472"/>
+  
+  <!-- Signal Waves -->
+  <path d="M76 70C76 70 86 75 86 80C86 85 76 90 76 90" stroke="#a3b472" stroke-width="2" fill="none"/>
+  <path d="M116 70C116 70 106 75 106 80C106 85 116 90 116 90" stroke="#a3b472" stroke-width="2" fill="none"/>
+  
+  <!-- NXZZ Text -->
+  <text x="96" y="152" font-family="monospace" font-size="14" font-weight="bold" text-anchor="middle" fill="#8d9c6b">NXZZ</text>
+</svg>
