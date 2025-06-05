@@ -243,6 +243,24 @@ export default function Chat() {
     }
   };
   
+  // Fetch messages for a conversation
+  const fetchMessages = async (conversationId: number) => {
+    try {
+      const response = await fetch(`/api/conversations/${conversationId}/messages`, {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const messages = await response.json();
+        setDatabaseMessages(messages);
+      } else {
+        console.error('Failed to fetch messages');
+      }
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    }
+  };
+
   // Start a direct chat with another user
   const handleStartDirectChat = async (otherUserId: number) => {
     if (!user) return;
