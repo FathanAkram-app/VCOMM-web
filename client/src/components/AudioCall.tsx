@@ -1,18 +1,21 @@
 import { useEffect, useState } from "react";
 import { useCall } from "../hooks/useCall";
 import { Button } from "./ui/button";
-import { ChevronDown, Mic, MicOff, Phone, Volume2, VolumeX, MessageSquare, Speaker } from "lucide-react";
+import { ChevronDown, Mic, MicOff, Phone, Volume2, VolumeX, MessageSquare, Speaker, Headphones } from "lucide-react";
+import { audioManager, optimizeStreamForMobile, createMobileAudioElement, isEarphoneConnected, getCurrentAudioOutput } from '@/utils/audioManager';
 
 export default function AudioCall() {
   const { activeCall, remoteAudioStream, hangupCall, toggleCallAudio, toggleMute } = useCall();
   const [callDuration, setCallDuration] = useState("00:00:00");
   const [isLoudspeaker, setIsLoudspeaker] = useState(false);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const [isEarphoneDetected, setIsEarphoneDetected] = useState(false);
+  const [audioOutput, setAudioOutput] = useState<string>("speaker");
   
   console.log("[AudioCall] Component rendering with activeCall:", activeCall);
   console.log("[AudioCall] remoteAudioStream:", remoteAudioStream);
   
-  // Detect mobile device on component mount
+  // Detect mobile device and earphone on component mount
   useEffect(() => {
     const checkMobileDevice = () => {
       const userAgent = navigator.userAgent.toLowerCase();
@@ -21,12 +24,50 @@ export default function AudioCall() {
       console.log("[AudioCall] Mobile device detected:", isMobile);
     };
     
+    const checkEarphoneConnection = () => {
+      const isConnected = isEarphoneConnected();
+      const currentOutput = getCurrentAudioOutput();
+      setIsEarphoneDetected(isConnected);
+      setAudioOutput(currentOutput);
+      console.log("[AudioCall] Earphone connected:", isConnected, "Current output:", currentOutput);
+    };
+    
     checkMobileDevice();
+    checkEarphoneConnection();
+    
+    // Listen for device changes
+    if (navigator.mediaDevices) {
+      navigator.mediaDevices.addEventListener('devicechange', checkEarphoneConnection);
+      return () => {
+        navigator.mediaDevices.removeEventListener('devicechange', checkEarphoneConnection);
+      };
+    }
   }, []);
 
   // Setup remote audio stream with mobile optimization
   useEffect(() => {
     console.log("[AudioCall] Remote stream effect triggered, remoteAudioStream:", remoteAudioStream);
+    
+    if (remoteAudioStream && isMobileDevice) {
+      console.log("[AudioCall] Optimizing audio stream for mobile device");
+      
+      // Optimize stream using audio manager
+      optimizeStreamForMobile(remoteAudioStream).then(optimizedStream => {
+        console.log("[AudioCall] Audio stream optimized for mobile");
+        
+        // Create optimized audio element
+        createMobileAudioElement().then(audioElement => {
+          audioElement.srcObject = optimizedStream;
+          audioElement.play().then(() => {
+            console.log("[AudioCall] Optimized audio playing successfully");
+          }).catch(error => {
+            console.error("[AudioCall] Error playing optimized audio:", error);
+          });
+        });
+      }).catch(error => {
+        console.error("[AudioCall] Error optimizing audio stream:", error);
+      });
+    }
     if (!remoteAudioStream) {
       console.log("[AudioCall] ❌ No remote audio stream available, waiting for stream...");
       return;
@@ -490,14 +531,16 @@ export default function AudioCall() {
               } mb-1`}></div>
               <span className="text-xs text-gray-400">VOLUME</span>
             </div>
-            {/* Speaker Mode Indicator - Only show on mobile */}
+            {/* Audio Output Indicator */}
             {isMobileDevice && (
               <div className="flex flex-col items-center">
                 <div className={`w-3 h-3 rounded-full ${
+                  isEarphoneDetected ? 'bg-purple-500' : 
                   isLoudspeaker ? 'bg-[#a6c455]' : 'bg-blue-500'
                 } mb-1`}></div>
                 <span className="text-xs text-gray-400">
-                  {isLoudspeaker ? 'LOUD' : 'EAR'}
+                  {isEarphoneDetected ? 'PHONE' : 
+                   isLoudspeaker ? 'LOUD' : 'EAR'}
                 </span>
               </div>
             )}
