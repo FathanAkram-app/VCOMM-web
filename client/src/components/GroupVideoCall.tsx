@@ -64,11 +64,11 @@ export default function GroupVideoCall() {
         console.log('[GroupVideoCall] Video tracks:', stream.getVideoTracks().length);
         console.log('[GroupVideoCall] Audio tracks:', stream.getAudioTracks().length);
         
-        // Initially disable video (default behavior)
+        // Enable video by default for group calls
         const videoTrack = stream.getVideoTracks()[0];
         if (videoTrack) {
-          videoTrack.enabled = false;
-          console.log('[GroupVideoCall] Video track disabled by default');
+          videoTrack.enabled = true;
+          console.log('[GroupVideoCall] Video track enabled by default for group calls');
         }
         
         setLocalStream(stream);
@@ -144,7 +144,7 @@ export default function GroupVideoCall() {
           userId: Number(participantId),
           userName: participantName,
           audioEnabled: typeof participant === 'object' ? participant.audioEnabled : true,
-          videoEnabled: typeof participant === 'object' ? participant.videoEnabled : false,
+          videoEnabled: true, // Always enable video for all participants
           stream: existingParticipant?.stream || undefined
         };
       });
@@ -270,6 +270,46 @@ export default function GroupVideoCall() {
       });
     }
   }, [participants, localStream, activeCall?.callId, user?.id]);
+
+  // Auto-initiate WebRTC connections when participants change
+  useEffect(() => {
+    if (participants.length > 0 && localStream && activeCall?.callId) {
+      console.log('[GroupVideoCall] Auto-initiating WebRTC connections for all participants');
+      
+      participants.forEach(participant => {
+        const existingConnection = peerConnections.current[participant.userId];
+        if (existingConnection && existingConnection.signalingState === 'stable') {
+          console.log('[GroupVideoCall] Auto-creating offer for participant:', participant.userId);
+          
+          // Small delay to ensure proper timing
+          setTimeout(() => {
+            existingConnection.createOffer({
+              offerToReceiveAudio: true,
+              offerToReceiveVideo: true
+            }).then(offer => {
+              return existingConnection.setLocalDescription(offer);
+            }).then(() => {
+              console.log('[GroupVideoCall] Auto-sending offer to participant:', participant.userId);
+              const ws = (window as any).__callWebSocket;
+              if (ws?.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                  type: 'group_webrtc_offer',
+                  payload: {
+                    callId: activeCall.callId,
+                    offer: existingConnection.localDescription,
+                    targetUserId: participant.userId,
+                    fromUserId: user?.id
+                  }
+                }));
+              }
+            }).catch(error => {
+              console.error('[GroupVideoCall] Error auto-creating offer for participant:', participant.userId, error);
+            });
+          }, 500 + Math.random() * 1000); // Random delay to avoid conflicts
+        }
+      });
+    }
+  }, [participants.length, localStream, activeCall?.callId, user?.id]);
 
   // Handle incoming WebRTC signals for group video call
   useEffect(() => {
