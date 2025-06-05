@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, memo, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useCall } from '@/hooks/useCall';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -13,6 +13,60 @@ interface GroupParticipant {
   videoEnabled: boolean;
   stream?: MediaStream | null;
 }
+
+// Stable video component to prevent stream disconnection during re-renders
+const StableParticipantVideo = memo(({ 
+  participant, 
+  stream, 
+  onMaximize 
+}: { 
+  participant: GroupParticipant; 
+  stream?: MediaStream | null;
+  onMaximize: () => void;
+}) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  
+  // Attach stream once and keep it stable
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream]);
+  
+  return (
+    <div className="relative bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] rounded-lg overflow-hidden border-2 border-[#4a7c59] aspect-[4/3] min-h-[120px] max-h-[160px]">
+      {stream ? (
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center">
+          <Avatar className="h-20 w-20 bg-[#7d9f7d] border-3 border-[#a6c455] shadow-lg">
+            <AvatarFallback className="bg-gradient-to-br from-[#7d9f7d] to-[#5d7f5d] text-white text-xl font-bold">
+              {participant.userName.substring(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+        </div>
+      )}
+      
+      <div className="absolute bottom-1 left-1 bg-black/80 px-2 py-1 rounded border border-[#7d9f7d]/50">
+        <p className="text-[#a6c455] text-xs font-medium">{participant.userName}</p>
+      </div>
+      
+      <button
+        onClick={onMaximize}
+        className="absolute top-1 right-1 bg-black/70 p-1 rounded hover:bg-[#4a7c59]/30 transition-colors border border-[#4a7c59]/30"
+      >
+        <svg className="w-3 h-3 text-[#a6c455]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+        </svg>
+      </button>
+    </div>
+  );
+});
 
 export default function GroupVideoCall() {
   const { activeCall, hangupCall } = useCall();
@@ -117,9 +171,20 @@ export default function GroupVideoCall() {
     }
   }, [localStream]);
 
-  // Update participants from activeCall
+  // Update participants from activeCall with stable references
+  const participantsRef = useRef<string>('');
+  
   useEffect(() => {
     if (activeCall?.participants && Array.isArray(activeCall.participants)) {
+      // Create stable string representation to avoid unnecessary re-renders
+      const participantsStr = JSON.stringify(activeCall.participants.sort());
+      
+      // Only update if participants actually changed
+      if (participantsRef.current === participantsStr) {
+        return;
+      }
+      
+      participantsRef.current = participantsStr;
       console.log('[GroupVideoCall] Processing participants from activeCall:', activeCall.participants);
       
       // Extract participant objects and filter out current user
@@ -131,37 +196,44 @@ export default function GroupVideoCall() {
       
       console.log('[GroupVideoCall] Other participants:', otherParticipants);
       
-      const updatedParticipants = otherParticipants.map((participant: any) => {
-        // Handle both object format and ID format
-        const participantId = typeof participant === 'object' ? participant.userId : participant;
-        const existingParticipant = participants.find(p => p.userId === Number(participantId));
+      setParticipants(prevParticipants => {
+        const updatedParticipants = otherParticipants.map((participant: any) => {
+          // Handle both object format and ID format
+          const participantId = typeof participant === 'object' ? participant.userId : participant;
+          const existingParticipant = prevParticipants.find(p => p.userId === Number(participantId));
+          
+          // Get real user name from allUsers data
+          const realUser = allUsers.find((u: any) => u.id === Number(participantId));
+          const participantName = realUser?.callsign || realUser?.fullName || `User ${participantId}`;
+          
+          return {
+            userId: Number(participantId),
+            userName: participantName,
+            audioEnabled: typeof participant === 'object' ? participant.audioEnabled : true,
+            videoEnabled: true, // Always enable video for all participants
+            stream: existingParticipant?.stream || undefined
+          };
+        });
         
-        // Get real user name from allUsers data
-        const realUser = allUsers.find((u: any) => u.id === Number(participantId));
-        const participantName = realUser?.callsign || realUser?.fullName || `User ${participantId}`;
-        
-        return {
-          userId: Number(participantId),
-          userName: participantName,
-          audioEnabled: typeof participant === 'object' ? participant.audioEnabled : true,
-          videoEnabled: true, // Always enable video for all participants
-          stream: existingParticipant?.stream || undefined
-        };
+        console.log('[GroupVideoCall] Updated participants list:', updatedParticipants);
+        return updatedParticipants;
       });
-      
-      setParticipants(updatedParticipants);
-      console.log('[GroupVideoCall] Updated participants list:', updatedParticipants);
     }
   }, [activeCall?.participants, user?.id, allUsers]);
 
-  // Setup WebRTC peer connections for group video call participants
+  // Track created peer connections to prevent duplicates
+  const createdConnections = useRef<Set<number>>(new Set());
+  
+  // Setup WebRTC peer connections for group video call participants with stream preservation
   useEffect(() => {
     if (participants.length > 0 && localStream && activeCall?.callId) {
       console.log('[GroupVideoCall] Setting up WebRTC connections for participants:', participants.map(p => p.userId));
       
       participants.forEach(participant => {
-        if (!peerConnections.current[participant.userId]) {
+        // Only create if not already created and not currently being processed
+        if (!peerConnections.current[participant.userId] && !createdConnections.current.has(participant.userId)) {
           console.log('[GroupVideoCall] Creating peer connection for user:', participant.userId);
+          createdConnections.current.add(participant.userId);
           
           const peerConnection = new RTCPeerConnection({
             iceServers: [
@@ -180,17 +252,24 @@ export default function GroupVideoCall() {
             peerConnection.addTrack(track, localStream);
           });
 
-          // Handle incoming remote stream
+          // Handle incoming remote stream with stable reference
           peerConnection.ontrack = (event) => {
             console.log('[GroupVideoCall] Received remote stream from user:', participant.userId);
             const [remoteStream] = event.streams;
             
             if (remoteStream && remoteStream.active) {
-              // Update state first
-              setRemoteStreams(prev => ({
-                ...prev,
-                [participant.userId]: remoteStream
-              }));
+              // Use callback to prevent state conflicts during re-renders
+              setRemoteStreams(prev => {
+                // Check if stream is already set to avoid unnecessary updates
+                if (prev[participant.userId] === remoteStream) {
+                  return prev;
+                }
+                
+                return {
+                  ...prev,
+                  [participant.userId]: remoteStream
+                };
+              });
               
               console.log('[GroupVideoCall] Remote stream added to state for user:', participant.userId);
             }
