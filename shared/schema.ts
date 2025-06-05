@@ -81,6 +81,7 @@ export const messages = pgTable("messages", {
   replyToId: integer("reply_to_id").references(() => messages.id),
   forwardedFromId: integer("forwarded_from_id").references(() => messages.id),
   isDeleted: boolean("is_deleted").default(false),
+  isRead: boolean("is_read").default(false),
 });
 
 // Schema types
