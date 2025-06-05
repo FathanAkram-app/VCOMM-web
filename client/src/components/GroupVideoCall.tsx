@@ -18,20 +18,69 @@ interface GroupParticipant {
 const StableParticipantVideo = memo(({ 
   participant, 
   stream, 
-  onMaximize 
+  onMaximize,
+  participantVideoRefs
 }: { 
   participant: GroupParticipant; 
   stream?: MediaStream | null;
   onMaximize: (participant: GroupParticipant) => void;
+  participantVideoRefs: React.MutableRefObject<{ [userId: number]: HTMLVideoElement }>;
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   
-  // Attach stream once and keep it stable
+  // Register video ref with main refs object
   useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
+    if (videoRef.current) {
+      participantVideoRefs.current[participant.userId] = videoRef.current;
+      console.log(`[StableParticipantVideo] Registered video ref for user ${participant.userId}`);
     }
-  }, [stream]);
+    
+    return () => {
+      delete participantVideoRefs.current[participant.userId];
+      console.log(`[StableParticipantVideo] Unregistered video ref for user ${participant.userId}`);
+    };
+  }, [participant.userId, participantVideoRefs]);
+  
+  // Attach stream once and keep it stable with enhanced debugging
+  useEffect(() => {
+    if (videoRef.current && stream && stream.active) {
+      console.log(`[StableParticipantVideo] Attaching stream for user ${participant.userId}:`, {
+        streamId: stream.id,
+        active: stream.active,
+        tracks: stream.getTracks().length,
+        videoTracks: stream.getVideoTracks().length
+      });
+      
+      const videoElement = videoRef.current;
+      videoElement.srcObject = stream;
+      videoElement.autoplay = true;
+      videoElement.playsInline = true;
+      videoElement.muted = false;
+      
+      // Enhanced play with error handling
+      const playPromise = videoElement.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            console.log(`[StableParticipantVideo] ✅ Video playing for user ${participant.userId}`);
+          })
+          .catch((error: any) => {
+            console.warn(`[StableParticipantVideo] Autoplay failed for user ${participant.userId}, trying muted:`, error);
+            videoElement.muted = true;
+            return videoElement.play();
+          })
+          .catch((muteError: any) => {
+            console.error(`[StableParticipantVideo] ❌ All play attempts failed for user ${participant.userId}:`, muteError);
+          });
+      }
+    } else {
+      console.log(`[StableParticipantVideo] Cannot attach stream for user ${participant.userId}:`, {
+        hasVideoRef: !!videoRef.current,
+        hasStream: !!stream,
+        streamActive: stream?.active
+      });
+    }
+  }, [stream, participant.userId]);
   
   return (
     <div className="relative bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] rounded-lg overflow-hidden border-2 border-[#4a7c59] aspect-[4/3] min-h-[120px] max-h-[160px]">
@@ -1093,6 +1142,7 @@ export default function GroupVideoCall() {
                     participant={participant}
                     stream={remoteStreams[participant.userId]}
                     onMaximize={handleMaximizeParticipant}
+                    participantVideoRefs={participantVideoRefs}
                   />
                 ))}
 
