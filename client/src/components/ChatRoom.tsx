@@ -1106,39 +1106,41 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       </>
                     )}
                     
-                    {/* Message action dropdown menu */}
-                    <div className="relative group">
+                    {/* Message action buttons - simplified approach */}
+                    <div className="absolute right-2 top-1 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="h-6 w-6 p-0 hover:bg-[#444444] text-white"
+                        onClick={() => {
+                          console.log("REPLY BUTTON CLICKED - Setting reply to message:", msg);
+                          console.log("Current replyToMessage state:", replyToMessage);
+                          setReplyToMessage(msg);
+                          console.log("After setting reply, new state should be:", msg);
+                          
+                          setTimeout(() => {
+                            const input = document.getElementById("message-input");
+                            if (input) {
+                              input.focus();
+                              console.log("Input focused successfully");
+                            }
+                          }, 100);
+                        }}
+                        title="Balas"
+                      >
+                        <Reply className="h-3 w-3" />
+                      </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button 
                             variant="ghost" 
-                            size="icon" 
-                            className="absolute right-2 -top-8 h-8 w-8 opacity-0 group-hover:opacity-100 hover:bg-[#444444] transition-opacity"
+                            size="sm"
+                            className="h-6 w-6 p-0 hover:bg-[#444444] text-white"
                           >
-                            <MoreVertical className="h-4 w-4 text-white" />
+                            <MoreVertical className="h-3 w-3" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="bg-[#2a2a2a] border-[#444444]">
-                          <DropdownMenuItem 
-                            onClick={() => {
-                              console.log("Setting reply to message:", msg);
-                              console.log("Current replyToMessage state:", replyToMessage);
-                              setReplyToMessage(msg);
-                              console.log("After setting reply, new state should be:", msg);
-                              
-                              setTimeout(() => {
-                                const input = document.getElementById("message-input");
-                                if (input) {
-                                  input.focus();
-                                  console.log("Input focused successfully");
-                                }
-                              }, 100);
-                            }}
-                            className="text-white hover:bg-[#444444] cursor-pointer"
-                          >
-                            <Reply className="mr-2 h-4 w-4" />
-                            Balas
-                          </DropdownMenuItem>
                           <DropdownMenuItem 
                             onClick={() => {
                               setSelectedMessage(msg);
