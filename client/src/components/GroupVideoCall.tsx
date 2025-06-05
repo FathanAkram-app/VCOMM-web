@@ -3,8 +3,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCall } from '@/hooks/useCall';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { PhoneOff, Mic, MicOff, Video, VideoOff, Users, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import { PhoneOff, Mic, MicOff, Video, VideoOff, Users, ArrowLeft, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import GroupManagement from './GroupManagement';
 
 interface GroupParticipant {
   userId: number;
@@ -90,6 +91,7 @@ export default function GroupVideoCall() {
   const [isMaximized, setIsMaximized] = useState(false);
   const [maximizedParticipant, setMaximizedParticipant] = useState<GroupParticipant | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
+  const [showGroupManagement, setShowGroupManagement] = useState(false);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const participantVideoRefs = useRef<{ [userId: number]: HTMLVideoElement }>({});
   const peerConnections = useRef<{ [userId: number]: RTCPeerConnection }>({});
@@ -1006,7 +1008,13 @@ export default function GroupVideoCall() {
             </div>
           </div>
           
-          <div className="w-8" />
+          <button
+            onClick={() => setShowGroupManagement(true)}
+            className="p-1.5 rounded-full bg-black/20 hover:bg-[#4a7c59]/30 transition-colors"
+            title="Kelola Grup"
+          >
+            <Settings className="h-4 w-4 text-[#a6c455]" />
+          </button>
         </div>
       </div>
 
