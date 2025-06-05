@@ -105,23 +105,34 @@ export default function GroupVideoCall() {
         });
         
         console.log('[GroupVideoCall] Got local media stream:', stream);
+        console.log('[GroupVideoCall] Video tracks:', stream.getVideoTracks().length);
+        console.log('[GroupVideoCall] Audio tracks:', stream.getAudioTracks().length);
+        
         setLocalStream(stream);
         setIsVideoEnabled(true);
         
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = stream;
-        }
+        // Ensure local video element gets the stream
+        setTimeout(() => {
+          if (localVideoRef.current && stream) {
+            localVideoRef.current.srcObject = stream;
+            localVideoRef.current.autoplay = true;
+            localVideoRef.current.playsInline = true;
+            localVideoRef.current.muted = true;
+            console.log('[GroupVideoCall] Local video element configured');
+          }
+        }, 100);
       } catch (error) {
         console.error('[GroupVideoCall] Error getting local media:', error);
       }
     };
 
-    getLocalMedia();
+    // Only get media if we don't already have it
+    if (!localStream) {
+      getLocalMedia();
+    }
 
     return () => {
-      if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-      }
+      // Don't cleanup here as it causes stream to be lost
     };
   }, []);
 
@@ -140,6 +151,17 @@ export default function GroupVideoCall() {
       
       console.log('[GroupVideoCall] Unique participants created:', newParticipants.length);
       setParticipants(newParticipants);
+    } else if (activeCall && user && allUsers.length > 0) {
+      // If no participants yet, create at least the current user
+      console.log('[GroupVideoCall] No participants found, creating current user participant');
+      const currentUserParticipant = {
+        userId: user.id,
+        userName: user.callsign || 'You',
+        audioEnabled: true,
+        videoEnabled: true,
+        stream: localStream
+      };
+      setParticipants([currentUserParticipant]);
     }
   }, [activeCall?.participants, user?.id, allUsers, localStream, remoteStreams]);
 
@@ -697,7 +719,7 @@ export default function GroupVideoCall() {
 
       {/* Grid View */}
       {!isMaximized && (
-        <div className="flex-1 grid grid-cols-3 grid-rows-2 gap-4">
+        <div className="flex-1 grid grid-cols-2 grid-rows-3 gap-4">
           {/* Current user video (always first slot) */}
           <div className="relative bg-[#1a1a1a] rounded-lg overflow-hidden border-2 border-[#4a7c59] shadow-lg">
             {isVideoEnabled && localStream ? (
