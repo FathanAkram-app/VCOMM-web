@@ -191,7 +191,14 @@ export default function GroupVideoCall() {
             const videoElement = participantVideoRefs.current[participant.userId];
             if (videoElement && remoteStream) {
               videoElement.srcObject = remoteStream;
+              videoElement.autoplay = true;
+              videoElement.playsInline = true;
               console.log('[GroupVideoCall] Attached remote stream to video element for user:', participant.userId);
+              
+              // Force play the video
+              videoElement.play().catch(error => {
+                console.warn('[GroupVideoCall] Video autoplay failed for user:', participant.userId, error);
+              });
             }
           };
 
@@ -568,23 +575,46 @@ export default function GroupVideoCall() {
                     key={participant.userId} 
                     className="relative bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] rounded-lg overflow-hidden border-2 border-[#7d9f7d] aspect-[4/3] min-h-[120px] max-h-[160px]"
                   >
-                    {/* Participant video display - simulated for group call */}
+                    {/* Participant video display */}
                     <div className="w-full h-full relative bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] overflow-hidden">
-                      {/* Simulated video background with subtle movement */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-[#2d4a2d] via-[#1e3a1e] to-[#0f1f0f] animate-pulse"></div>
+                      {/* Actual video element for remote stream */}
+                      <video
+                        ref={(el) => {
+                          if (el) {
+                            participantVideoRefs.current[participant.userId] = el;
+                            // Attach remote stream if available
+                            const remoteStream = remoteStreams[participant.userId];
+                            if (remoteStream) {
+                              el.srcObject = remoteStream;
+                              el.play().catch(e => console.warn('Video play failed:', e));
+                            }
+                          }
+                        }}
+                        className="w-full h-full object-cover"
+                        autoPlay
+                        playsInline
+                        muted={false}
+                        style={{ 
+                          display: remoteStreams[participant.userId] ? 'block' : 'none'
+                        }}
+                      />
                       
-                      {/* Participant avatar */}
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Avatar className="h-20 w-20 bg-[#7d9f7d] border-3 border-[#a6c455] shadow-lg transition-all duration-500 hover:scale-110">
-                          <AvatarFallback className="bg-gradient-to-br from-[#7d9f7d] to-[#5d7f5d] text-white text-xl font-bold">
-                            {participant.userName.substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                      </div>
+                      {/* Fallback avatar when no video stream */}
+                      {!remoteStreams[participant.userId] && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#2d4a2d] via-[#1e3a1e] to-[#0f1f0f]">
+                          <Avatar className="h-20 w-20 bg-[#7d9f7d] border-3 border-[#a6c455] shadow-lg">
+                            <AvatarFallback className="bg-gradient-to-br from-[#7d9f7d] to-[#5d7f5d] text-white text-xl font-bold">
+                              {participant.userName.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
+                      )}
                       
-                      {/* Simulated video activity indicator */}
+                      {/* Video activity indicator */}
                       <div className="absolute inset-0 pointer-events-none">
-                        <div className="w-full h-full border-2 border-[#a6c455]/20 rounded-lg animate-pulse"></div>
+                        <div className={`w-full h-full border-2 rounded-lg ${
+                          remoteStreams[participant.userId] ? 'border-green-400/50' : 'border-[#a6c455]/20 animate-pulse'
+                        }`}></div>
                       </div>
                       
                       {/* Audio level indicator */}
