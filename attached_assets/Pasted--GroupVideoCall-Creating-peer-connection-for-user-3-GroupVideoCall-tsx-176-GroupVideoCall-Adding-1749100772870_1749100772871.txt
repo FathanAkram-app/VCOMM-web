@@ -1,0 +1,215 @@
+[GroupVideoCall] Creating peer connection for user: 3
+GroupVideoCall.tsx:176 [GroupVideoCall] Adding local track to peer connection: audio
+GroupVideoCall.tsx:176 [GroupVideoCall] Adding local track to peer connection: video
+GroupVideoCall.tsx:289 [GroupVideoCall] Auto-initiating WebRTC connections for all participants
+GroupVideoCall.tsx:294 [GroupVideoCall] Auto-creating offer for participant: 5
+GroupVideoCall.tsx:294 [GroupVideoCall] Auto-creating offer for participant: 3
+GroupVideoCall.tsx:48 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749100698070_37_5', callType: 'video', status: 'connected', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:49 [GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:50 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:51 [GroupVideoCall] localStream: MediaStream {id: '67ce0225-1d5b-459e-9f13-df17c9fed139', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:238 [GroupVideoCall] Sending offer to user: 5
+GroupVideoCall.tsx:239 [GroupVideoCall] Offer details: RTCSessionDescription {type: 'offer', sdp: 'v=0\r\no=- 4824965082739567164 2 IN IP4 127.0.0.1\r\ns…17c9fed139 53700662-8491-4472-a43e-b15f1ed56270\r\n'}
+GroupVideoCall.tsx:254 [GroupVideoCall] ✅ Sending WebRTC offer to user 5 : {type: 'group_webrtc_offer', payload: {…}}
+GroupVideoCall.tsx:238 [GroupVideoCall] Sending offer to user: 3
+GroupVideoCall.tsx:239 [GroupVideoCall] Offer details: RTCSessionDescription {type: 'offer', sdp: 'v=0\r\no=- 7757730611744072303 2 IN IP4 127.0.0.1\r\ns…17c9fed139 53700662-8491-4472-a43e-b15f1ed56270\r\n'}
+GroupVideoCall.tsx:254 [GroupVideoCall] ✅ Sending WebRTC offer to user 3 : {type: 'group_webrtc_offer', payload: {…}}
+2GroupVideoCall.tsx:208 [GroupVideoCall] Sending ICE candidate to user: 5
+2GroupVideoCall.tsx:208 [GroupVideoCall] Sending ICE candidate to user: 3
+GroupVideoCall.tsx:63 [GroupVideoCall] Got local media stream: MediaStream {id: '8fb0d73e-a2d3-4ac6-957f-3dbe7e87fbd2', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:64 [GroupVideoCall] Video tracks: 1
+GroupVideoCall.tsx:65 [GroupVideoCall] Audio tracks: 1
+GroupVideoCall.tsx:71 [GroupVideoCall] Video track enabled by default for group calls
+GroupVideoCall.tsx:79 [GroupVideoCall] Set local video source
+GroupVideoCall.tsx:208 [GroupVideoCall] Sending ICE candidate to user: 5
+GroupVideoCall.tsx:48 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749100698070_37_5', callType: 'video', status: 'connected', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:49 [GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:50 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:51 [GroupVideoCall] localStream: MediaStream {id: '8fb0d73e-a2d3-4ac6-957f-3dbe7e87fbd2', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:109 [GroupVideoCall] Local video stream attached to element
+GroupVideoCall.tsx:115 [GroupVideoCall] Initial video state: true
+GroupVideoCall.tsx:160 [GroupVideoCall] Setting up WebRTC connections for participants: (2) [5, 3]
+GroupVideoCall.tsx:289 [GroupVideoCall] Auto-initiating WebRTC connections for all participants
+GroupVideoCall.tsx:48 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749100698070_37_5', callType: 'video', status: 'connected', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:49 [GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:50 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:51 [GroupVideoCall] localStream: MediaStream {id: '8fb0d73e-a2d3-4ac6-957f-3dbe7e87fbd2', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:208 [GroupVideoCall] Sending ICE candidate to user: 3
+GroupVideoCall.tsx:208 [GroupVideoCall] Sending ICE candidate to user: 5
+GroupVideoCall.tsx:208 [GroupVideoCall] Sending ICE candidate to user: 3
+2GroupVideoCall.tsx:208 [GroupVideoCall] Sending ICE candidate to user: 5
+2GroupVideoCall.tsx:208 [GroupVideoCall] Sending ICE candidate to user: 3
+CallContext.tsx:420 [CallContext] Received message: {type: 'group_webrtc_offer', payload: {…}}
+CallContext.tsx:464 [CallContext] Forwarding group WebRTC offer: {callId: 'group_call_1749100698070_37_5', offer: {…}, fromUserId: 3}
+GroupVideoCall.tsx:330 [GroupVideoCall] Received WebRTC offer from user: 3
+GroupVideoCall.tsx:182 [GroupVideoCall] Received remote stream from user: 3
+GroupVideoCall.tsx:196 [GroupVideoCall] Attached remote stream to video element for user: 3
+GroupVideoCall.tsx:182 [GroupVideoCall] Received remote stream from user: 3
+GroupVideoCall.tsx:196 [GroupVideoCall] Attached remote stream to video element for user: 3
+GroupVideoCall.tsx:200 [GroupVideoCall] Video autoplay failed for user: 3 AbortError: The play() request was interrupted by a new load request. https://goo.gl/LdLk22
+(anonymous) @ GroupVideoCall.tsx:200
+Promise.catch
+peerConnection.ontrack @ GroupVideoCall.tsx:199Understand this warning
+GroupVideoCall.tsx:345 [GroupVideoCall] Set remote description from offer
+GroupVideoCall.tsx:48 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749100698070_37_5', callType: 'video', status: 'connected', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:49 [GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:50 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:51 [GroupVideoCall] localStream: MediaStream {id: '8fb0d73e-a2d3-4ac6-957f-3dbe7e87fbd2', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:200 [GroupVideoCall] Video autoplay failed for user: 3 AbortError: The play() request was interrupted by a new load request. https://goo.gl/LdLk22
+(anonymous) @ GroupVideoCall.tsx:200
+Promise.catch
+peerConnection.ontrack @ GroupVideoCall.tsx:199Understand this warning
+GroupVideoCall.tsx:351 [GroupVideoCall] Sending answer to user: 3
+2GroupVideoCall.tsx:208 [GroupVideoCall] Sending ICE candidate to user: 3
+GroupVideoCall.tsx:48 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749100698070_37_5', callType: 'video', status: 'connected', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:49 [GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:50 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:51 [GroupVideoCall] localStream: MediaStream {id: '8fb0d73e-a2d3-4ac6-957f-3dbe7e87fbd2', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+CallContext.tsx:380 [CallContext] Creating stable WebSocket for calls...
+GroupVideoCall.tsx:647 Video play failed: AbortError: The play() request was interrupted by a new load request. https://goo.gl/LdLk22
+(anonymous) @ GroupVideoCall.tsx:647
+Promise.catch
+ref @ GroupVideoCall.tsx:647
+commitAttachRef @ chunk-RPCDYKBN.js?v=768c3251:17279
+commitLayoutEffectOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17168
+commitLayoutMountEffects_complete @ chunk-RPCDYKBN.js?v=768c3251:17980
+commitLayoutEffects_begin @ chunk-RPCDYKBN.js?v=768c3251:17969
+commitLayoutEffects @ chunk-RPCDYKBN.js?v=768c3251:17920
+commitRootImpl @ chunk-RPCDYKBN.js?v=768c3251:19353
+commitRoot @ chunk-RPCDYKBN.js?v=768c3251:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=768c3251:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=768c3251:18718
+workLoop @ chunk-RPCDYKBN.js?v=768c3251:197
+flushWork @ chunk-RPCDYKBN.js?v=768c3251:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=768c3251:384Understand this warning
+GroupVideoCall.tsx:208 [GroupVideoCall] Sending ICE candidate to user: 3
+GroupVideoCall.tsx:304 [GroupVideoCall] Auto-sending offer to participant: 3
+CallContext.tsx:490 [CallContext] WebSocket disconnected
+GroupVideoCall.tsx:48 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749100698070_37_5', callType: 'video', status: 'connected', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:49 [GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:50 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:51 [GroupVideoCall] localStream: MediaStream {id: '8fb0d73e-a2d3-4ac6-957f-3dbe7e87fbd2', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:647 Video play failed: AbortError: The play() request was interrupted by a new load request. https://goo.gl/LdLk22
+(anonymous) @ GroupVideoCall.tsx:647
+Promise.catch
+ref @ GroupVideoCall.tsx:647
+commitAttachRef @ chunk-RPCDYKBN.js?v=768c3251:17279
+commitLayoutEffectOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17168
+commitLayoutMountEffects_complete @ chunk-RPCDYKBN.js?v=768c3251:17980
+commitLayoutEffects_begin @ chunk-RPCDYKBN.js?v=768c3251:17969
+commitLayoutEffects @ chunk-RPCDYKBN.js?v=768c3251:17920
+commitRootImpl @ chunk-RPCDYKBN.js?v=768c3251:19353
+commitRoot @ chunk-RPCDYKBN.js?v=768c3251:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=768c3251:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=768c3251:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=768c3251:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=768c3251:555
+flush @ @tanstack_react-query.js?v=768c3251:569
+batch @ @tanstack_react-query.js?v=768c3251:587
+dispatch_fn @ @tanstack_react-query.js?v=768c3251:996
+setData @ @tanstack_react-query.js?v=768c3251:696
+onSuccess @ @tanstack_react-query.js?v=768c3251:897
+resolve @ @tanstack_react-query.js?v=768c3251:456
+Promise.then
+run @ @tanstack_react-query.js?v=768c3251:498
+start @ @tanstack_react-query.js?v=768c3251:536
+fetch @ @tanstack_react-query.js?v=768c3251:926
+executeFetch_fn @ @tanstack_react-query.js?v=768c3251:2211
+onSubscribe @ @tanstack_react-query.js?v=768c3251:1898
+subscribe @ @tanstack_react-query.js?v=768c3251:24
+(anonymous) @ @tanstack_react-query.js?v=768c3251:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=768c3251:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=768c3251:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=768c3251:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=768c3251:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=768c3251:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=768c3251:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=768c3251:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=768c3251:19447
+commitRootImpl @ chunk-RPCDYKBN.js?v=768c3251:19416
+commitRoot @ chunk-RPCDYKBN.js?v=768c3251:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=768c3251:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=768c3251:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=768c3251:18627
+setTimeout
+joinGroupCall @ CallContext.tsx:2271
+await in joinGroupCall
+acceptCall @ CallContext.tsx:1545
+callCallback2 @ chunk-RPCDYKBN.js?v=768c3251:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=768c3251:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=768c3251:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=768c3251:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=768c3251:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=768c3251:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=768c3251:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=768c3251:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=768c3251:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=768c3251:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=768c3251:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=768c3251:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=768c3251:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=768c3251:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=768c3251:5449Understand this warning
+GroupVideoCall.tsx:304 [GroupVideoCall] Auto-sending offer to participant: 5
+CallContext.tsx:387 [CallContext] WebSocket connected successfully for calls
+CallContext.tsx:401 [CallContext] Authenticated user 2 with WebSocket
+GroupVideoCall.tsx:48 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749100698070_37_5', callType: 'video', status: 'connected', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:49 [GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:50 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:51 [GroupVideoCall] localStream: MediaStream {id: '8fb0d73e-a2d3-4ac6-957f-3dbe7e87fbd2', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:647 Video play failed: AbortError: The play() request was interrupted by a new load request. https://goo.gl/LdLk22
+(anonymous) @ GroupVideoCall.tsx:647
+Promise.catch
+ref @ GroupVideoCall.tsx:647
+commitAttachRef @ chunk-RPCDYKBN.js?v=768c3251:17279
+commitLayoutEffectOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17168
+commitLayoutMountEffects_complete @ chunk-RPCDYKBN.js?v=768c3251:17980
+commitLayoutEffects_begin @ chunk-RPCDYKBN.js?v=768c3251:17969
+commitLayoutEffects @ chunk-RPCDYKBN.js?v=768c3251:17920
+commitRootImpl @ chunk-RPCDYKBN.js?v=768c3251:19353
+commitRoot @ chunk-RPCDYKBN.js?v=768c3251:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=768c3251:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=768c3251:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=768c3251:18627Understand this warning
+CallContext.tsx:420 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:420 [CallContext] Received message: {type: 'group_webrtc_offer', payload: {…}}
+CallContext.tsx:464 [CallContext] Forwarding group WebRTC offer: {callId: 'group_call_1749100698070_37_5', offer: {…}, fromUserId: 5}
+GroupVideoCall.tsx:330 [GroupVideoCall] Received WebRTC offer from user: 5
+GroupVideoCall.tsx:182 [GroupVideoCall] Received remote stream from user: 5
+GroupVideoCall.tsx:196 [GroupVideoCall] Attached remote stream to video element for user: 5
+GroupVideoCall.tsx:182 [GroupVideoCall] Received remote stream from user: 5
+GroupVideoCall.tsx:196 [GroupVideoCall] Attached remote stream to video element for user: 5
+GroupVideoCall.tsx:200 [GroupVideoCall] Video autoplay failed for user: 5 AbortError: The play() request was interrupted by a new load request. https://goo.gl/LdLk22
+(anonymous) @ GroupVideoCall.tsx:200
+Promise.catch
+peerConnection.ontrack @ GroupVideoCall.tsx:199Understand this warning
+GroupVideoCall.tsx:345 [GroupVideoCall] Set remote description from offer
+GroupVideoCall.tsx:48 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749100698070_37_5', callType: 'video', status: 'connected', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:49 [GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:50 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:51 [GroupVideoCall] localStream: MediaStream {id: '8fb0d73e-a2d3-4ac6-957f-3dbe7e87fbd2', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:200 [GroupVideoCall] Video autoplay failed for user: 5 AbortError: The play() request was interrupted by a new load request. https://goo.gl/LdLk22
+(anonymous) @ GroupVideoCall.tsx:200
+Promise.catch
+peerConnection.ontrack @ GroupVideoCall.tsx:199Understand this warning
+GroupVideoCall.tsx:647 Video play failed: AbortError: The play() request was interrupted by a new load request. https://goo.gl/LdLk22
+(anonymous) @ GroupVideoCall.tsx:647
+Promise.catch
+ref @ GroupVideoCall.tsx:647
+commitAttachRef @ chunk-RPCDYKBN.js?v=768c3251:17279
+commitLayoutEffectOnFiber @ chunk-RPCDYKBN.js?v=768c3251:17168
+commitLayoutMountEffects_complete @ chunk-RPCDYKBN.js?v=768c3251:17980
+commitLayoutEffects_begin @ chunk-RPCDYKBN.js?v=768c3251:17969
+commitLayoutEffects @ chunk-RPCDYKBN.js?v=768c3251:17920
+commitRootImpl @ chunk-RPCDYKBN.js?v=768c3251:19353
+commitRoot @ chunk-RPCDYKBN.js?v=768c3251:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=768c3251:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=768c3251:18718
+workLoop @ chunk-RPCDYKBN.js?v=768c3251:197
+flushWork @ chunk-RPCDYKBN.js?v=768c3251:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=768c3251:384Understand this warning
+GroupVideoCall.tsx:351 [GroupVideoCall] Sending answer to user: 5
+GroupVideoCall.tsx:226 [GroupVideoCall] Connection state for user 5 : connecting
+3GroupVideoCall.tsx:208 [GroupVideoCall] Sending ICE candidate to user: 5
+GroupVideoCall.tsx:226 [GroupVideoCall] Connection state for user 5 : connected

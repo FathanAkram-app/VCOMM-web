@@ -182,23 +182,41 @@ export default function GroupVideoCall() {
             console.log('[GroupVideoCall] Received remote stream from user:', participant.userId);
             const [remoteStream] = event.streams;
             
-            setRemoteStreams(prev => ({
-              ...prev,
-              [participant.userId]: remoteStream
-            }));
-            
-            // Attach stream to video element
-            const videoElement = participantVideoRefs.current[participant.userId];
-            if (videoElement && remoteStream) {
-              videoElement.srcObject = remoteStream;
-              videoElement.autoplay = true;
-              videoElement.playsInline = true;
-              console.log('[GroupVideoCall] Attached remote stream to video element for user:', participant.userId);
+            if (remoteStream && remoteStream.active) {
+              setRemoteStreams(prev => ({
+                ...prev,
+                [participant.userId]: remoteStream
+              }));
               
-              // Force play the video
-              videoElement.play().catch(error => {
-                console.warn('[GroupVideoCall] Video autoplay failed for user:', participant.userId, error);
-              });
+              // Delay attachment to prevent interference
+              setTimeout(() => {
+                const videoElement = participantVideoRefs.current[participant.userId];
+                if (videoElement && remoteStream.active) {
+                  // Clear any existing source
+                  videoElement.srcObject = null;
+                  
+                  // Set new stream
+                  videoElement.srcObject = remoteStream;
+                  videoElement.autoplay = true;
+                  videoElement.playsInline = true;
+                  videoElement.muted = false;
+                  
+                  console.log('[GroupVideoCall] Attached remote stream to video element for user:', participant.userId);
+                  
+                  // Force play with user interaction handling
+                  const playPromise = videoElement.play();
+                  if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                      console.warn('[GroupVideoCall] Video autoplay failed for user:', participant.userId, 'trying silent play');
+                      // Try muted autoplay as fallback
+                      videoElement.muted = true;
+                      videoElement.play().catch(err => {
+                        console.warn('[GroupVideoCall] Silent autoplay also failed:', err);
+                      });
+                    });
+                  }
+                }
+              }, 100);
             }
           };
 
@@ -640,11 +658,27 @@ export default function GroupVideoCall() {
                         ref={(el) => {
                           if (el) {
                             participantVideoRefs.current[participant.userId] = el;
-                            // Attach remote stream if available
+                            
+                            // Immediately attach stream if available
                             const remoteStream = remoteStreams[participant.userId];
-                            if (remoteStream) {
+                            if (remoteStream && remoteStream.active) {
+                              console.log(`[GroupVideoCall] Attaching stream to video element for user ${participant.userId}`);
                               el.srcObject = remoteStream;
-                              el.play().catch(e => console.warn('Video play failed:', e));
+                              el.autoplay = true;
+                              el.playsInline = true;
+                              el.muted = false;
+                              
+                              // Force play immediately
+                              const playPromise = el.play();
+                              if (playPromise !== undefined) {
+                                playPromise.catch(error => {
+                                  console.warn(`[GroupVideoCall] Auto-play failed for user ${participant.userId}, trying muted:`, error);
+                                  el.muted = true;
+                                  el.play().catch(muteErr => {
+                                    console.warn(`[GroupVideoCall] Muted play also failed:`, muteErr);
+                                  });
+                                });
+                              }
                             }
                           }
                         }}
