@@ -287,15 +287,45 @@ export default function GroupVideoCall() {
                   return updated;
                 });
                 
-                // Immediately try to attach to video element
+                // Immediately try to attach to video element with enhanced setup
                 setTimeout(() => {
                   const videoElement = participantVideoRefs.current[participant.userId];
                   if (videoElement && remoteStream) {
-                    videoElement.srcObject = remoteStream;
-                    videoElement.play().catch(e => console.error('[GroupVideoCall] Error playing remote video:', e));
-                    console.log('[GroupVideoCall] Direct video attachment for user:', participant.userId);
+                    console.log(`[GroupVideoCall] Attempting direct attachment for user ${participant.userId}`);
+                    console.log(`[GroupVideoCall] Stream tracks:`, remoteStream.getTracks().map(t => `${t.kind}:${t.enabled}:${t.readyState}`));
+                    
+                    // Ensure video element is properly configured
+                    videoElement.srcObject = null;
+                    videoElement.load();
+                    
+                    // Wait a bit then attach stream
+                    setTimeout(() => {
+                      videoElement.srcObject = remoteStream;
+                      videoElement.autoplay = true;
+                      videoElement.playsInline = true;
+                      videoElement.muted = false;
+                      
+                      // Force play with comprehensive error handling
+                      const playPromise = videoElement.play();
+                      if (playPromise !== undefined) {
+                        playPromise
+                          .then(() => {
+                            console.log(`[GroupVideoCall] ✅ Direct video playback started for user ${participant.userId}`);
+                          })
+                          .catch((playError: any) => {
+                            console.warn(`[GroupVideoCall] Direct play failed for user ${participant.userId}, trying muted:`, playError);
+                            videoElement.muted = true;
+                            return videoElement.play();
+                          })
+                          .catch((muteError: any) => {
+                            console.error(`[GroupVideoCall] ❌ All direct play attempts failed for user ${participant.userId}:`, muteError);
+                          });
+                      }
+                    }, 50);
+                    
+                    console.log('[GroupVideoCall] Direct video attachment initiated for user:', participant.userId);
                   }
-                }, 100);
+                }, 200);
                 
                 console.log('[GroupVideoCall] Remote stream added to state for user:', participant.userId);
               } else {
@@ -468,9 +498,24 @@ export default function GroupVideoCall() {
       
       if (stream && videoElement && stream.active) {
         console.log(`[GroupVideoCall] ✅ Attaching stream to video element for user ${userId}`);
-        console.log(`[GroupVideoCall] Stream tracks:`, stream.getTracks().map(t => `${t.kind}:${t.enabled}`));
+        const videoTracks = stream.getVideoTracks();
+        const audioTracks = stream.getAudioTracks();
         
-        // Force clear and re-attach
+        console.log(`[GroupVideoCall] Stream details for user ${userId}:`, {
+          streamId: stream.id,
+          active: stream.active,
+          videoTracks: videoTracks.length,
+          audioTracks: audioTracks.length,
+          videoTrackDetails: videoTracks.map(t => ({
+            kind: t.kind,
+            enabled: t.enabled,
+            readyState: t.readyState,
+            muted: t.muted,
+            settings: t.getSettings?.()
+          }))
+        });
+        
+        // Force clear and re-attach with comprehensive setup
         videoElement.srcObject = null;
         videoElement.load();
         
@@ -479,18 +524,48 @@ export default function GroupVideoCall() {
           videoElement.autoplay = true;
           videoElement.playsInline = true;
           videoElement.muted = false;
+          videoElement.controls = false;
           
-          // Try to play with enhanced fallback
+          // Additional video element properties for better compatibility
+          videoElement.style.objectFit = 'cover';
+          videoElement.style.width = '100%';
+          videoElement.style.height = '100%';
+          
+          // Monitor video element state
+          console.log(`[GroupVideoCall] Video element state for user ${userId}:`, {
+            srcObject: !!videoElement.srcObject,
+            readyState: videoElement.readyState,
+            videoWidth: videoElement.videoWidth,
+            videoHeight: videoElement.videoHeight,
+            paused: videoElement.paused,
+            ended: videoElement.ended
+          });
+          
+          // Try to play with enhanced fallback and monitoring
           const playPromise = videoElement.play();
           if (playPromise !== undefined) {
             playPromise
               .then(() => {
                 console.log(`[GroupVideoCall] ✅ Video playback started for user ${userId}`);
+                
+                // Monitor video after successful play
+                setTimeout(() => {
+                  console.log(`[GroupVideoCall] Post-play video state for user ${userId}:`, {
+                    videoWidth: videoElement.videoWidth,
+                    videoHeight: videoElement.videoHeight,
+                    currentTime: videoElement.currentTime,
+                    duration: videoElement.duration,
+                    buffered: videoElement.buffered.length
+                  });
+                }, 1000);
               })
               .catch((error: any) => {
                 console.warn(`[GroupVideoCall] ⚠️ Autoplay failed for user ${userId}, trying muted:`, error);
                 videoElement.muted = true;
                 return videoElement.play();
+              })
+              .then(() => {
+                console.log(`[GroupVideoCall] ✅ Muted video playback started for user ${userId}`);
               })
               .catch((muteErr: any) => {
                 console.error(`[GroupVideoCall] ❌ All playback attempts failed for user ${userId}:`, muteErr);
