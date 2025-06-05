@@ -554,7 +554,7 @@ export class DatabaseStorage implements IStorage {
       // Enrich with contact names
       const enrichedCalls = await Promise.all(calls.map(async (call) => {
         let contactName = 'Unknown';
-        let isOutgoing = call.initiatorId === userId;
+        const isIncoming = call.initiatorId !== userId; // Since we only show incoming calls
 
         if (call.conversationId) {
           // Group call - get conversation name
@@ -564,25 +564,12 @@ export class DatabaseStorage implements IStorage {
             .where(eq(conversations.id, call.conversationId));
           contactName = conversation?.name || 'Group Call';
         } else {
-          // Individual call - get other user's name
-          if (call.initiatorId !== userId) {
-            // This is an incoming call - get caller's name
-            const [callerUser] = await db
-              .select()
-              .from(users)
-              .where(eq(users.id, call.initiatorId));
-            contactName = callerUser ? (callerUser.callsign || callerUser.fullName || 'Unknown') : 'Unknown';
-          } else {
-            // This is an outgoing call - need target user info from participants
-            const targetUserId = call.participants?.find(id => parseInt(id) !== userId);
-            if (targetUserId) {
-              const [targetUser] = await db
-                .select()
-                .from(users)
-                .where(eq(users.id, parseInt(targetUserId)));
-              contactName = targetUser ? (targetUser.callsign || targetUser.fullName || 'Unknown') : 'Unknown';
-            }
-          }
+          // Individual call - get caller's name (since this is incoming)
+          const [callerUser] = await db
+            .select()
+            .from(users)
+            .where(eq(users.id, call.initiatorId));
+          contactName = callerUser ? (callerUser.callsign || callerUser.fullName || 'Unknown') : 'Unknown';
         }
 
         return {
@@ -590,14 +577,13 @@ export class DatabaseStorage implements IStorage {
           callId: call.callId,
           callType: call.callType,
           fromUserId: call.initiatorId,
-          toUserId: call.conversationId || call.participants?.find(id => parseInt(id) !== call.initiatorId),
+          toUserId: userId,
           contactName,
-          isOutgoing,
+          isOutgoing: false, // Always false since we only show incoming calls
           status: call.status,
           duration: call.duration || 0,
           timestamp: call.startTime.toISOString(),
-          toUserName: isOutgoing ? contactName : undefined,
-          fromUserName: !isOutgoing ? contactName : undefined
+          fromUserName: contactName
         };
       }));
 

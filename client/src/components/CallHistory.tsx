@@ -96,11 +96,13 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
     }
   };
 
-  // Fetch call history
+  // Fetch call history with no cache to ensure fresh data
   const { data: callHistory = [], isLoading, refetch } = useQuery({
-    queryKey: ['/api/call-history'],
+    queryKey: ['/api/call-history', Date.now()], // Force fresh data with timestamp
     enabled: !!user,
-    refetchInterval: 3000, // Auto-refresh every 3 seconds
+    refetchInterval: 2000, // Auto-refresh every 2 seconds
+    staleTime: 0, // Always consider data stale
+    gcTime: 0, // Don't cache data
   });
 
   const getCallIcon = (callType: string) => {

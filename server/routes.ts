@@ -718,8 +718,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Authentication required" });
       }
       
-      // Get call history from storage (use in-memory for now)
+      console.log(`[API] Fetching call history for user ${userId}`);
+      
+      // Disable caching to ensure fresh data
+      res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+      
+      // Get call history from storage
       const callHistory = await storage.getCallHistory(userId);
+      console.log(`[API] Found ${callHistory.length} call history entries for user ${userId}`);
+      
       res.json(callHistory);
     } catch (error) {
       console.error("Error fetching call history:", error);
