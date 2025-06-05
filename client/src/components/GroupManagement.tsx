@@ -370,14 +370,13 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
           </div>
         </div>
 
-        <div className="flex h-[calc(90vh-80px)]">
-          {/* Left Panel - Group Info */}
-          <div className="w-1/3 border-r border-[#4a7c59]/30 p-4">
-            <ScrollArea className="h-full">
-              <div className="space-y-6">
-                {/* Group Name */}
-                <div>
-                  <label className="text-sm font-medium text-[#a6c455] mb-2 block">Nama Grup</label>
+        <div className="flex flex-col h-[calc(90vh-80px)]">
+          {/* Group Info Section */}
+          <div className="p-4 border-b border-[#4a7c59]/30">
+            <div className="space-y-4">
+              {/* Group Name */}
+              <div>
+                <label className="text-sm font-medium text-[#a6c455] mb-2 block">Nama Grup</label>
                   {isEditingName ? (
                     <div className="flex space-x-2">
                       <Input
@@ -485,54 +484,46 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
                   )}
                 </div>
 
-                {/* Group Stats */}
-                <div className="bg-[#2d4a2d]/30 p-4 rounded border border-[#4a7c59]/50">
-                  <h3 className="text-sm font-medium text-[#a6c455] mb-3">Statistik Grup</h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#7d9f7d]">Total Anggota</span>
-                      <span className="text-white font-medium">{members.length}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#7d9f7d]">Admin</span>
-                      <span className="text-white font-medium">
-                        {members.filter(m => m.role === 'admin').length}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#7d9f7d]">Online</span>
-                      <span className="text-green-400 font-medium">
-                        {members.filter(m => m.isOnline).length}
-                      </span>
-                    </div>
-                    {groupInfo?.createdAt && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-[#7d9f7d]">Dibuat</span>
-                        <span className="text-white font-medium">
-                          {new Date(groupInfo.createdAt).toLocaleDateString('id-ID')}
-                        </span>
-                      </div>
-                    )}
+                {/* Group Stats - Compact */}
+                <div className="grid grid-cols-4 gap-2 text-center">
+                  <div className="bg-[#2d4a2d]/30 p-2 rounded border border-[#4a7c59]/50">
+                    <div className="text-lg font-bold text-white">{members.length}</div>
+                    <div className="text-xs text-[#7d9f7d]">Anggota</div>
+                  </div>
+                  <div className="bg-[#2d4a2d]/30 p-2 rounded border border-[#4a7c59]/50">
+                    <div className="text-lg font-bold text-yellow-400">{members.filter(m => m.role === 'admin').length}</div>
+                    <div className="text-xs text-[#7d9f7d]">Admin</div>
+                  </div>
+                  <div className="bg-[#2d4a2d]/30 p-2 rounded border border-[#4a7c59]/50">
+                    <div className="text-lg font-bold text-green-400">{members.filter(m => m.isOnline).length}</div>
+                    <div className="text-xs text-[#7d9f7d]">Online</div>
+                  </div>
+                  <div className="bg-[#2d4a2d]/30 p-2 rounded border border-[#4a7c59]/50">
+                    <div className="text-lg font-bold text-[#a6c455]">{Math.ceil((Date.now() - new Date(groupInfo?.createdAt || Date.now()).getTime()) / (1000 * 60 * 60 * 24))}</div>
+                    <div className="text-xs text-[#7d9f7d]">Hari</div>
                   </div>
                 </div>
               </div>
-            </ScrollArea>
           </div>
 
-          {/* Right Panel - Members & Add Users */}
+          {/* Members Section */}
           <div className="flex-1 flex flex-col">
-            {/* Tab Buttons */}
-            <div className="flex border-b border-[#4a7c59]/30">
-              <div className="flex-1 p-3 bg-[#2d4a2d]/30 text-center">
-                <span className="text-[#a6c455] font-medium">Anggota Grup</span>
-              </div>
-              {isCurrentUserAdmin && (
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <div className="flex-1 p-3 hover:bg-[#4a7c59]/20 text-center cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95">
-                      <span className="text-[#7d9f7d] font-medium transition-colors duration-300 hover:text-[#a6c455]">Tambah Anggota</span>
-                    </div>
-                  </DialogTrigger>
+            {/* Section Header */}
+            <div className="p-4 border-b border-[#4a7c59]/30">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-bold text-[#a6c455]">Anggota Grup</h3>
+                {isCurrentUserAdmin && (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="border-[#4a7c59] text-[#a6c455] hover:bg-[#4a7c59]/20 transition-all duration-300 hover:scale-105 active:scale-95"
+                      >
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Tambah Anggota
+                      </Button>
+                    </DialogTrigger>
                   <DialogContent className="bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] border-[#4a7c59] max-w-md animate-in slide-in-from-bottom-4 duration-500">
                     <DialogHeader>
                       <DialogTitle className="text-[#a6c455]">Tambah Anggota</DialogTitle>

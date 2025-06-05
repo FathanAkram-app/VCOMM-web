@@ -15,7 +15,7 @@ import MessageAttachment from './MessageAttachment';
 import VoiceRecorder from './VoiceRecorder';
 import AudioPlayerInline from './AudioPlayerInline';
 import SimpleAudioPlayer from './SimpleAudioPlayer';
-import GroupManagement from './GroupManagement';
+import GroupManagementMobile from './GroupManagementMobile';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1262,7 +1262,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
 
       {/* Group Management Dialog */}
       {isGroupManagementOpen && chatData && user && (
-        <GroupManagement
+        <GroupManagementMobile
           groupId={chatId}
           groupName={chatData.name}
           onClose={() => setIsGroupManagementOpen(false)}
