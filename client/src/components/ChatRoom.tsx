@@ -726,8 +726,8 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
           attachmentName: msg.attachmentName || '',
           attachmentSize: msg.attachmentSize || 0,
           // Reply, Forward fields
-          replyToId: msg.replyToId || undefined,
-          forwardedFromId: msg.forwardedFromId || undefined,
+          replyToId: msg.replyToId,
+          forwardedFromId: msg.forwardedFromId,
           isDeleted: msg.isDeleted || false
         });
       } catch (e) {

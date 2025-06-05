@@ -1,0 +1,161 @@
+ReplyToMessage state changed: {id: 136, senderId: 3, senderName: 'aji', content: 'asxxss', timestamp: '2025-05-20T13:30:41.330Z', …}
+ChatRoom.tsx:1122 Input focused successfully
+ChatRoom.tsx:670 Processing message data for grouping: (11) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:671 Total messages to process: 11
+ChatRoom.tsx:743 Grouped messages: (2) [{…}, {…}]
+ChatRoom.tsx:744 Total date groups: 2
+ChatRoom.tsx:746 Total messages in first group: 8
+ChatRoom.tsx:1030 [Message Debug] Message ID: 118, replyToId: undefined, content: 🔊 Pesan Suara (0:08)
+ChatRoom.tsx:1030 [Message Debug] Message ID: 119, replyToId: undefined, content: [File: Screenshot_20240622_150708_Nex-xuz.jpg]
+ChatRoom.tsx:1030 [Message Debug] Message ID: 121, replyToId: undefined, content: oke nih
+ChatRoom.tsx:1030 [Message Debug] Message ID: 122, replyToId: undefined, content: sip
+ChatRoom.tsx:1030 [Message Debug] Message ID: 126, replyToId: undefined, content: cek
+ChatRoom.tsx:1030 [Message Debug] Message ID: 129, replyToId: undefined, content: okoaks
+ChatRoom.tsx:1030 [Message Debug] Message ID: 134, replyToId: undefined, content: halo
+ChatRoom.tsx:1030 [Message Debug] Message ID: 136, replyToId: undefined, content: asxxss
+ChatRoom.tsx:1030 [Message Debug] Message ID: 196, replyToId: undefined, content: cakep
+ChatRoom.tsx:1030 [Message Debug] Message ID: 201, replyToId: undefined, content: ok
+ChatRoom.tsx:1030 [Message Debug] Message ID: 205, replyToId: undefined, content: cek
+ChatRoom.tsx:1034 [DEBUG] Full message 205 object: {id: 205, senderId: 2, senderName: 'eko', content: 'cek', timestamp: '2025-06-05T09:41:34.371Z', …}
+SimpleAudioPlayer.tsx:189 Trying to play audio from URL: /uploads/f5a09bac-74c8-4688-a8fe-9eab60540a32.webm
+SimpleAudioPlayer.tsx:190 File name extracted: f5a09bac-74c8-4688-a8fe-9eab60540a32.webm
+ChatRoom.tsx:670 Processing message data for grouping: (11) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:671 Total messages to process: 11
+ChatRoom.tsx:743 Grouped messages: (2) [{…}, {…}]
+ChatRoom.tsx:744 Total date groups: 2
+ChatRoom.tsx:746 Total messages in first group: 8
+ChatRoom.tsx:1030 [Message Debug] Message ID: 118, replyToId: undefined, content: 🔊 Pesan Suara (0:08)
+ChatRoom.tsx:1030 [Message Debug] Message ID: 119, replyToId: undefined, content: [File: Screenshot_20240622_150708_Nex-xuz.jpg]
+ChatRoom.tsx:1030 [Message Debug] Message ID: 121, replyToId: undefined, content: oke nih
+ChatRoom.tsx:1030 [Message Debug] Message ID: 122, replyToId: undefined, content: sip
+ChatRoom.tsx:1030 [Message Debug] Message ID: 126, replyToId: undefined, content: cek
+ChatRoom.tsx:1030 [Message Debug] Message ID: 129, replyToId: undefined, content: okoaks
+ChatRoom.tsx:1030 [Message Debug] Message ID: 134, replyToId: undefined, content: halo
+ChatRoom.tsx:1030 [Message Debug] Message ID: 136, replyToId: undefined, content: asxxss
+ChatRoom.tsx:1030 [Message Debug] Message ID: 196, replyToId: undefined, content: cakep
+ChatRoom.tsx:1030 [Message Debug] Message ID: 201, replyToId: undefined, content: ok
+ChatRoom.tsx:1030 [Message Debug] Message ID: 205, replyToId: undefined, content: cek
+ChatRoom.tsx:1034 [DEBUG] Full message 205 object: {id: 205, senderId: 2, senderName: 'eko', content: 'cek', timestamp: '2025-06-05T09:41:34.371Z', …}
+SimpleAudioPlayer.tsx:189 Trying to play audio from URL: /uploads/f5a09bac-74c8-4688-a8fe-9eab60540a32.webm
+SimpleAudioPlayer.tsx:190 File name extracted: f5a09bac-74c8-4688-a8fe-9eab60540a32.webm
+ChatRoom.tsx:670 Processing message data for grouping: (11) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:671 Total messages to process: 11
+ChatRoom.tsx:743 Grouped messages: (2) [{…}, {…}]
+ChatRoom.tsx:744 Total date groups: 2
+ChatRoom.tsx:746 Total messages in first group: 8
+ChatRoom.tsx:1030 [Message Debug] Message ID: 118, replyToId: undefined, content: 🔊 Pesan Suara (0:08)
+ChatRoom.tsx:1030 [Message Debug] Message ID: 119, replyToId: undefined, content: [File: Screenshot_20240622_150708_Nex-xuz.jpg]
+ChatRoom.tsx:1030 [Message Debug] Message ID: 121, replyToId: undefined, content: oke nih
+ChatRoom.tsx:1030 [Message Debug] Message ID: 122, replyToId: undefined, content: sip
+ChatRoom.tsx:1030 [Message Debug] Message ID: 126, replyToId: undefined, content: cek
+ChatRoom.tsx:1030 [Message Debug] Message ID: 129, replyToId: undefined, content: okoaks
+ChatRoom.tsx:1030 [Message Debug] Message ID: 134, replyToId: undefined, content: halo
+ChatRoom.tsx:1030 [Message Debug] Message ID: 136, replyToId: undefined, content: asxxss
+ChatRoom.tsx:1030 [Message Debug] Message ID: 196, replyToId: undefined, content: cakep
+ChatRoom.tsx:1030 [Message Debug] Message ID: 201, replyToId: undefined, content: ok
+ChatRoom.tsx:1030 [Message Debug] Message ID: 205, replyToId: undefined, content: cek
+ChatRoom.tsx:1034 [DEBUG] Full message 205 object: {id: 205, senderId: 2, senderName: 'eko', content: 'cek', timestamp: '2025-06-05T09:41:34.371Z', …}
+SimpleAudioPlayer.tsx:189 Trying to play audio from URL: /uploads/f5a09bac-74c8-4688-a8fe-9eab60540a32.webm
+SimpleAudioPlayer.tsx:190 File name extracted: f5a09bac-74c8-4688-a8fe-9eab60540a32.webm
+ChatRoom.tsx:670 Processing message data for grouping: (11) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:671 Total messages to process: 11
+ChatRoom.tsx:743 Grouped messages: (2) [{…}, {…}]
+ChatRoom.tsx:744 Total date groups: 2
+ChatRoom.tsx:746 Total messages in first group: 8
+ChatRoom.tsx:1030 [Message Debug] Message ID: 118, replyToId: undefined, content: 🔊 Pesan Suara (0:08)
+ChatRoom.tsx:1030 [Message Debug] Message ID: 119, replyToId: undefined, content: [File: Screenshot_20240622_150708_Nex-xuz.jpg]
+ChatRoom.tsx:1030 [Message Debug] Message ID: 121, replyToId: undefined, content: oke nih
+ChatRoom.tsx:1030 [Message Debug] Message ID: 122, replyToId: undefined, content: sip
+ChatRoom.tsx:1030 [Message Debug] Message ID: 126, replyToId: undefined, content: cek
+ChatRoom.tsx:1030 [Message Debug] Message ID: 129, replyToId: undefined, content: okoaks
+ChatRoom.tsx:1030 [Message Debug] Message ID: 134, replyToId: undefined, content: halo
+ChatRoom.tsx:1030 [Message Debug] Message ID: 136, replyToId: undefined, content: asxxss
+ChatRoom.tsx:1030 [Message Debug] Message ID: 196, replyToId: undefined, content: cakep
+ChatRoom.tsx:1030 [Message Debug] Message ID: 201, replyToId: undefined, content: ok
+ChatRoom.tsx:1030 [Message Debug] Message ID: 205, replyToId: undefined, content: cek
+ChatRoom.tsx:1034 [DEBUG] Full message 205 object: {id: 205, senderId: 2, senderName: 'eko', content: 'cek', timestamp: '2025-06-05T09:41:34.371Z', …}
+SimpleAudioPlayer.tsx:189 Trying to play audio from URL: /uploads/f5a09bac-74c8-4688-a8fe-9eab60540a32.webm
+SimpleAudioPlayer.tsx:190 File name extracted: f5a09bac-74c8-4688-a8fe-9eab60540a32.webm
+ChatRoom.tsx:670 Processing message data for grouping: (11) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:671 Total messages to process: 11
+ChatRoom.tsx:743 Grouped messages: (2) [{…}, {…}]
+ChatRoom.tsx:744 Total date groups: 2
+ChatRoom.tsx:746 Total messages in first group: 8
+ChatRoom.tsx:1030 [Message Debug] Message ID: 118, replyToId: undefined, content: 🔊 Pesan Suara (0:08)
+ChatRoom.tsx:1030 [Message Debug] Message ID: 119, replyToId: undefined, content: [File: Screenshot_20240622_150708_Nex-xuz.jpg]
+ChatRoom.tsx:1030 [Message Debug] Message ID: 121, replyToId: undefined, content: oke nih
+ChatRoom.tsx:1030 [Message Debug] Message ID: 122, replyToId: undefined, content: sip
+ChatRoom.tsx:1030 [Message Debug] Message ID: 126, replyToId: undefined, content: cek
+ChatRoom.tsx:1030 [Message Debug] Message ID: 129, replyToId: undefined, content: okoaks
+ChatRoom.tsx:1030 [Message Debug] Message ID: 134, replyToId: undefined, content: halo
+ChatRoom.tsx:1030 [Message Debug] Message ID: 136, replyToId: undefined, content: asxxss
+ChatRoom.tsx:1030 [Message Debug] Message ID: 196, replyToId: undefined, content: cakep
+ChatRoom.tsx:1030 [Message Debug] Message ID: 201, replyToId: undefined, content: ok
+ChatRoom.tsx:1030 [Message Debug] Message ID: 205, replyToId: undefined, content: cek
+ChatRoom.tsx:1034 [DEBUG] Full message 205 object: {id: 205, senderId: 2, senderName: 'eko', content: 'cek', timestamp: '2025-06-05T09:41:34.371Z', …}
+SimpleAudioPlayer.tsx:189 Trying to play audio from URL: /uploads/f5a09bac-74c8-4688-a8fe-9eab60540a32.webm
+SimpleAudioPlayer.tsx:190 File name extracted: f5a09bac-74c8-4688-a8fe-9eab60540a32.webm
+ChatRoom.tsx:620 Current reply state: {id: 136, senderId: 3, senderName: 'aji', content: 'asxxss', timestamp: '2025-05-20T13:30:41.330Z', …}
+ChatRoom.tsx:645 Sending text message with reply data: {content: 'sippp', replyToId: 136, conversationId: 31}
+ChatRoom.tsx:670 Processing message data for grouping: (11) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:671 Total messages to process: 11
+ChatRoom.tsx:743 Grouped messages: (2) [{…}, {…}]
+ChatRoom.tsx:744 Total date groups: 2
+ChatRoom.tsx:746 Total messages in first group: 8
+ChatRoom.tsx:1030 [Message Debug] Message ID: 118, replyToId: undefined, content: 🔊 Pesan Suara (0:08)
+ChatRoom.tsx:1030 [Message Debug] Message ID: 119, replyToId: undefined, content: [File: Screenshot_20240622_150708_Nex-xuz.jpg]
+ChatRoom.tsx:1030 [Message Debug] Message ID: 121, replyToId: undefined, content: oke nih
+ChatRoom.tsx:1030 [Message Debug] Message ID: 122, replyToId: undefined, content: sip
+ChatRoom.tsx:1030 [Message Debug] Message ID: 126, replyToId: undefined, content: cek
+ChatRoom.tsx:1030 [Message Debug] Message ID: 129, replyToId: undefined, content: okoaks
+ChatRoom.tsx:1030 [Message Debug] Message ID: 134, replyToId: undefined, content: halo
+ChatRoom.tsx:1030 [Message Debug] Message ID: 136, replyToId: undefined, content: asxxss
+ChatRoom.tsx:1030 [Message Debug] Message ID: 196, replyToId: undefined, content: cakep
+ChatRoom.tsx:1030 [Message Debug] Message ID: 201, replyToId: undefined, content: ok
+ChatRoom.tsx:1030 [Message Debug] Message ID: 205, replyToId: undefined, content: cek
+ChatRoom.tsx:1034 [DEBUG] Full message 205 object: {id: 205, senderId: 2, senderName: 'eko', content: 'cek', timestamp: '2025-06-05T09:41:34.371Z', …}
+SimpleAudioPlayer.tsx:189 Trying to play audio from URL: /uploads/f5a09bac-74c8-4688-a8fe-9eab60540a32.webm
+SimpleAudioPlayer.tsx:190 File name extracted: f5a09bac-74c8-4688-a8fe-9eab60540a32.webm
+ChatRoom.tsx:170 ReplyToMessage state changed: null
+CallContext.tsx:421 [CallContext] Received message: {type: 'new_message', payload: {…}}
+ChatRoom.tsx:670 Processing message data for grouping: (11) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:671 Total messages to process: 11
+ChatRoom.tsx:743 Grouped messages: (2) [{…}, {…}]
+ChatRoom.tsx:744 Total date groups: 2
+ChatRoom.tsx:746 Total messages in first group: 8
+ChatRoom.tsx:1030 [Message Debug] Message ID: 118, replyToId: undefined, content: 🔊 Pesan Suara (0:08)
+ChatRoom.tsx:1030 [Message Debug] Message ID: 119, replyToId: undefined, content: [File: Screenshot_20240622_150708_Nex-xuz.jpg]
+ChatRoom.tsx:1030 [Message Debug] Message ID: 121, replyToId: undefined, content: oke nih
+ChatRoom.tsx:1030 [Message Debug] Message ID: 122, replyToId: undefined, content: sip
+ChatRoom.tsx:1030 [Message Debug] Message ID: 126, replyToId: undefined, content: cek
+ChatRoom.tsx:1030 [Message Debug] Message ID: 129, replyToId: undefined, content: okoaks
+ChatRoom.tsx:1030 [Message Debug] Message ID: 134, replyToId: undefined, content: halo
+ChatRoom.tsx:1030 [Message Debug] Message ID: 136, replyToId: undefined, content: asxxss
+ChatRoom.tsx:1030 [Message Debug] Message ID: 196, replyToId: undefined, content: cakep
+ChatRoom.tsx:1030 [Message Debug] Message ID: 201, replyToId: undefined, content: ok
+ChatRoom.tsx:1030 [Message Debug] Message ID: 205, replyToId: undefined, content: cek
+ChatRoom.tsx:1034 [DEBUG] Full message 205 object: {id: 205, senderId: 2, senderName: 'eko', content: 'cek', timestamp: '2025-06-05T09:41:34.371Z', …}
+SimpleAudioPlayer.tsx:189 Trying to play audio from URL: /uploads/f5a09bac-74c8-4688-a8fe-9eab60540a32.webm
+SimpleAudioPlayer.tsx:190 File name extracted: f5a09bac-74c8-4688-a8fe-9eab60540a32.webm
+ChatRoom.tsx:670 Processing message data for grouping: (12) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:671 Total messages to process: 12
+ChatRoom.tsx:743 Grouped messages: (2) [{…}, {…}]
+ChatRoom.tsx:744 Total date groups: 2
+ChatRoom.tsx:746 Total messages in first group: 8
+ChatRoom.tsx:1030 [Message Debug] Message ID: 118, replyToId: undefined, content: 🔊 Pesan Suara (0:08)
+ChatRoom.tsx:1030 [Message Debug] Message ID: 119, replyToId: undefined, content: [File: Screenshot_20240622_150708_Nex-xuz.jpg]
+ChatRoom.tsx:1030 [Message Debug] Message ID: 121, replyToId: undefined, content: oke nih
+ChatRoom.tsx:1030 [Message Debug] Message ID: 122, replyToId: undefined, content: sip
+ChatRoom.tsx:1030 [Message Debug] Message ID: 126, replyToId: undefined, content: cek
+ChatRoom.tsx:1030 [Message Debug] Message ID: 129, replyToId: undefined, content: okoaks
+ChatRoom.tsx:1030 [Message Debug] Message ID: 134, replyToId: undefined, content: halo
+ChatRoom.tsx:1030 [Message Debug] Message ID: 136, replyToId: undefined, content: asxxss
+ChatRoom.tsx:1030 [Message Debug] Message ID: 196, replyToId: undefined, content: cakep
+ChatRoom.tsx:1030 [Message Debug] Message ID: 201, replyToId: undefined, content: ok
+ChatRoom.tsx:1030 [Message Debug] Message ID: 205, replyToId: undefined, content: cek
+ChatRoom.tsx:1034 [DEBUG] Full message 205 object: {id: 205, senderId: 2, senderName: 'eko', content: 'cek', timestamp: '2025-06-05T09:41:34.371Z', …}
+ChatRoom.tsx:1030 [Message Debug] Message ID: 206, replyToId: undefined, content: sippp
+SimpleAudioPlayer.tsx:189 Trying to play audio from URL: /uploads/f5a09bac-74c8-4688-a8fe-9eab60540a32.webm
+SimpleAudioPlayer.tsx:190 File name extracted: f5a09bac-74c8-4688-a8fe-9eab60540a32.webm
+ChatRoom.tsx:162 Messages data received: (12) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:164 Fetched 12 messages for chat 31
