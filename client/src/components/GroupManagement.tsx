@@ -693,6 +693,7 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
             </div>
           </div>
         </div>
+        </div>
       </div>
     </div>
   );

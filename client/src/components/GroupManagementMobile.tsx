@@ -48,17 +48,17 @@ export default function GroupManagementMobile({ groupId, groupName, onClose, cur
   const queryClient = useQueryClient();
 
   // Fetch group info
-  const { data: groupInfo, isLoading: isLoadingInfo } = useQuery({
+  const { data: groupInfo, isLoading: isLoadingInfo } = useQuery<GroupInfo>({
     queryKey: [`/api/group-info/${groupId}`],
   });
 
   // Fetch group members
-  const { data: members = [], isLoading: isLoadingMembers } = useQuery({
+  const { data: members = [], isLoading: isLoadingMembers } = useQuery<GroupMember[]>({
     queryKey: [`/api/group-members/${groupId}`],
   });
 
   // Fetch all users for adding
-  const { data: allUsers = [] } = useQuery({
+  const { data: allUsers = [] } = useQuery<any[]>({
     queryKey: ['/api/all-users'],
   });
 
@@ -73,9 +73,10 @@ export default function GroupManagementMobile({ groupId, groupName, onClose, cur
   // Update group name mutation
   const updateGroupNameMutation = useMutation({
     mutationFn: async (name: string) => {
-      await apiRequest(`/api/groups/${groupId}`, {
+      return await apiRequest(`/api/groups/${groupId}`, {
         method: 'PATCH',
-        body: { name }
+        body: JSON.stringify({ name }),
+        headers: { 'Content-Type': 'application/json' }
       });
     },
     onSuccess: () => {
@@ -91,9 +92,10 @@ export default function GroupManagementMobile({ groupId, groupName, onClose, cur
   // Add members mutation
   const addMembersMutation = useMutation({
     mutationFn: async (userIds: number[]) => {
-      await apiRequest(`/api/groups/${groupId}/members`, {
+      return await fetch(`/api/groups/${groupId}/members`, {
         method: 'POST',
-        body: { userIds }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userIds })
       });
     },
     onSuccess: () => {

@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { PhoneOff, Mic, MicOff, Video, VideoOff, Users, ArrowLeft, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import GroupManagement from './GroupManagement';
+// Removed GroupManagement import - menu removed from video call interface
 
 interface GroupParticipant {
   userId: number;
@@ -91,7 +91,7 @@ export default function GroupVideoCall() {
   const [isMaximized, setIsMaximized] = useState(false);
   const [maximizedParticipant, setMaximizedParticipant] = useState<GroupParticipant | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
-  const [showGroupManagement, setShowGroupManagement] = useState(false);
+  // Removed group management state - menu removed from video call interface
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const participantVideoRefs = useRef<{ [userId: number]: HTMLVideoElement }>({});
   const peerConnections = useRef<{ [userId: number]: RTCPeerConnection }>({});
