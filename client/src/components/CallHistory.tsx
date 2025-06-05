@@ -14,18 +14,14 @@ interface CallHistoryProps {
 interface CallHistoryItem {
   id: number;
   callId: string;
-  callType: 'audio' | 'video' | 'group_audio' | 'group_video';
-  initiatorId: number;
-  initiatorName: string;
-  conversationId?: number;
-  conversationName?: string;
-  participants: string[];
-  participantNames: string[];
-  status: 'completed' | 'missed' | 'rejected' | 'failed';
-  startTime: string;
-  endTime?: string;
-  duration?: number;
-  createdAt: string;
+  callType: string;
+  fromUserId: number;
+  fromUserName: string;
+  toUserId: number;
+  toUserName: string;
+  status: string;
+  duration: number;
+  timestamp: string;
 }
 
 export default function CallHistory({ onBack }: CallHistoryProps) {
@@ -33,9 +29,10 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
   const [filter, setFilter] = useState<'all' | 'audio' | 'video' | 'group'>('all');
 
   // Fetch call history
-  const { data: callHistory = [], isLoading } = useQuery({
+  const { data: callHistory = [], isLoading, refetch } = useQuery({
     queryKey: ['/api/call-history'],
     enabled: !!user,
+    refetchInterval: 3000, // Auto-refresh every 3 seconds
   });
 
   const getCallIcon = (callType: string) => {
@@ -100,13 +97,13 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  const filteredHistory = callHistory.filter((call: CallHistoryItem) => {
+  const filteredHistory = Array.isArray(callHistory) ? callHistory.filter((call: any) => {
     if (filter === 'all') return true;
     if (filter === 'audio') return call.callType === 'audio';
     if (filter === 'video') return call.callType === 'video';
-    if (filter === 'group') return call.callType.startsWith('group_');
+    if (filter === 'group') return call.callType?.startsWith('group_');
     return true;
-  });
+  }) : [];
 
   if (isLoading) {
     return (
@@ -220,10 +217,20 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
                       <div className="flex items-center mt-1 text-xs text-gray-500">
                         <Calendar className="w-3 h-3 mr-1" />
                         <span>
-                          {formatDistanceToNow(new Date(call.startTime), { 
-                            addSuffix: true, 
-                            locale: id 
-                          })}
+                          {(() => {
+                            try {
+                              const date = new Date(call.timestamp || call.startTime);
+                              if (isNaN(date.getTime())) {
+                                return 'Waktu tidak valid';
+                              }
+                              return formatDistanceToNow(date, { 
+                                addSuffix: true, 
+                                locale: id 
+                              });
+                            } catch (error) {
+                              return 'Baru saja';
+                            }
+                          })()}
                         </span>
                       </div>
                     </div>
