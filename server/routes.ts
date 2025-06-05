@@ -615,16 +615,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/conversations/:id', isAuthenticated, async (req: AuthRequest, res) => {
     try {
       const conversationId = parseInt(req.params.id);
-      console.log('[DEBUG DELETE] Request user object:', JSON.stringify(req.user, null, 2));
-      
-      const userId = req.user?.claims?.sub;
+      const userId = req.session?.user?.id;
       
       if (!userId) {
-        console.log('[DEBUG DELETE] User ID not found. req.user:', req.user);
         return res.status(400).json({ message: "User ID not found in session" });
       }
       
-      console.log(`[DEBUG DELETE] User ${userId} attempting to delete conversation ${conversationId}`);
+      console.log(`[API] User ${userId} attempting to delete conversation ${conversationId}`);
       
       if (isNaN(conversationId)) {
         return res.status(400).json({ message: "Invalid conversation ID" });
@@ -655,7 +652,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/conversations/:id/clear', isAuthenticated, async (req: AuthRequest, res) => {
     try {
       const conversationId = parseInt(req.params.id);
-      const userId = req.user?.claims?.sub;
+      const userId = req.session?.user?.id;
       
       if (!userId) {
         return res.status(400).json({ message: "User ID not found in session" });
