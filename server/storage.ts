@@ -436,7 +436,7 @@ export class DatabaseStorage implements IStorage {
         .update(conversations)
         .set({ 
           lastMessage: null,
-          lastMessageAt: null,
+          lastMessageTime: null,
           updatedAt: new Date()
         })
         .where(eq(conversations.id, conversationId));

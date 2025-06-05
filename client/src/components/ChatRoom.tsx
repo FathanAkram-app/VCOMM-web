@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import { useCall } from '@/hooks/useCall';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { queryClient } from '@/lib/queryClient';
+import { queryClient, apiRequest } from '@/lib/queryClient';
 import { formatDistanceToNow } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { type Conversation, type Message } from '@shared/schema';
@@ -516,21 +516,14 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   // Clear chat history mutation
   const clearChatHistoryMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch(`/api/conversations/${chatId}/clear`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to clear chat history');
-      }
-      
-      return response.json();
+      await apiRequest('POST', `/api/conversations/${chatId}/clear`);
     },
     onSuccess: () => {
       // Refresh messages after clearing
       queryClient.invalidateQueries({ queryKey: [`/api/conversations/${chatId}/messages`] });
       queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/direct-chats'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/rooms'] });
     },
   });
 
