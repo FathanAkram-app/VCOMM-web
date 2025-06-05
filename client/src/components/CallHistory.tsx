@@ -100,6 +100,11 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
   };
 
   const filteredHistory = Array.isArray(callHistory) ? callHistory.filter((call: any) => {
+    // Hanya tampilkan missed calls dan incoming calls (bukan outgoing)
+    const isIncomingOrMissed = call.status === 'missed' || (call.status === 'accepted' && !call.isOutgoing);
+    
+    if (!isIncomingOrMissed) return false;
+    
     if (filter === 'all') return true;
     if (filter === 'audio') return call.callType === 'audio';
     if (filter === 'video') return call.callType === 'video';

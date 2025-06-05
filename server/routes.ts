@@ -1064,6 +1064,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             console.log(`[Group Call] Sent ${invitationsSent} group call invitations for call ${callId}`);
             
+            // Log group call initiation to call history
+            await storage.addCallHistory({
+              callId,
+              callType: callType,
+              fromUserId,
+              fromUserName,
+              toUserId: groupId, // For group calls, use groupId as target
+              toUserName: groupName,
+              status: 'initiated',
+              duration: 0
+            });
+            
             // Add the initiator to the group call participants
             if (!activeGroupCalls.has(callId)) {
               activeGroupCalls.set(callId, new Set());
