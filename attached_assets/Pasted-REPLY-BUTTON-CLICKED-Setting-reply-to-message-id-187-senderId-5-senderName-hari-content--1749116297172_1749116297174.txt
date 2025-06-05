@@ -1,0 +1,82 @@
+REPLY BUTTON CLICKED - Setting reply to message: {id: 187, senderId: 5, senderName: 'hari', content: 'Ok', timestamp: '2025-06-03T13:31:01.108Z', …}
+ChatRoom.tsx:1109 Current replyToMessage state: null
+ChatRoom.tsx:1111 After setting reply, new state should be: {id: 187, senderId: 5, senderName: 'hari', content: 'Ok', timestamp: '2025-06-03T13:31:01.108Z', …}
+ChatRoom.tsx:670 Processing message data for grouping: (5) [{…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:671 Total messages to process: 5
+ChatRoom.tsx:743 Grouped messages: (2) [{…}, {…}]
+ChatRoom.tsx:744 Total date groups: 2
+ChatRoom.tsx:746 Total messages in first group: 3
+ChatRoom.tsx:1030 [Message Debug] Message ID: 186, replyToId: undefined, content: Tes
+ChatRoom.tsx:1030 [Message Debug] Message ID: 187, replyToId: undefined, content: Ok
+ChatRoom.tsx:1030 [Message Debug] Message ID: 188, replyToId: undefined, content: mantapp
+ChatRoom.tsx:1030 [Message Debug] Message ID: 202, replyToId: undefined, content: ini
+ChatRoom.tsx:1030 [Message Debug] Message ID: 203, replyToId: undefined, content: cek
+ChatRoom.tsx:170 ReplyToMessage state changed: {id: 187, senderId: 5, senderName: 'hari', content: 'Ok', timestamp: '2025-06-03T13:31:01.108Z', …}
+ChatRoom.tsx:1117 Input focused successfully
+ChatRoom.tsx:670 Processing message data for grouping: (5) [{…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:671 Total messages to process: 5
+ChatRoom.tsx:743 Grouped messages: (2) [{…}, {…}]
+ChatRoom.tsx:744 Total date groups: 2
+ChatRoom.tsx:746 Total messages in first group: 3
+ChatRoom.tsx:1030 [Message Debug] Message ID: 186, replyToId: undefined, content: Tes
+ChatRoom.tsx:1030 [Message Debug] Message ID: 187, replyToId: undefined, content: Ok
+ChatRoom.tsx:1030 [Message Debug] Message ID: 188, replyToId: undefined, content: mantapp
+ChatRoom.tsx:1030 [Message Debug] Message ID: 202, replyToId: undefined, content: ini
+ChatRoom.tsx:1030 [Message Debug] Message ID: 203, replyToId: undefined, content: cek
+ChatRoom.tsx:670 Processing message data for grouping: (5) [{…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:671 Total messages to process: 5
+ChatRoom.tsx:743 Grouped messages: (2) [{…}, {…}]
+ChatRoom.tsx:744 Total date groups: 2
+ChatRoom.tsx:746 Total messages in first group: 3
+ChatRoom.tsx:1030 [Message Debug] Message ID: 186, replyToId: undefined, content: Tes
+ChatRoom.tsx:1030 [Message Debug] Message ID: 187, replyToId: undefined, content: Ok
+ChatRoom.tsx:1030 [Message Debug] Message ID: 188, replyToId: undefined, content: mantapp
+ChatRoom.tsx:1030 [Message Debug] Message ID: 202, replyToId: undefined, content: ini
+ChatRoom.tsx:1030 [Message Debug] Message ID: 203, replyToId: undefined, content: cek
+ChatRoom.tsx:670 Processing message data for grouping: (5) [{…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:671 Total messages to process: 5
+ChatRoom.tsx:743 Grouped messages: (2) [{…}, {…}]
+ChatRoom.tsx:744 Total date groups: 2
+ChatRoom.tsx:746 Total messages in first group: 3
+ChatRoom.tsx:1030 [Message Debug] Message ID: 186, replyToId: undefined, content: Tes
+ChatRoom.tsx:1030 [Message Debug] Message ID: 187, replyToId: undefined, content: Ok
+ChatRoom.tsx:1030 [Message Debug] Message ID: 188, replyToId: undefined, content: mantapp
+ChatRoom.tsx:1030 [Message Debug] Message ID: 202, replyToId: undefined, content: ini
+ChatRoom.tsx:1030 [Message Debug] Message ID: 203, replyToId: undefined, content: cek
+ChatRoom.tsx:620 Current reply state: {id: 187, senderId: 5, senderName: 'hari', content: 'Ok', timestamp: '2025-06-03T13:31:01.108Z', …}
+ChatRoom.tsx:645 Sending text message with reply data: {content: 'asd', replyToId: 187, conversationId: 37}
+ChatRoom.tsx:670 Processing message data for grouping: (5) [{…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:671 Total messages to process: 5
+ChatRoom.tsx:743 Grouped messages: (2) [{…}, {…}]
+ChatRoom.tsx:744 Total date groups: 2
+ChatRoom.tsx:746 Total messages in first group: 3
+ChatRoom.tsx:1030 [Message Debug] Message ID: 186, replyToId: undefined, content: Tes
+ChatRoom.tsx:1030 [Message Debug] Message ID: 187, replyToId: undefined, content: Ok
+ChatRoom.tsx:1030 [Message Debug] Message ID: 188, replyToId: undefined, content: mantapp
+ChatRoom.tsx:1030 [Message Debug] Message ID: 202, replyToId: undefined, content: ini
+ChatRoom.tsx:1030 [Message Debug] Message ID: 203, replyToId: undefined, content: cek
+ChatRoom.tsx:170 ReplyToMessage state changed: null
+CallContext.tsx:421 [CallContext] Received message: {type: 'new_message', payload: {…}}
+ChatRoom.tsx:670 Processing message data for grouping: (5) [{…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:671 Total messages to process: 5
+ChatRoom.tsx:743 Grouped messages: (2) [{…}, {…}]
+ChatRoom.tsx:744 Total date groups: 2
+ChatRoom.tsx:746 Total messages in first group: 3
+ChatRoom.tsx:1030 [Message Debug] Message ID: 186, replyToId: undefined, content: Tes
+ChatRoom.tsx:1030 [Message Debug] Message ID: 187, replyToId: undefined, content: Ok
+ChatRoom.tsx:1030 [Message Debug] Message ID: 188, replyToId: undefined, content: mantapp
+ChatRoom.tsx:1030 [Message Debug] Message ID: 202, replyToId: undefined, content: ini
+ChatRoom.tsx:1030 [Message Debug] Message ID: 203, replyToId: undefined, content: cek
+ChatRoom.tsx:670 Processing message data for grouping: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:671 Total messages to process: 6
+ChatRoom.tsx:743 Grouped messages: (2) [{…}, {…}]
+ChatRoom.tsx:744 Total date groups: 2
+ChatRoom.tsx:746 Total messages in first group: 3
+ChatRoom.tsx:1030 [Message Debug] Message ID: 186, replyToId: undefined, content: Tes
+ChatRoom.tsx:1030 [Message Debug] Message ID: 187, replyToId: undefined, content: Ok
+ChatRoom.tsx:1030 [Message Debug] Message ID: 188, replyToId: undefined, content: mantapp
+ChatRoom.tsx:1030 [Message Debug] Message ID: 202, replyToId: undefined, content: ini
+ChatRoom.tsx:1030 [Message Debug] Message ID: 203, replyToId: undefined, content: cek
+ChatRoom.tsx:1030 [Message Debug] Message ID: 204, replyToId: undefined, content: asd
+ChatRoom.tsx:162 Messages data received: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:164 Fetched 6 messages for chat 37

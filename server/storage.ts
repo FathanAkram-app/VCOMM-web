@@ -311,7 +311,24 @@ export class DatabaseStorage implements IStorage {
 
   async getMessagesByConversation(conversationId: number): Promise<Message[]> {
     return await db
-      .select()
+      .select({
+        id: messages.id,
+        content: messages.content,
+        senderId: messages.senderId,
+        conversationId: messages.conversationId,
+        createdAt: messages.createdAt,
+        updatedAt: messages.updatedAt,
+        classification: messages.classification,
+        hasAttachment: messages.hasAttachment,
+        attachmentType: messages.attachmentType,
+        attachmentUrl: messages.attachmentUrl,
+        attachmentName: messages.attachmentName,
+        attachmentSize: messages.attachmentSize,
+        replyToId: messages.replyToId,
+        forwardedFromId: messages.forwardedFromId,
+        isDeleted: messages.isDeleted,
+        isRead: messages.isRead
+      })
       .from(messages)
       .where(eq(messages.conversationId, conversationId))
       .orderBy(messages.createdAt);
