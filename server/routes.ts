@@ -1151,6 +1151,235 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error broadcasting to conversation:', error);
     }
   }
+
+  // Group Management API Routes
+  
+  // Get group information
+  app.get('/api/group-info/:groupId', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const groupId = parseInt(req.params.groupId);
+      const userId = req.session?.user?.id;
+      
+      if (!groupId || !userId) {
+        return res.status(400).json({ message: 'Invalid group ID or user ID' });
+      }
+      
+      // Get group conversation
+      const conversation = await storage.getConversation(groupId);
+      if (!conversation || !conversation.isGroup) {
+        return res.status(404).json({ message: 'Group not found' });
+      }
+      
+      // Check if user is member
+      const membership = await storage.getConversationMembership(userId, groupId);
+      if (!membership) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+      
+      // Get member count
+      const members = await storage.getConversationMembers(groupId);
+      
+      res.json({
+        id: conversation.id,
+        name: conversation.name,
+        description: conversation.description,
+        createdAt: conversation.createdAt,
+        memberCount: members.length,
+        isAdmin: membership.role === 'admin',
+        classification: conversation.classification
+      });
+    } catch (error) {
+      console.error('Error getting group info:', error);
+      res.status(500).json({ message: 'Failed to get group info' });
+    }
+  });
+  
+  // Get group members
+  app.get('/api/group-members/:groupId', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const groupId = parseInt(req.params.groupId);
+      const userId = req.session?.user?.id;
+      
+      if (!groupId || !userId) {
+        return res.status(400).json({ message: 'Invalid group ID or user ID' });
+      }
+      
+      // Check if user is member
+      const membership = await storage.getConversationMembership(userId, groupId);
+      if (!membership) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+      
+      const members = await storage.getConversationMembers(groupId);
+      
+      // Get user details and online status
+      const memberDetails = await Promise.all(
+        members.map(async (member) => {
+          const user = await storage.getUser(member.userId);
+          return {
+            id: user?.id,
+            callsign: user?.callsign,
+            fullName: user?.fullName,
+            role: member.role,
+            joinedAt: member.joinedAt,
+            isOnline: userConnections.has(member.userId)
+          };
+        })
+      );
+      
+      res.json(memberDetails);
+    } catch (error) {
+      console.error('Error getting group members:', error);
+      res.status(500).json({ message: 'Failed to get group members' });
+    }
+  });
+  
+  // Update group name
+  app.patch('/api/groups/:groupId/name', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const groupId = parseInt(req.params.groupId);
+      const userId = req.session?.user?.id;
+      const { name } = req.body;
+      
+      if (!groupId || !userId || !name?.trim()) {
+        return res.status(400).json({ message: 'Invalid data' });
+      }
+      
+      // Check if user is admin
+      const membership = await storage.getConversationMembership(userId, groupId);
+      if (!membership || membership.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
+      await storage.updateConversation(groupId, { name: name.trim() });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error updating group name:', error);
+      res.status(500).json({ message: 'Failed to update group name' });
+    }
+  });
+  
+  // Update group description
+  app.patch('/api/groups/:groupId/description', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const groupId = parseInt(req.params.groupId);
+      const userId = req.session?.user?.id;
+      const { description } = req.body;
+      
+      if (!groupId || !userId) {
+        return res.status(400).json({ message: 'Invalid data' });
+      }
+      
+      // Check if user is admin
+      const membership = await storage.getConversationMembership(userId, groupId);
+      if (!membership || membership.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
+      await storage.updateConversation(groupId, { description: description?.trim() || null });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error updating group description:', error);
+      res.status(500).json({ message: 'Failed to update group description' });
+    }
+  });
+  
+  // Add members to group
+  app.post('/api/groups/:groupId/members', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const groupId = parseInt(req.params.groupId);
+      const userId = req.session?.user?.id;
+      const { userIds } = req.body;
+      
+      if (!groupId || !userId || !Array.isArray(userIds)) {
+        return res.status(400).json({ message: 'Invalid data' });
+      }
+      
+      // Check if user is admin
+      const membership = await storage.getConversationMembership(userId, groupId);
+      if (!membership || membership.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
+      // Add users to group
+      for (const targetUserId of userIds) {
+        const existingMembership = await storage.getConversationMembership(targetUserId, groupId);
+        if (!existingMembership) {
+          await storage.addConversationMember(targetUserId, groupId, 'member');
+        }
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error adding group members:', error);
+      res.status(500).json({ message: 'Failed to add group members' });
+    }
+  });
+  
+  // Remove member from group
+  app.delete('/api/groups/:groupId/members/:memberId', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const groupId = parseInt(req.params.groupId);
+      const memberId = parseInt(req.params.memberId);
+      const userId = req.session?.user?.id;
+      
+      if (!groupId || !memberId || !userId) {
+        return res.status(400).json({ message: 'Invalid data' });
+      }
+      
+      // Check if user is admin
+      const membership = await storage.getConversationMembership(userId, groupId);
+      if (!membership || membership.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
+      // Can't remove yourself
+      if (memberId === userId) {
+        return res.status(400).json({ message: 'Cannot remove yourself' });
+      }
+      
+      await storage.removeConversationMember(memberId, groupId);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error removing group member:', error);
+      res.status(500).json({ message: 'Failed to remove group member' });
+    }
+  });
+  
+  // Change member role
+  app.patch('/api/groups/:groupId/members/:memberId/role', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const groupId = parseInt(req.params.groupId);
+      const memberId = parseInt(req.params.memberId);
+      const userId = req.session?.user?.id;
+      const { role } = req.body;
+      
+      if (!groupId || !memberId || !userId || !['admin', 'member'].includes(role)) {
+        return res.status(400).json({ message: 'Invalid data' });
+      }
+      
+      // Check if user is admin
+      const membership = await storage.getConversationMembership(userId, groupId);
+      if (!membership || membership.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
+      // Can't change your own role
+      if (memberId === userId) {
+        return res.status(400).json({ message: 'Cannot change your own role' });
+      }
+      
+      await storage.updateConversationMemberRole(memberId, groupId, role);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error changing member role:', error);
+      res.status(500).json({ message: 'Failed to change member role' });
+    }
+  });
   
   // Message delete endpoint
   app.delete('/api/messages/:id', isAuthenticated, async (req: AuthRequest, res) => {

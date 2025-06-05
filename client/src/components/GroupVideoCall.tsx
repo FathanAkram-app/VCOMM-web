@@ -1220,6 +1220,16 @@ export default function GroupVideoCall() {
           <PhoneOff className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* Group Management Modal */}
+      {showGroupManagement && activeCall?.groupId && user?.id && (
+        <GroupManagement
+          groupId={activeCall.groupId}
+          groupName={groupName}
+          onClose={() => setShowGroupManagement(false)}
+          currentUserId={user.id}
+        />
+      )}
     </div>
   );
 }

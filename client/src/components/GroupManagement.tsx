@@ -70,10 +70,20 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
   // Update group name mutation
   const updateGroupNameMutation = useMutation({
     mutationFn: async (name: string) => {
-      return await apiRequest(`/api/groups/${groupId}/name`, {
+      const response = await fetch(`/api/groups/${groupId}/name`, {
         method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
         body: JSON.stringify({ name })
       });
+      
+      if (!response.ok) {
+        throw new Error(`${response.status}: ${response.statusText}`);
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -96,10 +106,20 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
   // Update group description mutation
   const updateGroupDescriptionMutation = useMutation({
     mutationFn: async (description: string) => {
-      return await apiRequest(`/api/groups/${groupId}/description`, {
+      const response = await fetch(`/api/groups/${groupId}/description`, {
         method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
         body: JSON.stringify({ description })
       });
+      
+      if (!response.ok) {
+        throw new Error(`${response.status}: ${response.statusText}`);
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -121,10 +141,20 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
   // Add members mutation
   const addMembersMutation = useMutation({
     mutationFn: async (userIds: number[]) => {
-      return await apiRequest(`/api/groups/${groupId}/members`, {
+      const response = await fetch(`/api/groups/${groupId}/members`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
         body: JSON.stringify({ userIds })
       });
+      
+      if (!response.ok) {
+        throw new Error(`${response.status}: ${response.statusText}`);
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -147,9 +177,16 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
   // Remove member mutation
   const removeMemberMutation = useMutation({
     mutationFn: async (userId: number) => {
-      return await apiRequest(`/api/groups/${groupId}/members/${userId}`, {
-        method: 'DELETE'
+      const response = await fetch(`/api/groups/${groupId}/members/${userId}`, {
+        method: 'DELETE',
+        credentials: 'include'
       });
+      
+      if (!response.ok) {
+        throw new Error(`${response.status}: ${response.statusText}`);
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       toast({
