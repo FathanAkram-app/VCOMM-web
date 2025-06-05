@@ -418,9 +418,9 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
                           onClick={() => setIsEditingName(true)}
                           size="sm"
                           variant="ghost"
-                          className="text-[#7d9f7d] hover:text-[#a6c455] hover:bg-[#4a7c59]/20"
+                          className="text-[#7d9f7d] hover:text-[#a6c455] hover:bg-[#4a7c59]/20 transition-all duration-300 hover:scale-110 active:scale-95"
                         >
-                          <Edit3 className="h-4 w-4" />
+                          <Edit3 className="h-4 w-4 transition-transform duration-300 hover:rotate-12" />
                         </Button>
                       )}
                     </div>
@@ -435,16 +435,21 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
                       <textarea
                         value={newDescription}
                         onChange={(e) => setNewDescription(e.target.value)}
-                        className="w-full bg-[#2d4a2d]/50 border border-[#4a7c59] rounded p-3 text-white resize-none h-20"
+                        className="w-full bg-[#2d4a2d]/50 border border-[#4a7c59] rounded p-3 text-white resize-none h-20 transition-all duration-300 focus:border-[#a6c455] focus:ring-2 focus:ring-[#a6c455]/20 hover:border-[#5a8c69]"
                         placeholder="Deskripsi grup..."
                       />
                       <div className="flex space-x-2">
                         <Button
                           onClick={handleSaveDescription}
                           size="sm"
-                          className="bg-[#4a7c59] hover:bg-[#5a8c69] text-white"
+                          disabled={updateGroupDescriptionMutation.isPending}
+                          className="bg-[#4a7c59] hover:bg-[#5a8c69] text-white transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50"
                         >
-                          <Save className="h-4 w-4" />
+                          {updateGroupDescriptionMutation.isPending ? (
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          ) : (
+                            <Save className="h-4 w-4" />
+                          )}
                         </Button>
                         <Button
                           onClick={() => {
@@ -453,7 +458,7 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
                           }}
                           size="sm"
                           variant="outline"
-                          className="border-[#4a7c59] text-[#7d9f7d] hover:bg-[#4a7c59]/20"
+                          className="border-[#4a7c59] text-[#7d9f7d] hover:bg-[#4a7c59]/20 transition-all duration-300 hover:scale-105 active:scale-95"
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -524,11 +529,11 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
               {isCurrentUserAdmin && (
                 <Dialog>
                   <DialogTrigger asChild>
-                    <div className="flex-1 p-3 hover:bg-[#4a7c59]/20 text-center cursor-pointer transition-colors">
-                      <span className="text-[#7d9f7d] font-medium">Tambah Anggota</span>
+                    <div className="flex-1 p-3 hover:bg-[#4a7c59]/20 text-center cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95">
+                      <span className="text-[#7d9f7d] font-medium transition-colors duration-300 hover:text-[#a6c455]">Tambah Anggota</span>
                     </div>
                   </DialogTrigger>
-                  <DialogContent className="bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] border-[#4a7c59] max-w-md">
+                  <DialogContent className="bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] border-[#4a7c59] max-w-md animate-in slide-in-from-bottom-4 duration-500">
                     <DialogHeader>
                       <DialogTitle className="text-[#a6c455]">Tambah Anggota</DialogTitle>
                     </DialogHeader>
@@ -539,15 +544,16 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
                           placeholder="Cari pengguna..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="pl-10 bg-[#2d4a2d]/50 border-[#4a7c59] text-white"
+                          className="pl-10 bg-[#2d4a2d]/50 border-[#4a7c59] text-white transition-all duration-300 focus:border-[#a6c455] focus:ring-2 focus:ring-[#a6c455]/20 hover:border-[#5a8c69]"
                         />
                       </div>
                       <ScrollArea className="h-60">
                         <div className="space-y-2">
-                          {availableUsers.map(user => (
+                          {availableUsers.map((user, index) => (
                             <div
                               key={user.id}
-                              className="flex items-center space-x-3 p-2 hover:bg-[#4a7c59]/20 rounded cursor-pointer"
+                              className="flex items-center space-x-3 p-2 hover:bg-[#4a7c59]/20 rounded cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-md animate-in slide-in-from-left-2 duration-500"
+                              style={{ animationDelay: `${index * 100}ms` }}
                               onClick={() => {
                                 setSelectedUsers(prev => 
                                   prev.includes(user.id)
@@ -557,21 +563,21 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
                               }}
                             >
                               <div className="relative">
-                                <Avatar className="h-8 w-8 bg-[#4a7c59]">
+                                <Avatar className="h-8 w-8 bg-[#4a7c59] transition-all duration-300 hover:scale-110">
                                   <AvatarFallback className="bg-[#4a7c59] text-white text-xs">
                                     {user.callsign.substring(0, 2).toUpperCase()}
                                   </AvatarFallback>
                                 </Avatar>
                                 {selectedUsers.includes(user.id) && (
-                                  <div className="absolute -top-1 -right-1 bg-[#a6c455] rounded-full p-0.5">
+                                  <div className="absolute -top-1 -right-1 bg-[#a6c455] rounded-full p-0.5 animate-in zoom-in-50 duration-300">
                                     <Check className="h-3 w-3 text-black" />
                                   </div>
                                 )}
                               </div>
                               <div className="flex-1">
-                                <p className="text-white font-medium text-sm">{user.callsign}</p>
+                                <p className="text-white font-medium text-sm transition-colors duration-300 hover:text-[#a6c455]">{user.callsign}</p>
                                 {user.fullName && (
-                                  <p className="text-[#7d9f7d] text-xs">{user.fullName}</p>
+                                  <p className="text-[#7d9f7d] text-xs transition-colors duration-300 hover:text-[#9db59d]">{user.fullName}</p>
                                 )}
                               </div>
                             </div>
@@ -581,10 +587,14 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
                       {selectedUsers.length > 0 && (
                         <Button
                           onClick={handleAddMembers}
-                          className="w-full bg-[#4a7c59] hover:bg-[#5a8c69] text-white"
+                          className="w-full bg-[#4a7c59] hover:bg-[#5a8c69] text-white transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50"
                           disabled={addMembersMutation.isPending}
                         >
-                          <UserPlus className="h-4 w-4 mr-2" />
+                          {addMembersMutation.isPending ? (
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
+                          ) : (
+                            <UserPlus className="h-4 w-4 mr-2" />
+                          )}
                           Tambah {selectedUsers.length} Anggota
                         </Button>
                       )}
@@ -597,10 +607,13 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
             {/* Members List */}
             <div className="flex-1 p-4">
               <ScrollArea className="h-full">
-                {/* Debug info */}
+                {/* Loading state */}
                 {(isLoadingMembers || isLoadingInfo) && (
-                  <div className="bg-[#2d4a2d]/30 p-3 rounded border border-[#4a7c59]/50 mb-4">
-                    <p className="text-[#a6c455] text-sm">Memuat data grup...</p>
+                  <div className="bg-[#2d4a2d]/30 p-3 rounded border border-[#4a7c59]/50 mb-4 animate-pulse">
+                    <div className="flex items-center space-x-3">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#a6c455] border-t-transparent" />
+                      <p className="text-[#a6c455] text-sm animate-in slide-in-from-left-2 duration-500">Memuat data grup...</p>
+                    </div>
                   </div>
                 )}
 
