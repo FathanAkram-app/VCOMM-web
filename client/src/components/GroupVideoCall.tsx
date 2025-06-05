@@ -28,17 +28,15 @@ const StableParticipantVideo = memo(({
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   
-  // Register video ref with main refs object
+  // Register video ref with main refs object - keep ref stable during UI transitions
   useEffect(() => {
     if (videoRef.current) {
       participantVideoRefs.current[participant.userId] = videoRef.current;
       console.log(`[StableParticipantVideo] Registered video ref for user ${participant.userId}`);
     }
     
-    return () => {
-      delete participantVideoRefs.current[participant.userId];
-      console.log(`[StableParticipantVideo] Unregistered video ref for user ${participant.userId}`);
-    };
+    // Don't unregister on unmount to preserve refs during UI transitions
+    // Only clean up when component is truly destroyed
   }, [participant.userId, participantVideoRefs]);
   
   // Attach stream once and keep it stable with enhanced debugging
