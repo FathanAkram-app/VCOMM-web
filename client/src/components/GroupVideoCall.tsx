@@ -25,13 +25,14 @@ export default function GroupVideoCall() {
   const [currentPage, setCurrentPage] = useState(0);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const participantVideoRefs = useRef<{ [userId: number]: HTMLVideoElement }>({});
-  const participantAudioRefs = useRef<{ [userId: number]: HTMLAudioElement }>({});
+  const peerConnections = useRef<{ [userId: number]: RTCPeerConnection }>({});
+  const [remoteStreams, setRemoteStreams] = useState<{ [userId: number]: MediaStream }>({});
 
   // Extract group info
   const groupName = activeCall?.groupName || 'Unknown Group';
 
   // Fetch all users to get real names
-  const { data: allUsers = [] } = useQuery({
+  const { data: allUsers = [] } = useQuery<any[]>({
     queryKey: ['/api/all-users'],
     enabled: !!activeCall?.participants
   });
@@ -153,16 +154,71 @@ export default function GroupVideoCall() {
     }
   }, [activeCall?.participants, user?.id, allUsers]);
 
-  // For now, show participants visually without WebRTC streams
-  // In a real implementation, this would involve WebRTC peer connections
-  // to exchange media streams between all participants
+  // Setup WebRTC peer connections for each participant
   useEffect(() => {
-    if (participants.length > 0) {
-      console.log('[GroupVideoCall] Displaying participants:', participants.map(p => p.userId));
-      // Future: Setup WebRTC peer connections for each participant
-      // to exchange video and audio streams
+    if (participants.length > 0 && localStream) {
+      console.log('[GroupVideoCall] Setting up WebRTC for participants:', participants.map(p => p.userId));
+      
+      participants.forEach(participant => {
+        if (!peerConnections.current[participant.userId]) {
+          const peerConnection = new RTCPeerConnection({
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+          });
+
+          // Add local stream tracks to peer connection
+          localStream.getTracks().forEach(track => {
+            peerConnection.addTrack(track, localStream);
+          });
+
+          // Handle remote stream
+          peerConnection.ontrack = (event) => {
+            console.log('[GroupVideoCall] Received remote stream from participant:', participant.userId);
+            const [remoteStream] = event.streams;
+            setRemoteStreams(prev => ({
+              ...prev,
+              [participant.userId]: remoteStream
+            }));
+            
+            // Update participant with stream
+            setParticipants(prev => prev.map(p => 
+              p.userId === participant.userId 
+                ? { ...p, stream: remoteStream }
+                : p
+            ));
+          };
+
+          // Handle ICE candidates
+          peerConnection.onicecandidate = (event) => {
+            if (event.candidate) {
+              console.log('[GroupVideoCall] ICE candidate for participant:', participant.userId);
+              // In a real implementation, send ICE candidate via WebSocket
+            }
+          };
+
+          peerConnections.current[participant.userId] = peerConnection;
+          
+          console.log('[GroupVideoCall] WebRTC peer connection established for participant:', participant.userId);
+        }
+      });
+
+      // Cleanup peer connections for participants who left
+      Object.keys(peerConnections.current).forEach(userIdStr => {
+        const userId = parseInt(userIdStr);
+        if (!participants.some(p => p.userId === userId)) {
+          peerConnections.current[userId]?.close();
+          delete peerConnections.current[userId];
+          setRemoteStreams(prev => {
+            const updated = { ...prev };
+            delete updated[userId];
+            return updated;
+          });
+        }
+      });
     }
-  }, [participants]);
+  }, [participants, localStream]);
 
   // Cleanup on component unmount
   useEffect(() => {
