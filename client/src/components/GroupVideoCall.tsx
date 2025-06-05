@@ -206,10 +206,10 @@ export default function GroupVideoCall() {
           peerConnection.onicecandidate = (event) => {
             if (event.candidate) {
               console.log('[GroupVideoCall] Sending ICE candidate to user:', participant.userId);
-              const ws = (window as any).__callWebSocket;
-              if (ws?.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({
-                  type: 'webrtc_ice_candidate',
+              const websocket = (window as any).__callWebSocket;
+              if (websocket?.readyState === WebSocket.OPEN) {
+                websocket.send(JSON.stringify({
+                  type: 'group_webrtc_ice_candidate',
                   payload: {
                     callId: activeCall.callId,
                     candidate: event.candidate,
@@ -240,8 +240,8 @@ export default function GroupVideoCall() {
             
             // Send WebRTC offer through CallContext WebSocket
             const sendWebRTCOffer = () => {
-              const ws = (window as any).__callWebSocket;
-              if (ws?.readyState === WebSocket.OPEN) {
+              const websocket = (window as any).__callWebSocket;
+              if (websocket?.readyState === WebSocket.OPEN) {
                 const message = {
                   type: 'group_webrtc_offer',
                   payload: {
@@ -251,11 +251,10 @@ export default function GroupVideoCall() {
                     fromUserId: user?.id
                   }
                 };
-                console.log('[GroupVideoCall] Sending WebRTC message:', message);
-                ws.send(JSON.stringify(message));
+                console.log('[GroupVideoCall] ✅ Sending WebRTC offer to user', participant.userId, ':', message);
+                websocket.send(JSON.stringify(message));
               } else {
-                console.error('[GroupVideoCall] WebSocket not ready, state:', ws?.readyState);
-                console.log('[GroupVideoCall] Retrying WebRTC offer in 1 second...');
+                console.log('[GroupVideoCall] ⚠️ WebSocket not ready, state:', websocket?.readyState, 'retrying in 1s...');
                 setTimeout(sendWebRTCOffer, 1000);
               }
             };
@@ -351,9 +350,9 @@ export default function GroupVideoCall() {
         
         console.log('[GroupVideoCall] Sending answer to user:', fromUserId);
         const sendAnswer = () => {
-          const ws = (window as any).__callWebSocket;
-          if (ws?.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({
+          const websocket = (window as any).__callWebSocket;
+          if (websocket?.readyState === WebSocket.OPEN) {
+            websocket.send(JSON.stringify({
               type: 'group_webrtc_answer',
               payload: {
                 callId: activeCall.callId,
