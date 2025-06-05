@@ -1,52 +1,39 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { queryClient, apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useToast } from '@/hooks/use-toast';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
 import {
   ArrowLeft,
-  Settings as SettingsIcon,
   User,
   Shield,
-  Palette,
   Bell,
   Lock,
-  Globe,
-  Smartphone,
-  Wifi,
-  Moon,
-  Sun,
-  Monitor,
+  Palette,
+  Settings as SettingsIcon,
+  Save,
+  RefreshCw,
+  LogOut,
   Eye,
   EyeOff,
-  Save,
-  LogOut,
-  Info,
-  HelpCircle,
-  Download,
-  Trash2,
-  RefreshCw,
-  Database,
-  Network,
+  Volume2,
   Mic,
   MicOff,
-  Volume2,
-  VolumeX,
   Speaker,
-  Headphones,
+  Smartphone,
   Play,
-  Square
+  Square,
+  Info
 } from 'lucide-react';
 
 interface UserSettings {
@@ -88,26 +75,30 @@ interface SettingsProps {
 }
 
 export default function Settings({ onBack }: SettingsProps) {
-  const { user } = useAuth();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  
+
   // Audio test states
-  const [audioTestMode, setAudioTestMode] = useState<'earpiece' | 'speaker' | 'loudspeaker'>('earpiece');
-  const [isTestingAudio, setIsTestingAudio] = useState(false);
-  const [isMicTesting, setIsMicTesting] = useState(false);
-  const [micLevel, setMicLevel] = useState(0);
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedAudioDevice, setSelectedAudioDevice] = useState<string>('');
+  const [isTestingAudio, setIsTestingAudio] = useState(false);
+  const [audioTestMode, setAudioTestMode] = useState<'earpiece' | 'speaker' | 'loudspeaker' | null>(null);
   const [testAudioElement, setTestAudioElement] = useState<HTMLAudioElement | null>(null);
+  const [isMicTesting, setIsMicTesting] = useState(false);
   const [micStream, setMicStream] = useState<MediaStream | null>(null);
+  const [micLevel, setMicLevel] = useState(0);
 
-  // Default settings
+  // Get user from auth
+  const { data: user } = useQuery({
+    queryKey: ['/api/auth/user'],
+    retry: false,
+  }) as { data: any };
+
+  // Form state
   const [settings, setSettings] = useState<UserSettings>({
-    id: user?.id || 0,
+    id: 0,
     theme: 'dark',
-    status: 'online',
-    statusMessage: 'Available',
+    status: 'Available',
+    statusMessage: '',
     language: 'id',
     notifications: {
       push: true,
@@ -164,8 +155,6 @@ export default function Settings({ onBack }: SettingsProps) {
       });
     },
   });
-
-
 
   // Audio test functions
   const loadAudioDevices = async () => {
@@ -366,9 +355,9 @@ export default function Settings({ onBack }: SettingsProps) {
     saveSettingsMutation.mutate(settings);
   };
 
-  const updateSettings = (path: string, value: any) => {
+  const updateSettings = (key: string, value: any) => {
     setSettings(prev => {
-      const keys = path.split('.');
+      const keys = key.split('.');
       const newSettings = { ...prev };
       let current: any = newSettings;
       
@@ -382,40 +371,21 @@ export default function Settings({ onBack }: SettingsProps) {
     });
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'online': return 'bg-green-500';
-      case 'away': return 'bg-yellow-500';
-      case 'busy': return 'bg-red-500';
-      case 'invisible': return 'bg-gray-500';
-      default: return 'bg-gray-500';
-    }
-  };
-
-  const getThemeIcon = (theme: string) => {
-    switch (theme) {
-      case 'light': return <Sun className="w-4 h-4" />;
-      case 'dark': return <Moon className="w-4 h-4" />;
-      case 'system': return <Monitor className="w-4 h-4" />;
-      default: return <Monitor className="w-4 h-4" />;
-    }
-  };
-
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-900">
-        <RefreshCw className="w-8 h-8 animate-spin text-green-500" />
+      <div className="flex items-center justify-center h-full">
+        <RefreshCw className="w-6 h-6 animate-spin text-green-500" />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-900 text-white">
+    <div className="flex flex-col h-full bg-gray-900">
       {/* Header */}
       <div className="flex items-center p-4 border-b border-gray-700 bg-gray-800">
         <Button
           variant="ghost"
-          size="icon"
+          size="sm"
           onClick={onBack}
           className="mr-3 text-white hover:bg-gray-700"
         >
@@ -467,14 +437,14 @@ export default function Settings({ onBack }: SettingsProps) {
                   {/* Profile Picture */}
                   <div className="flex items-center space-x-4">
                     <Avatar className="w-20 h-20">
-                      <AvatarImage src={user?.profileImageUrl} />
-                      <AvatarFallback className="bg-green-600 text-white text-lg">
-                        {user?.callsign?.substring(0, 2).toUpperCase()}
+                      <AvatarImage src={(user as any)?.profileImageUrl ?? ''} />
+                      <AvatarFallback className="bg-green-600 text-white text-xl">
+                        {(user as any)?.callsign?.charAt(0)?.toUpperCase() || 'U'}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
-                      <h3 className="font-semibold text-white">{user?.fullName || user?.callsign}</h3>
-                      <p className="text-gray-400">{user?.callsign}</p>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-white">{(user as any)?.callsign || 'Unknown'}</h3>
+                      <p className="text-sm text-gray-400">{(user as any)?.nrp || 'No NRP'}</p>
                       <Button variant="outline" size="sm" className="mt-2">
                         Ubah Foto
                       </Button>
@@ -483,69 +453,33 @@ export default function Settings({ onBack }: SettingsProps) {
 
                   <Separator className="bg-gray-700" />
 
-                  {/* Status */}
-                  <div className="space-y-3">
-                    <Label className="text-white">Status Online</Label>
-                    <Select value={settings.status} onValueChange={(value) => updateSettings('status', value)}>
-                      <SelectTrigger className="bg-gray-700 border-gray-600">
-                        <div className="flex items-center">
-                          <div className={`w-3 h-3 rounded-full mr-2 ${getStatusColor(settings.status)}`} />
+                  {/* Status Settings */}
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-white">Status</Label>
+                      <Select value={settings.status} onValueChange={(value) => updateSettings('status', value)}>
+                        <SelectTrigger className="bg-gray-700 border-gray-600">
                           <SelectValue />
-                        </div>
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-700 border-gray-600">
-                        <SelectItem value="online">
-                          <div className="flex items-center">
-                            <div className="w-3 h-3 rounded-full bg-green-500 mr-2" />
-                            Online
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="away">
-                          <div className="flex items-center">
-                            <div className="w-3 h-3 rounded-full bg-yellow-500 mr-2" />
-                            Away
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="busy">
-                          <div className="flex items-center">
-                            <div className="w-3 h-3 rounded-full bg-red-500 mr-2" />
-                            Busy
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="invisible">
-                          <div className="flex items-center">
-                            <div className="w-3 h-3 rounded-full bg-gray-500 mr-2" />
-                            Invisible
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-700 border-gray-600">
+                          <SelectItem value="Available">🟢 Available</SelectItem>
+                          <SelectItem value="Busy">🔴 Busy</SelectItem>
+                          <SelectItem value="Away">🟡 Away</SelectItem>
+                          <SelectItem value="Offline">⚫ Offline</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                  {/* Status Message */}
-                  <div className="space-y-2">
-                    <Label className="text-white">Pesan Status</Label>
-                    <Input
-                      value={settings.statusMessage}
-                      onChange={(e) => updateSettings('statusMessage', e.target.value)}
-                      placeholder="Tulis pesan status..."
-                      className="bg-gray-700 border-gray-600 text-white"
-                    />
-                  </div>
-
-                  {/* Language */}
-                  <div className="space-y-2">
-                    <Label className="text-white">Bahasa</Label>
-                    <Select value={settings.language} onValueChange={(value) => updateSettings('language', value)}>
-                      <SelectTrigger className="bg-gray-700 border-gray-600">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-700 border-gray-600">
-                        <SelectItem value="id">Bahasa Indonesia</SelectItem>
-                        <SelectItem value="en">English</SelectItem>
-                        <SelectItem value="ms">Bahasa Melayu</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="space-y-2">
+                      <Label className="text-white">Status Message</Label>
+                      <Textarea
+                        placeholder="Tulis status message..."
+                        value={settings.statusMessage}
+                        onChange={(e) => updateSettings('statusMessage', e.target.value)}
+                        className="bg-gray-700 border-gray-600 text-white resize-none"
+                        rows={3}
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -557,19 +491,18 @@ export default function Settings({ onBack }: SettingsProps) {
                 <CardHeader>
                   <CardTitle className="flex items-center text-white">
                     <Shield className="w-5 h-5 mr-2 text-green-500" />
-                    Privasi & Keamanan
+                    Privasi
                   </CardTitle>
                   <CardDescription>
                     Kontrol siapa yang dapat melihat informasi Anda
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Privacy Settings */}
+                <CardContent className="space-y-6">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <Label className="text-white">Tampilkan Status Online</Label>
-                        <p className="text-sm text-gray-400">Orang lain dapat melihat kapan Anda online</p>
+                        <p className="text-sm text-gray-400">Biarkan orang lain melihat saat Anda online</p>
                       </div>
                       <Switch
                         checked={settings.privacy.showOnline}
@@ -590,8 +523,8 @@ export default function Settings({ onBack }: SettingsProps) {
 
                     <div className="flex items-center justify-between">
                       <div>
-                        <Label className="text-white">Konfirmasi Baca</Label>
-                        <p className="text-sm text-gray-400">Kirim tanda pesan telah dibaca</p>
+                        <Label className="text-white">Tanda Baca Pesan</Label>
+                        <p className="text-sm text-gray-400">Tampilkan centang biru saat pesan dibaca</p>
                       </div>
                       <Switch
                         checked={settings.privacy.readReceipts}
@@ -602,7 +535,7 @@ export default function Settings({ onBack }: SettingsProps) {
                     <div className="flex items-center justify-between">
                       <div>
                         <Label className="text-white">Foto Profil</Label>
-                        <p className="text-sm text-gray-400">Orang lain dapat melihat foto profil Anda</p>
+                        <p className="text-sm text-gray-400">Siapa yang dapat melihat foto profil Anda</p>
                       </div>
                       <Switch
                         checked={settings.privacy.profilePhoto}
@@ -613,7 +546,7 @@ export default function Settings({ onBack }: SettingsProps) {
                     <div className="flex items-center justify-between">
                       <div>
                         <Label className="text-white">Undangan Grup</Label>
-                        <p className="text-sm text-gray-400">Izinkan ditambahkan ke grup</p>
+                        <p className="text-sm text-gray-400">Izinkan orang lain menambahkan ke grup</p>
                       </div>
                       <Switch
                         checked={settings.privacy.allowGroups}
@@ -631,58 +564,39 @@ export default function Settings({ onBack }: SettingsProps) {
                 <CardHeader>
                   <CardTitle className="flex items-center text-white">
                     <Palette className="w-5 h-5 mr-2 text-green-500" />
-                    Tampilan & Tema
+                    Tampilan
                   </CardTitle>
                   <CardDescription>
-                    Sesuaikan tampilan aplikasi sesuai preferensi Anda
+                    Sesuaikan tampilan aplikasi
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Theme Selection */}
-                  <div className="space-y-3">
-                    <Label className="text-white">Tema</Label>
-                    <div className="grid grid-cols-3 gap-3">
-                      {[
-                        { value: 'light', label: 'Terang', icon: <Sun className="w-4 h-4" /> },
-                        { value: 'dark', label: 'Gelap', icon: <Moon className="w-4 h-4" /> },
-                        { value: 'system', label: 'Sistem', icon: <Monitor className="w-4 h-4" /> },
-                      ].map((theme) => (
-                        <Button
-                          key={theme.value}
-                          variant={settings.theme === theme.value ? 'default' : 'outline'}
-                          className={`p-4 h-auto flex flex-col items-center space-y-2 ${
-                            settings.theme === theme.value ? 'bg-green-600 hover:bg-green-700' : ''
-                          }`}
-                          onClick={() => updateSettings('theme', theme.value)}
-                        >
-                          {theme.icon}
-                          <span className="text-sm">{theme.label}</span>
-                        </Button>
-                      ))}
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-white">Tema</Label>
+                      <Select value={settings.theme} onValueChange={(value) => updateSettings('theme', value)}>
+                        <SelectTrigger className="bg-gray-700 border-gray-600">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-700 border-gray-600">
+                          <SelectItem value="light">Terang</SelectItem>
+                          <SelectItem value="dark">Gelap</SelectItem>
+                          <SelectItem value="system">Sistem</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                  </div>
 
-                  <Separator className="bg-gray-700" />
-
-                  {/* Color Scheme */}
-                  <div className="space-y-3">
-                    <Label className="text-white">Skema Warna</Label>
-                    <div className="grid grid-cols-4 gap-3">
-                      {[
-                        { name: 'Green', color: 'bg-green-500' },
-                        { name: 'Blue', color: 'bg-blue-500' },
-                        { name: 'Purple', color: 'bg-purple-500' },
-                        { name: 'Orange', color: 'bg-orange-500' },
-                      ].map((color) => (
-                        <Button
-                          key={color.name}
-                          variant="outline"
-                          className="p-4 h-auto flex flex-col items-center space-y-2"
-                        >
-                          <div className={`w-6 h-6 rounded-full ${color.color}`} />
-                          <span className="text-xs">{color.name}</span>
-                        </Button>
-                      ))}
+                    <div className="space-y-2">
+                      <Label className="text-white">Bahasa</Label>
+                      <Select value={settings.language} onValueChange={(value) => updateSettings('language', value)}>
+                        <SelectTrigger className="bg-gray-700 border-gray-600">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-700 border-gray-600">
+                          <SelectItem value="id">Bahasa Indonesia</SelectItem>
+                          <SelectItem value="en">English</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </CardContent>
@@ -698,16 +612,15 @@ export default function Settings({ onBack }: SettingsProps) {
                     Notifikasi
                   </CardTitle>
                   <CardDescription>
-                    Kelola notifikasi dan suara
+                    Atur bagaimana Anda menerima notifikasi
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Notification Settings */}
+                <CardContent className="space-y-6">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <Label className="text-white">Notifikasi Push</Label>
-                        <p className="text-sm text-gray-400">Terima notifikasi dari aplikasi</p>
+                        <Label className="text-white">Push Notifications</Label>
+                        <p className="text-sm text-gray-400">Terima notifikasi push</p>
                       </div>
                       <Switch
                         checked={settings.notifications.push}
@@ -717,8 +630,8 @@ export default function Settings({ onBack }: SettingsProps) {
 
                     <div className="flex items-center justify-between">
                       <div>
-                        <Label className="text-white">Suara Notifikasi</Label>
-                        <p className="text-sm text-gray-400">Putar suara untuk notifikasi</p>
+                        <Label className="text-white">Suara</Label>
+                        <p className="text-sm text-gray-400">Mainkan suara notifikasi</p>
                       </div>
                       <Switch
                         checked={settings.notifications.sound}
@@ -729,7 +642,7 @@ export default function Settings({ onBack }: SettingsProps) {
                     <div className="flex items-center justify-between">
                       <div>
                         <Label className="text-white">Getaran</Label>
-                        <p className="text-sm text-gray-400">Bergetar untuk notifikasi</p>
+                        <p className="text-sm text-gray-400">Getar saat menerima notifikasi</p>
                       </div>
                       <Switch
                         checked={settings.notifications.vibration}
@@ -738,6 +651,8 @@ export default function Settings({ onBack }: SettingsProps) {
                     </div>
 
                     <Separator className="bg-gray-700" />
+
+                    <h4 className="font-semibold text-white">Notifikasi Khusus</h4>
 
                     <div className="flex items-center justify-between">
                       <div>
@@ -764,7 +679,7 @@ export default function Settings({ onBack }: SettingsProps) {
                     <div className="flex items-center justify-between">
                       <div>
                         <Label className="text-white">Grup</Label>
-                        <p className="text-sm text-gray-400">Notifikasi pesan grup</p>
+                        <p className="text-sm text-gray-400">Notifikasi aktivitas grup</p>
                       </div>
                       <Switch
                         checked={settings.notifications.groups}
@@ -785,16 +700,15 @@ export default function Settings({ onBack }: SettingsProps) {
                     Keamanan
                   </CardTitle>
                   <CardDescription>
-                    Pengaturan keamanan dan autentikasi
+                    Lindungi akun dan data Anda
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Security Settings */}
+                <CardContent className="space-y-6">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <Label className="text-white">Autentikasi Dua Faktor</Label>
-                        <p className="text-sm text-gray-400">Tambahkan lapisan keamanan ekstra</p>
+                        <Label className="text-white">Two-Factor Authentication</Label>
+                        <p className="text-sm text-gray-400">Tambahan keamanan dengan 2FA</p>
                       </div>
                       <Switch
                         checked={settings.security.twoFactor}
@@ -1077,78 +991,6 @@ export default function Settings({ onBack }: SettingsProps) {
                         </ul>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-                    <div className="space-y-2">
-                      <Label className="text-white">Penggunaan Data</Label>
-                      <Select
-                        value={settings.network.dataUsage}
-                        onValueChange={(value) => updateSettings('network.dataUsage', value)}
-                      >
-                        <SelectTrigger className="bg-gray-700 border-gray-600">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-gray-700 border-gray-600">
-                          <SelectItem value="low">Rendah</SelectItem>
-                          <SelectItem value="medium">Sedang</SelectItem>
-                          <SelectItem value="high">Tinggi</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <Separator className="bg-gray-700" />
-
-                  {/* Storage & Data */}
-                  <div className="space-y-4">
-                    <h4 className="font-semibold text-white flex items-center">
-                      <Database className="w-4 h-4 mr-2" />
-                      Penyimpanan
-                    </h4>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <Button variant="outline" className="flex flex-col p-4 h-auto">
-                        <Download className="w-6 h-6 mb-2" />
-                        <span className="text-sm">Export Data</span>
-                      </Button>
-                      <Button variant="outline" className="flex flex-col p-4 h-auto">
-                        <Trash2 className="w-6 h-6 mb-2" />
-                        <span className="text-sm">Hapus Cache</span>
-                      </Button>
-                    </div>
-                  </div>
-
-                  <Separator className="bg-gray-700" />
-
-                  {/* About */}
-                  <div className="space-y-4">
-                    <h4 className="font-semibold text-white flex items-center">
-                      <Info className="w-4 h-4 mr-2" />
-                      Tentang
-                    </h4>
-
-                    <div className="space-y-2 text-sm text-gray-400">
-                      <div className="flex justify-between">
-                        <span>Versi Aplikasi</span>
-                        <span>v1.0.0</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Build</span>
-                        <span>2025.1.1</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Database</span>
-                        <span>PostgreSQL</span>
-                      </div>
-                    </div>
-
-                    <Button variant="outline" className="w-full">
-                      <HelpCircle className="w-4 h-4 mr-2" />
-                      Bantuan & Dukungan
-                    </Button>
                   </div>
                 </CardContent>
               </Card>
