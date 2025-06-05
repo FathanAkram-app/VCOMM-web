@@ -1,0 +1,83 @@
+[GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749097871750_37_2', callType: 'video', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:49 [GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:50 [GroupVideoCall] isVideoEnabled: false
+GroupVideoCall.tsx:51 [GroupVideoCall] localStream: null
+GroupVideoCall.tsx:161 [GroupVideoCall] Displaying participants in group call: [3]
+GroupVideoCall.tsx:63 [GroupVideoCall] Got local media stream: MediaStream {id: 'c6859321-a638-4224-aa5f-edc9e95f0920', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:64 [GroupVideoCall] Video tracks: 1
+GroupVideoCall.tsx:65 [GroupVideoCall] Audio tracks: 1
+GroupVideoCall.tsx:71 [GroupVideoCall] Video track disabled by default
+GroupVideoCall.tsx:79 [GroupVideoCall] Set local video source
+GroupVideoCall.tsx:48 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749097871750_37_2', callType: 'video', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:49 [GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:50 [GroupVideoCall] isVideoEnabled: false
+GroupVideoCall.tsx:51 [GroupVideoCall] localStream: MediaStream {id: 'c6859321-a638-4224-aa5f-edc9e95f0920', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:109 [GroupVideoCall] Local video stream attached to element
+GroupVideoCall.tsx:115 [GroupVideoCall] Initial video state: false
+GroupVideoCall.tsx:48 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749097871750_37_2', callType: 'video', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:49 [GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:50 [GroupVideoCall] isVideoEnabled: false
+GroupVideoCall.tsx:51 [GroupVideoCall] localStream: MediaStream {id: 'c6859321-a638-4224-aa5f-edc9e95f0920', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+CallContext.tsx:412 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:412 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:412 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:412 [CallContext] Received message: {type: 'user_status', payload: {…}}
+GroupVideoCall.tsx:199 [GroupVideoCall] Video toggled: true
+GroupVideoCall.tsx:204 [GroupVideoCall] Video element updated
+GroupVideoCall.tsx:48 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749097871750_37_2', callType: 'video', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:49 [GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:50 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:51 [GroupVideoCall] localStream: MediaStream {id: 'c6859321-a638-4224-aa5f-edc9e95f0920', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+CallContext.tsx:412 [CallContext] Received message: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:985 [CallContext] Group call participants update: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:990 [CallContext] Comparing callIds - message: group_call_1749097871750_37_2 activeCall: group_call_1749097871750_37_2
+CallContext.tsx:991 [CallContext] ActiveCall groupId: 37
+CallContext.tsx:1030 [CallContext] Extracted groupIds - message: 37 active: 37
+CallContext.tsx:1031 [CallContext] CallId parts: (5) ['group', 'call', '1749097871750', '37', '2']
+CallContext.tsx:1034 [CallContext] Group IDs match, updating participants: (3) [2, 3, 5]
+CallContext.tsx:1038 [CallContext] Unique participants after deduplication: (3) [2, 3, 5]
+CallContext.tsx:1056 [CallContext] Updated participants in active call: (3) [2, 3, 5]
+GroupVideoCall.tsx:48 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749097871750_37_2', callType: 'video', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:49 [GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:50 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:51 [GroupVideoCall] localStream: MediaStream {id: 'c6859321-a638-4224-aa5f-edc9e95f0920', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:92 [GroupVideoCall] useEffect cleanup triggered
+GroupVideoCall.tsx:211 [GroupVideoCall] Cleaning up media tracks
+GroupVideoCall.tsx:215 [GroupVideoCall] Stopping localStream tracks
+GroupVideoCall.tsx:219 [GroupVideoCall] Stopped track: audio readyState: ended
+GroupVideoCall.tsx:219 [GroupVideoCall] Stopped track: video readyState: ended
+GroupVideoCall.tsx:227 [GroupVideoCall] Clearing video element
+GroupVideoCall.tsx:231 [GroupVideoCall] Cleared and reloaded video element
+GroupVideoCall.tsx:253 [GroupVideoCall] All media cleanup completed
+GroupVideoCall.tsx:57 [GroupVideoCall] Getting local media stream...
+GroupVideoCall.tsx:123 [GroupVideoCall] Processing participants from activeCall: (3) [{…}, {…}, {…}]
+GroupVideoCall.tsx:132 [GroupVideoCall] Other participants: (2) [{…}, {…}]
+GroupVideoCall.tsx:153 [GroupVideoCall] Updated participants list: (2) [{…}, {…}]
+GroupVideoCall.tsx:48 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749097871750_37_2', callType: 'video', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:49 [GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:50 [GroupVideoCall] isVideoEnabled: false
+GroupVideoCall.tsx:51 [GroupVideoCall] localStream: null
+GroupVideoCall.tsx:161 [GroupVideoCall] Displaying participants in group call: (2) [3, 5]
+GroupVideoCall.tsx:63 [GroupVideoCall] Got local media stream: MediaStream {id: '842eb593-4b04-4774-91ee-5e4650ef91c4', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:64 [GroupVideoCall] Video tracks: 1
+GroupVideoCall.tsx:65 [GroupVideoCall] Audio tracks: 1
+GroupVideoCall.tsx:71 [GroupVideoCall] Video track disabled by default
+GroupVideoCall.tsx:79 [GroupVideoCall] Set local video source
+GroupVideoCall.tsx:48 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749097871750_37_2', callType: 'video', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:49 [GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:50 [GroupVideoCall] isVideoEnabled: false
+GroupVideoCall.tsx:51 [GroupVideoCall] localStream: MediaStream {id: '842eb593-4b04-4774-91ee-5e4650ef91c4', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:109 [GroupVideoCall] Local video stream attached to element
+GroupVideoCall.tsx:115 [GroupVideoCall] Initial video state: false
+GroupVideoCall.tsx:48 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749097871750_37_2', callType: 'video', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:49 [GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:50 [GroupVideoCall] isVideoEnabled: false
+GroupVideoCall.tsx:51 [GroupVideoCall] localStream: MediaStream {id: '842eb593-4b04-4774-91ee-5e4650ef91c4', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+CallContext.tsx:412 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:412 [CallContext] Received message: {type: 'user_status', payload: {…}}
+GroupVideoCall.tsx:199 [GroupVideoCall] Video toggled: true
+GroupVideoCall.tsx:204 [GroupVideoCall] Video element updated
+GroupVideoCall.tsx:48 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749097871750_37_2', callType: 'video', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:49 [GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:50 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:51 [GroupVideoCall] localStream: MediaStream {id: '842eb593-4b04-4774-91ee-5e4650ef91c4', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}

@@ -353,26 +353,45 @@ export default function GroupVideoCall() {
                     key={participant.userId} 
                     className="relative bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] rounded-lg overflow-hidden border-2 border-[#7d9f7d] aspect-[4/3] min-h-[120px] max-h-[160px]"
                   >
-                    {participant.videoEnabled && participant.stream ? (
-                      <video
-                        ref={el => {
-                          if (el) participantVideoRefs.current[participant.userId] = el;
-                        }}
-                        autoPlay
-                        playsInline
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#2d4a2d] to-[#1e3a1e]">
-                        <Avatar className="h-12 w-12 bg-[#7d9f7d] border-2 border-[#a6c455]">
-                          <AvatarFallback className="bg-[#7d9f7d] text-white text-sm font-bold">
-                            {participant.userName.substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
+                    {/* Simulated participant video with animated avatar */}
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#2d4a2d] to-[#1e3a1e] relative">
+                      <Avatar className="h-16 w-16 bg-[#7d9f7d] border-2 border-[#a6c455] transition-all duration-300 hover:scale-105">
+                        <AvatarFallback className="bg-[#7d9f7d] text-white text-lg font-bold">
+                          {participant.userName.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      
+                      {/* Audio level indicator */}
+                      <div className="absolute top-2 right-2">
+                        <div className="flex space-x-1">
+                          <div className="w-1 h-3 bg-[#a6c455] rounded-full animate-pulse"></div>
+                          <div className="w-1 h-4 bg-[#a6c455] rounded-full animate-pulse delay-100"></div>
+                          <div className="w-1 h-2 bg-[#a6c455] rounded-full animate-pulse delay-200"></div>
+                        </div>
                       </div>
-                    )}
+                      
+                      {/* Connection status */}
+                      <div className="absolute top-2 left-2">
+                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                      </div>
+                    </div>
+                    
                     <div className="absolute bottom-1 left-1 bg-black/80 px-2 py-1 rounded border border-[#7d9f7d]/50">
                       <p className="text-[#a6c455] text-xs font-medium">{participant.userName}</p>
+                    </div>
+                    
+                    {/* Participant controls indicator */}
+                    <div className="absolute bottom-1 right-1 flex space-x-1">
+                      <div className="w-4 h-4 bg-black/60 rounded-full flex items-center justify-center border border-[#7d9f7d]/30">
+                        <svg className="w-2 h-2 text-[#a6c455]" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.814L4.75 13.5H2a1 1 0 01-1-1v-5a1 1 0 011-1h2.75l3.633-3.314a1 1 0 01.617-.186z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div className="w-4 h-4 bg-black/60 rounded-full flex items-center justify-center border border-[#7d9f7d]/30">
+                        <svg className="w-2 h-2 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
                 ))}
