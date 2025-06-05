@@ -1200,29 +1200,31 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
         <form onSubmit={handleSendMessage} className="flex flex-col">
           {/* Show reply preview if replying to a message - WhatsApp style */}
           {replyToMessage && (
-            <div className="flex items-center bg-[#212121] rounded-lg p-2 mb-2 border-l-4 border-[#8ba742]">
-              <div className="flex-1">
-                <div className="flex items-center text-[#a6c455] text-xs mb-1">
-                  <ArrowLeft className="h-3 w-3 mr-1" />
+            <div className="flex items-center bg-[#212121] rounded-lg p-3 mb-3 border-l-4 border-[#8ba742] mx-2">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center text-[#a6c455] text-sm font-medium mb-1">
+                  <CornerDownRight className="h-4 w-4 mr-2" />
                   <span>Membalas {replyToMessage.senderId === user?.id ? 'diri sendiri' : replyToMessage.senderName}</span>
                 </div>
                 {replyToMessage.hasAttachment ? (
-                  <div className="flex items-center text-xs text-gray-300">
-                    <span className="text-[#8ba742] mr-1">📎</span>
-                    <span>{replyToMessage.attachmentName || 'File'}</span>
+                  <div className="flex items-center text-sm text-gray-300">
+                    <span className="text-[#8ba742] mr-2">📎</span>
+                    <span className="truncate">{replyToMessage.attachmentName || 'File'}</span>
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-300 line-clamp-1">{replyToMessage.content || '<Pesan kosong>'}</p>
+                  <p className="text-sm text-gray-300 truncate">{replyToMessage.content || '<Pesan kosong>'}</p>
                 )}
               </div>
               <Button 
                 type="button"
                 variant="ghost" 
                 size="sm"
-                className="text-gray-400 hover:text-white h-6 w-6 p-0"
-                onClick={() => setReplyToMessage(null)}
+                className="text-gray-400 hover:text-white h-8 w-8 p-0 ml-2 shrink-0"
+                onClick={() => {
+                  console.log("Canceling reply");
+                  setReplyToMessage(null);
+                }}
               >
-                <span className="sr-only">Batal</span>
                 <X className="h-4 w-4" />
               </Button>
             </div>
