@@ -567,9 +567,14 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
                           <div className="flex items-center space-x-2">
                             <p className="text-white font-medium">{member.callsign}</p>
                             {member.role === 'admin' && (
-                              <Badge className="bg-[#a6c455] text-black text-xs">
+                              <Badge className="bg-gradient-to-r from-yellow-600 to-yellow-500 text-white text-xs font-bold border border-yellow-400">
                                 <Crown className="h-3 w-3 mr-1" />
-                                Admin
+                                ADMIN GRUP
+                              </Badge>
+                            )}
+                            {member.role === 'member' && (
+                              <Badge variant="outline" className="border-[#4a7c59] text-[#7d9f7d] text-xs">
+                                Anggota
                               </Badge>
                             )}
                             {member.id === currentUserId && (
