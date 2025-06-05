@@ -462,21 +462,21 @@ export function CallProvider({ children }: { children: ReactNode }) {
           case 'group_webrtc_offer':
             // Forward group WebRTC offer to GroupVideoCall component
             console.log('[CallContext] Forwarding group WebRTC offer:', message.payload || message);
-            window.dispatchEvent(new CustomEvent('group_webrtc_offer', {
+            window.dispatchEvent(new CustomEvent('group-webrtc-offer', {
               detail: message.payload || message
             }));
             break;
           case 'group_webrtc_answer':
             // Forward group WebRTC answer to GroupVideoCall component
             console.log('[CallContext] Forwarding group WebRTC answer:', message.payload || message);
-            window.dispatchEvent(new CustomEvent('group_webrtc_answer', {
+            window.dispatchEvent(new CustomEvent('group-webrtc-answer', {
               detail: message.payload || message
             }));
             break;
           case 'group_webrtc_ice_candidate':
             // Forward group WebRTC ICE candidate to GroupVideoCall component
             console.log('[CallContext] Forwarding group WebRTC ICE candidate:', message.payload || message);
-            window.dispatchEvent(new CustomEvent('group_webrtc_ice_candidate', {
+            window.dispatchEvent(new CustomEvent('group-webrtc-ice-candidate', {
               detail: message.payload || message
             }));
             break;
