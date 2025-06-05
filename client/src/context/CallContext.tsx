@@ -387,6 +387,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
       console.log('[CallContext] WebSocket connected successfully for calls');
       setWs(websocket);
       
+      // Set global WebSocket reference for GroupVideoCall
+      (window as any).__callWebSocket = websocket;
+      
       // Authenticate user with WebSocket
       if (user?.id) {
         websocket.send(JSON.stringify({
@@ -404,6 +407,11 @@ export function CallProvider({ children }: { children: ReactNode }) {
         console.log('[CallContext] ✅ Sent pending WebRTC offer after connection');
         (window as any).__pendingWebRTCOffer = null;
       }
+      
+      // Notify that WebSocket is ready
+      window.dispatchEvent(new CustomEvent('websocket-ready', {
+        detail: { websocket }
+      }));
     };
 
     websocket.onmessage = (event) => {
