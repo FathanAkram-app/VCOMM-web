@@ -1043,28 +1043,27 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                     )}
                     
                     {/* Reply message format seperti WhatsApp */}
-                    {msg.replyToId && (
-                      <div className="bg-black/20 rounded-lg p-2 mb-2 border-l-4 border-[#a6c455]">
-                        <div className="text-xs font-medium text-[#a6c455] mb-1">
-                          {(() => {
-                            // Dapatkan nama pengirim pesan yang dibalas dari allMessages
-                            const repliedMessage = allMessages.find((m: any) => m.id === msg.replyToId);
-                            return repliedMessage?.senderName || 'Unknown User';
-                          })()}
-                        </div>
-                        <div className="text-xs text-gray-300 opacity-80">
-                          {(() => {
-                            // Dapatkan konten pesan yang dibalas dari allMessages
-                            const repliedMessage = allMessages.find((m: any) => m.id === msg.replyToId);
-                            
-                            if (repliedMessage?.hasAttachment) {
-                              return `📎 ${repliedMessage.attachmentName || 'File'}`;
+                    {msg.replyToId && (() => {
+                      console.log(`[Reply Debug] Message ${msg.id} has replyToId: ${msg.replyToId}`);
+                      console.log(`[Reply Debug] Available messages:`, allMessages.map(m => `${m.id}: ${m.content}`));
+                      
+                      const repliedMessage = allMessages.find((m: any) => m.id === msg.replyToId);
+                      console.log(`[Reply Debug] Found replied message:`, repliedMessage);
+                      
+                      return (
+                        <div className="bg-black/30 rounded-md p-2 mb-2 border-l-4 border-[#8ba742]">
+                          <div className="text-xs font-medium text-[#8ba742] mb-1">
+                            {repliedMessage?.senderName || 'Unknown User'}
+                          </div>
+                          <div className="text-xs text-gray-300 opacity-90">
+                            {repliedMessage?.hasAttachment 
+                              ? `📎 ${repliedMessage.attachmentName || 'File'}`
+                              : (repliedMessage?.content || 'Pesan tidak ditemukan')
                             }
-                            return repliedMessage?.content || 'Pesan tidak ditemukan';
-                          })()}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                     
                     {/* Tampilkan isi pesan jika bukan pesan suara */}
                     {!(msg.hasAttachment && msg.attachmentType === 'audio') && (
