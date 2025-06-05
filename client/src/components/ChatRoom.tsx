@@ -1025,6 +1025,9 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
               
               {group.messages.map(msg => {
                 const isOwnMessage = msg.senderId === user?.id;
+                
+                // Debug logging untuk setiap pesan
+                console.log(`[Message Debug] Message ID: ${msg.id}, replyToId: ${msg.replyToId}, content: ${msg.content}`);
               
               return (
                 <div 

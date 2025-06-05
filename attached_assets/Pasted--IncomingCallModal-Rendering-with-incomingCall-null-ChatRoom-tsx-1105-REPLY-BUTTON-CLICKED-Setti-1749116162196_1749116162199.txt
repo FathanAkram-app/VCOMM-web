@@ -1,0 +1,29 @@
+[IncomingCallModal] Rendering with incomingCall: null
+ChatRoom.tsx:1105 REPLY BUTTON CLICKED - Setting reply to message: {id: 186, senderId: 3, senderName: 'aji', content: 'Tes', timestamp: '2025-06-03T13:30:37.965Z', …}
+ChatRoom.tsx:1106 Current replyToMessage state: null
+ChatRoom.tsx:1108 After setting reply, new state should be: {id: 186, senderId: 3, senderName: 'aji', content: 'Tes', timestamp: '2025-06-03T13:30:37.965Z', …}
+ChatRoom.tsx:670 Processing message data for grouping: (4) [{…}, {…}, {…}, {…}]
+ChatRoom.tsx:671 Total messages to process: 4
+ChatRoom.tsx:743 Grouped messages: (2) [{…}, {…}]
+ChatRoom.tsx:744 Total date groups: 2
+ChatRoom.tsx:746 Total messages in first group: 3
+ChatRoom.tsx:170 ReplyToMessage state changed: {id: 186, senderId: 3, senderName: 'aji', content: 'Tes', timestamp: '2025-06-03T13:30:37.965Z', …}
+CallContext.tsx:421 [CallContext] Received message: {type: 'user_status', payload: {…}}
+ChatRoom.tsx:1114 Input focused successfully
+ChatRoom.tsx:670 Processing message data for grouping: (4) [{…}, {…}, {…}, {…}]
+ChatRoom.tsx:671 Total messages to process: 4
+ChatRoom.tsx:743 Grouped messages: (2) [{…}, {…}]
+ChatRoom.tsx:744 Total date groups: 2
+ChatRoom.tsx:746 Total messages in first group: 3
+ChatRoom.tsx:670 Processing message data for grouping: (4) [{…}, {…}, {…}, {…}]
+ChatRoom.tsx:671 Total messages to process: 4
+ChatRoom.tsx:743 Grouped messages: (2) [{…}, {…}]
+ChatRoom.tsx:744 Total date groups: 2
+ChatRoom.tsx:746 Total messages in first group: 3
+ChatRoom.tsx:670 Processing message data for grouping: (4) [{…}, {…}, {…}, {…}]
+ChatRoom.tsx:671 Total messages to process: 4
+ChatRoom.tsx:743 Grouped messages: (2) [{…}, {…}]
+ChatRoom.tsx:744 Total date groups: 2
+ChatRoom.tsx:746 Total messages in first group: 3
+ChatRoom.tsx:620 Current reply state: {id: 186, senderId: 3, senderName: 'aji', content: 'Tes', timestamp: '2025-06-03T13:30:37.965Z', …}
+ChatRoom.tsx:645 Sending text message with reply data: {content: 'cek', replyToId: 186, conversationId: 37}
