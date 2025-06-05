@@ -1,0 +1,65 @@
+[AudioCall] Component rendering with activeCall: {callId: 'call_1749127351723_2_3', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 2, …}
+AudioCall.tsx:11 [AudioCall] remoteAudioStream: MediaStream {id: '0e71fa57-8d32-464e-af72-970861a895a6', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:15 [AudioCall] Remote stream effect triggered, remoteAudioStream: MediaStream {id: '0e71fa57-8d32-464e-af72-970861a895a6', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:21 [AudioCall] Setting up remote audio stream...
+AudioCall.tsx:25 [AudioCall] ✅ Found remote audio element, setting stream
+AudioCall.tsx:35 [AudioCall] 🌐 Browser environment: {userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWeb…KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36', platform: 'Win32', isSecureContext: true, protocol: 'https:', hostname: 'd6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev'}
+AudioCall.tsx:43 [AudioCall] 🔊 Attempt 1 - Audio element state: {paused: true, muted: false, volume: 1, readyState: 0, networkState: 3, …}
+AudioCall.tsx:58 [AudioCall] 🎤 Remote stream info: {tracksCount: 1, streamActive: true, streamId: '0e71fa57-8d32-464e-af72-970861a895a6'}
+AudioCall.tsx:64 [AudioCall] Track 0: {enabled: true, muted: false, readyState: 'live', kind: 'audio', id: '00ee07dd-aa22-4033-87fc-0fd2c8e325c0', …}
+AudioCall.tsx:76 [AudioCall] 🎮 Checking autoplay policy...
+2CallContext.tsx:1335 [CallContext] ✅ Added pending ICE candidate
+AudioCall.tsx:85 [AudioCall] ✅ Remote audio playing successfully (attempt 1)
+2CallContext.tsx:1335 [CallContext] ✅ Added pending ICE candidate
+CallContext.tsx:1346 [CallContext] ✅ Local description (answer) set successfully
+CallContext.tsx:1357 [CallContext] ⚠️ WebSocket not ready for answer, using HTTP API fallback
+CallContext.tsx:1854 [CallContext] ✅ RECEIVER: Remote audio playing successfully
+CallContext.tsx:1374 [CallContext] ✅ Sent WebRTC answer via HTTP API fallback
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1749127351723_2_3', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 2, …}
+AudioCall.tsx:11 [AudioCall] remoteAudioStream: MediaStream {id: '0e71fa57-8d32-464e-af72-970861a895a6', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:117 [AudioCall] 📊 Audio status after play: {paused: false, currentTime: 0.566, volume: 1}
+AudioCall.tsx:135 [AudioCall] ✅ HTML5 audio working correctly, currentTime: 0.566
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1749127351723_2_3', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 2, …}
+AudioCall.tsx:11 [AudioCall] remoteAudioStream: MediaStream {id: '0e71fa57-8d32-464e-af72-970861a895a6', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1749127351723_2_3', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 2, …}
+AudioCall.tsx:11 [AudioCall] remoteAudioStream: MediaStream {id: '0e71fa57-8d32-464e-af72-970861a895a6', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1749127351723_2_3', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 2, …}
+AudioCall.tsx:11 [AudioCall] remoteAudioStream: MediaStream {id: '0e71fa57-8d32-464e-af72-970861a895a6', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:10 [AudioCall] Component rendering with activeCall: {callId: 'call_1749127351723_2_3', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 2, …}
+AudioCall.tsx:11 [AudioCall] remoteAudioStream: MediaStream {id: '0e71fa57-8d32-464e-af72-970861a895a6', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+CallContext.tsx:1982 [CallContext] Hanging up call - start
+CallContext.tsx:1985 [CallContext] FORCE STOPPING ALL RINGTONES - hangup call
+CallContext.tsx:287 [CallContext] Stopping waiting tone - comprehensive cleanup
+CallContext.tsx:337 [CallContext] ✅ Waiting tone cleanup completed
+CallContext.tsx:2022 [CallContext] ✅ All page audio elements forcefully stopped on hangup
+CallContext.tsx:2036 [CallContext] Stopping local media tracks
+CallContext.tsx:2040 [CallContext] Stopped local track: audio
+CallContext.tsx:2181 [CallContext] Call ended successfully, all audio streams stopped, navigated back to chat
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+AudioCall.tsx:203 [AudioCall] Component unmounting, cleaning up streams
+AudioCall.tsx:245 [AudioCall] Cleaning up call duration timer
+ChatList.tsx:94 Contoh data percakapan dari server: {id: 35, createdById: 1, createdAt: '2025-06-02T15:31:27.620Z', updatedAt: '2025-06-02T15:31:27.620Z', isGroup: false, …}
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+CallContext.tsx:2172 [CallContext] Requesting media device cleanup
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+ChatList.tsx:94 Contoh data percakapan dari server: {id: 35, createdById: 1, createdAt: '2025-06-02T15:31:27.620Z', updatedAt: '2025-06-02T15:31:27.620Z', isGroup: false, …}
+CallContext.tsx:444 [CallContext] Creating stable WebSocket for calls...
+CallContext.tsx:557 [CallContext] WebSocket disconnected
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+Chat.tsx:85 User data from session: {id: 3, callsign: 'aji', nrp: '123123', fullName: 'aji a', rank: 'SPC', …}
+Chat.tsx:113 Fetching all conversations for user ID: 3
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+Chat.tsx:236 Fetched 7 users for personnel list
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+Chat.tsx:126 All conversations from server: (7) [{…}, {…}, {…}, {…}, {…}, {…}, {…}]
+Chat.tsx:139 Fetching direct chats from server for user ID: 3
+CallContext.tsx:451 [CallContext] WebSocket connected successfully for calls
+CallContext.tsx:465 [CallContext] Authenticated user 3 with WebSocket
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+Chat.tsx:153 Fetched 4 direct chats from server
+Chat.tsx:180 Fetching group chats/rooms for user ID: 3
+CallContext.tsx:484 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:484 [CallContext] Received message: {type: 'user_status', payload: {…}}
+Chat.tsx:194 Fetched 3 group chats/rooms
+IncomingCallModal.tsx:8 [IncomingCallModal] Rendering with incomingCall: null
+CallContext.tsx:484 [CallContext] Received message: {type: 'user_status', payload: {…}}

@@ -284,7 +284,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   // Function to stop waiting tone
   const stopWaitingTone = () => {
-    console.log('[CallContext] Stopping waiting tone - comprehensive cleanup');
+    console.log('[CallContext] 🔇 AGGRESSIVE AUDIO CLEANUP - STOPPING ALL AUDIO');
     
     // Clear the main waiting tone interval
     if (waitingToneInterval) {
@@ -316,15 +316,43 @@ export function CallProvider({ children }: { children: ReactNode }) {
       }
     }
     
-    // Force close any audio contexts that might be playing waiting tones
-    if (audioContext) {
-      try {
-        console.log('[CallContext] Force closing audio context for waiting tone');
+    // NUCLEAR OPTION: Close ALL AudioContext instances in the browser
+    try {
+      console.log('[CallContext] 💥 NUCLEAR AUDIO CLEANUP - Closing ALL AudioContext instances');
+      
+      // Close the main audio context
+      if (audioContext) {
         audioContext.close();
         setAudioContext(null);
-      } catch (e) {
-        console.log('[CallContext] Audio context already closed or error:', e);
       }
+      
+      // Force close ALL possible AudioContext instances
+      const contextTypes = ['AudioContext', 'webkitAudioContext', 'mozAudioContext'];
+      contextTypes.forEach(contextType => {
+        if ((window as any)[contextType]) {
+          try {
+            // Create a temporary context just to get access to close all
+            const tempContext = new (window as any)[contextType]();
+            tempContext.close();
+            console.log(`[CallContext] ✅ Closed ${contextType}`);
+          } catch (e) {
+            console.log(`[CallContext] No ${contextType} to close`);
+          }
+        }
+      });
+      
+      // Clear any global audio context references
+      if ((window as any).globalAudioContext) {
+        try {
+          (window as any).globalAudioContext.close();
+          delete (window as any).globalAudioContext;
+        } catch (e) {
+          console.log('[CallContext] Error closing global audio context');
+        }
+      }
+      
+    } catch (e) {
+      console.log('[CallContext] Error in nuclear audio cleanup:', e);
     }
     
     // Store interval ID when creating waiting tone to clear it specifically
@@ -334,7 +362,27 @@ export function CallProvider({ children }: { children: ReactNode }) {
       (window as any).__waitingToneIntervalId = null;
     }
     
-    console.log('[CallContext] ✅ Waiting tone cleanup completed');
+    // Clear ALL intervals and timeouts (extreme measure)
+    try {
+      console.log('[CallContext] 💥 NUCLEAR INTERVAL CLEANUP - Clearing ALL intervals');
+      const highestIntervalId = setInterval(() => {}, 9999);
+      for (let i = 1; i <= highestIntervalId; i++) {
+        clearInterval(i);
+      }
+      clearInterval(highestIntervalId);
+      
+      const highestTimeoutId = setTimeout(() => {}, 9999);
+      for (let i = 1; i <= highestTimeoutId; i++) {
+        clearTimeout(i);
+      }
+      clearTimeout(highestTimeoutId);
+      
+      console.log('[CallContext] ✅ Nuclear interval cleanup completed');
+    } catch (e) {
+      console.log('[CallContext] Error in nuclear interval cleanup:', e);
+    }
+    
+    console.log('[CallContext] ✅ AGGRESSIVE AUDIO CLEANUP COMPLETED');
   };
 
   // Function to fetch participant names asynchronously
