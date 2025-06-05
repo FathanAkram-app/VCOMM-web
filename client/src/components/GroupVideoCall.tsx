@@ -446,6 +446,8 @@ export default function GroupVideoCall() {
             peerConnection!.addTrack(track, localStream);
           });
 
+          console.log('[GroupVideoCall] Peer connection created for incoming offer from user:', fromUserId);
+          
           // Handle incoming remote stream with comprehensive debugging
           peerConnection.ontrack = (event) => {
             console.log('[GroupVideoCall] *** ONTRACK EVENT TRIGGERED ***');
