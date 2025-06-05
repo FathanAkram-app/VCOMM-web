@@ -181,43 +181,68 @@ export default function Settings({ onBack }: SettingsProps) {
         testAudioElement.currentTime = 0;
       }
       
-      // Create test audio element
-      const audio = new Audio();
-      audio.loop = true;
-      audio.volume = mode === 'loudspeaker' ? 1.0 : 0.8;
+      // Create audio context for better control
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       
-      // Generate test tone URL (simple beep)
-      const testToneUrl = generateTestTone(440, 2); // 440Hz for 2 seconds
-      audio.src = testToneUrl;
-      
-      // Configure audio output based on mode
-      if (mode === 'earpiece') {
-        // Earpiece mode - use phone speaker (receiver)
-        audio.setAttribute('preload', 'auto');
-        if ('setSinkId' in audio && selectedAudioDevice) {
-          await (audio as any).setSinkId('communications');
-        }
-      } else if (mode === 'speaker') {
-        // Speaker mode - use device speaker
-        audio.setAttribute('preload', 'auto');
-        if ('setSinkId' in audio && selectedAudioDevice) {
-          await (audio as any).setSinkId(selectedAudioDevice);
-        }
-      } else if (mode === 'loudspeaker') {
-        // Loudspeaker mode - use external speaker
-        audio.setAttribute('preload', 'auto');
-        audio.setAttribute('playsinline', 'true');
-        if ('setSinkId' in audio) {
-          await (audio as any).setSinkId('default');
-        }
+      // Resume audio context if suspended (required on mobile)
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
       }
       
-      setTestAudioElement(audio);
-      await audio.play();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      const compressor = audioContext.createDynamicsCompressor();
+      
+      // Connect audio nodes
+      oscillator.connect(gainNode);
+      gainNode.connect(compressor);
+      compressor.connect(audioContext.destination);
+      
+      // Configure different audio characteristics for each mode
+      if (mode === 'earpiece') {
+        // Earpiece - focused frequency for voice calls, lower volume
+        oscillator.frequency.setValueAtTime(2000, audioContext.currentTime); // Higher frequency
+        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime); // Lower volume
+        oscillator.type = 'sine'; // Pure tone for earpiece
+        compressor.threshold.setValueAtTime(-24, audioContext.currentTime);
+        compressor.knee.setValueAtTime(30, audioContext.currentTime);
+        compressor.ratio.setValueAtTime(12, audioContext.currentTime);
+      } else if (mode === 'speaker') {
+        // Speaker - balanced frequency, medium volume
+        oscillator.frequency.setValueAtTime(1000, audioContext.currentTime); // Mid frequency
+        gainNode.gain.setValueAtTime(0.4, audioContext.currentTime); // Medium volume
+        oscillator.type = 'square'; // Square wave for distinction
+        compressor.threshold.setValueAtTime(-18, audioContext.currentTime);
+        compressor.knee.setValueAtTime(20, audioContext.currentTime);
+        compressor.ratio.setValueAtTime(8, audioContext.currentTime);
+      } else if (mode === 'loudspeaker') {
+        // Loudspeaker - lower frequency, higher volume for external speaker
+        oscillator.frequency.setValueAtTime(500, audioContext.currentTime); // Lower frequency
+        gainNode.gain.setValueAtTime(0.7, audioContext.currentTime); // Higher volume
+        oscillator.type = 'sawtooth'; // Rich harmonics for loudspeaker
+        compressor.threshold.setValueAtTime(-12, audioContext.currentTime);
+        compressor.knee.setValueAtTime(10, audioContext.currentTime);
+        compressor.ratio.setValueAtTime(4, audioContext.currentTime);
+      }
+      
+      // Start oscillator
+      oscillator.start();
+      
+      // Store oscillator reference for stopping
+      setTestAudioElement(oscillator as any);
+      
+      // Create frequency modulation for more realistic test
+      const modOscillator = audioContext.createOscillator();
+      const modGain = audioContext.createGain();
+      modOscillator.frequency.setValueAtTime(5, audioContext.currentTime); // 5Hz modulation
+      modGain.gain.setValueAtTime(50, audioContext.currentTime); // Modulation depth
+      modOscillator.connect(modGain);
+      modGain.connect(oscillator.frequency);
+      modOscillator.start();
       
       toast({
         title: `Audio Test - ${mode.toUpperCase()}`,
-        description: `Testing audio output melalui ${mode}. Tekan Stop untuk menghentikan.`,
+        description: `Menguji ${mode} dengan frekuensi ${mode === 'earpiece' ? '2000Hz (Suara jernih untuk panggilan)' : mode === 'speaker' ? '1000Hz (Suara seimbang)' : '500Hz (Bass untuk speaker eksternal)'}`,
       });
       
     } catch (error) {
@@ -233,23 +258,38 @@ export default function Settings({ onBack }: SettingsProps) {
 
   const stopAudioTest = () => {
     if (testAudioElement) {
-      testAudioElement.pause();
-      testAudioElement.currentTime = 0;
-      testAudioElement.src = '';
+      try {
+        // Stop oscillator if it's an oscillator node
+        if (typeof testAudioElement.stop === 'function') {
+          testAudioElement.stop();
+        } else {
+          // Stop audio element if it's an HTML audio element
+          testAudioElement.pause();
+          testAudioElement.currentTime = 0;
+          testAudioElement.src = '';
+        }
+      } catch (error) {
+        console.log('Audio test stopped');
+      }
     }
     setIsTestingAudio(false);
+    setAudioTestMode(null);
     setTestAudioElement(null);
   };
 
   const startMicTest = async () => {
     try {
       setIsMicTesting(true);
+      setMicLevel(0);
       
+      // Request microphone access with specific constraints
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+          sampleRate: 44100,
+          channelCount: 1
         }
       });
       
@@ -257,36 +297,72 @@ export default function Settings({ onBack }: SettingsProps) {
       
       // Create audio context for microphone level monitoring
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Resume context if suspended
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
+      
       const source = audioContext.createMediaStreamSource(stream);
       const analyser = audioContext.createAnalyser();
       
-      analyser.fftSize = 256;
+      // Configure analyser for better sensitivity
+      analyser.fftSize = 1024;
+      analyser.smoothingTimeConstant = 0.3;
+      analyser.minDecibels = -100;
+      analyser.maxDecibels = -10;
+      
       source.connect(analyser);
       
       const bufferLength = analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
       
+      let isRunning = true;
+      
       const updateMicLevel = () => {
-        if (isMicTesting) {
-          analyser.getByteFrequencyData(dataArray);
-          const average = dataArray.reduce((sum, value) => sum + value, 0) / bufferLength;
-          setMicLevel(Math.round((average / 255) * 100));
-          requestAnimationFrame(updateMicLevel);
+        if (!isRunning || !isMicTesting) return;
+        
+        analyser.getByteFrequencyData(dataArray);
+        
+        // Calculate RMS (root mean square) for more accurate level detection
+        let sum = 0;
+        for (let i = 0; i < bufferLength; i++) {
+          sum += dataArray[i] * dataArray[i];
         }
+        const rms = Math.sqrt(sum / bufferLength);
+        const level = Math.min(Math.round((rms / 128) * 100), 100);
+        
+        setMicLevel(level);
+        requestAnimationFrame(updateMicLevel);
+      };
+      
+      // Store the stop function
+      (window as any).stopMicTest = () => {
+        isRunning = false;
       };
       
       updateMicLevel();
       
       toast({
         title: "Microphone Test",
-        description: "Berbicara untuk melihat level microphone. Tekan Stop untuk menghentikan.",
+        description: "Berbicara atau buat suara untuk melihat level microphone. Level akan bergerak jika mic aktif.",
       });
       
     } catch (error) {
       console.error('Failed to start microphone test:', error);
+      let errorMessage = "Gagal mengakses microphone.";
+      
+      if (error.name === 'NotAllowedError') {
+        errorMessage = "Izin microphone ditolak. Mohon izinkan akses microphone di browser.";
+      } else if (error.name === 'NotFoundError') {
+        errorMessage = "Microphone tidak ditemukan. Pastikan microphone terhubung.";
+      } else if (error.name === 'NotReadableError') {
+        errorMessage = "Microphone sedang digunakan aplikasi lain.";
+      }
+      
       toast({
         title: "Microphone Test Error",
-        description: "Gagal mengakses microphone. Pastikan izin microphone diberikan.",
+        description: errorMessage,
         variant: "destructive",
       });
       setIsMicTesting(false);
@@ -294,12 +370,24 @@ export default function Settings({ onBack }: SettingsProps) {
   };
 
   const stopMicTest = () => {
+    // Stop the mic level monitoring
+    if ((window as any).stopMicTest) {
+      (window as any).stopMicTest();
+    }
+    
+    // Stop all media tracks
     if (micStream) {
       micStream.getTracks().forEach(track => track.stop());
       setMicStream(null);
     }
+    
     setIsMicTesting(false);
     setMicLevel(0);
+    
+    toast({
+      title: "Microphone Test Stopped",
+      description: "Test microphone telah dihentikan.",
+    });
   };
 
   const generateTestTone = (frequency: number, duration: number): string => {
