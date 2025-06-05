@@ -84,9 +84,26 @@ export const messages = pgTable("messages", {
   isRead: boolean("is_read").default(false),
 });
 
+// Call history table
+export const callHistory = pgTable("call_history", {
+  id: serial("id").primaryKey(),
+  callId: varchar("call_id").notNull(), // unique identifier for the call
+  callType: varchar("call_type").notNull(), // 'audio', 'video', 'group_audio', 'group_video'
+  initiatorId: integer("initiator_id").references(() => users.id).notNull(),
+  conversationId: integer("conversation_id").references(() => conversations.id),
+  participants: text("participants").array(), // array of user IDs who participated
+  status: varchar("status").notNull(), // 'completed', 'missed', 'rejected', 'failed'
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time"),
+  duration: integer("duration"), // in seconds
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Schema types
 export type User = typeof users.$inferSelect;
 export type UpsertUser = typeof users.$inferInsert;
+export type CallHistory = typeof callHistory.$inferSelect;
+export type InsertCallHistory = typeof callHistory.$inferInsert;
 
 // Create schema for user registration
 export const registerUserSchema = createInsertSchema(users).pick({

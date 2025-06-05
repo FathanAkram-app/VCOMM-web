@@ -14,6 +14,7 @@ import ChatRoom from '../components/ChatRoom';
 import IncomingCallModal from '../components/IncomingCallModal';
 import GroupCall from '../components/GroupCall';
 import GroupVideoCall from '../components/GroupVideoCall';
+import CallHistory from '../components/CallHistory';
 import { useCall } from '../hooks/useCall';
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
