@@ -915,34 +915,8 @@ export default function GroupVideoCall() {
     };
   }, [activeCall?.callId, user?.id]);
 
-  // Cleanup on component unmount
-  useEffect(() => {
-    return () => {
-      console.log('[GroupVideoCall] Component unmounting, cleaning up streams');
-      cleanupMediaTracks();
-      
-      // Clean up peer connections
-      Object.values(peerConnections.current).forEach(pc => {
-        if (pc) {
-          pc.close();
-        }
-      });
-      peerConnections.current = {};
-      
-      // Clean up remote streams
-      Object.values(remoteStreams).forEach(stream => {
-        stream.getTracks().forEach(track => track.stop());
-      });
-      setRemoteStreams({});
-      
-      // Force cleanup of all media tracks in the browser
-      navigator.mediaDevices.enumerateDevices().then(devices => {
-        console.log('[GroupVideoCall] Available devices:', devices.length);
-      }).catch(err => {
-        console.log('[GroupVideoCall] Could not enumerate devices:', err);
-      });
-    };
-  }, []); // Empty dependency array means this runs only on unmount
+  // Simplified cleanup - no automatic cleanup to prevent component instability
+  // Manual cleanup only when user explicitly ends call
 
   const toggleAudio = () => {
     if (localStream) {
