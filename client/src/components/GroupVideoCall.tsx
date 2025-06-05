@@ -679,9 +679,13 @@ export default function GroupVideoCall() {
       }
     };
 
+    console.log('[GroupVideoCall] Setting up WebRTC event listeners...');
+    
     window.addEventListener('group_webrtc_offer', handleGroupWebRTCOffer as any);
     window.addEventListener('group_webrtc_answer', handleGroupWebRTCAnswer as any);
     window.addEventListener('group_webrtc_ice_candidate', handleGroupWebRTCIceCandidate as any);
+    
+    console.log('[GroupVideoCall] WebRTC event listeners registered successfully');
 
     return () => {
       window.removeEventListener('group_webrtc_offer', handleGroupWebRTCOffer as any);
