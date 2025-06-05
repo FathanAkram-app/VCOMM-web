@@ -288,7 +288,7 @@ export default function AudioCall() {
   };
   
   return (
-    <div className="h-full w-full flex flex-col bg-[#171717]">
+    <div className="h-full w-full flex flex-col bg-gray-900">
       {/* Hidden audio element for remote stream */}
       <audio 
         id="remoteAudio"
@@ -300,7 +300,7 @@ export default function AudioCall() {
       {/* Audio Call UI */}
       <div className="flex-1 flex flex-col">
         {/* Call Info Header */}
-        <div className="bg-[#1a1a1a] border-b border-[#333333] p-4 flex items-center">
+        <div className="bg-gray-800 border-b border-gray-700 p-4 flex items-center">
           <Button 
             variant="ghost" 
             size="icon" 

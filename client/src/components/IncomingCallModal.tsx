@@ -11,7 +11,7 @@ export default function IncomingCallModal() {
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-      <div className="bg-[#1a1a1a] border border-[#a6c455] p-8 max-w-md w-full mx-4">
+      <div className="bg-gray-800 border border-green-500 p-8 max-w-md w-full mx-4">
         <div className="text-center">
           {/* Incoming Call Header */}
           <div className="mb-6">

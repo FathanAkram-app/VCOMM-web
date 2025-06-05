@@ -44,7 +44,7 @@ const StableParticipantVideo = memo(({
   // This component only registers the video ref
   
   return (
-    <div className="relative bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] rounded-lg overflow-hidden border-2 border-[#4a7c59] aspect-[4/3] min-h-[120px] max-h-[160px]">
+    <div className="relative bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700 aspect-[4/3] min-h-[120px] max-h-[160px]">
       {/* Always render video element to ensure ref registration */}
       <video
         ref={videoRef}
@@ -1021,7 +1021,7 @@ export default function GroupVideoCall() {
               <div className="grid grid-cols-2 gap-2 h-full">
                 {/* Current User - Always first position */}
                 {user && activeCall && (
-                  <div className="relative bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] rounded-lg overflow-hidden border-2 border-[#4a7c59] aspect-[4/3] min-h-[120px] max-h-[160px]">
+                  <div className="relative bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700 aspect-[4/3] min-h-[120px] max-h-[160px]">
                     {/* Video element - always present */}
                     <video
                       ref={localVideoRef}
