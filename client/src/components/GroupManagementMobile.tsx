@@ -73,11 +73,13 @@ export default function GroupManagementMobile({ groupId, groupName, onClose, cur
   // Update group name mutation
   const updateGroupNameMutation = useMutation({
     mutationFn: async (name: string) => {
-      return await fetch(`/api/groups/${groupId}`, {
+      const response = await fetch(`/api/groups/${groupId}/name`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name })
       });
+      if (!response.ok) throw new Error('Failed to update group name');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/group-info/${groupId}`] });
