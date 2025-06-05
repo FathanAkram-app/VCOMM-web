@@ -447,39 +447,63 @@ export default function GroupVideoCall() {
 
   // Attach remote streams to video elements when streams are available
   useEffect(() => {
+    console.log('[GroupVideoCall] Stream attachment effect triggered');
+    console.log('[GroupVideoCall] Available remote streams:', Object.keys(remoteStreams));
+    console.log('[GroupVideoCall] Available video refs:', Object.keys(participantVideoRefs.current));
+    
     Object.keys(remoteStreams).forEach(userIdStr => {
       const userId = parseInt(userIdStr);
       const stream = remoteStreams[userId];
       const videoElement = participantVideoRefs.current[userId];
       
+      console.log(`[GroupVideoCall] Processing user ${userId}:`, {
+        hasStream: !!stream,
+        streamActive: stream?.active,
+        streamTracks: stream?.getTracks().length,
+        hasVideoElement: !!videoElement,
+        videoElementTagName: videoElement?.tagName,
+        isMaximized,
+        maximizedParticipant: maximizedParticipant?.userId
+      });
+      
       if (stream && videoElement && stream.active) {
-        console.log(`[GroupVideoCall] Attaching stream to video element for user ${userId}`);
-        console.log(`[GroupVideoCall] Video element exists:`, !!videoElement);
-        console.log(`[GroupVideoCall] Stream active:`, stream.active);
-        console.log(`[GroupVideoCall] Current srcObject:`, videoElement.srcObject);
+        console.log(`[GroupVideoCall] ✅ Attaching stream to video element for user ${userId}`);
+        console.log(`[GroupVideoCall] Stream tracks:`, stream.getTracks().map(t => `${t.kind}:${t.enabled}`));
         
-        // Always re-attach stream to ensure it's connected properly
-        videoElement.srcObject = stream;
-        videoElement.autoplay = true;
-        videoElement.playsInline = true;
-        videoElement.muted = false;
+        // Force clear and re-attach
+        videoElement.srcObject = null;
+        videoElement.load();
         
-        // Try to play with fallback
-        const playPromise = videoElement.play();
-        if (playPromise !== undefined) {
-          playPromise.catch((error: any) => {
-            console.warn(`[GroupVideoCall] Autoplay failed for user ${userId}, trying muted play`);
-            videoElement.muted = true;
-            videoElement.play().catch((muteErr: any) => {
-              console.warn(`[GroupVideoCall] Muted play failed for user ${userId}:`, muteErr);
-            });
-          });
-        }
+        setTimeout(() => {
+          videoElement.srcObject = stream;
+          videoElement.autoplay = true;
+          videoElement.playsInline = true;
+          videoElement.muted = false;
+          
+          // Try to play with enhanced fallback
+          const playPromise = videoElement.play();
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                console.log(`[GroupVideoCall] ✅ Video playback started for user ${userId}`);
+              })
+              .catch((error: any) => {
+                console.warn(`[GroupVideoCall] ⚠️ Autoplay failed for user ${userId}, trying muted:`, error);
+                videoElement.muted = true;
+                return videoElement.play();
+              })
+              .catch((muteErr: any) => {
+                console.error(`[GroupVideoCall] ❌ All playback attempts failed for user ${userId}:`, muteErr);
+              });
+          }
+        }, 100);
       } else {
-        console.log(`[GroupVideoCall] Cannot attach stream for user ${userId}:`, {
+        console.log(`[GroupVideoCall] ❌ Cannot attach stream for user ${userId}:`, {
           hasStream: !!stream,
           hasVideoElement: !!videoElement,
-          streamActive: stream?.active
+          streamActive: stream?.active,
+          streamId: stream?.id,
+          videoElementId: videoElement?.id
         });
       }
     });
