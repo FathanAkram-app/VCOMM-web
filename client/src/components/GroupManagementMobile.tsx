@@ -73,10 +73,10 @@ export default function GroupManagementMobile({ groupId, groupName, onClose, cur
   // Update group name mutation
   const updateGroupNameMutation = useMutation({
     mutationFn: async (name: string) => {
-      return await apiRequest(`/api/groups/${groupId}`, {
+      return await fetch(`/api/groups/${groupId}`, {
         method: 'PATCH',
-        body: JSON.stringify({ name }),
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
       });
     },
     onSuccess: () => {
@@ -111,9 +111,11 @@ export default function GroupManagementMobile({ groupId, groupName, onClose, cur
   // Remove member mutation
   const removeMemberMutation = useMutation({
     mutationFn: async (userId: number) => {
-      await apiRequest(`/api/groups/${groupId}/members/${userId}`, {
+      const response = await fetch(`/api/groups/${groupId}/members/${userId}`, {
         method: 'DELETE'
       });
+      if (!response.ok) throw new Error('Failed to remove member');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/group-members/${groupId}`] });
@@ -127,10 +129,13 @@ export default function GroupManagementMobile({ groupId, groupName, onClose, cur
   // Change role mutation
   const changeRoleMutation = useMutation({
     mutationFn: async ({ userId, role }: { userId: number; role: string }) => {
-      await apiRequest(`/api/groups/${groupId}/members/${userId}/role`, {
+      const response = await fetch(`/api/groups/${groupId}/members/${userId}/role`, {
         method: 'PATCH',
-        body: { role }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role })
       });
+      if (!response.ok) throw new Error('Failed to change role');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/group-members/${groupId}`] });
