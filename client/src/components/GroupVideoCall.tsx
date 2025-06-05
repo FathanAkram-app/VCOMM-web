@@ -373,9 +373,81 @@ export default function GroupVideoCall() {
         return;
       }
       
-      const peerConnection = peerConnections.current[fromUserId];
+      let peerConnection = peerConnections.current[fromUserId];
+      if (!peerConnection && localStream) {
+        console.log('[GroupVideoCall] Creating peer connection for new participant:', fromUserId);
+        
+        // Create peer connection for this user
+        peerConnection = new RTCPeerConnection({
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            { urls: 'stun:stun3.l.google.com:19302' },
+            { urls: 'stun:stun4.l.google.com:19302' }
+          ],
+          iceCandidatePoolSize: 10
+        });
+
+        // Add local stream tracks
+        localStream.getTracks().forEach(track => {
+          console.log('[GroupVideoCall] Adding local track to new peer connection:', track.kind);
+          peerConnection!.addTrack(track, localStream);
+        });
+
+        // Handle incoming remote stream
+        peerConnection.ontrack = (event) => {
+          console.log('[GroupVideoCall] Received remote stream from user:', fromUserId);
+          const [remoteStream] = event.streams;
+          
+          if (remoteStream && remoteStream.active) {
+            setRemoteStreams(prev => ({
+              ...prev,
+              [fromUserId]: remoteStream
+            }));
+            console.log('[GroupVideoCall] Remote stream added to state for user:', fromUserId);
+          }
+        };
+
+        // Handle ICE candidates
+        peerConnection.onicecandidate = (event) => {
+          if (event.candidate) {
+            console.log('[GroupVideoCall] Sending ICE candidate to user:', fromUserId);
+            const ws = (window as any).__callWebSocket;
+            if (ws?.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({
+                type: 'group_webrtc_ice_candidate',
+                payload: {
+                  callId: activeCall?.callId,
+                  candidate: event.candidate,
+                  targetUserId: fromUserId,
+                  fromUserId: user?.id
+                }
+              }));
+            }
+          }
+        };
+
+        // Handle connection state changes with restart mechanism
+        peerConnection.onconnectionstatechange = () => {
+          console.log('[GroupVideoCall] Connection state for user', fromUserId, ':', peerConnection!.connectionState);
+          
+          if (peerConnection!.connectionState === 'failed') {
+            console.warn(`[GroupVideoCall] Connection failed for user ${fromUserId}, attempting restart`);
+            setTimeout(() => {
+              if (peerConnection!.connectionState === 'failed') {
+                console.log(`[GroupVideoCall] Restarting ICE for user ${fromUserId}`);
+                peerConnection!.restartIce();
+              }
+            }, 2000);
+          }
+        };
+
+        peerConnections.current[fromUserId] = peerConnection;
+      }
+      
       if (!peerConnection) {
-        console.log('[GroupVideoCall] No peer connection found for user:', fromUserId);
+        console.log('[GroupVideoCall] Still no peer connection available for user:', fromUserId);
         return;
       }
       

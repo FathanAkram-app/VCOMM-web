@@ -1,0 +1,114 @@
+[GroupVideoCall] Creating peer connection for user: 3
+GroupVideoCall.tsx:179 [GroupVideoCall] Adding local track to peer connection: audio
+GroupVideoCall.tsx:179 [GroupVideoCall] Adding local track to peer connection: video
+GroupVideoCall.tsx:295 [GroupVideoCall] Auto-initiating WebRTC connections for all participants
+GroupVideoCall.tsx:300 [GroupVideoCall] Auto-creating offer for participant: 3
+GroupVideoCall.tsx:48 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749101421866_37_2', callType: 'video', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:49 [GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:50 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:51 [GroupVideoCall] localStream: MediaStream {id: 'abd58cd3-17d0-4762-8453-db6d22848d61', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:244 [GroupVideoCall] Sending offer to user: 3
+GroupVideoCall.tsx:245 [GroupVideoCall] Offer details: RTCSessionDescription {type: 'offer', sdp: 'v=0\r\no=- 1022576166957396074 2 IN IP4 127.0.0.1\r\ns…6d22848d61 92b39951-2416-4aa8-9c9d-68c268b009bb\r\n'}
+GroupVideoCall.tsx:260 [GroupVideoCall] ✅ Sending WebRTC offer to user 3 : {type: 'group_webrtc_offer', payload: {…}}
+6GroupVideoCall.tsx:202 [GroupVideoCall] Sending ICE candidate to user: 3
+GroupVideoCall.tsx:310 [GroupVideoCall] Auto-sending offer to participant: 3
+CallContext.tsx:420 [CallContext] Received message: {type: 'group_webrtc_offer', payload: {…}}
+CallContext.tsx:464 [CallContext] Forwarding group WebRTC offer: {callId: 'group_call_1749101421866_37_2', offer: {…}, fromUserId: 3}
+GroupVideoCall.tsx:369 [GroupVideoCall] Received WebRTC offer from user: 3
+GroupVideoCall.tsx:185 [GroupVideoCall] Received remote stream from user: 3
+GroupVideoCall.tsx:195 [GroupVideoCall] Remote stream added to state for user: 3
+GroupVideoCall.tsx:185 [GroupVideoCall] Received remote stream from user: 3
+GroupVideoCall.tsx:195 [GroupVideoCall] Remote stream added to state for user: 3
+GroupVideoCall.tsx:384 [GroupVideoCall] Set remote description from offer
+GroupVideoCall.tsx:48 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749101421866_37_2', callType: 'video', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:49 [GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:50 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:51 [GroupVideoCall] localStream: MediaStream {id: 'abd58cd3-17d0-4762-8453-db6d22848d61', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:340 [GroupVideoCall] Attaching stream to video element for user 3
+GroupVideoCall.tsx:390 [GroupVideoCall] Sending answer to user: 3
+GroupVideoCall.tsx:202 [GroupVideoCall] Sending ICE candidate to user: 3
+CallContext.tsx:420 [CallContext] Received message: {type: 'group_webrtc_offer', payload: {…}}
+CallContext.tsx:464 [CallContext] Forwarding group WebRTC offer: {callId: 'group_call_1749101421866_37_2', offer: {…}, fromUserId: 5}
+GroupVideoCall.tsx:369 [GroupVideoCall] Received WebRTC offer from user: 5
+GroupVideoCall.tsx:378 [GroupVideoCall] No peer connection found for user: 5
+GroupVideoCall.tsx:202 [GroupVideoCall] Sending ICE candidate to user: 3
+CallContext.tsx:420 [CallContext] Received message: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1014 [CallContext] Group call participants update: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1019 [CallContext] Comparing callIds - message: group_call_1749101421866_37_2 activeCall: group_call_1749101421866_37_2
+CallContext.tsx:1020 [CallContext] ActiveCall groupId: 37
+CallContext.tsx:1059 [CallContext] Extracted groupIds - message: 37 active: 37
+CallContext.tsx:1060 [CallContext] CallId parts: (5) ['group', 'call', '1749101421866', '37', '2']
+CallContext.tsx:1063 [CallContext] Group IDs match, updating participants: (3) [2, 3, 5]
+CallContext.tsx:1067 [CallContext] Unique participants after deduplication: (3) [2, 3, 5]
+CallContext.tsx:1085 [CallContext] Updated participants in active call: (3) [2, 3, 5]
+GroupVideoCall.tsx:48 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749101421866_37_2', callType: 'video', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:49 [GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:50 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:51 [GroupVideoCall] localStream: MediaStream {id: 'abd58cd3-17d0-4762-8453-db6d22848d61', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:92 [GroupVideoCall] useEffect cleanup triggered
+GroupVideoCall.tsx:530 [GroupVideoCall] Cleaning up media tracks
+GroupVideoCall.tsx:534 [GroupVideoCall] Stopping localStream tracks
+GroupVideoCall.tsx:538 [GroupVideoCall] Stopped track: audio readyState: ended
+GroupVideoCall.tsx:538 [GroupVideoCall] Stopped track: video readyState: ended
+GroupVideoCall.tsx:546 [GroupVideoCall] Clearing video element
+GroupVideoCall.tsx:550 [GroupVideoCall] Cleared and reloaded video element
+GroupVideoCall.tsx:556 [GroupVideoCall] Clearing participant video element
+GroupVideoCall.tsx:572 [GroupVideoCall] All media cleanup completed
+GroupVideoCall.tsx:57 [GroupVideoCall] Getting local media stream...
+GroupVideoCall.tsx:123 [GroupVideoCall] Processing participants from activeCall: (3) [{…}, {…}, {…}]
+GroupVideoCall.tsx:132 [GroupVideoCall] Other participants: (2) [{…}, {…}]
+GroupVideoCall.tsx:153 [GroupVideoCall] Updated participants list: (2) [{…}, {…}]
+GroupVideoCall.tsx:353 [GroupVideoCall] Autoplay failed for user 3, trying muted play
+(anonymous) @ GroupVideoCall.tsx:353
+Promise.catch
+(anonymous) @ GroupVideoCall.tsx:352
+(anonymous) @ GroupVideoCall.tsx:334
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=768c3251:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=768c3251:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=768c3251:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=768c3251:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=768c3251:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=768c3251:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=768c3251:19447
+(anonymous) @ chunk-RPCDYKBN.js?v=768c3251:19328
+workLoop @ chunk-RPCDYKBN.js?v=768c3251:197
+flushWork @ chunk-RPCDYKBN.js?v=768c3251:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=768c3251:384Understand this warning
+GroupVideoCall.tsx:48 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749101421866_37_2', callType: 'video', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:49 [GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:50 [GroupVideoCall] isVideoEnabled: false
+GroupVideoCall.tsx:51 [GroupVideoCall] localStream: null
+GroupVideoCall.tsx:63 [GroupVideoCall] Got local media stream: MediaStream {id: 'f3fba9fd-48e9-47f8-8638-6547c20fe9bd', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:64 [GroupVideoCall] Video tracks: 1
+GroupVideoCall.tsx:65 [GroupVideoCall] Audio tracks: 1
+GroupVideoCall.tsx:71 [GroupVideoCall] Video track enabled by default for group calls
+GroupVideoCall.tsx:79 [GroupVideoCall] Set local video source
+GroupVideoCall.tsx:48 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749101421866_37_2', callType: 'video', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:49 [GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:50 [GroupVideoCall] isVideoEnabled: false
+GroupVideoCall.tsx:51 [GroupVideoCall] localStream: MediaStream {id: 'f3fba9fd-48e9-47f8-8638-6547c20fe9bd', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:109 [GroupVideoCall] Local video stream attached to element
+GroupVideoCall.tsx:115 [GroupVideoCall] Initial video state: true
+GroupVideoCall.tsx:160 [GroupVideoCall] Setting up WebRTC connections for participants: (2) [3, 5]
+GroupVideoCall.tsx:164 [GroupVideoCall] Creating peer connection for user: 5
+GroupVideoCall.tsx:179 [GroupVideoCall] Adding local track to peer connection: audio
+GroupVideoCall.tsx:179 [GroupVideoCall] Adding local track to peer connection: video
+GroupVideoCall.tsx:295 [GroupVideoCall] Auto-initiating WebRTC connections for all participants
+GroupVideoCall.tsx:300 [GroupVideoCall] Auto-creating offer for participant: 3
+GroupVideoCall.tsx:300 [GroupVideoCall] Auto-creating offer for participant: 5
+GroupVideoCall.tsx:48 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749101421866_37_2', callType: 'video', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:49 [GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:50 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:51 [GroupVideoCall] localStream: MediaStream {id: 'f3fba9fd-48e9-47f8-8638-6547c20fe9bd', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:202 [GroupVideoCall] Sending ICE candidate to user: 3
+GroupVideoCall.tsx:244 [GroupVideoCall] Sending offer to user: 5
+GroupVideoCall.tsx:245 [GroupVideoCall] Offer details: RTCSessionDescription {type: 'offer', sdp: 'v=0\r\no=- 6169418258308730685 2 IN IP4 127.0.0.1\r\ns…47c20fe9bd 8b976923-c02e-4af2-b81f-d3f8d367799c\r\n'}
+GroupVideoCall.tsx:260 [GroupVideoCall] ✅ Sending WebRTC offer to user 5 : {type: 'group_webrtc_offer', payload: {…}}
+4GroupVideoCall.tsx:202 [GroupVideoCall] Sending ICE candidate to user: 5
+CallContext.tsx:420 [CallContext] Received message: {type: 'user_status', payload: {…}}
+2GroupVideoCall.tsx:202 [GroupVideoCall] Sending ICE candidate to user: 5
+CallContext.tsx:420 [CallContext] Received message: {type: 'user_status', payload: {…}}
+GroupVideoCall.tsx:310 [GroupVideoCall] Auto-sending offer to participant: 3
+CallContext.tsx:420 [CallContext] Received message: {type: 'user_status', payload: {…}}
+GroupVideoCall.tsx:310 [GroupVideoCall] Auto-sending offer to participant: 5
+CallContext.tsx:420 [CallContext] Received message: {type: 'user_status', payload: {…}}
