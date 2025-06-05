@@ -1273,6 +1273,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       await storage.updateConversation(groupId, { name: name.trim() });
       
+      // Broadcast group update to all members
+      await broadcastGroupUpdate(groupId, 'name_updated', { name: name.trim() });
+      
       res.json({ success: true });
     } catch (error) {
       console.error('Error updating group name:', error);

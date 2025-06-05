@@ -445,6 +445,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
           case 'group_call_participants_update':
             handleGroupCallParticipantsUpdate(message);
             break;
+          case 'group_update':
+            handleGroupUpdate(message);
+            break;
           case 'webrtc_ready':
             handleWebRTCReady(message.payload || message);
             break;
@@ -1007,6 +1010,25 @@ export function CallProvider({ children }: { children: ReactNode }) {
       }
     } else {
       console.log('[CallContext] No matching active group call found for user left event');
+    }
+  };
+
+  // Handle group update notifications for real-time cache invalidation
+  const handleGroupUpdate = (message: any) => {
+    console.log('[CallContext] Group update received:', message);
+    
+    if (message.payload) {
+      const { groupId, updateType } = message.payload;
+      console.log(`[CallContext] Processing group update: ${updateType} for group ${groupId}`);
+      
+      // Trigger a custom event that GroupManagement can listen to
+      window.dispatchEvent(new CustomEvent('group-update', {
+        detail: {
+          groupId,
+          updateType,
+          data: message.payload.data
+        }
+      }));
     }
   };
 

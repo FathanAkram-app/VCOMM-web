@@ -50,6 +50,39 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Listen for WebSocket group updates for real-time cache invalidation
+  useEffect(() => {
+    const handleGroupUpdate = (event: CustomEvent) => {
+      const { groupId: updatedGroupId, updateType } = event.detail;
+      
+      if (updatedGroupId === groupId) {
+        console.log(`[GroupManagement] Received real-time update: ${updateType} for group ${groupId}`);
+        
+        // Invalidate all related caches immediately
+        queryClient.invalidateQueries({ queryKey: [`/api/group-info/${groupId}`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/group-members/${groupId}`] });
+        queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/rooms'] });
+        queryClient.invalidateQueries({ queryKey: [`/api/conversations/${groupId}`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/conversations/${groupId}/members`] });
+        
+        // Show toast notification for changes made by other users
+        if (updateType !== 'self') {
+          toast({
+            title: "Perubahan Grup",
+            description: `Grup telah diperbarui secara real-time`,
+          });
+        }
+      }
+    };
+
+    window.addEventListener('group-update', handleGroupUpdate);
+    
+    return () => {
+      window.removeEventListener('group-update', handleGroupUpdate);
+    };
+  }, [groupId, queryClient, toast]);
+
   // Fetch group info
   const { data: groupInfo, isLoading: isLoadingInfo } = useQuery<GroupInfo>({
     queryKey: [`/api/group-info/${groupId}`],
