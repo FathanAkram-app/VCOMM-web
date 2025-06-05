@@ -448,6 +448,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Clear chat history endpoint
+  app.delete('/api/conversations/:id/clear', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      if (isNaN(conversationId)) {
+        return res.status(400).json({ message: "Invalid conversation ID" });
+      }
+      
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(400).json({ message: "User ID not found in session" });
+      }
+      
+      // Check if user is member of the conversation
+      const members = await storage.getConversationMembers(conversationId);
+      const isMember = members.some((member: any) => member.userId == userId);
+      
+      if (!isMember) {
+        return res.status(403).json({ message: "Not authorized to clear this conversation" });
+      }
+      
+      // Clear all messages in the conversation
+      await storage.clearConversationMessages(conversationId);
+      
+      console.log(`[API] Cleared chat history for conversation ${conversationId} by user ${userId}`);
+      res.json({ message: "Chat history cleared successfully" });
+    } catch (error) {
+      console.error("Error clearing chat history:", error);
+      res.status(500).json({ message: "Failed to clear chat history" });
+    }
+  });
+
+  // Delete conversation/group endpoint
+  app.delete('/api/conversations/:id', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      if (isNaN(conversationId)) {
+        return res.status(400).json({ message: "Invalid conversation ID" });
+      }
+      
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(400).json({ message: "User ID not found in session" });
+      }
+      
+      // Get conversation details
+      const conversation = await storage.getConversation(conversationId);
+      if (!conversation) {
+        return res.status(404).json({ message: "Conversation not found" });
+      }
+      
+      // For groups, check if user is member
+      if (conversation.isGroup) {
+        const members = await storage.getConversationMembers(conversationId);
+        const isMember = members.some((member: any) => member.userId == userId);
+        
+        if (!isMember) {
+          return res.status(403).json({ message: "Not authorized to delete this group" });
+        }
+      }
+      
+      // Delete the conversation and all related data
+      await storage.deleteConversation(conversationId);
+      
+      console.log(`[API] Deleted conversation ${conversationId} by user ${userId}`);
+      res.json({ message: "Conversation deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
+      res.status(500).json({ message: "Failed to delete conversation" });
+    }
+  });
+
   // Messages routes
   app.get('/api/conversations/:id/messages', isAuthenticated, async (req: AuthRequest, res) => {
     try {

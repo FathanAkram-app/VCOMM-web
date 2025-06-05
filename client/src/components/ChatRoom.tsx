@@ -995,7 +995,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                 <DropdownMenuItem 
                   className="text-red-500 cursor-pointer hover:bg-[#3d5040] focus:bg-[#3d5040] focus:text-red-400"
                   onClick={() => {
-                    if (confirm(`Apakah Anda yakin ingin menghapus grup ${chatName}?`)) {
+                    if (confirm(`Apakah Anda yakin ingin menghapus grup ${chatData?.name || 'ini'}?`)) {
                       deleteGroup();
                     }
                   }}

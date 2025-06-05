@@ -398,6 +398,28 @@ export class DatabaseStorage implements IStorage {
     const newMessage = await this.createMessage(forwardData);
     return newMessage;
   }
+
+  async clearConversationMessages(conversationId: number): Promise<void> {
+    // Delete all messages in the conversation
+    await db
+      .delete(messages)
+      .where(eq(messages.conversationId, conversationId));
+  }
+
+  async deleteConversation(conversationId: number): Promise<void> {
+    // Delete all messages in the conversation first
+    await this.clearConversationMessages(conversationId);
+    
+    // Delete all conversation members
+    await db
+      .delete(conversationMembers)
+      .where(eq(conversationMembers.conversationId, conversationId));
+    
+    // Delete the conversation itself
+    await db
+      .delete(conversations)
+      .where(eq(conversations.id, conversationId));
+  }
 }
 
 // Export DatabaseStorage instance to be used in the application
