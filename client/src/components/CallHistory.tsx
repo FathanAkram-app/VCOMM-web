@@ -194,13 +194,15 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
+  // Debug: log the first few entries to understand data structure
+  if (Array.isArray(callHistory) && callHistory.length > 0) {
+    console.log('[CallHistory] First entry structure:', callHistory[0]);
+    console.log('[CallHistory] All entries:', callHistory.map(c => ({ id: c.id, callType: c.callType, status: c.status, contactName: c.contactName })));
+  }
+
   const filteredHistory = Array.isArray(callHistory) ? callHistory.filter((call: any) => {
-    // Untuk group calls, tampilkan semua (karena penting untuk tracking)
-    // Untuk individual calls, hanya tampilkan missed calls dan incoming calls
-    const isGroupCall = call.callType?.startsWith('group_');
-    const isIncomingOrMissed = call.status === 'missed' || (call.status === 'accepted' && !call.isOutgoing);
-    
-    if (!isGroupCall && !isIncomingOrMissed) return false;
+    // Show all incoming calls since backend already filters for incoming only
+    // Backend query: WHERE initiator_id != userId (already incoming calls only)
     
     if (filter === 'all') return true;
     if (filter === 'audio') return call.callType === 'audio';
