@@ -100,15 +100,20 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
   const { data: callHistory = [], isLoading, refetch, error } = useQuery({
     queryKey: ['/api/call-history'],
     enabled: !!user,
-    refetchInterval: 5000, // Refresh every 5 seconds
-    staleTime: 0, // Always consider data stale
-    gcTime: 0, // Don't cache data
+    retry: 1,
+    staleTime: 0,
+    gcTime: 0,
   });
 
-  // Log data for debugging
+  // Force console logging for debugging
+  console.log('[CallHistory] Component rendered');
+  console.log('[CallHistory] User:', user);
   console.log('[CallHistory] Data received:', callHistory);
   console.log('[CallHistory] IsLoading:', isLoading);
   console.log('[CallHistory] Error:', error);
+  
+  // Force show data if we have any
+  const hasData = Array.isArray(callHistory) && callHistory.length > 0;
 
   const getCallIcon = (callType: string) => {
     switch (callType) {
