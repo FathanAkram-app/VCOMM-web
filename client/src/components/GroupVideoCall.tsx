@@ -499,8 +499,13 @@ export default function GroupVideoCall() {
       }
       
       try {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-        console.log('[GroupVideoCall] Set remote description from answer');
+        // Check if peer connection is in correct state for setting remote description
+        if (peerConnection.signalingState === 'have-local-offer') {
+          await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+          console.log('[GroupVideoCall] Set remote description from answer');
+        } else {
+          console.warn('[GroupVideoCall] Ignoring answer - peer connection not in correct state:', peerConnection.signalingState);
+        }
       } catch (error) {
         console.error('[GroupVideoCall] Error handling answer:', error);
       }
