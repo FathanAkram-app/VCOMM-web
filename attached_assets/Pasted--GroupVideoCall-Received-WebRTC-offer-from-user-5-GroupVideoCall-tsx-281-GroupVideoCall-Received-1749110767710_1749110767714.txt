@@ -1,0 +1,45 @@
+[GroupVideoCall] Received WebRTC offer from user: 5
+GroupVideoCall.tsx:281 [GroupVideoCall] Received remote stream from user: 5
+GroupVideoCall.tsx:282 [GroupVideoCall] Event streams: [MediaStream]
+GroupVideoCall.tsx:283 [GroupVideoCall] Event track: MediaStreamTrack {kind: 'audio', id: '7be867ad-8d3c-4d8c-9aff-f4b6cc00b75d', label: '7be867ad-8d3c-4d8c-9aff-f4b6cc00b75d', enabled: true, muted: true, …}
+GroupVideoCall.tsx:288 [GroupVideoCall] Remote stream details: {id: '9ea73763-9cb6-4808-8f3a-a90620d782dd', active: true, tracks: 2, videoTracks: 1, audioTracks: 1}
+GroupVideoCall.tsx:307 [GroupVideoCall] Updated remote streams state: ['5']
+GroupVideoCall.tsx:314 [GroupVideoCall] Remote stream added to state for user: 5
+GroupVideoCall.tsx:281 [GroupVideoCall] Received remote stream from user: 5
+GroupVideoCall.tsx:282 [GroupVideoCall] Event streams: [MediaStream]
+GroupVideoCall.tsx:283 [GroupVideoCall] Event track: MediaStreamTrack {kind: 'video', id: 'c478b451-24f6-424f-bcf2-8c54d7bf842a', label: 'c478b451-24f6-424f-bcf2-8c54d7bf842a', enabled: true, muted: true, …}
+GroupVideoCall.tsx:288 [GroupVideoCall] Remote stream details: {id: '9ea73763-9cb6-4808-8f3a-a90620d782dd', active: true, tracks: 2, videoTracks: 1, audioTracks: 1}
+GroupVideoCall.tsx:314 [GroupVideoCall] Remote stream added to state for user: 5
+GroupVideoCall.tsx:706 [GroupVideoCall] Set remote description from offer
+GroupVideoCall.tsx:115 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749110729666_37_2', callType: 'video', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:116 [GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:117 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:118 [GroupVideoCall] localStream: MediaStream {id: 'b681e7a6-4355-424c-9acf-64c4d35f8786', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:468 [GroupVideoCall] Stream attachment effect triggered
+GroupVideoCall.tsx:469 [GroupVideoCall] Available remote streams: ['5']
+GroupVideoCall.tsx:470 [GroupVideoCall] Available video refs: ['5']
+GroupVideoCall.tsx:477 [GroupVideoCall] Processing user 5: {hasStream: true, streamActive: true, streamTracks: 2, hasVideoElement: true, videoElementTagName: 'VIDEO', …}
+GroupVideoCall.tsx:494 [GroupVideoCall] ✅ Attaching stream to video element for user 5
+GroupVideoCall.tsx:498 [GroupVideoCall] Stream details for user 5: {streamId: '9ea73763-9cb6-4808-8f3a-a90620d782dd', active: true, videoTracks: 1, audioTracks: 1, videoTrackDetails: Array(1)}
+GroupVideoCall.tsx:712 [GroupVideoCall] Sending answer to user: 5
+2GroupVideoCall.tsx:326 [GroupVideoCall] Sending ICE candidate to user: 5
+CallContext.tsx:420 [CallContext] Received message: {type: 'user_status', payload: {…}}
+GroupVideoCall.tsx:531 [GroupVideoCall] Video element state for user 5: {srcObject: true, readyState: 0, videoWidth: 0, videoHeight: 0, paused: true, …}
+GroupVideoCall.tsx:326 [GroupVideoCall] Sending ICE candidate to user: 5
+CallContext.tsx:420 [CallContext] Received message: {type: 'user_status', payload: {…}}
+GroupVideoCall.tsx:442 [GroupVideoCall] Auto-sending offer to participant: 5
+GroupVideoCall.tsx:344 [GroupVideoCall] Connection state for user 5 : connecting
+GroupVideoCall.tsx:344 [GroupVideoCall] Connection state for user 5 : failed
+GroupVideoCall.tsx:347 [GroupVideoCall] Connection failed for user 5, cleaning up
+peerConnection.onconnectionstatechange @ GroupVideoCall.tsx:347Understand this warning
+GroupVideoCall.tsx:115 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749110729666_37_2', callType: 'video', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:116 [GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:117 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:118 [GroupVideoCall] localStream: MediaStream {id: 'b681e7a6-4355-424c-9acf-64c4d35f8786', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:468 [GroupVideoCall] Stream attachment effect triggered
+GroupVideoCall.tsx:469 [GroupVideoCall] Available remote streams: []
+GroupVideoCall.tsx:470 [GroupVideoCall] Available video refs: ['5']
+CallContext.tsx:420 [CallContext] Received message: {type: 'group_webrtc_answer', payload: {…}}
+CallContext.tsx:471 [CallContext] Forwarding group WebRTC answer: {callId: 'group_call_1749110729666_37_2', answer: {…}, fromUserId: 5}
+GroupVideoCall.tsx:738 [GroupVideoCall] Received WebRTC answer from user: 5
+GroupVideoCall.tsx:747 [GroupVideoCall] No peer connection found for user: 5

@@ -339,24 +339,34 @@ export default function GroupVideoCall() {
             }
           };
 
-          // Handle connection state changes with proper error recovery
+          // Handle connection state changes with delayed cleanup
           peerConnection.onconnectionstatechange = () => {
             console.log('[GroupVideoCall] Connection state for user', participant.userId, ':', peerConnection.connectionState);
             
             if (peerConnection.connectionState === 'failed') {
-              console.warn(`[GroupVideoCall] Connection failed for user ${participant.userId}, cleaning up`);
+              console.warn(`[GroupVideoCall] Connection failed for user ${participant.userId}, will retry in 5 seconds`);
               
-              // Clean up failed connection
-              delete peerConnections.current[participant.userId];
-              
-              // Remove from remote streams to trigger UI update
-              setRemoteStreams(prev => {
-                const updated = { ...prev };
-                delete updated[participant.userId];
-                return updated;
-              });
+              // Delay cleanup to allow for potential recovery via answer processing
+              setTimeout(() => {
+                // Only clean up if still failed and no successful connection established
+                if (peerConnection.connectionState === 'failed') {
+                  console.log(`[GroupVideoCall] Cleaning up persistently failed connection for user ${participant.userId}`);
+                  
+                  // Clean up failed connection
+                  delete peerConnections.current[participant.userId];
+                  
+                  // Remove from remote streams to trigger UI update
+                  setRemoteStreams(prev => {
+                    const updated = { ...prev };
+                    delete updated[participant.userId];
+                    return updated;
+                  });
+                }
+              }, 5000); // Give 5 seconds for potential recovery
             } else if (peerConnection.connectionState === 'connected') {
               console.log(`[GroupVideoCall] ✅ Connection established with user ${participant.userId}`);
+            } else if (peerConnection.connectionState === 'connecting') {
+              console.log(`[GroupVideoCall] Connection in progress for user ${participant.userId}`);
             }
           };
 
