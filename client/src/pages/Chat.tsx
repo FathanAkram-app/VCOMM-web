@@ -18,7 +18,7 @@ import { useCall } from '../hooks/useCall';
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -687,19 +687,16 @@ export default function Chat() {
                         try {
                           const response = await apiRequest('POST', `/api/conversations/${id}/delete`);
                           
-                          if (response.ok) {
-                            console.log(`Chat ${id} berhasil dihapus`);
-                            // Refresh chat list
-                            if (user) fetchUserChats(user.id);
-                            // Jika chat yang dihapus sedang aktif, kembali ke list
-                            if (activeChat?.id === id) {
-                              setActiveChat(null);
-                              setShowChatRoom(false);
-                            }
-                          } else {
-                            const error = await response.text();
-                            console.error('Gagal menghapus chat:', error);
-                            alert(`Gagal menghapus chat: ${error}`);
+                          console.log(`Chat ${id} berhasil dihapus`);
+                          // Invalidate and refetch chat lists to update UI immediately
+                          queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+                          queryClient.invalidateQueries({ queryKey: ['/api/direct-chats'] });
+                          queryClient.invalidateQueries({ queryKey: ['/api/rooms'] });
+                          
+                          // If this is the active chat, navigate back to chat list
+                          if (activeChat?.id === id) {
+                            setActiveChat(null);
+                            setShowChatRoom(false);
                           }
                         } catch (error) {
                           console.error('Error menghapus chat:', error);
@@ -710,20 +707,15 @@ export default function Chat() {
                         try {
                           const response = await apiRequest('POST', `/api/conversations/${id}/clear`);
                           
-                          if (response.ok) {
-                            console.log(`Riwayat chat ${id} berhasil dibersihkan`);
-                            // Refresh chat list and messages if this is active chat
-                            if (user) fetchUserChats(user.id);
-                            if (activeChat?.id === id) {
-                              setDatabaseMessages([]);
-                              // Refresh messages
-                              fetchMessages(id);
-                            }
-                          } else {
-                            const error = await response.text();
-                            console.error('Gagal membersihkan riwayat chat:', error);
-                            alert(`Gagal membersihkan riwayat chat: ${error}`);
+                          console.log(`Riwayat chat ${id} berhasil dibersihkan`);
+                          // Invalidate and refetch messages for immediate update
+                          if (activeChat?.id === id) {
+                            queryClient.invalidateQueries({ queryKey: [`/api/conversations/${id}/messages`] });
                           }
+                          // Also invalidate conversation list to update last message
+                          queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+                          queryClient.invalidateQueries({ queryKey: ['/api/direct-chats'] });
+                          queryClient.invalidateQueries({ queryKey: ['/api/rooms'] });
                         } catch (error) {
                           console.error('Error membersihkan riwayat chat:', error);
                           alert('Terjadi kesalahan saat membersihkan riwayat chat');

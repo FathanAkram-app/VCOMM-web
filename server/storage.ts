@@ -402,7 +402,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async clearConversationMessages(conversationId: number): Promise<void> {
-    // Delete all messages in the conversation
+    // First, handle messages that reference other messages (forwarded messages)
+    // Set forwardedFromId to null for messages that reference messages in this conversation
+    await db
+      .update(messages)
+      .set({ forwardedFromId: null })
+      .where(
+        and(
+          eq(messages.conversationId, conversationId),
+          sql`forwarded_from_id IS NOT NULL`
+        )
+      );
+    
+    // Also update any messages in other conversations that reference messages in this conversation
+    await db
+      .update(messages)
+      .set({ forwardedFromId: null })
+      .where(
+        sql`forwarded_from_id IN (SELECT id FROM messages WHERE conversation_id = ${conversationId})`
+      );
+    
+    // Now delete all messages in the conversation
     await db
       .delete(messages)
       .where(eq(messages.conversationId, conversationId));
