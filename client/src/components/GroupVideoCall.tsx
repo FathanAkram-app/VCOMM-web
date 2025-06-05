@@ -560,8 +560,13 @@ export default function GroupVideoCall() {
           const answer = await peerConnection.createAnswer();
           await peerConnection.setLocalDescription(answer);
           
+          console.log('[GroupVideoCall] Preparing to send WebRTC answer to user:', fromUserId);
+          console.log('[GroupVideoCall] Answer SDP type:', answer.type);
+          console.log('[GroupVideoCall] Answer SDP length:', answer.sdp?.length || 0);
+          
           const websocket = (window as any).__callWebSocket;
           if (websocket?.readyState === WebSocket.OPEN) {
+            console.log('[GroupVideoCall] WebSocket is open, sending answer...');
             websocket.send(JSON.stringify({
               type: 'group_webrtc_answer',
               payload: {
