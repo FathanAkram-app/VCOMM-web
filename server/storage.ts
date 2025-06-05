@@ -536,26 +536,16 @@ export class DatabaseStorage implements IStorage {
   // Call history using database storage
   async getCallHistory(userId: number): Promise<any[]> {
     try {
-      // Get calls where user is a participant (received calls) or missed calls only
-      // Exclude outgoing calls where user is the initiator
+      // Only show calls where user received the call (not initiated)
       const calls = await db
         .select()
         .from(callHistory)
         .where(
           and(
-            or(
-              // Incoming calls where user is not the initiator
-              and(
-                sql`${callHistory.participants} @> ARRAY[${userId.toString()}]::text[]`,
-                sql`${callHistory.initiatorId} != ${userId}`
-              ),
-              // Missed calls where user is the target
-              and(
-                eq(callHistory.status, 'missed'),
-                sql`${callHistory.participants} @> ARRAY[${userId.toString()}]::text[]`
-              )
-            ),
-            // Only show incoming, missed, rejected calls - not outgoing
+            // User is in participants but not the initiator
+            sql`${callHistory.participants} @> ARRAY[${userId.toString()}]::text[]`,
+            sql`${callHistory.initiatorId} != ${userId}`,
+            // Only show incoming, missed, rejected, accepted calls - exclude outgoing
             sql`${callHistory.status} IN ('incoming', 'missed', 'rejected', 'accepted', 'ended')`
           )
         )
@@ -620,20 +610,19 @@ export class DatabaseStorage implements IStorage {
 
   async addCallHistory(callData: any): Promise<void> {
     try {
-      const isGroupCall = callData.callType?.startsWith('group_') || callData.callType === 'video' && callData.toUserId > 10;
-      
       await db.insert(callHistory).values({
         callId: callData.callId,
         callType: callData.callType,
-        initiatorId: callData.fromUserId,
-        conversationId: isGroupCall ? callData.toUserId : null,
-        participants: callData.participants || [callData.fromUserId.toString(), callData.toUserId?.toString()].filter(Boolean),
+        initiatorId: callData.initiatorId,
+        conversationId: callData.conversationId,
+        participants: callData.participants,
         status: callData.status,
-        startTime: new Date(),
-        duration: callData.duration || 0
+        startTime: callData.startTime,
+        endTime: callData.endTime,
+        duration: callData.duration
       });
       
-      console.log(`[Storage] Added call history: ${callData.callId} (${callData.callType}) - ${callData.status} - isGroupCall: ${isGroupCall}`);
+      console.log(`[Storage] Added call history: ${callData.callId} (${callData.callType}) - ${callData.status}`);
     } catch (error) {
       console.error('Error adding call history:', error);
     }

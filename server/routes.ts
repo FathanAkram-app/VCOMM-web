@@ -928,13 +928,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Log call initiation
           await storage.addCallHistory({
             callId,
-            fromUserId,
-            fromUserName,
-            toUserId,
-            toUserName: targetUserName,
             callType,
-            status: 'initiated',
-            duration: 0
+            initiatorId: fromUserId,
+            conversationId: null,
+            participants: [fromUserId.toString(), toUserId.toString()],
+            status: 'incoming',
+            startTime: new Date(),
+            endTime: null,
+            duration: null
           });
           
           const targetClient = clients.get(toUserId);
@@ -953,13 +954,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // User is offline, log missed call
             await storage.addCallHistory({
               callId,
-              fromUserId,
-              fromUserName,
-              toUserId,
-              toUserName: targetUserName,
               callType,
+              initiatorId: fromUserId,
+              conversationId: null,
+              participants: [fromUserId.toString(), toUserId.toString()],
               status: 'missed',
-              duration: 0
+              startTime: new Date(),
+              endTime: null,
+              duration: null
             });
             
             // Send failure response
@@ -1131,10 +1133,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             await storage.addCallHistory({
               callId,
               callType: `group_${callType}`,
-              fromUserId,
-              toUserId: groupId, // For group calls, use groupId as conversation ID
-              status: 'initiated',
-              participants: [fromUserId.toString()]
+              initiatorId: fromUserId,
+              conversationId: groupId,
+              participants: [fromUserId.toString()],
+              status: 'incoming',
+              startTime: new Date(),
+              endTime: null,
+              duration: null
             });
             
             // Add the initiator to the group call participants
