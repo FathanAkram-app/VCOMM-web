@@ -1038,9 +1038,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
         console.log('[CallContext] Unique participants after deduplication:', uniqueParticipants);
         
         // Convert participant IDs to participant objects
-        const participantObjects = uniqueParticipants.map((participantId: number) => ({
-          userId: participantId,
-          userName: `User ${participantId}`, // Placeholder - should be fetched from user data
+        const participantObjects = uniqueParticipants.map((participantId: any) => ({
+          userId: Number(participantId),
+          userName: `User ${participantId}`, // Will be updated with real names from server
           audioEnabled: true,
           videoEnabled: groupCallToUpdate.callType === 'video',
           stream: null

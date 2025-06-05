@@ -136,50 +136,16 @@ export default function GroupVideoCall() {
     }
   }, [activeCall?.participants, user?.id, participants]);
 
-  // Setup audio elements for participants
+  // For now, show participants visually without WebRTC streams
+  // In a real implementation, this would involve WebRTC peer connections
+  // to exchange media streams between all participants
   useEffect(() => {
-    participants.forEach(participant => {
-      if (participant.userId !== user?.id && participant.stream) {
-        // Create or update audio element for participant
-        let audioElement = document.getElementById(`groupAudio-${participant.userId}`) as HTMLAudioElement;
-        
-        if (!audioElement) {
-          audioElement = document.createElement('audio');
-          audioElement.id = `groupAudio-${participant.userId}`;
-          audioElement.autoplay = true;
-          audioElement.playsInline = true;
-          audioElement.volume = 0.8;
-          document.body.appendChild(audioElement);
-          console.log('[GroupVideoCall] Created audio element for participant:', participant.userId);
-        }
-        
-        // Set the stream
-        if (audioElement.srcObject !== participant.stream) {
-          audioElement.srcObject = participant.stream;
-          console.log('[GroupVideoCall] Set audio stream for participant:', participant.userId);
-          
-          // Try to play the audio
-          audioElement.play().then(() => {
-            console.log('[GroupVideoCall] Audio playing for participant:', participant.userId);
-          }).catch(err => {
-            console.log('[GroupVideoCall] Audio autoplay failed for participant:', participant.userId, err);
-          });
-        }
-      }
-    });
-
-    // Cleanup audio elements for participants no longer in the call
-    const audioElements = document.querySelectorAll('[id^="groupAudio-"]');
-    audioElements.forEach(element => {
-      const participantId = parseInt(element.id.replace('groupAudio-', ''));
-      const participantExists = participants.some(p => p.userId === participantId);
-      
-      if (!participantExists) {
-        element.remove();
-        console.log('[GroupVideoCall] Removed audio element for participant:', participantId);
-      }
-    });
-  }, [participants, user?.id]);
+    if (participants.length > 0) {
+      console.log('[GroupVideoCall] Displaying participants:', participants.map(p => p.userId));
+      // Future: Setup WebRTC peer connections for each participant
+      // to exchange video and audio streams
+    }
+  }, [participants]);
 
   // Cleanup on component unmount
   useEffect(() => {
