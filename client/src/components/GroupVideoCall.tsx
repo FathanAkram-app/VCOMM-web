@@ -339,20 +339,24 @@ export default function GroupVideoCall() {
             }
           };
 
-          // Handle connection state changes with restart mechanism
+          // Handle connection state changes with proper error recovery
           peerConnection.onconnectionstatechange = () => {
             console.log('[GroupVideoCall] Connection state for user', participant.userId, ':', peerConnection.connectionState);
             
             if (peerConnection.connectionState === 'failed') {
-              console.warn(`[GroupVideoCall] Connection failed for user ${participant.userId}, attempting restart`);
+              console.warn(`[GroupVideoCall] Connection failed for user ${participant.userId}, cleaning up`);
               
-              // Restart connection after delay
-              setTimeout(() => {
-                if (peerConnection.connectionState === 'failed') {
-                  console.log(`[GroupVideoCall] Restarting ICE for user ${participant.userId}`);
-                  peerConnection.restartIce();
-                }
-              }, 2000);
+              // Clean up failed connection
+              delete peerConnections.current[participant.userId];
+              
+              // Remove from remote streams to trigger UI update
+              setRemoteStreams(prev => {
+                const updated = { ...prev };
+                delete updated[participant.userId];
+                return updated;
+              });
+            } else if (peerConnection.connectionState === 'connected') {
+              console.log(`[GroupVideoCall] ✅ Connection established with user ${participant.userId}`);
             }
           };
 
@@ -748,20 +752,23 @@ export default function GroupVideoCall() {
         console.log('[GroupVideoCall] Current signaling state:', peerConnection.signalingState);
         console.log('[GroupVideoCall] Current connection state:', peerConnection.connectionState);
         
-        // Only set remote description if in the correct signaling state
+        // Handle answer based on signaling state with proper error recovery
         if (peerConnection.signalingState === 'have-local-offer') {
           await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
           console.log('[GroupVideoCall] Successfully set remote description from answer');
         } else if (peerConnection.signalingState === 'stable') {
-          console.warn('[GroupVideoCall] Peer connection already stable, ignoring answer');
+          console.warn('[GroupVideoCall] Peer connection already stable, ignoring duplicate answer');
+          return; // Don't process duplicate answers
+        } else if (peerConnection.signalingState === 'have-remote-offer') {
+          console.warn('[GroupVideoCall] Got answer but we have remote offer, creating fresh connection');
+          // Clean up and recreate connection to resolve signaling conflict
+          peerConnection.close();
+          delete peerConnections.current[fromUserId];
+          createdConnections.current.delete(fromUserId);
+          return;
         } else {
           console.warn('[GroupVideoCall] Invalid signaling state for answer:', peerConnection.signalingState);
-          
-          // Try to recover by restarting the connection
-          if (peerConnection.connectionState === 'failed' || peerConnection.connectionState === 'disconnected') {
-            console.log('[GroupVideoCall] Attempting to restart connection for user:', fromUserId);
-            peerConnection.restartIce();
-          }
+          return; // Don't attempt recovery that could make things worse
         }
       } catch (error) {
         console.error('[GroupVideoCall] Error handling answer:', error);
