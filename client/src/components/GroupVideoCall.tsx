@@ -764,7 +764,7 @@ export default function GroupVideoCall() {
                         playsInline
                         muted={false}
                         style={{ 
-                          display: remoteStreams[participant.userId] ? 'block' : 'none'
+                          display: 'block'
                         }}
                       />
                       
