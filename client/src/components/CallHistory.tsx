@@ -356,10 +356,8 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
                       )}
                     </div>
                   )}
-                </div>
-
-                  {/* Action Buttons - Moved to the right */}
-                  <div className="flex items-center space-x-1 ml-4 flex-shrink-0">
+                  {/* Action Buttons - Positioned at the far right */}
+                  <div className="flex items-center space-x-1 flex-shrink-0">
                     {/* Callback Button */}
                     <Button
                       variant="ghost"
@@ -389,6 +387,7 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
+                </div>
               </div>
             ))}
           </div>
