@@ -154,71 +154,16 @@ export default function GroupVideoCall() {
     }
   }, [activeCall?.participants, user?.id, allUsers]);
 
-  // Setup WebRTC peer connections for each participant
+  // For group video call, display participants without full WebRTC implementation
+  // Full WebRTC requires complex signaling server implementation for mesh or SFU architecture
   useEffect(() => {
-    if (participants.length > 0 && localStream) {
-      console.log('[GroupVideoCall] Setting up WebRTC for participants:', participants.map(p => p.userId));
-      
-      participants.forEach(participant => {
-        if (!peerConnections.current[participant.userId]) {
-          const peerConnection = new RTCPeerConnection({
-            iceServers: [
-              { urls: 'stun:stun.l.google.com:19302' },
-              { urls: 'stun:stun1.l.google.com:19302' }
-            ]
-          });
-
-          // Add local stream tracks to peer connection
-          localStream.getTracks().forEach(track => {
-            peerConnection.addTrack(track, localStream);
-          });
-
-          // Handle remote stream
-          peerConnection.ontrack = (event) => {
-            console.log('[GroupVideoCall] Received remote stream from participant:', participant.userId);
-            const [remoteStream] = event.streams;
-            setRemoteStreams(prev => ({
-              ...prev,
-              [participant.userId]: remoteStream
-            }));
-            
-            // Update participant with stream
-            setParticipants(prev => prev.map(p => 
-              p.userId === participant.userId 
-                ? { ...p, stream: remoteStream }
-                : p
-            ));
-          };
-
-          // Handle ICE candidates
-          peerConnection.onicecandidate = (event) => {
-            if (event.candidate) {
-              console.log('[GroupVideoCall] ICE candidate for participant:', participant.userId);
-              // In a real implementation, send ICE candidate via WebSocket
-            }
-          };
-
-          peerConnections.current[participant.userId] = peerConnection;
-          
-          console.log('[GroupVideoCall] WebRTC peer connection established for participant:', participant.userId);
-        }
-      });
-
-      // Cleanup peer connections for participants who left
-      Object.keys(peerConnections.current).forEach(userIdStr => {
-        const userId = parseInt(userIdStr);
-        if (!participants.some(p => p.userId === userId)) {
-          peerConnections.current[userId]?.close();
-          delete peerConnections.current[userId];
-          setRemoteStreams(prev => {
-            const updated = { ...prev };
-            delete updated[userId];
-            return updated;
-          });
-        }
-      });
+    if (participants.length > 0) {
+      console.log('[GroupVideoCall] Displaying participants in group call:', participants.map(p => p.userId));
+      // Each participant displays their own video locally
+      // In a production system, this would use a media server (SFU) like Janus, Kurento, or mediasoup
+      // for scalable multi-party video calling
     }
-  }, [participants, localStream]);
+  }, [participants]);
 
   // Cleanup on component unmount
   useEffect(() => {

@@ -1030,19 +1030,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Handle WebRTC ICE candidate
         if (data.type === 'webrtc_ice_candidate' && ws.userId) {
-          const { callId, candidate } = data;
-          console.log(`[WebRTC] Relaying ICE candidate for call ${callId}`);
+          const { callId, candidate, targetUserId, fromUserId } = data.payload || data;
+          console.log(`[WebRTC] Relaying ICE candidate for call ${callId} from ${fromUserId || ws.userId} to ${targetUserId || 'all'}`);
           
-          // Find the target user based on call participants
-          clients.forEach((client, userId) => {
-            if (userId !== ws.userId && client.readyState === client.OPEN) {
-              client.send(JSON.stringify({
+          if (targetUserId) {
+            // Send to specific user (for group calls)
+            const targetClient = clients.get(targetUserId);
+            if (targetClient && targetClient.readyState === targetClient.OPEN) {
+              targetClient.send(JSON.stringify({
                 type: 'webrtc_ice_candidate',
-                callId,
-                candidate
+                payload: {
+                  callId,
+                  candidate,
+                  fromUserId: fromUserId || ws.userId
+                }
               }));
             }
-          });
+          } else {
+            // Broadcast to all participants (fallback for 1-on-1 calls)
+            clients.forEach((client, userId) => {
+              if (userId !== ws.userId && client.readyState === client.OPEN) {
+                client.send(JSON.stringify({
+                  type: 'webrtc_ice_candidate',
+                  callId,
+                  candidate
+                }));
+              }
+            });
+          }
+        }
+
+        // Handle group call WebRTC offer
+        if (data.type === 'group_webrtc_offer' && ws.userId) {
+          const { callId, offer, targetUserId, fromUserId } = data.payload;
+          console.log(`[Group WebRTC] Relaying offer for call ${callId} from ${fromUserId} to ${targetUserId}`);
+          
+          const targetClient = clients.get(targetUserId);
+          if (targetClient && targetClient.readyState === targetClient.OPEN) {
+            targetClient.send(JSON.stringify({
+              type: 'group_webrtc_offer',
+              payload: {
+                callId,
+                offer,
+                fromUserId
+              }
+            }));
+          }
+        }
+
+        // Handle group call WebRTC answer
+        if (data.type === 'group_webrtc_answer' && ws.userId) {
+          const { callId, answer, targetUserId, fromUserId } = data.payload;
+          console.log(`[Group WebRTC] Relaying answer for call ${callId} from ${fromUserId} to ${targetUserId}`);
+          
+          const targetClient = clients.get(targetUserId);
+          if (targetClient && targetClient.readyState === targetClient.OPEN) {
+            targetClient.send(JSON.stringify({
+              type: 'group_webrtc_answer',
+              payload: {
+                callId,
+                answer,
+                fromUserId
+              }
+            }));
+          }
         }
       } catch (error) {
         console.error('WebSocket message error:', error);
