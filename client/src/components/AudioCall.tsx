@@ -241,93 +241,95 @@ export default function AudioCall() {
     setIsLoudspeaker(newLoudspeakerState);
     
     const audioElement = document.querySelector('#remoteAudio') as HTMLAudioElement;
-    if (audioElement && isMobileDevice) {
+    if (audioElement && isMobileDevice && remoteAudioStream) {
       try {
-        // Use setSinkId for audio output routing (if supported)
-        if ('setSinkId' in audioElement) {
-          if (newLoudspeakerState) {
-            // Use default speakers (loudspeaker)
-            await (audioElement as any).setSinkId('default');
-            console.log("[AudioCall] 🔊 Switched to loudspeaker using setSinkId");
-          } else {
-            // Try to use communications device (earpiece)
-            await (audioElement as any).setSinkId('communications');
-            console.log("[AudioCall] 📱 Switched to earpiece using setSinkId");
-          }
+        console.log(`[AudioCall] Switching to ${newLoudspeakerState ? 'LOUDSPEAKER' : 'EARPIECE'} mode`);
+        
+        // Stop current audio stream temporarily
+        audioElement.pause();
+        audioElement.srcObject = null;
+        
+        // For mobile devices, we need to recreate the audio context with proper routing
+        if (newLoudspeakerState) {
+          // LOUDSPEAKER MODE - Use external speakers
+          audioElement.volume = 1.0;
+          audioElement.setAttribute('playsinline', 'true');
+          audioElement.setAttribute('webkit-playsinline', 'true');
+          audioElement.removeAttribute('autoplay');
+          
+          // Set audio to use loudspeaker
+          Object.defineProperty(audioElement, 'sinkId', {
+            value: 'default',
+            writable: true
+          });
+          
+          console.log("[AudioCall] 🔊 Configured for LOUDSPEAKER");
         } else {
-          // Fallback: modify audio context and volume
+          // EARPIECE MODE - Use phone speaker (receiver)
+          audioElement.volume = 0.8;
+          audioElement.removeAttribute('playsinline');
+          audioElement.removeAttribute('webkit-playsinline');
+          audioElement.setAttribute('autoplay', 'true');
+          
+          // Set audio to use earpiece/receiver
+          Object.defineProperty(audioElement, 'sinkId', {
+            value: 'communications',
+            writable: true
+          });
+          
+          console.log("[AudioCall] 📱 Configured for EARPIECE");
+        }
+        
+        // Reapply the stream after configuration
+        await new Promise(resolve => setTimeout(resolve, 200));
+        audioElement.srcObject = remoteAudioStream;
+        
+        // Force play with user gesture
+        try {
+          await audioElement.play();
+          console.log(`[AudioCall] ✓ Audio playing in ${newLoudspeakerState ? 'LOUDSPEAKER' : 'EARPIECE'} mode`);
+        } catch (playError) {
+          console.error("[AudioCall] Play error:", playError);
+          
+          // Alternative approach: create new audio element
+          const newAudioElement = document.createElement('audio');
+          newAudioElement.id = 'remoteAudio';
+          newAudioElement.autoplay = !newLoudspeakerState;
+          newAudioElement.volume = newLoudspeakerState ? 1.0 : 0.8;
+          newAudioElement.srcObject = remoteAudioStream;
+          
           if (newLoudspeakerState) {
-            audioElement.volume = 1.0;
-            audioElement.style.display = 'block';
-            // Force external speaker by setting audio attributes
-            audioElement.setAttribute('x-webkit-airplay', 'allow');
-            audioElement.setAttribute('autoplay', 'true');
-            console.log("[AudioCall] 🔊 Loudspeaker mode (fallback method)");
+            newAudioElement.setAttribute('playsinline', 'true');
           } else {
-            audioElement.volume = 0.7;
-            audioElement.style.display = 'none';
-            // Remove external speaker attributes for earpiece mode
-            audioElement.removeAttribute('x-webkit-airplay');
-            audioElement.setAttribute('autoplay', 'false');
-            console.log("[AudioCall] 📱 Earpiece mode (fallback method)");
+            newAudioElement.removeAttribute('playsinline');
           }
+          
+          // Replace old audio element
+          const oldElement = document.querySelector('#remoteAudio');
+          if (oldElement?.parentNode) {
+            oldElement.parentNode.replaceChild(newAudioElement, oldElement);
+          }
+          
+          await newAudioElement.play();
+          console.log(`[AudioCall] ✓ New audio element playing in ${newLoudspeakerState ? 'LOUDSPEAKER' : 'EARPIECE'} mode`);
         }
         
-        // Additional mobile-specific audio routing using Web Audio API
-        if (remoteAudioStream) {
+      } catch (toggleError) {
+        console.error("[AudioCall] Error during speaker toggle:", toggleError);
+        
+        // Emergency fallback - basic volume adjustment
+        if (audioElement) {
+          audioElement.volume = newLoudspeakerState ? 1.0 : 0.7;
+          audioElement.srcObject = remoteAudioStream;
           try {
-            // Create or get existing audio context
-            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-            
-            if (audioContext.state === 'suspended') {
-              await audioContext.resume();
-            }
-            
-            // Create media stream source
-            const source = audioContext.createMediaStreamSource(remoteAudioStream);
-            const gainNode = audioContext.createGain();
-            
-            // Route audio based on speaker mode
-            if (newLoudspeakerState) {
-              // Loudspeaker mode - higher gain and connect to speakers
-              gainNode.gain.value = 1.0;
-              console.log("[AudioCall] 🔊 Web Audio: Routing to loudspeaker");
-            } else {
-              // Earpiece mode - lower gain for phone speaker
-              gainNode.gain.value = 0.7;
-              console.log("[AudioCall] 📱 Web Audio: Routing to earpiece");
-            }
-            
-            // Connect the audio graph
-            source.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            // Re-apply stream to HTML audio element as backup
-            audioElement.srcObject = null;
-            await new Promise(resolve => setTimeout(resolve, 100));
-            audioElement.srcObject = remoteAudioStream;
-            audioElement.play().catch(console.error);
-            
-            // Store references for cleanup
-            (window as any).currentAudioContext = audioContext;
-            (window as any).currentAudioSource = source;
-            (window as any).currentGainNode = gainNode;
-            
-          } catch (webAudioError) {
-            console.error("[AudioCall] Web Audio API failed:", webAudioError);
-            // Fallback to basic stream re-assignment
-            audioElement.srcObject = null;
-            await new Promise(resolve => setTimeout(resolve, 100));
-            audioElement.srcObject = remoteAudioStream;
-            audioElement.play().catch(console.error);
+            await audioElement.play();
+          } catch (playErr) {
+            console.error("[AudioCall] Emergency fallback play failed:", playErr);
           }
         }
-        
-      } catch (error) {
-        console.error("[AudioCall] Error switching audio output:", error);
-        // Fallback to volume adjustment
-        audioElement.volume = newLoudspeakerState ? 1.0 : 0.7;
       }
+    } else {
+      console.log("[AudioCall] Speaker toggle not available - missing requirements");
     }
   };
 
@@ -338,7 +340,7 @@ export default function AudioCall() {
       
       // Stop any active media streams
       if (activeCall?.localStream) {
-        activeCall.localStream.getTracks().forEach(track => {
+        activeCall.localStream.getTracks().forEach((track: MediaStreamTrack) => {
           if (track.readyState !== 'ended') {
             track.stop();
             console.log('[AudioCall] Cleanup on unmount - stopped track:', track.kind);
@@ -360,7 +362,7 @@ export default function AudioCall() {
         console.log('[AudioCall] Closed Web Audio Context');
       }
     };
-  }, []);
+  }, [activeCall]);
 
   // Update call duration timer
   useEffect(() => {
