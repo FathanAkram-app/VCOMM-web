@@ -16,7 +16,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
-import { eq, and, or, inArray, desc, exists } from "drizzle-orm";
+import { eq, ne, and, or, inArray, desc, exists } from "drizzle-orm";
 
 // Storage interface
 export interface IStorage {

@@ -15,6 +15,24 @@ export default function AudioCall() {
   console.log("[AudioCall] Component rendering with activeCall:", activeCall);
   console.log("[AudioCall] remoteAudioStream:", remoteAudioStream);
   
+  // Toggle speaker mode function
+  const toggleSpeakerMode = async () => {
+    if (!isMobileDevice) return;
+    
+    console.log("[AudioCall] Toggling speaker mode from:", isLoudspeaker);
+    setIsLoudspeaker(!isLoudspeaker);
+    
+    // Apply audio routing changes
+    try {
+      const newOutput = !isLoudspeaker ? 'speaker' : 'earpiece';
+      await audioManager.setAudioOutput(newOutput);
+      setAudioOutput(newOutput);
+      console.log("[AudioCall] Audio output changed to:", newOutput);
+    } catch (error) {
+      console.error("[AudioCall] Failed to change audio output:", error);
+    }
+  };
+  
   // Detect mobile device and earphone on component mount
   useEffect(() => {
     const checkMobileDevice = () => {
