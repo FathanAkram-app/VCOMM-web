@@ -529,13 +529,23 @@ export class DatabaseStorage implements IStorage {
           contactName = conversation?.name || 'Group Call';
         } else {
           // Individual call - get other user's name
-          const otherUserId = call.initiatorId === userId ? null : call.initiatorId;
-          if (otherUserId) {
-            const [otherUser] = await db
+          if (call.initiatorId !== userId) {
+            // This is an incoming call - get caller's name
+            const [callerUser] = await db
               .select()
               .from(users)
-              .where(eq(users.id, otherUserId));
-            contactName = otherUser ? (otherUser.callsign || otherUser.fullName || 'Unknown') : 'Unknown';
+              .where(eq(users.id, call.initiatorId));
+            contactName = callerUser ? (callerUser.callsign || callerUser.fullName || 'Unknown') : 'Unknown';
+          } else {
+            // This is an outgoing call - need target user info from participants
+            const targetUserId = call.participants?.find(id => parseInt(id) !== userId);
+            if (targetUserId) {
+              const [targetUser] = await db
+                .select()
+                .from(users)
+                .where(eq(users.id, parseInt(targetUserId)));
+              contactName = targetUser ? (targetUser.callsign || targetUser.fullName || 'Unknown') : 'Unknown';
+            }
           }
         }
 
