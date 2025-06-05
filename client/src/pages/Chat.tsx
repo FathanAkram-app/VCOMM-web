@@ -18,6 +18,7 @@ import { useCall } from '../hooks/useCall';
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { apiRequest } from '@/lib/queryClient';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -684,13 +685,7 @@ export default function Chat() {
                       onSelectChat={handleSelectChat}
                       onChatDeleted={async (id, isGroup) => {
                         try {
-                          const response = await fetch(`/api/conversations/${id}`, {
-                            method: 'DELETE',
-                            credentials: 'include',
-                            headers: {
-                              'Content-Type': 'application/json',
-                            }
-                          });
+                          const response = await apiRequest('DELETE', `/api/conversations/${id}`);
                           
                           if (response.ok) {
                             console.log(`Chat ${id} berhasil dihapus`);
@@ -713,13 +708,7 @@ export default function Chat() {
                       }}
                       onClearChatHistory={async (id, isGroup) => {
                         try {
-                          const response = await fetch(`/api/conversations/${id}/clear`, {
-                            method: 'POST',
-                            credentials: 'include',
-                            headers: {
-                              'Content-Type': 'application/json',
-                            }
-                          });
+                          const response = await apiRequest('POST', `/api/conversations/${id}/clear`);
                           
                           if (response.ok) {
                             console.log(`Riwayat chat ${id} berhasil dibersihkan`);
