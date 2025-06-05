@@ -504,11 +504,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log(`[API] Creating message from user ${userId} for conversation ${req.body.conversationId}`);
+      console.log(`[API] Request body:`, req.body);
       
       const parseResult = insertMessageSchema.safeParse({
         ...req.body,
         senderId: userId
       });
+      
+      console.log(`[API] Parse result success:`, parseResult.success);
+      if (parseResult.success) {
+        console.log(`[API] Parsed data:`, parseResult.data);
+      }
       
       if (!parseResult.success) {
         return res.status(400).json({ 
