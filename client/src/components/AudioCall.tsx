@@ -571,18 +571,42 @@ export default function AudioCall() {
             <Phone className="h-8 w-8 rotate-135" />
           </Button>
           
-          <Button 
-            variant="outline" 
-            size="icon" 
-            className={`w-16 h-16 rounded-sm ${
-              !activeCall.isMuted 
-                ? 'bg-[#333333] border-[#a6c455] text-[#a6c455]' 
-                : 'bg-red-600 text-white border-red-600'
-            }`}
-            onClick={toggleMute}
-          >
-            {!activeCall.isMuted ? <Volume2 className="h-7 w-7" /> : <VolumeX className="h-7 w-7" />}
-          </Button>
+          {/* Audio Output Toggle - Only on mobile */}
+          {isMobileDevice ? (
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className={`w-16 h-16 rounded-sm ${
+                isEarphoneDetected 
+                  ? 'bg-purple-600 border-purple-500 text-white' 
+                  : isLoudspeaker 
+                    ? 'bg-[#a6c455] border-[#a6c455] text-black' 
+                    : 'bg-blue-600 border-blue-500 text-white'
+              }`}
+              onClick={toggleSpeakerMode}
+            >
+              {isEarphoneDetected ? (
+                <Headphones className="h-7 w-7" />
+              ) : isLoudspeaker ? (
+                <Speaker className="h-7 w-7" />
+              ) : (
+                <Volume2 className="h-7 w-7" />
+              )}
+            </Button>
+          ) : (
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className={`w-16 h-16 rounded-sm ${
+                !activeCall.isMuted 
+                  ? 'bg-[#333333] border-[#a6c455] text-[#a6c455]' 
+                  : 'bg-red-600 text-white border-red-600'
+              }`}
+              onClick={toggleMute}
+            >
+              {!activeCall.isMuted ? <Volume2 className="h-7 w-7" /> : <VolumeX className="h-7 w-7" />}
+            </Button>
+          )}
 
           {/* Speaker Toggle Button - Only show on mobile */}
           {isMobileDevice && (
