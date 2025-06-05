@@ -1043,27 +1043,31 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                     )}
                     
                     {/* Reply message format seperti WhatsApp */}
-                    {msg.replyToId && (() => {
-                      console.log(`[Reply Debug] Message ${msg.id} has replyToId: ${msg.replyToId}`);
-                      console.log(`[Reply Debug] Available messages:`, allMessages.map(m => `${m.id}: ${m.content}`));
-                      
-                      const repliedMessage = allMessages.find((m: any) => m.id === msg.replyToId);
-                      console.log(`[Reply Debug] Found replied message:`, repliedMessage);
-                      
-                      return (
-                        <div className="bg-black/30 rounded-md p-2 mb-2 border-l-4 border-[#8ba742]">
-                          <div className="text-xs font-medium text-[#8ba742] mb-1">
-                            {repliedMessage?.senderName || 'Unknown User'}
-                          </div>
-                          <div className="text-xs text-gray-300 opacity-90">
-                            {repliedMessage?.hasAttachment 
-                              ? `📎 ${repliedMessage.attachmentName || 'File'}`
-                              : (repliedMessage?.content || 'Pesan tidak ditemukan')
-                            }
-                          </div>
+                    {msg.replyToId && (
+                      <div className="bg-black/30 rounded-md p-2 mb-2 border-l-4 border-[#8ba742]">
+                        <div className="text-xs font-medium text-[#8ba742] mb-1">
+                          {(() => {
+                            console.log(`[Reply Debug] Message ${msg.id} has replyToId: ${msg.replyToId}`);
+                            console.log(`[Reply Debug] All messages:`, allMessages);
+                            
+                            const repliedMessage = allMessages.find((m: any) => m.id === msg.replyToId);
+                            console.log(`[Reply Debug] Found replied message:`, repliedMessage);
+                            
+                            return repliedMessage?.senderName || 'Unknown User';
+                          })()}
                         </div>
-                      );
-                    })()}
+                        <div className="text-xs text-gray-300 opacity-90">
+                          {(() => {
+                            const repliedMessage = allMessages.find((m: any) => m.id === msg.replyToId);
+                            
+                            if (repliedMessage?.hasAttachment) {
+                              return `📎 ${repliedMessage.attachmentName || 'File'}`;
+                            }
+                            return repliedMessage?.content || 'Pesan tidak ditemukan';
+                          })()}
+                        </div>
+                      </div>
+                    )}
                     
                     {/* Tampilkan isi pesan jika bukan pesan suara */}
                     {!(msg.hasAttachment && msg.attachmentType === 'audio') && (
