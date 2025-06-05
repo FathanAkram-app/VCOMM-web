@@ -1038,46 +1038,32 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
                     )}
                     
-                    {/* Reply message format sesuai dengan kode yang diberikan */}
+                    {/* Reply message format seperti WhatsApp */}
                     {msg.replyToId && (
-                      <>
-                        <div className="text-xs mb-0.5">
-                          <span className="text-[#a6c455] mr-1">↪</span>
-                          <span className="text-[#a6c455] uppercase font-medium tracking-wide">
-                            {(() => {
-                              // Dapatkan nama pengirim pesan yang dibalas
-                              const senderName = messages && Array.isArray(messages) 
-                                ? (messages.find((m: any) => m.id === msg.replyToId)?.senderName || 'UNKNOWN')
-                                : 'UNKNOWN';
-                              
-                              // Format waktu
-                              const timestamp = messages && Array.isArray(messages)
-                                ? messages.find((m: any) => m.id === msg.replyToId)?.timestamp
-                                : '';
-                                
-                              let timeStr = '';
-                              if (timestamp) {
-                                try {
-                                  const date = new Date(timestamp);
-                                  timeStr = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                                } catch (e) {
-                                  timeStr = '';
-                                }
-                              }
-                              
-                              return `${senderName} ${timeStr}`;
-                            })()}
-                          </span>
-                        </div>
-                        <div className="text-[#d7d7d7] text-xs mb-1.5 ml-3">
+                      <div className="bg-black/20 rounded-lg p-2 mb-2 border-l-4 border-[#a6c455]">
+                        <div className="text-xs font-medium text-[#a6c455] mb-1">
                           {(() => {
-                            // Dapatkan konten pesan yang dibalas
-                            return messages && Array.isArray(messages) 
-                              ? (messages.find((m: any) => m.id === msg.replyToId)?.content || '')
-                              : '';
+                            // Dapatkan nama pengirim pesan yang dibalas
+                            const repliedMessage = messages && Array.isArray(messages) 
+                              ? messages.find((m: any) => m.id === msg.replyToId)
+                              : null;
+                            return repliedMessage?.senderName || 'Unknown User';
                           })()}
                         </div>
-                      </>
+                        <div className="text-xs text-gray-300 opacity-80">
+                          {(() => {
+                            // Dapatkan konten pesan yang dibalas
+                            const repliedMessage = messages && Array.isArray(messages) 
+                              ? messages.find((m: any) => m.id === msg.replyToId)
+                              : null;
+                            
+                            if (repliedMessage?.hasAttachment) {
+                              return `📎 ${repliedMessage.attachmentName || 'File'}`;
+                            }
+                            return repliedMessage?.content || 'Pesan tidak ditemukan';
+                          })()}
+                        </div>
+                      </div>
                     )}
                     
                     {/* Tampilkan isi pesan jika bukan pesan suara */}
