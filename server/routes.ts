@@ -729,9 +729,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get call history from storage
       const callHistory = await storage.getCallHistory(userId);
-      console.log(`[API] Found ${callHistory.length} call history entries for user ${userId}`);
+      const historyArray = callHistory || [];
+      console.log(`[API] Found ${historyArray.length} call history entries for user ${userId}`);
       
-      res.json(callHistory);
+      res.json(historyArray);
     } catch (error) {
       console.error("Error fetching call history:", error);
       res.status(500).json({ message: "Failed to fetch call history" });

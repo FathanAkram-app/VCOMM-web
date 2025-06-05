@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useCall } from "../hooks/useCall";
 import { Button } from "./ui/button";
-import { ChevronDown, Mic, MicOff, Phone, Volume2, VolumeX, MessageSquare } from "lucide-react";
+import { ChevronDown, Mic, MicOff, Phone, Volume2, VolumeX, MessageSquare, Speaker } from "lucide-react";
 
 export default function AudioCall() {
   const { activeCall, remoteAudioStream, hangupCall, toggleCallAudio, toggleMute } = useCall();

@@ -520,18 +520,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Update call history status
-  async updateCallHistoryStatus(callId: string, status: string): Promise<void> {
-    try {
-      await db
-        .update(callHistory)
-        .set({ status })
-        .where(eq(callHistory.callId, callId));
-      console.log(`[Storage] Updated call history status for ${callId} to ${status}`);
-    } catch (error) {
-      console.error(`Error updating call history status for ${callId}:`, error);
-    }
-  }
+
 
   // Call history using database storage
   async getCallHistory(userId: number): Promise<any[]> {
