@@ -1,6 +1,6 @@
 import { useCall } from "../hooks/useCall";
 import { Button } from "./ui/button";
-import { Phone, PhoneOff, Volume2 } from "lucide-react";
+import { Phone, PhoneOff, Volume2, Headphones } from "lucide-react";
 
 export default function IncomingCallModal() {
   const { incomingCall, acceptCall, rejectCall } = useCall();
@@ -48,7 +48,7 @@ export default function IncomingCallModal() {
           </div>
           
           {/* Call Type Indicator */}
-          <div className="bg-[#2a2a2a] border border-[#a6c455] px-4 py-2 mb-8 inline-block">
+          <div className="bg-[#2a2a2a] border border-[#a6c455] px-4 py-2 mb-4 inline-block">
             <div className="flex items-center justify-center space-x-2">
               {incomingCall.callType === 'audio' ? (
                 <Volume2 className="h-4 w-4 text-[#a6c455]" />
@@ -60,6 +60,19 @@ export default function IncomingCallModal() {
               </span>
             </div>
           </div>
+          
+          {/* Earphone Recommendation for Audio Calls */}
+          {incomingCall.callType === 'audio' && (
+            <div className="bg-amber-900/20 border border-amber-600 rounded p-3 mb-6">
+              <div className="flex items-center justify-center space-x-2 mb-2">
+                <Headphones className="w-4 h-4 text-amber-400" />
+                <span className="text-amber-300 font-medium text-sm">REKOMENDASI</span>
+              </div>
+              <p className="text-amber-200 text-xs text-center">
+                Gunakan earphone untuk kualitas audio yang lebih baik
+              </p>
+            </div>
+          )}
           
           {/* Action Buttons */}
           <div className="flex justify-center space-x-6">

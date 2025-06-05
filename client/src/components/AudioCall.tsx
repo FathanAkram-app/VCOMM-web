@@ -528,11 +528,34 @@ export default function AudioCall() {
             <h2 className="text-2xl font-bold text-white uppercase tracking-wider mb-2">
               {activeCall.peerName || 'UNKNOWN OPERATOR'}
             </h2>
-            <div className="bg-[#2a2a2a] px-4 py-2 border border-[#a6c455]">
+            <div className="bg-[#2a2a2a] px-4 py-2 border border-[#a6c455] mb-3">
               <p className="text-[#a6c455] uppercase font-bold text-sm">
                 {getStatusText()}
               </p>
             </div>
+            
+            {/* Earphone Recommendation for Mobile */}
+            {isMobileDevice && !isEarphoneDetected && (
+              <div className="bg-amber-900/20 border border-amber-600 rounded p-3 mt-3">
+                <div className="flex items-center justify-center space-x-2 mb-2">
+                  <Headphones className="w-5 h-5 text-amber-400" />
+                  <span className="text-amber-300 font-semibold text-sm">REKOMENDASI AUDIO</span>
+                </div>
+                <p className="text-amber-200 text-xs">
+                  Gunakan earphone atau headset untuk kualitas audio yang lebih baik dan privasi panggilan.
+                </p>
+              </div>
+            )}
+            
+            {/* Earphone Connected Status */}
+            {isMobileDevice && isEarphoneDetected && (
+              <div className="bg-green-900/20 border border-green-600 rounded p-2 mt-3">
+                <div className="flex items-center justify-center space-x-2">
+                  <Headphones className="w-4 h-4 text-green-400" />
+                  <span className="text-green-300 font-medium text-xs">EARPHONE TERHUBUNG</span>
+                </div>
+              </div>
+            )}
           </div>
           
           {/* Call Status Indicators */}
