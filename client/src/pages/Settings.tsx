@@ -177,73 +177,80 @@ export default function Settings({ onBack }: SettingsProps) {
       
       // Stop any existing audio
       if (testAudioElement) {
-        testAudioElement.pause();
-        testAudioElement.currentTime = 0;
+        if (typeof testAudioElement.stop === 'function') {
+          testAudioElement.stop();
+        }
       }
       
-      // Create audio context for better control
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      // Use HTML Audio element with different audio files for mobile compatibility
+      const audio = new Audio();
+      audio.loop = true;
+      audio.preload = 'auto';
       
-      // Resume audio context if suspended (required on mobile)
-      if (audioContext.state === 'suspended') {
-        await audioContext.resume();
-      }
-      
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      const compressor = audioContext.createDynamicsCompressor();
-      
-      // Connect audio nodes
-      oscillator.connect(gainNode);
-      gainNode.connect(compressor);
-      compressor.connect(audioContext.destination);
-      
-      // Configure different audio characteristics for each mode
+      // Configure different test tones for each mode
       if (mode === 'earpiece') {
-        // Earpiece - focused frequency for voice calls, lower volume
-        oscillator.frequency.setValueAtTime(2000, audioContext.currentTime); // Higher frequency
-        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime); // Lower volume
-        oscillator.type = 'sine'; // Pure tone for earpiece
-        compressor.threshold.setValueAtTime(-24, audioContext.currentTime);
-        compressor.knee.setValueAtTime(30, audioContext.currentTime);
-        compressor.ratio.setValueAtTime(12, audioContext.currentTime);
+        // High frequency tone for earpiece test (simulating voice call)
+        audio.src = generateTestTone(3000, 1); // Higher pitch for earpiece
+        audio.volume = 0.3; // Lower volume
+        
+        // Try to route to earpiece on mobile
+        try {
+          if ('setSinkId' in audio) {
+            await (audio as any).setSinkId('communications');
+          }
+        } catch (e) {
+          console.log('setSinkId not supported or failed');
+        }
+        
+        toast({
+          title: "Test Nada Via Speaker",
+          description: "Nada akan keluar via speaker HP. Untuk test earpiece sebenarnya, lakukan panggilan suara biasa.",
+        });
+        
       } else if (mode === 'speaker') {
-        // Speaker - balanced frequency, medium volume
-        oscillator.frequency.setValueAtTime(1000, audioContext.currentTime); // Mid frequency
-        gainNode.gain.setValueAtTime(0.4, audioContext.currentTime); // Medium volume
-        oscillator.type = 'square'; // Square wave for distinction
-        compressor.threshold.setValueAtTime(-18, audioContext.currentTime);
-        compressor.knee.setValueAtTime(20, audioContext.currentTime);
-        compressor.ratio.setValueAtTime(8, audioContext.currentTime);
+        // Medium frequency for normal speaker
+        audio.src = generateTestTone(1000, 1); // Medium pitch
+        audio.volume = 0.6; // Medium volume
+        
+        toast({
+          title: "Speaker Test", 
+          description: "Nada menengah 1000Hz - Volume sedang untuk speaker normal.",
+        });
+        
       } else if (mode === 'loudspeaker') {
-        // Loudspeaker - lower frequency, higher volume for external speaker
-        oscillator.frequency.setValueAtTime(500, audioContext.currentTime); // Lower frequency
-        gainNode.gain.setValueAtTime(0.7, audioContext.currentTime); // Higher volume
-        oscillator.type = 'sawtooth'; // Rich harmonics for loudspeaker
-        compressor.threshold.setValueAtTime(-12, audioContext.currentTime);
-        compressor.knee.setValueAtTime(10, audioContext.currentTime);
-        compressor.ratio.setValueAtTime(4, audioContext.currentTime);
+        // Low frequency bass tone for loudspeaker
+        audio.src = generateTestTone(300, 1); // Lower bass frequency
+        audio.volume = 0.9; // Higher volume
+        
+        toast({
+          title: "Loudspeaker Test",
+          description: "Nada bass 300Hz - Volume tinggi untuk speaker eksternal/loudspeaker.",
+        });
       }
       
-      // Start oscillator
-      oscillator.start();
+      // Mobile-specific audio setup
+      audio.setAttribute('playsinline', 'true');
+      audio.setAttribute('webkit-playsinline', 'true');
       
-      // Store oscillator reference for stopping
-      setTestAudioElement(oscillator as any);
+      // Ensure audio plays on mobile by requiring user interaction
+      const playPromise = audio.play();
       
-      // Create frequency modulation for more realistic test
-      const modOscillator = audioContext.createOscillator();
-      const modGain = audioContext.createGain();
-      modOscillator.frequency.setValueAtTime(5, audioContext.currentTime); // 5Hz modulation
-      modGain.gain.setValueAtTime(50, audioContext.currentTime); // Modulation depth
-      modOscillator.connect(modGain);
-      modGain.connect(oscillator.frequency);
-      modOscillator.start();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          console.log(`Audio test started for ${mode}`);
+        }).catch((error) => {
+          console.error('Audio play failed:', error);
+          toast({
+            title: "Audio Play Error",
+            description: "Gagal memutar audio. Coba sentuh layar terlebih dahulu.",
+            variant: "destructive",
+          });
+          setIsTestingAudio(false);
+          return;
+        });
+      }
       
-      toast({
-        title: `Audio Test - ${mode.toUpperCase()}`,
-        description: `Menguji ${mode} dengan frekuensi ${mode === 'earpiece' ? '2000Hz (Suara jernih untuk panggilan)' : mode === 'speaker' ? '1000Hz (Suara seimbang)' : '500Hz (Bass untuk speaker eksternal)'}`,
-      });
+      setTestAudioElement(audio);
       
     } catch (error) {
       console.error('Failed to start audio test:', error);
@@ -899,17 +906,27 @@ export default function Settings({ onBack }: SettingsProps) {
                     {/* Audio Test Buttons */}
                     <div className="grid grid-cols-1 gap-3">
                       {/* Earpiece Test */}
-                      <div className="p-4 bg-gray-700 rounded-lg">
+                      <div className="p-4 bg-gray-700 rounded-lg border border-yellow-600">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center">
                             <Smartphone className="w-5 h-5 mr-2 text-blue-400" />
-                            <span className="text-white font-medium">Earpiece (Speaker Telinga)</span>
+                            <span className="text-white font-medium">Test Earpiece (Speaker Telinga)</span>
                           </div>
-                          <Badge variant={audioTestMode === 'earpiece' && isTestingAudio ? 'default' : 'secondary'}>
-                            {audioTestMode === 'earpiece' && isTestingAudio ? 'Testing' : 'Ready'}
+                          <Badge variant="outline" className="text-yellow-400 border-yellow-400">
+                            Manual Test
                           </Badge>
                         </div>
-                        <p className="text-sm text-gray-400 mb-3">Test audio melalui speaker telinga HP</p>
+                        <div className="bg-yellow-900/20 border border-yellow-600 rounded p-3 mb-3">
+                          <p className="text-sm text-yellow-200">
+                            ⚠️ <strong>Keterbatasan Browser Mobile:</strong><br/>
+                            Browser tidak dapat langsung routing audio ke earpiece. Untuk test earpiece:
+                          </p>
+                          <ol className="text-sm text-yellow-200 mt-2 ml-4 list-decimal">
+                            <li>Lakukan panggilan suara biasa</li>
+                            <li>Dengarkan apakah suara keluar dari speaker telinga</li>
+                            <li>Jika tidak terdengar, earpiece mungkin bermasalah</li>
+                          </ol>
+                        </div>
                         <Button
                           onClick={() => isTestingAudio ? stopAudioTest() : startAudioTest('earpiece')}
                           className={`w-full ${
@@ -921,12 +938,12 @@ export default function Settings({ onBack }: SettingsProps) {
                           {audioTestMode === 'earpiece' && isTestingAudio ? (
                             <>
                               <Square className="w-4 h-4 mr-2" />
-                              Stop Test
+                              Stop Test Nada
                             </>
                           ) : (
                             <>
                               <Play className="w-4 h-4 mr-2" />
-                              Test Earpiece
+                              Test Nada (Via Speaker)
                             </>
                           )}
                         </Button>
