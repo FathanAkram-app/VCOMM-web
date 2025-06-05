@@ -10,7 +10,7 @@ interface GroupParticipant {
   userName: string;
   audioEnabled: boolean;
   videoEnabled: boolean;
-  stream?: MediaStream;
+  stream?: MediaStream | null;
 }
 
 export default function GroupVideoCall() {
@@ -24,6 +24,7 @@ export default function GroupVideoCall() {
   const [currentPage, setCurrentPage] = useState(0);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const participantVideoRefs = useRef<{ [userId: number]: HTMLVideoElement }>({});
+  const participantAudioRefs = useRef<{ [userId: number]: HTMLAudioElement }>({});
 
   // Extract group info
   const groupName = activeCall?.groupName || 'Unknown Group';
@@ -107,6 +108,78 @@ export default function GroupVideoCall() {
       }
     }
   }, [localStream]);
+
+  // Update participants from activeCall
+  useEffect(() => {
+    if (activeCall?.participants && Array.isArray(activeCall.participants)) {
+      console.log('[GroupVideoCall] Processing participants from activeCall:', activeCall.participants);
+      
+      // Filter out current user and create participants
+      const otherParticipantIds = activeCall.participants.filter((id: any) => Number(id) !== user?.id);
+      console.log('[GroupVideoCall] Other participants:', otherParticipantIds);
+      
+      const updatedParticipants = otherParticipantIds.map((participantId: any) => {
+        const id = Number(participantId);
+        const existingParticipant = participants.find(p => p.userId === id);
+        
+        return {
+          userId: id,
+          userName: `Participant ${id}`,
+          audioEnabled: true,
+          videoEnabled: false,
+          stream: existingParticipant?.stream || undefined
+        };
+      });
+      
+      setParticipants(updatedParticipants);
+      console.log('[GroupVideoCall] Updated participants list:', updatedParticipants);
+    }
+  }, [activeCall?.participants, user?.id, participants]);
+
+  // Setup audio elements for participants
+  useEffect(() => {
+    participants.forEach(participant => {
+      if (participant.userId !== user?.id && participant.stream) {
+        // Create or update audio element for participant
+        let audioElement = document.getElementById(`groupAudio-${participant.userId}`) as HTMLAudioElement;
+        
+        if (!audioElement) {
+          audioElement = document.createElement('audio');
+          audioElement.id = `groupAudio-${participant.userId}`;
+          audioElement.autoplay = true;
+          audioElement.playsInline = true;
+          audioElement.volume = 0.8;
+          document.body.appendChild(audioElement);
+          console.log('[GroupVideoCall] Created audio element for participant:', participant.userId);
+        }
+        
+        // Set the stream
+        if (audioElement.srcObject !== participant.stream) {
+          audioElement.srcObject = participant.stream;
+          console.log('[GroupVideoCall] Set audio stream for participant:', participant.userId);
+          
+          // Try to play the audio
+          audioElement.play().then(() => {
+            console.log('[GroupVideoCall] Audio playing for participant:', participant.userId);
+          }).catch(err => {
+            console.log('[GroupVideoCall] Audio autoplay failed for participant:', participant.userId, err);
+          });
+        }
+      }
+    });
+
+    // Cleanup audio elements for participants no longer in the call
+    const audioElements = document.querySelectorAll('[id^="groupAudio-"]');
+    audioElements.forEach(element => {
+      const participantId = parseInt(element.id.replace('groupAudio-', ''));
+      const participantExists = participants.some(p => p.userId === participantId);
+      
+      if (!participantExists) {
+        element.remove();
+        console.log('[GroupVideoCall] Removed audio element for participant:', participantId);
+      }
+    });
+  }, [participants, user?.id]);
 
   // Cleanup on component unmount
   useEffect(() => {
