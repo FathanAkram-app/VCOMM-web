@@ -1025,10 +1025,10 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
               return (
                 <div 
                   key={msg.id} 
-                  className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
+                  className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group`}
                 >
                   <div 
-                    className={`max-w-[70%] rounded-lg px-4 py-2 ${
+                    className={`relative max-w-[70%] rounded-lg px-4 py-2 ${
                       isOwnMessage 
                         ? 'bg-[#4d5d30] text-white rounded-br-none' 
                         : 'bg-[#333333] text-white rounded-bl-none'
