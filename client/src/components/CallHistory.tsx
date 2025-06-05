@@ -70,19 +70,17 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
   const handleCallback = async (call: CallHistoryItem) => {
     try {
       if (call.callType?.startsWith('group_')) {
-        // For group calls, we need to get the group ID from the call
-        const groupId = call.callType.includes('video') ? 
-          call.toUserId : // Assuming group ID is stored in toUserId for group calls
-          call.fromUserId;
-        await startGroupCall(groupId, call.callType.includes('video'));
-      } else if (call.callType?.includes('video')) {
-        // Video callback
-        const targetUserId = call.isOutgoing ? call.toUserId : call.fromUserId;
-        await startVideoCall(targetUserId);
+        // For group calls, use the group ID and name
+        const groupId = call.isOutgoing ? call.toUserId : call.fromUserId;
+        const groupName = call.contactName;
+        const callType = call.callType.includes('video') ? 'video' : 'audio';
+        startGroupCall(groupId, groupName, callType);
       } else {
-        // Audio callback
+        // For direct calls, use startCall with user ID, name, and call type
         const targetUserId = call.isOutgoing ? call.toUserId : call.fromUserId;
-        await startAudioCall(targetUserId);
+        const targetName = call.contactName;
+        const callType = call.callType?.includes('video') ? 'video' : 'audio';
+        startCall(targetUserId, targetName, callType);
       }
       
       toast({
@@ -321,7 +319,8 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
                         <span>
                           {(() => {
                             try {
-                              const date = new Date(call.timestamp || call.startTime);
+                              const dateString = call.timestamp || call.startTime || '';
+                              const date = new Date(dateString);
                               if (isNaN(date.getTime())) {
                                 return 'Waktu tidak valid';
                               }
