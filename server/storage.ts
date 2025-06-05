@@ -544,9 +544,8 @@ export class DatabaseStorage implements IStorage {
           and(
             // User is in participants but not the initiator
             sql`${callHistory.participants} @> ARRAY[${userId.toString()}]::text[]`,
-            sql`${callHistory.initiatorId} != ${userId}`,
-            // Only show incoming, missed, rejected, accepted calls - exclude outgoing
-            sql`${callHistory.status} IN ('incoming', 'missed', 'rejected', 'accepted', 'ended')`
+            sql`${callHistory.initiatorId} != ${userId}`
+            // Show all incoming calls regardless of status
           )
         )
         .orderBy(desc(callHistory.startTime));
