@@ -655,6 +655,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
             break;
           case 'call_ended':
             handleCallEnded(message.payload || message);
+            // Trigger call history update
+            window.dispatchEvent(new CustomEvent('callHistoryUpdate', { 
+              detail: { type: 'call_ended', data: message.payload || message } 
+            }));
             break;
           case 'group_call_ended':
             handleGroupCallEnded(message.payload || message);
