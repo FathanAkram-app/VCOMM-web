@@ -308,45 +308,8 @@ export default function GroupVideoCall() {
                   return updated;
                 });
                 
-                // Immediately try to attach to video element with enhanced setup
-                setTimeout(() => {
-                  const videoElement = participantVideoRefs.current[participant.userId];
-                  if (videoElement && remoteStream) {
-                    console.log(`[GroupVideoCall] Attempting direct attachment for user ${participant.userId}`);
-                    console.log(`[GroupVideoCall] Stream tracks:`, remoteStream.getTracks().map(t => `${t.kind}:${t.enabled}:${t.readyState}`));
-                    
-                    // Ensure video element is properly configured
-                    videoElement.srcObject = null;
-                    videoElement.load();
-                    
-                    // Wait a bit then attach stream
-                    setTimeout(() => {
-                      videoElement.srcObject = remoteStream;
-                      videoElement.autoplay = true;
-                      videoElement.playsInline = true;
-                      videoElement.muted = false;
-                      
-                      // Force play with comprehensive error handling
-                      const playPromise = videoElement.play();
-                      if (playPromise !== undefined) {
-                        playPromise
-                          .then(() => {
-                            console.log(`[GroupVideoCall] ✅ Direct video playback started for user ${participant.userId}`);
-                          })
-                          .catch((playError: any) => {
-                            console.warn(`[GroupVideoCall] Direct play failed for user ${participant.userId}, trying muted:`, playError);
-                            videoElement.muted = true;
-                            return videoElement.play();
-                          })
-                          .catch((muteError: any) => {
-                            console.error(`[GroupVideoCall] ❌ All direct play attempts failed for user ${participant.userId}:`, muteError);
-                          });
-                      }
-                    }, 50);
-                    
-                    console.log('[GroupVideoCall] Direct video attachment initiated for user:', participant.userId);
-                  }
-                }, 200);
+                // Stream attachment is handled by the main stream attachment effect
+                // This prevents multiple attachment conflicts
                 
                 console.log('[GroupVideoCall] Remote stream added to state for user:', participant.userId);
               } else {
