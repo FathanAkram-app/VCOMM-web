@@ -25,6 +25,16 @@ interface AuthRequest extends Request {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Add global request logging
+  app.use((req, res, next) => {
+    if (req.method === 'DELETE' && req.path.includes('/api/conversations/')) {
+      console.log(`[GLOBAL MIDDLEWARE] ${req.method} ${req.path}`);
+      console.log('[GLOBAL MIDDLEWARE] Session exists:', !!req.session);
+      console.log('[GLOBAL MIDDLEWARE] Session user:', req.session?.user);
+    }
+    next();
+  });
+
   // Auth middleware
   await setupAuth(app);
 
