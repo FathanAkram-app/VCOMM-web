@@ -127,6 +127,35 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
       refetchMessages();
     }
   }, [chatId, refetchMessages]);
+
+  // Listen for real-time group updates
+  useEffect(() => {
+    if (!ws) return;
+
+    const handleMessage = (event: MessageEvent) => {
+      try {
+        const message = JSON.parse(event.data);
+        if (message.type === 'group_update' && message.payload?.groupId === chatId) {
+          const { updateType, data } = message.payload;
+          
+          if (updateType === 'name_updated') {
+            // Invalidate queries to refresh chat data and conversations list
+            queryClient.invalidateQueries({ queryKey: [`/api/conversations/${chatId}`] });
+            queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/rooms'] });
+          } else if (updateType === 'member_removed' || updateType === 'members_added') {
+            // Refresh member list when members change
+            queryClient.invalidateQueries({ queryKey: [`/api/conversations/${chatId}/members`] });
+          }
+        }
+      } catch (error) {
+        console.error('Error processing WebSocket message in ChatRoom:', error);
+      }
+    };
+
+    ws.addEventListener('message', handleMessage);
+    return () => ws.removeEventListener('message', handleMessage);
+  }, [ws, chatId]);
   
   // Add console log to debug message data
   useEffect(() => {

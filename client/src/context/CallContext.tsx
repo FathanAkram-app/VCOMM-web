@@ -95,6 +95,7 @@ interface CallContextType {
   activeCall: CallState | null;
   incomingCall: CallState | null;
   remoteAudioStream: MediaStream | null;
+  ws: WebSocket | null;
   startCall: (peerUserId: number, peerName: string, callType: 'audio' | 'video') => void;
   startGroupCall: (groupId: number, groupName: string, callType: 'audio' | 'video') => void;
   acceptCall: () => void;
@@ -2309,6 +2310,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       activeCall,
       incomingCall,
       remoteAudioStream,
+      ws,
       startCall,
       startGroupCall,
       acceptCall,
