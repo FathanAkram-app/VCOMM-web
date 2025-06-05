@@ -76,7 +76,10 @@ export default function GroupVideoCall() {
   const { user } = useAuth();
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
+  const participantVideoRefs = useRef<{ [userId: number]: HTMLVideoElement }>({});
+  const peerConnections = useRef<{ [userId: number]: RTCPeerConnection }>({});
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [remoteStreams, setRemoteStreams] = useState<{ [userId: number]: MediaStream }>({});
   const [participants, setParticipants] = useState<GroupParticipant[]>([
     {
       userId: 2,
@@ -98,7 +101,7 @@ export default function GroupVideoCall() {
   const [isMuted, setIsMuted] = useState(false);
   const [maximizedParticipant, setMaximizedParticipant] = useState<GroupParticipant | null>(null);
 
-  // Initialize local media stream
+  // Initialize local media stream and WebRTC connections
   useEffect(() => {
     const initializeMedia = async () => {
       try {
@@ -114,6 +117,14 @@ export default function GroupVideoCall() {
         }
         
         console.log('[GroupVideoCall] Local media initialized successfully');
+        
+        // Start WebRTC connections with other participants
+        participants.forEach(participant => {
+          if (participant.userId !== user?.id) {
+            createPeerConnection(participant.userId, stream);
+          }
+        });
+        
       } catch (error) {
         console.error('[GroupVideoCall] Failed to initialize media:', error);
       }
@@ -125,8 +136,202 @@ export default function GroupVideoCall() {
       if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
       }
+      // Clean up peer connections
+      Object.values(peerConnections.current).forEach(pc => pc.close());
     };
   }, []);
+
+  // Create peer connection for a participant
+  const createPeerConnection = async (participantId: number, localStream: MediaStream) => {
+    try {
+      console.log(`[GroupVideoCall] Creating peer connection for participant ${participantId}`);
+      
+      const peerConnection = new RTCPeerConnection({
+        iceServers: [], // Local network only for intranet
+        iceTransportPolicy: 'all'
+      });
+
+      // Add local stream tracks
+      localStream.getTracks().forEach(track => {
+        peerConnection.addTrack(track, localStream);
+      });
+
+      // Handle remote stream
+      peerConnection.ontrack = (event) => {
+        console.log(`[GroupVideoCall] Received remote stream from participant ${participantId}`);
+        const [remoteStream] = event.streams;
+        
+        setRemoteStreams(prev => ({
+          ...prev,
+          [participantId]: remoteStream
+        }));
+
+        // Update participant with stream
+        setParticipants(prev => prev.map(p => 
+          p.userId === participantId 
+            ? { ...p, stream: remoteStream }
+            : p
+        ));
+      };
+
+      // Handle ICE candidates
+      peerConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+          console.log(`[GroupVideoCall] Sending ICE candidate to participant ${participantId}`);
+          // Send ICE candidate via WebSocket
+          const ws = (window as any).groupCallWebSocket;
+          if (ws) {
+            ws.send(JSON.stringify({
+              type: 'group_webrtc_ice_candidate',
+              payload: {
+                candidate: event.candidate,
+                targetUserId: participantId,
+                fromUserId: user?.id
+              }
+            }));
+          }
+        }
+      };
+
+      peerConnections.current[participantId] = peerConnection;
+
+      // Create and send offer
+      const offer = await peerConnection.createOffer();
+      await peerConnection.setLocalDescription(offer);
+
+      console.log(`[GroupVideoCall] Sending WebRTC offer to participant ${participantId}`);
+      const ws = (window as any).groupCallWebSocket;
+      if (ws) {
+        ws.send(JSON.stringify({
+          type: 'group_webrtc_offer',
+          payload: {
+            offer,
+            targetUserId: participantId,
+            fromUserId: user?.id
+          }
+        }));
+      }
+
+    } catch (error) {
+      console.error(`[GroupVideoCall] Failed to create peer connection for participant ${participantId}:`, error);
+    }
+  };
+
+  // Handle WebRTC events
+  useEffect(() => {
+    const handleGroupWebRTCOffer = async (event: CustomEvent) => {
+      const { offer, fromUserId } = event.detail;
+      console.log(`[GroupVideoCall] Received WebRTC offer from participant ${fromUserId}`);
+
+      try {
+        if (!localStream) return;
+
+        const peerConnection = new RTCPeerConnection({
+          iceServers: [],
+          iceTransportPolicy: 'all'
+        });
+
+        // Add local stream
+        localStream.getTracks().forEach(track => {
+          peerConnection.addTrack(track, localStream);
+        });
+
+        // Handle remote stream
+        peerConnection.ontrack = (event) => {
+          const [remoteStream] = event.streams;
+          setRemoteStreams(prev => ({
+            ...prev,
+            [fromUserId]: remoteStream
+          }));
+
+          setParticipants(prev => prev.map(p => 
+            p.userId === fromUserId 
+              ? { ...p, stream: remoteStream }
+              : p
+          ));
+        };
+
+        // Handle ICE candidates
+        peerConnection.onicecandidate = (event) => {
+          if (event.candidate) {
+            const ws = (window as any).groupCallWebSocket;
+            if (ws) {
+              ws.send(JSON.stringify({
+                type: 'group_webrtc_ice_candidate',
+                payload: {
+                  candidate: event.candidate,
+                  targetUserId: fromUserId,
+                  fromUserId: user?.id
+                }
+              }));
+            }
+          }
+        };
+
+        peerConnections.current[fromUserId] = peerConnection;
+
+        // Set remote description and create answer
+        await peerConnection.setRemoteDescription(offer);
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+
+        // Send answer
+        const ws = (window as any).groupCallWebSocket;
+        if (ws) {
+          ws.send(JSON.stringify({
+            type: 'group_webrtc_answer',
+            payload: {
+              answer,
+              targetUserId: fromUserId,
+              fromUserId: user?.id
+            }
+          }));
+        }
+
+      } catch (error) {
+        console.error(`[GroupVideoCall] Failed to handle WebRTC offer from ${fromUserId}:`, error);
+      }
+    };
+
+    const handleGroupWebRTCAnswer = async (event: CustomEvent) => {
+      const { answer, fromUserId } = event.detail;
+      console.log(`[GroupVideoCall] Received WebRTC answer from participant ${fromUserId}`);
+
+      try {
+        const peerConnection = peerConnections.current[fromUserId];
+        if (peerConnection) {
+          await peerConnection.setRemoteDescription(answer);
+        }
+      } catch (error) {
+        console.error(`[GroupVideoCall] Failed to handle WebRTC answer from ${fromUserId}:`, error);
+      }
+    };
+
+    const handleGroupWebRTCIceCandidate = async (event: CustomEvent) => {
+      const { candidate, fromUserId } = event.detail;
+      console.log(`[GroupVideoCall] Received ICE candidate from participant ${fromUserId}`);
+
+      try {
+        const peerConnection = peerConnections.current[fromUserId];
+        if (peerConnection) {
+          await peerConnection.addIceCandidate(candidate);
+        }
+      } catch (error) {
+        console.error(`[GroupVideoCall] Failed to handle ICE candidate from ${fromUserId}:`, error);
+      }
+    };
+
+    // Add event listeners
+    window.addEventListener('group_webrtc_offer', handleGroupWebRTCOffer as EventListener);
+    window.addEventListener('group_webrtc_answer', handleGroupWebRTCAnswer as EventListener);
+    window.addEventListener('group_webrtc_ice_candidate', handleGroupWebRTCIceCandidate as EventListener);
+
+    return () => {
+      window.removeEventListener('group_webrtc_offer', handleGroupWebRTCOffer as EventListener);
+      window.removeEventListener('group_webrtc_answer', handleGroupWebRTCAnswer as EventListener);
+      window.removeEventListener('group_webrtc_ice_candidate', handleGroupWebRTCIceCandidate as EventListener);
+    };
+  }, [localStream, user?.id]);
 
   const toggleAudio = useCallback(() => {
     if (localStream) {
@@ -284,7 +489,9 @@ export default function GroupVideoCall() {
                 key={participant.userId}
                 participant={participant}
                 videoRef={(el) => {
-                  // Handle video ref assignment for participants
+                  if (el && remoteStreams[participant.userId]) {
+                    el.srcObject = remoteStreams[participant.userId];
+                  }
                 }}
                 onMaximize={handleMaximizeParticipant}
               />
