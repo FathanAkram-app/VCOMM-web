@@ -22,7 +22,7 @@ const StableParticipantVideo = memo(({
 }: { 
   participant: GroupParticipant; 
   stream?: MediaStream | null;
-  onMaximize: () => void;
+  onMaximize: (participant: GroupParticipant) => void;
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   
@@ -40,6 +40,7 @@ const StableParticipantVideo = memo(({
           ref={videoRef}
           autoPlay
           playsInline
+          muted={false}
           className="w-full h-full object-cover"
         />
       ) : (
@@ -57,7 +58,7 @@ const StableParticipantVideo = memo(({
       </div>
       
       <button
-        onClick={onMaximize}
+        onClick={() => onMaximize(participant)}
         className="absolute top-1 right-1 bg-black/70 p-1 rounded hover:bg-[#4a7c59]/30 transition-colors border border-[#4a7c59]/30"
       >
         <svg className="w-3 h-3 text-[#a6c455]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -76,6 +77,7 @@ export default function GroupVideoCall() {
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [isVideoEnabled, setIsVideoEnabled] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
+  const [maximizedParticipant, setMaximizedParticipant] = useState<GroupParticipant | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const participantVideoRefs = useRef<{ [userId: number]: HTMLVideoElement }>({});
@@ -753,6 +755,18 @@ export default function GroupVideoCall() {
   const prevPage = () => {
     setCurrentPage(prev => Math.max(0, prev - 1));
   };
+
+  // Handle maximize participant
+  const handleMaximizeParticipant = useCallback((participant: GroupParticipant) => {
+    setMaximizedParticipant(participant);
+    setIsMaximized(true);
+  }, []);
+
+  // Handle minimize back to grid
+  const handleMinimize = useCallback(() => {
+    setIsMaximized(false);
+    setMaximizedParticipant(null);
+  }, []);
 
   if (!activeCall || !user) {
     return null;
