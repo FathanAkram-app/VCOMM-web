@@ -82,15 +82,17 @@ const StableParticipantVideo = memo(({
   
   return (
     <div className="relative bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] rounded-lg overflow-hidden border-2 border-[#4a7c59] aspect-[4/3] min-h-[120px] max-h-[160px]">
-      {stream ? (
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted={false}
-          className="w-full h-full object-cover"
-        />
-      ) : (
+      {/* Always render video element to ensure ref registration */}
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted={false}
+        className={`w-full h-full object-cover ${stream ? 'block' : 'hidden'}`}
+      />
+      
+      {/* Show avatar when no stream */}
+      {!stream && (
         <div className="w-full h-full flex items-center justify-center">
           <Avatar className="h-20 w-20 bg-[#7d9f7d] border-3 border-[#a6c455] shadow-lg">
             <AvatarFallback className="bg-gradient-to-br from-[#7d9f7d] to-[#5d7f5d] text-white text-xl font-bold">
