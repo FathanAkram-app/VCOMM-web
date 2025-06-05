@@ -1,10 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useCall } from '@/hooks/useCall';
-import { useAuth } from '@/hooks/useAuth';
-import { useQuery } from '@tanstack/react-query';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Video, VideoOff, Phone, ArrowLeft, ArrowRight, Maximize2, Minimize2 } from 'lucide-react';
+import { useEffect, useRef, useState, useCallback } from "react";
+import { useCall } from "../hooks/useCall";
+import { useGroupCall } from "../context/GroupCallContext";
+import { Button } from "./ui/button";
+import { ChevronDown, Mic, MicOff, Camera, CameraOff, Phone, Volume2, Volume, MessageSquare, SwitchCamera } from "lucide-react";
 
 interface GroupParticipant {
   userId: number;
@@ -21,382 +19,111 @@ interface ParticipantVideoProps {
 }
 
 const ParticipantVideo = ({ participant, videoRef, onMaximize }: ParticipantVideoProps) => {
-  const hasVideo = participant.stream && participant.videoEnabled;
-  const videoElementRef = useRef<HTMLVideoElement>(null);
-  
-  // Ensure stream is attached to video element
-  useEffect(() => {
-    if (videoElementRef.current && participant.stream) {
-      console.log('[ParticipantVideo] Attaching stream to video element for user:', participant.userId);
-      videoElementRef.current.srcObject = participant.stream;
-      videoElementRef.current.play().catch(e => 
-        console.error('[ParticipantVideo] Error playing video for user:', participant.userId, e)
-      );
-    }
-  }, [participant.stream, participant.userId]);
-  
-  // Forward ref to parent component
-  useEffect(() => {
-    if (videoElementRef.current) {
-      videoRef(videoElementRef.current);
-    }
-  }, [videoRef]);
-  
   return (
-    <div className="relative bg-[#1a1a1a] rounded-lg overflow-hidden border-2 border-[#4a7c59] shadow-lg aspect-video">
-      {hasVideo ? (
-        <video
-          ref={videoElementRef}
-          autoPlay
-          playsInline
-          muted={false}
-          className="w-full h-full object-cover"
-        />
-      ) : (
-        <div className="w-full h-full flex items-center justify-center">
-          <Avatar className="h-20 w-20 bg-[#7d9f7d] border-3 border-[#a6c455] shadow-lg">
-            <AvatarFallback className="bg-gradient-to-br from-[#7d9f7d] to-[#5d7f5d] text-white text-xl font-bold">
-              {participant.userName.substring(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-        </div>
-      )}
-      
-      <div className="absolute bottom-1 left-1 bg-black/80 px-2 py-1 rounded border border-[#7d9f7d]/50">
-        <p className="text-[#a6c455] text-xs font-medium">{participant.userName}</p>
+    <div className="relative bg-gray-800 rounded-lg overflow-hidden aspect-video">
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted={false}
+        className="w-full h-full object-cover"
+      />
+      <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm">
+        {participant.userName}
       </div>
-      
+      <div className="absolute bottom-2 right-2 flex gap-1">
+        {!participant.audioEnabled && (
+          <div className="bg-red-500 p-1 rounded">
+            <MicOff size={12} className="text-white" />
+          </div>
+        )}
+        {!participant.videoEnabled && (
+          <div className="bg-red-500 p-1 rounded">
+            <CameraOff size={12} className="text-white" />
+          </div>
+        )}
+      </div>
       <button
         onClick={() => onMaximize(participant)}
-        className="absolute top-1 right-1 bg-black/70 p-1 rounded hover:bg-[#4a7c59]/30 transition-colors border border-[#4a7c59]/30"
+        className="absolute top-2 right-2 bg-black bg-opacity-50 text-white p-1 rounded hover:bg-opacity-70"
       >
-        <Maximize2 className="w-3 h-3 text-[#a6c455]" />
+        <ChevronDown size={16} />
       </button>
     </div>
   );
 };
 
+/**
+ * GroupVideoCall Component - Emergency Fallback Implementation
+ * 
+ * This is a completely rewritten version that separates WebRTC handling
+ * from video display handling, focusing on getting video elements to show.
+ */
 export default function GroupVideoCall() {
-  const { activeCall, hangupCall } = useCall();
-  const { user } = useAuth();
-  const [participants, setParticipants] = useState<GroupParticipant[]>([]);
-  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
-  const [isVideoEnabled, setIsVideoEnabled] = useState(false);
-  const [isMaximized, setIsMaximized] = useState(false);
-  const [maximizedParticipant, setMaximizedParticipant] = useState<GroupParticipant | null>(null);
-  const [currentPage, setCurrentPage] = useState(0);
+  const { activeCall, user, localStream, hangupCall, isAudioEnabled, isVideoEnabled, toggleCallAudio, toggleCallVideo } = useCall();
+  const { activeGroupCall } = useGroupCall();
+
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const participantVideoRefs = useRef<{ [userId: number]: HTMLVideoElement }>({});
   const peerConnections = useRef<{ [userId: number]: RTCPeerConnection }>({});
   const [remoteStreams, setRemoteStreams] = useState<{ [userId: number]: MediaStream }>({});
-  const createdConnections = useRef<Set<number>>(new Set());
-  const connectionQueue = useRef<number[]>([]);
-  const isProcessingConnection = useRef(false);
-
-  const groupName = activeCall?.groupName || 'Unknown Group';
-
-  const { data: allUsers = [] } = useQuery<any[]>({
-    queryKey: ['/api/all-users'],
-    enabled: !!activeCall?.participants
-  });
   
-  const PARTICIPANTS_PER_PAGE = 5;
-  const otherParticipants = participants.filter(p => p.userId !== user?.id);
-  const totalPages = Math.max(1, Math.ceil(otherParticipants.length / PARTICIPANTS_PER_PAGE));
-  const startIndex = currentPage * PARTICIPANTS_PER_PAGE;
-  const endIndex = startIndex + PARTICIPANTS_PER_PAGE;
-  const currentPageParticipants = otherParticipants.slice(startIndex, endIndex);
+  const [participants, setParticipants] = useState<GroupParticipant[]>([]);
+  const [maximizedParticipant, setMaximizedParticipant] = useState<GroupParticipant | null>(null);
+  const [callDuration, setCallDuration] = useState("00:00:00");
 
-  console.log('[GroupVideoCall] Component rendering with activeCall:', activeCall);
-  console.log('[GroupVideoCall] user?.id:', user?.id);
+  console.log('[GroupVideoCall] Component rendering with activeCall:', activeCall?.callId);
+  console.log('[GroupVideoCall] user id:', user?.id);
   console.log('[GroupVideoCall] isVideoEnabled:', isVideoEnabled);
-  console.log('[GroupVideoCall] localStream:', localStream);
+  console.log('[GroupVideoCall] isAudioEnabled:', isAudioEnabled);
 
-  // Get user media when component mounts
+  // Set up local video stream
   useEffect(() => {
-    const getLocalMedia = async () => {
-      try {
-        console.log('[GroupVideoCall] Getting local media stream...');
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 640, height: 480 },
-          audio: true
-        });
-        
-        console.log('[GroupVideoCall] Got local media stream:', stream);
-        console.log('[GroupVideoCall] Video tracks:', stream.getVideoTracks().length);
-        console.log('[GroupVideoCall] Audio tracks:', stream.getAudioTracks().length);
-        
-        setLocalStream(stream);
-        setIsVideoEnabled(true);
-        
-        // Ensure local video element gets the stream
-        setTimeout(() => {
-          if (localVideoRef.current && stream) {
-            localVideoRef.current.srcObject = stream;
-            localVideoRef.current.autoplay = true;
-            localVideoRef.current.playsInline = true;
-            localVideoRef.current.muted = true;
-            console.log('[GroupVideoCall] Local video element configured');
-          }
-        }, 100);
-      } catch (error) {
-        console.error('[GroupVideoCall] Error getting local media:', error);
+    if (localVideoRef.current && localStream) {
+      console.log('[GroupVideoCall] Setting up local video stream');
+      localVideoRef.current.srcObject = localStream;
+      localVideoRef.current.muted = true; // Mute local video to prevent echo
+    }
+  }, [localStream]);
+
+  // Process participants from activeCall
+  useEffect(() => {
+    if (activeCall && activeCall.participants) {
+      console.log('[GroupVideoCall] Processing participants from activeCall:', activeCall.participants.length);
+      const processedParticipants: GroupParticipant[] = activeCall.participants
+        .filter((p: any) => p.userId !== user?.id) // Don't include self
+        .map((p: any) => ({
+          userId: p.userId,
+          userName: p.userName || `User ${p.userId}`,
+          audioEnabled: p.audioEnabled !== false,
+          videoEnabled: p.videoEnabled !== false,
+          stream: remoteStreams[p.userId] || null
+        }));
+      
+      console.log('[GroupVideoCall] Unique participants for display:', processedParticipants);
+      setParticipants(processedParticipants);
+    }
+  }, [activeCall?.participants, remoteStreams, user?.id]);
+
+  // Update participant video refs when participants change
+  useEffect(() => {
+    participants.forEach(participant => {
+      const videoElement = participantVideoRefs.current[participant.userId];
+      if (videoElement && participant.stream) {
+        console.log('[GroupVideoCall] Setting stream for participant:', participant.userId);
+        videoElement.srcObject = participant.stream;
       }
-    };
+    });
+  }, [participants]);
 
-    // Only get media if we don't already have it
-    if (!localStream) {
-      getLocalMedia();
-    }
-
-    return () => {
-      // Don't cleanup here as it causes stream to be lost
-    };
-  }, []);
-
-  // Process participants when activeCall changes
+  // Update remote video elements when streams change
   useEffect(() => {
-    console.log('[GroupVideoCall] Processing participants from activeCall:', activeCall?.participants?.length);
-    
-    if (activeCall?.participants && allUsers.length > 0) {
-      const newParticipants = activeCall.participants.map((p: any) => ({
-        userId: p.userId,
-        userName: allUsers.find(u => u.id === p.userId)?.callsign || p.userName || `User${p.userId}`,
-        audioEnabled: true,
-        videoEnabled: true,
-        stream: p.userId === user?.id ? localStream : remoteStreams[p.userId] || null
-      }));
-      
-      console.log('[GroupVideoCall] Unique participants created:', newParticipants.length);
-      setParticipants(newParticipants);
-    } else if (activeCall && user && allUsers.length > 0) {
-      // If no participants yet, create at least the current user
-      console.log('[GroupVideoCall] No participants found, creating current user participant');
-      const currentUserParticipant = {
-        userId: user.id,
-        userName: user.callsign || 'You',
-        audioEnabled: true,
-        videoEnabled: true,
-        stream: localStream
-      };
-      setParticipants([currentUserParticipant]);
-    }
-  }, [activeCall?.participants, user?.id, allUsers, localStream, remoteStreams]);
-
-  // Sequential WebRTC connection setup to prevent SSL role conflicts
-  useEffect(() => {
-    if (participants.length > 0 && localStream && activeCall?.callId) {
-      console.log('[GroupVideoCall] Setting up WebRTC connections sequentially');
-      
-      const otherParticipants = participants.filter(p => p.userId !== user?.id);
-      
-      // Add to queue
-      otherParticipants.forEach(participant => {
-        if (!peerConnections.current[participant.userId] && !createdConnections.current.has(participant.userId)) {
-          if (!connectionQueue.current.includes(participant.userId)) {
-            connectionQueue.current.push(participant.userId);
-          }
-        }
-      });
-      
-      // Process queue
-      processConnectionQueue();
-    }
-  }, [participants, localStream, activeCall?.callId]);
-
-  // Sequential connection processing to avoid SSL role errors
-  const processConnectionQueue = async () => {
-    if (isProcessingConnection.current || connectionQueue.current.length === 0) {
-      return;
-    }
-    
-    isProcessingConnection.current = true;
-    const userId = connectionQueue.current.shift()!;
-    
-    console.log('[GroupVideoCall] Processing connection for user:', userId);
-    
-    if (!peerConnections.current[userId] && !createdConnections.current.has(userId)) {
-      try {
-        console.log('[GroupVideoCall] Creating peer connection for user:', userId);
-        createdConnections.current.add(userId);
-        
-        const peerConnection = new RTCPeerConnection({
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:stun2.l.google.com:19302' }
-          ],
-          iceCandidatePoolSize: 10,
-          bundlePolicy: 'max-bundle',
-          rtcpMuxPolicy: 'require',
-          iceTransportPolicy: 'all'
-        });
-
-        // Add local stream tracks
-        if (localStream) {
-          localStream.getTracks().forEach(track => {
-            console.log('[GroupVideoCall] Adding local track to peer connection:', track.kind);
-            peerConnection.addTrack(track, localStream);
-          });
-        }
-
-        // Handle incoming remote stream
-        peerConnection.ontrack = (event) => {
-          console.log('[GroupVideoCall] Received remote stream from user:', userId);
-          console.log('[GroupVideoCall] Remote stream tracks:', event.streams[0].getTracks().length);
-          console.log('[GroupVideoCall] Track details:', event.streams[0].getTracks().map(t => `${t.kind}:${t.enabled}`));
-          
-          const [remoteStream] = event.streams;
-          
-          if (remoteStream && remoteStream.active) {
-            console.log('[GroupVideoCall] Setting remote stream for user:', userId);
-            setRemoteStreams(prev => {
-              const updated = { ...prev, [userId]: remoteStream };
-              console.log('[GroupVideoCall] Updated remoteStreams keys:', Object.keys(updated));
-              return updated;
-            });
-            
-            // Update participants with new stream immediately
-            setParticipants(prevParticipants => {
-              const updated = prevParticipants.map(p => 
-                p.userId === userId 
-                  ? { ...p, stream: remoteStream }
-                  : p
-              );
-              console.log('[GroupVideoCall] Updated participants with remote stream for user:', userId);
-              return updated;
-            });
-            
-            // Also directly attach to video element as backup
-            setTimeout(() => {
-              const videoElement = participantVideoRefs.current[userId];
-              if (videoElement && remoteStream) {
-                videoElement.srcObject = remoteStream;
-                videoElement.autoplay = true;
-                videoElement.playsInline = true;
-                videoElement.play().catch(e => console.error('[GroupVideoCall] Error playing remote video:', e));
-                console.log('[GroupVideoCall] Remote video element configured for user:', userId);
-              }
-            }, 100);
-          }
-        };
-
-        // Handle ICE candidates
-        peerConnection.onicecandidate = (event) => {
-          if (event.candidate) {
-            const websocket = (window as any).__callWebSocket;
-            if (websocket?.readyState === WebSocket.OPEN) {
-              websocket.send(JSON.stringify({
-                type: 'group_webrtc_ice_candidate',
-                payload: {
-                  callId: activeCall?.callId,
-                  candidate: event.candidate,
-                  targetUserId: userId,
-                  fromUserId: user?.id
-                }
-              }));
-            }
-          }
-        };
-
-        // Enhanced connection state handling
-        peerConnection.onconnectionstatechange = () => {
-          const state = peerConnection.connectionState;
-          console.log('[GroupVideoCall] Connection state for user', userId, ':', state);
-          
-          if (state === 'failed' || state === 'disconnected') {
-            console.warn(`[GroupVideoCall] Connection ${state} for user ${userId}, cleaning up`);
-            cleanupConnection(userId);
-          } else if (state === 'connected') {
-            console.log(`[GroupVideoCall] Successfully connected to user ${userId}`);
-          }
-        };
-
-        peerConnections.current[userId] = peerConnection;
-
-        // Create and send offer
-        const offer = await peerConnection.createOffer({
-          offerToReceiveAudio: true,
-          offerToReceiveVideo: true
-        });
-        
-        await peerConnection.setLocalDescription(offer);
-        
-        // Send offer via WebSocket
-        const websocket = (window as any).__callWebSocket;
-        if (websocket?.readyState === WebSocket.OPEN) {
-          websocket.send(JSON.stringify({
-            type: 'group_webrtc_offer',
-            payload: {
-              callId: activeCall?.callId,
-              offer: offer,
-              targetUserId: userId,
-              fromUserId: user?.id
-            }
-          }));
-          console.log('[GroupVideoCall] Sent WebRTC offer to user:', userId);
-        }
-        
-        // Wait between connections to avoid SSL role conflicts
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-      } catch (error) {
-        console.error('[GroupVideoCall] Error creating connection for user:', userId, error);
-        createdConnections.current.delete(userId);
-      }
-    }
-    
-    isProcessingConnection.current = false;
-    
-    // Process next in queue
-    if (connectionQueue.current.length > 0) {
-      setTimeout(() => processConnectionQueue(), 100);
-    }
-  };
-
-  // Clean up connection
-  const cleanupConnection = (userId: number) => {
-    if (peerConnections.current[userId]) {
-      try {
-        peerConnections.current[userId].close();
-      } catch (error) {
-        console.warn(`[GroupVideoCall] Error closing connection:`, error);
-      }
-      delete peerConnections.current[userId];
-      createdConnections.current.delete(userId);
-      
-      setRemoteStreams(prev => {
-        const updated = { ...prev };
-        delete updated[userId];
-        return updated;
-      });
-    }
-  };
-
-  // Update video elements when remote streams change
-  useEffect(() => {
-    Object.entries(remoteStreams).forEach(([userId, stream]) => {
-      const videoElement = participantVideoRefs.current[parseInt(userId)];
+    Object.entries(remoteStreams).forEach(([userIdStr, stream]) => {
+      const userId = parseInt(userIdStr);
+      const videoElement = participantVideoRefs.current[userId];
       if (videoElement && stream) {
-        if (videoElement.srcObject !== stream) {
-          console.log('[GroupVideoCall] Updating video element for user:', userId);
-          videoElement.srcObject = stream;
-          videoElement.autoplay = true;
-          videoElement.playsInline = true;
-          videoElement.muted = false;
-          
-          const playPromise = videoElement.play();
-          if (playPromise !== undefined) {
-            playPromise.catch((error: any) => {
-              console.warn(`[GroupVideoCall] Autoplay failed for user ${userId}, trying muted play`);
-              videoElement.muted = true;
-              videoElement.play().catch((muteErr: any) => {
-                console.warn(`[GroupVideoCall] Muted play failed for user ${userId}:`, muteErr);
-              });
-            });
-          }
-        }
+        console.log('[GroupVideoCall] Updating video element for user:', userId);
+        videoElement.srcObject = stream;
       }
     });
   }, [remoteStreams]);
@@ -412,14 +139,13 @@ export default function GroupVideoCall() {
         console.log('[GroupVideoCall] Active call exists:', !!activeCall);
         console.log('[GroupVideoCall] Local stream ready:', !!localStream);
         console.log('[GroupVideoCall] User ID:', user?.id);
-        console.log('[GroupVideoCall] Starting offer processing...');
         
         if (!activeCall || activeCall.callId !== callId) {
           console.warn('[GroupVideoCall] Ignoring offer - call ID mismatch or no active call');
           console.log('[GroupVideoCall] Expected callId:', activeCall?.callId, 'Received:', callId);
           return;
         }
-      
+        
         // Check if we need to wait for local stream
         if (!localStream) {
           console.warn('[GroupVideoCall] Local stream not ready, cannot process offer from:', fromUserId);
@@ -430,7 +156,6 @@ export default function GroupVideoCall() {
         if (!peerConnection) {
           console.log('[GroupVideoCall] Creating NEW peer connection for incoming offer from:', fromUserId);
           
-          try {
           peerConnection = new RTCPeerConnection({
             iceServers: [
               { urls: 'stun:stun.l.google.com:19302' },
@@ -438,89 +163,37 @@ export default function GroupVideoCall() {
               { urls: 'stun:stun2.l.google.com:19302' }
             ],
             iceCandidatePoolSize: 10,
-            bundlePolicy: 'max-bundle',
-            rtcpMuxPolicy: 'require',
-            iceTransportPolicy: 'all'
+            bundlePolicy: 'balanced',
+            rtcpMuxPolicy: 'require'
           });
 
           // Add local stream tracks
-          localStream.getTracks().forEach(track => {
+          console.log('[GroupVideoCall] Adding local stream tracks to peer connection');
+          localStream.getTracks().forEach((track: any) => {
+            console.log('[GroupVideoCall] Adding track:', track.kind, track.enabled);
             peerConnection!.addTrack(track, localStream);
           });
 
-          console.log('[GroupVideoCall] Peer connection created for incoming offer from user:', fromUserId);
-          
-          // Handle incoming remote stream with comprehensive debugging
+          // Handle incoming remote stream
           peerConnection.ontrack = (event) => {
-            console.log('[GroupVideoCall] *** ONTRACK EVENT TRIGGERED ***');
-            console.log('[GroupVideoCall] Received remote stream from user:', fromUserId);
-            console.log('[GroupVideoCall] Event details:', event);
-            console.log('[GroupVideoCall] Streams count:', event.streams.length);
+            console.log('[GroupVideoCall] Received remote track from user:', fromUserId);
+            console.log('[GroupVideoCall] Track kind:', event.track.kind);
+            console.log('[GroupVideoCall] Track enabled:', event.track.enabled);
+            console.log('[GroupVideoCall] Track readyState:', event.track.readyState);
             
-            if (event.streams.length > 0) {
-              const [remoteStream] = event.streams;
-              console.log('[GroupVideoCall] Remote stream ID:', remoteStream.id);
-              console.log('[GroupVideoCall] Remote stream active:', remoteStream.active);
-              console.log('[GroupVideoCall] Remote stream tracks:', remoteStream.getTracks().length);
-              console.log('[GroupVideoCall] Track details:', remoteStream.getTracks().map(t => `${t.kind}:${t.enabled}:${t.readyState}`));
-              
-              if (remoteStream && remoteStream.active) {
-                console.log('[GroupVideoCall] Setting remote stream for user:', fromUserId);
-                setRemoteStreams(prev => {
-                  const updated = { ...prev, [fromUserId]: remoteStream };
-                  console.log('[GroupVideoCall] Updated remoteStreams keys:', Object.keys(updated));
-                  return updated;
-                });
-                
-                // Update participants with new stream immediately
-                setParticipants(prevParticipants => {
-                  const updated = prevParticipants.map(p => 
-                    p.userId === fromUserId 
-                      ? { ...p, stream: remoteStream }
-                      : p
-                  );
-                  console.log('[GroupVideoCall] Updated participants with remote stream for user:', fromUserId);
-                  return updated;
-                });
-                
-                // Immediately try to attach to video element
-                setTimeout(() => {
-                  const videoElement = participantVideoRefs.current[fromUserId];
-                  console.log('[GroupVideoCall] Video element for user', fromUserId, ':', !!videoElement);
-                  if (videoElement && remoteStream) {
-                    console.log('[GroupVideoCall] Attaching stream to video element for user:', fromUserId);
-                    videoElement.srcObject = remoteStream;
-                    videoElement.autoplay = true;
-                    videoElement.playsInline = true;
-                    videoElement.muted = false;
-                    
-                    const playPromise = videoElement.play();
-                    if (playPromise !== undefined) {
-                      playPromise
-                        .then(() => {
-                          console.log('[GroupVideoCall] Video playing successfully for user:', fromUserId);
-                        })
-                        .catch((e) => {
-                          console.error('[GroupVideoCall] Error playing remote video for user:', fromUserId, e);
-                          // Try muted play
-                          videoElement.muted = true;
-                          return videoElement.play();
-                        })
-                        .catch((e2) => {
-                          console.error('[GroupVideoCall] Muted play also failed for user:', fromUserId, e2);
-                        });
-                    }
-                  }
-                }, 100);
-              }
-            } else {
-              console.warn('[GroupVideoCall] No streams in ontrack event from user:', fromUserId);
+            if (event.streams && event.streams[0]) {
+              console.log('[GroupVideoCall] Setting remote stream for user:', fromUserId);
+              setRemoteStreams(prev => ({
+                ...prev,
+                [fromUserId]: event.streams[0]
+              }));
             }
           };
 
           // Handle ICE candidates
           peerConnection.onicecandidate = (event) => {
             if (event.candidate) {
+              console.log('[GroupVideoCall] Sending ICE candidate to user:', fromUserId);
               const websocket = (window as any).__callWebSocket;
               if (websocket?.readyState === WebSocket.OPEN) {
                 websocket.send(JSON.stringify({
@@ -536,93 +209,46 @@ export default function GroupVideoCall() {
             }
           };
 
-          // Enhanced connection state handling with detailed debugging
+          // Handle connection state changes
           peerConnection.onconnectionstatechange = () => {
-            const state = peerConnection!.connectionState;
-            console.log('[GroupVideoCall] Connection state for user', fromUserId, ':', state);
-            console.log('[GroupVideoCall] Local description set:', !!peerConnection!.localDescription);
-            console.log('[GroupVideoCall] Remote description set:', !!peerConnection!.remoteDescription);
-            console.log('[GroupVideoCall] ICE connection state:', peerConnection!.iceConnectionState);
-            console.log('[GroupVideoCall] ICE gathering state:', peerConnection!.iceGatheringState);
-            
-            // Log current receivers and senders
-            const receivers = peerConnection!.getReceivers();
-            const senders = peerConnection!.getSenders();
-            console.log('[GroupVideoCall] Active receivers:', receivers.length);
-            console.log('[GroupVideoCall] Active senders:', senders.length);
-            
-            receivers.forEach((receiver, index) => {
-              console.log(`[GroupVideoCall] Receiver ${index}:`, receiver.track?.kind, receiver.track?.enabled);
-            });
-            
-            if (state === 'failed' || state === 'disconnected') {
-              console.warn(`[GroupVideoCall] Connection ${state} for user ${fromUserId}, cleaning up`);
-              cleanupConnection(fromUserId);
-            } else if (state === 'connected') {
-              console.log(`[GroupVideoCall] Successfully connected to user ${fromUserId}`);
-              // Force check for remote streams when connected
-              setTimeout(() => {
-                const currentRemoteStreams = peerConnection!.getReceivers()
-                  .map(receiver => receiver.track)
-                  .filter(track => track !== null);
-                console.log('[GroupVideoCall] Remote tracks after connection:', currentRemoteStreams.length);
-              }, 1000);
-            }
+            console.log('[GroupVideoCall] Connection state changed for user:', fromUserId, peerConnection!.connectionState);
           };
 
           peerConnections.current[fromUserId] = peerConnection;
-          
-          console.log('[GroupVideoCall] Setting remote description with offer...');
-          await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-          console.log('[GroupVideoCall] Remote description set successfully');
-          
-          console.log('[GroupVideoCall] Creating WebRTC answer...');
-          const answer = await peerConnection.createAnswer();
-          console.log('[GroupVideoCall] Answer created successfully, type:', answer.type);
-          
-          console.log('[GroupVideoCall] Setting local description with answer...');
-          await peerConnection.setLocalDescription(answer);
-          console.log('[GroupVideoCall] Local description set successfully');
-          
-          console.log('[GroupVideoCall] Preparing to send WebRTC answer to user:', fromUserId);
-          console.log('[GroupVideoCall] Answer SDP type:', answer.type);
-          console.log('[GroupVideoCall] Answer SDP length:', answer.sdp?.length || 0);
-          
-          const websocket = (window as any).__callWebSocket;
-          if (websocket?.readyState === WebSocket.OPEN) {
-            console.log('[GroupVideoCall] WebSocket is open, sending answer...');
-            websocket.send(JSON.stringify({
-              type: 'group_webrtc_answer',
-              payload: {
-                callId: activeCall.callId,
-                answer: answer,
-                targetUserId: fromUserId,
-                fromUserId: user?.id
-              }
-            }));
-            console.log('[GroupVideoCall] Sent WebRTC answer to user:', fromUserId);
-          }
-          
-        } catch (error) {
-          console.error('[GroupVideoCall] Error handling offer:', error);
-          
-          // Enhanced error recovery for SSL role errors
-          if ((error as Error).message?.includes('SSL role') || (error as Error).message?.includes('transport')) {
-            console.log('[GroupVideoCall] SSL role error detected, cleaning up connection for user:', fromUserId);
-            cleanupConnection(fromUserId);
-            
-            // Retry after delay
-            setTimeout(async () => {
-              console.log('[GroupVideoCall] Retrying connection setup for user:', fromUserId);
-              connectionQueue.current.push(fromUserId);
-              processConnectionQueue();
-            }, 2000);
-          }
         }
-      } catch (topLevelError) {
-        console.error('[GroupVideoCall] TOP LEVEL ERROR in handleGroupWebRTCOffer:', topLevelError);
-        console.error('[GroupVideoCall] Error stack:', (topLevelError as Error).stack);
-        console.error('[GroupVideoCall] Error message:', (topLevelError as Error).message);
+
+        console.log('[GroupVideoCall] Setting remote description with offer...');
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+        console.log('[GroupVideoCall] Remote description set successfully');
+
+        console.log('[GroupVideoCall] Creating answer...');
+        const answer = await peerConnection.createAnswer();
+        console.log('[GroupVideoCall] Answer created successfully, type:', answer.type);
+        
+        console.log('[GroupVideoCall] Setting local description with answer...');
+        await peerConnection.setLocalDescription(answer);
+        console.log('[GroupVideoCall] Local description set successfully');
+        
+        console.log('[GroupVideoCall] Preparing to send WebRTC answer to user:', fromUserId);
+        console.log('[GroupVideoCall] Answer SDP type:', answer.type);
+        console.log('[GroupVideoCall] Answer SDP length:', answer.sdp?.length || 0);
+        
+        const websocket = (window as any).__callWebSocket;
+        if (websocket?.readyState === WebSocket.OPEN) {
+          console.log('[GroupVideoCall] WebSocket is open, sending answer...');
+          websocket.send(JSON.stringify({
+            type: 'group_webrtc_answer',
+            payload: {
+              callId: activeCall.callId,
+              answer: answer,
+              targetUserId: fromUserId,
+              fromUserId: user?.id
+            }
+          }));
+          console.log('[GroupVideoCall] Sent WebRTC answer to user:', fromUserId);
+        }
+      } catch (error) {
+        console.error('[GroupVideoCall] Error handling offer:', error);
       }
     };
 
@@ -662,329 +288,217 @@ export default function GroupVideoCall() {
           
         } catch (error) {
           console.error('[GroupVideoCall] Error handling answer:', error);
-          
-          // Enhanced error recovery for SSL role errors
-          if ((error as Error).message?.includes('SSL role') || (error as Error).message?.includes('transport')) {
-            console.log('[GroupVideoCall] SSL role error detected, cleaning up connection for user:', fromUserId);
-            cleanupConnection(fromUserId);
-          }
         }
-      } else {
-        console.error('[GroupVideoCall] No peer connection found for user:', fromUserId);
       }
     };
 
     const handleGroupWebRTCIceCandidate = async (event: CustomEvent) => {
       const { callId, candidate, fromUserId } = event.detail;
+      console.log('[GroupVideoCall] *** RECEIVED ICE CANDIDATE ***');
+      console.log('[GroupVideoCall] ICE candidate from user:', fromUserId);
       
       if (!activeCall || activeCall.callId !== callId) {
+        console.warn('[GroupVideoCall] Ignoring ICE candidate - call ID mismatch or no active call');
         return;
       }
       
       const peerConnection = peerConnections.current[fromUserId];
-      if (peerConnection && candidate) {
+      if (peerConnection) {
         try {
+          console.log('[GroupVideoCall] Adding ICE candidate...');
           await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-          console.log('[GroupVideoCall] Added ICE candidate from user:', fromUserId);
+          console.log('[GroupVideoCall] Successfully added ICE candidate from user:', fromUserId);
         } catch (error) {
           console.error('[GroupVideoCall] Error adding ICE candidate:', error);
         }
       }
     };
 
-    console.log('[GroupVideoCall] Setting up WebRTC event listeners...');
-    
-    window.addEventListener('group_webrtc_offer', handleGroupWebRTCOffer as any);
-    window.addEventListener('group_webrtc_answer', handleGroupWebRTCAnswer as any);
-    window.addEventListener('group_webrtc_ice_candidate', handleGroupWebRTCIceCandidate as any);
-    
-    console.log('[GroupVideoCall] WebRTC event listeners registered successfully');
+    // Register event listeners
+    window.addEventListener('group_webrtc_offer', handleGroupWebRTCOffer as EventListener);
+    window.addEventListener('group_webrtc_answer', handleGroupWebRTCAnswer as EventListener);
+    window.addEventListener('group_webrtc_ice_candidate', handleGroupWebRTCIceCandidate as EventListener);
 
     return () => {
-      window.removeEventListener('group_webrtc_offer', handleGroupWebRTCOffer as any);
-      window.removeEventListener('group_webrtc_answer', handleGroupWebRTCAnswer as any);
-      window.removeEventListener('group_webrtc_ice_candidate', handleGroupWebRTCIceCandidate as any);
+      window.removeEventListener('group_webrtc_offer', handleGroupWebRTCOffer as EventListener);
+      window.removeEventListener('group_webrtc_answer', handleGroupWebRTCAnswer as EventListener);
+      window.removeEventListener('group_webrtc_ice_candidate', handleGroupWebRTCIceCandidate as EventListener);
     };
   }, [activeCall, localStream, user?.id]);
 
-  // Cleanup on unmount
+  // Call duration timer
   useEffect(() => {
-    return () => {
-      Object.values(peerConnections.current).forEach(pc => {
-        try {
-          pc.close();
-        } catch (error) {
-          console.warn('Error closing peer connection:', error);
-        }
-      });
-      
-      if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-      }
-      
-      setRemoteStreams({});
-    };
+    if (!activeCall) return;
+
+    const startTime = new Date(activeCall.startedAt || Date.now()).getTime();
+    const timer = setInterval(() => {
+      const now = Date.now();
+      const elapsed = now - startTime;
+      const hours = Math.floor(elapsed / 3600000);
+      const minutes = Math.floor((elapsed % 3600000) / 60000);
+      const seconds = Math.floor((elapsed % 60000) / 1000);
+      setCallDuration(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [activeCall]);
+
+  const handleMaximizeParticipant = useCallback((participant: GroupParticipant) => {
+    setMaximizedParticipant(prev => prev?.userId === participant.userId ? null : participant);
   }, []);
 
-  // Control functions
-  const toggleAudio = () => {
-    if (localStream) {
-      localStream.getAudioTracks().forEach(track => {
-        track.enabled = !track.enabled;
-      });
-      setIsAudioEnabled(!isAudioEnabled);
-    }
-  };
-
-  const toggleVideo = () => {
-    if (localStream) {
-      localStream.getVideoTracks().forEach(track => {
-        track.enabled = !track.enabled;
-      });
-      setIsVideoEnabled(!isVideoEnabled);
-    }
-    
-    if (localVideoRef.current) {
-      localVideoRef.current.style.display = isVideoEnabled ? 'none' : 'block';
-    }
-  };
-
-  const handleEndCall = () => {
-    // Stop all tracks
-    if (localStream) {
-      localStream.getTracks().forEach(track => track.stop());
-    }
-    
-    // Close all peer connections
-    Object.values(peerConnections.current).forEach(pc => {
-      try {
-        pc.close();
-      } catch (error) {
-        console.warn('Error closing peer connection:', error);
-      }
-    });
-    
-    // Clear video elements
-    Object.values(participantVideoRefs.current).forEach(video => {
-      if (video) {
-        video.pause();
-        video.srcObject = null;
-        video.load();
-      }
-    });
-    
-    // Reset state
-    setLocalStream(null);
-    setIsVideoEnabled(false);
-    setIsAudioEnabled(true);
-    setParticipants([]);
-    
-    // Clear refs
-    participantVideoRefs.current = {};
+  const handleHangup = () => {
+    // Cleanup all peer connections
+    Object.values(peerConnections.current).forEach(pc => pc.close());
     peerConnections.current = {};
-    
+    setRemoteStreams({});
     hangupCall();
   };
 
-  const nextPage = () => {
-    setCurrentPage(prev => (prev + 1) % totalPages);
-  };
+  const setParticipantVideoRef = useCallback((userId: number) => {
+    return (el: HTMLVideoElement | null) => {
+      if (el) {
+        participantVideoRefs.current[userId] = el;
+        // If we already have a stream for this user, set it immediately
+        const stream = remoteStreams[userId];
+        if (stream) {
+          console.log('[GroupVideoCall] Setting immediate stream for participant:', userId);
+          el.srcObject = stream;
+        }
+      }
+    };
+  }, [remoteStreams]);
 
-  const prevPage = () => {
-    setCurrentPage(prev => (prev - 1 + totalPages) % totalPages);
-  };
-
-  const handleMaximizeParticipant = useCallback((participant: GroupParticipant) => {
-    setMaximizedParticipant(participant);
-    setIsMaximized(true);
-  }, []);
-
-  const handleMinimize = () => {
-    setIsMaximized(false);
-    setMaximizedParticipant(null);
-  };
-
-  if (!activeCall || !user) {
+  if (!activeCall) {
     return null;
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-[#1a1a1a] to-[#0d1b0d] text-white p-4 flex flex-col">
+    <div className="fixed inset-0 bg-gray-900 z-50 flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center space-x-3">
-          <div className="bg-[#4a7c59] p-2 rounded-lg">
-            <Video className="h-6 w-6 text-[#a6c455]" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-[#a6c455]">Video Call - {groupName}</h1>
-            <p className="text-sm text-gray-400">{participants.length} participants</p>
-          </div>
+      <div className="bg-gray-800 p-4 flex justify-between items-center">
+        <div>
+          <h3 className="text-white font-semibold">{activeCall.groupName || 'Group Call'}</h3>
+          <p className="text-gray-300 text-sm">{callDuration}</p>
         </div>
-        
-        {/* Pagination Controls */}
-        {totalPages > 1 && (
-          <div className="flex items-center space-x-2">
-            <Button onClick={prevPage} variant="outline" size="sm" className="border-[#4a7c59] text-[#a6c455]">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm text-gray-400">
-              {currentPage + 1} / {totalPages}
-            </span>
-            <Button onClick={nextPage} variant="outline" size="sm" className="border-[#4a7c59] text-[#a6c455]">
-              <ArrowRight className="h-4 w-4" />
-            </Button>
+        <div className="text-white text-sm">
+          {participants.length + 1} participants
+        </div>
+      </div>
+
+      {/* Video Grid */}
+      <div className="flex-1 p-4">
+        {maximizedParticipant ? (
+          // Maximized view
+          <div className="h-full flex flex-col">
+            <div className="flex-1 bg-gray-800 rounded-lg overflow-hidden relative">
+              <video
+                ref={setParticipantVideoRef(maximizedParticipant.userId)}
+                autoPlay
+                playsInline
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-3 py-2 rounded">
+                {maximizedParticipant.userName}
+              </div>
+              <button
+                onClick={() => setMaximizedParticipant(null)}
+                className="absolute top-4 right-4 bg-black bg-opacity-50 text-white p-2 rounded hover:bg-opacity-70"
+              >
+                <ChevronDown size={20} />
+              </button>
+            </div>
+            
+            {/* Local video in corner */}
+            <div className="absolute bottom-20 right-4 w-32 h-24 bg-gray-800 rounded overflow-hidden">
+              <video
+                ref={localVideoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute bottom-1 left-1 text-white text-xs bg-black bg-opacity-50 px-1 rounded">
+                You
+              </div>
+            </div>
+          </div>
+        ) : (
+          // Grid view
+          <div className="h-full grid gap-4" style={{
+            gridTemplateColumns: participants.length <= 1 ? '1fr 1fr' :
+                               participants.length <= 4 ? 'repeat(2, 1fr)' :
+                               participants.length <= 9 ? 'repeat(3, 1fr)' : 'repeat(4, 1fr)',
+            gridTemplateRows: participants.length <= 2 ? '1fr' :
+                            participants.length <= 4 ? 'repeat(2, 1fr)' :
+                            participants.length <= 9 ? 'repeat(3, 1fr)' : 'repeat(4, 1fr)'
+          }}>
+            {/* Local video */}
+            <div className="relative bg-gray-800 rounded-lg overflow-hidden aspect-video">
+              <video
+                ref={localVideoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm">
+                You
+              </div>
+              <div className="absolute bottom-2 right-2 flex gap-1">
+                {!isAudioEnabled && (
+                  <div className="bg-red-500 p-1 rounded">
+                    <MicOff size={12} className="text-white" />
+                  </div>
+                )}
+                {!isVideoEnabled && (
+                  <div className="bg-red-500 p-1 rounded">
+                    <CameraOff size={12} className="text-white" />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Remote participants */}
+            {participants.map((participant) => (
+              <ParticipantVideo
+                key={participant.userId}
+                participant={participant}
+                videoRef={setParticipantVideoRef(participant.userId)}
+                onMaximize={handleMaximizeParticipant}
+              />
+            ))}
           </div>
         )}
       </div>
 
-      {/* Maximized View */}
-      {isMaximized && maximizedParticipant && (
-        <div className="flex-1 flex flex-col">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-[#a6c455]">
-              {maximizedParticipant.userName}
-            </h2>
-            <Button onClick={handleMinimize} variant="outline" size="sm" className="border-[#4a7c59] text-[#a6c455]">
-              <Minimize2 className="h-4 w-4" />
-            </Button>
-          </div>
-          
-          <div className="flex-1 bg-[#1a1a1a] rounded-lg overflow-hidden border-2 border-[#4a7c59] shadow-lg">
-            {maximizedParticipant.userId === user.id ? (
-              <video
-                ref={localVideoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-cover"
-              />
-            ) : remoteStreams[maximizedParticipant.userId] && maximizedParticipant.videoEnabled ? (
-              <video
-                ref={(el) => {
-                  if (el) participantVideoRefs.current[maximizedParticipant.userId] = el;
-                }}
-                autoPlay
-                playsInline
-                muted={false}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <Avatar className="h-32 w-32 bg-[#7d9f7d] border-4 border-[#a6c455] shadow-lg">
-                  <AvatarFallback className="bg-gradient-to-br from-[#7d9f7d] to-[#5d7f5d] text-white text-4xl font-bold">
-                    {maximizedParticipant.userName.substring(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Grid View */}
-      {!isMaximized && (
-        <div className="flex-1 grid grid-cols-2 grid-rows-3 gap-4">
-          {/* Current user video (always first slot) */}
-          <div className="relative bg-[#1a1a1a] rounded-lg overflow-hidden border-2 border-[#4a7c59] shadow-lg">
-            {isVideoEnabled && localStream ? (
-              <video
-                ref={localVideoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <Avatar className="h-20 w-20 bg-[#7d9f7d] border-3 border-[#a6c455] shadow-lg">
-                  <AvatarFallback className="bg-gradient-to-br from-[#7d9f7d] to-[#5d7f5d] text-white text-xl font-bold">
-                    {user.callsign?.substring(0, 2).toUpperCase() || 'ME'}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
-            )}
-            
-            <div className="absolute bottom-1 left-1 bg-black/80 px-2 py-1 rounded border border-[#7d9f7d]/50">
-              <p className="text-[#a6c455] text-xs font-medium">{user.callsign || 'You'}</p>
-            </div>
-            
-            <button
-              onClick={() => handleMaximizeParticipant({
-                userId: user.id,
-                userName: user.callsign || 'You',
-                audioEnabled: isAudioEnabled,
-                videoEnabled: isVideoEnabled,
-                stream: localStream
-              })}
-              className="absolute top-1 right-1 bg-black/70 p-1 rounded hover:bg-[#4a7c59]/30 transition-colors border border-[#4a7c59]/30"
-            >
-              <Maximize2 className="w-3 h-3 text-[#a6c455]" />
-            </button>
-          </div>
-
-          {/* Other participants */}
-          {currentPageParticipants.map((participant) => (
-            <ParticipantVideo
-              key={participant.userId}
-              participant={{
-                ...participant,
-                stream: remoteStreams[participant.userId] || null
-              }}
-              videoRef={(el) => {
-                if (el) participantVideoRefs.current[participant.userId] = el;
-              }}
-              onMaximize={handleMaximizeParticipant}
-            />
-          ))}
-
-          {/* Empty slots */}
-          {Array.from({ length: 5 - currentPageParticipants.length }).map((_, index) => (
-            <div
-              key={`empty-${index}`}
-              className="bg-[#0d1a0d] rounded-lg border-2 border-dashed border-[#4a7c59]/30 flex items-center justify-center"
-            >
-              <p className="text-gray-500 text-sm">Empty Slot</p>
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* Controls */}
-      <div className="flex items-center justify-center space-x-4 mt-6">
+      <div className="bg-gray-800 p-4 flex justify-center items-center gap-4">
         <Button
-          onClick={toggleAudio}
+          onClick={toggleCallAudio}
           variant={isAudioEnabled ? "default" : "destructive"}
           size="lg"
-          className={`w-14 h-14 rounded-full border-2 ${
-            isAudioEnabled 
-              ? 'bg-[#4a7c59] border-[#a6c455] hover:bg-[#5d7f5d]' 
-              : 'bg-red-600 border-red-500 hover:bg-red-700'
-          }`}
+          className="rounded-full w-12 h-12"
         >
-          {isAudioEnabled ? <Mic className="h-6 w-6" /> : <MicOff className="h-6 w-6" />}
+          {isAudioEnabled ? <Mic size={20} /> : <MicOff size={20} />}
         </Button>
 
         <Button
-          onClick={toggleVideo}
+          onClick={toggleCallVideo}
           variant={isVideoEnabled ? "default" : "destructive"}
           size="lg"
-          className={`w-14 h-14 rounded-full border-2 ${
-            isVideoEnabled 
-              ? 'bg-[#4a7c59] border-[#a6c455] hover:bg-[#5d7f5d]' 
-              : 'bg-red-600 border-red-500 hover:bg-red-700'
-          }`}
+          className="rounded-full w-12 h-12"
         >
-          {isVideoEnabled ? <Video className="h-6 w-6" /> : <VideoOff className="h-6 w-6" />}
+          {isVideoEnabled ? <Camera size={20} /> : <CameraOff size={20} />}
         </Button>
 
         <Button
-          onClick={handleEndCall}
+          onClick={handleHangup}
           variant="destructive"
           size="lg"
-          className="w-14 h-14 rounded-full bg-red-600 border-2 border-red-500 hover:bg-red-700"
+          className="rounded-full w-12 h-12"
         >
-          <Phone className="h-6 w-6 rotate-[135deg]" />
+          <Phone size={20} />
         </Button>
       </div>
     </div>
