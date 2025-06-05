@@ -100,10 +100,12 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
   };
 
   const filteredHistory = Array.isArray(callHistory) ? callHistory.filter((call: any) => {
-    // Hanya tampilkan missed calls dan incoming calls (bukan outgoing)
+    // Untuk group calls, tampilkan semua (karena penting untuk tracking)
+    // Untuk individual calls, hanya tampilkan missed calls dan incoming calls
+    const isGroupCall = call.callType?.startsWith('group_');
     const isIncomingOrMissed = call.status === 'missed' || (call.status === 'accepted' && !call.isOutgoing);
     
-    if (!isIncomingOrMissed) return false;
+    if (!isGroupCall && !isIncomingOrMissed) return false;
     
     if (filter === 'all') return true;
     if (filter === 'audio') return call.callType === 'audio';

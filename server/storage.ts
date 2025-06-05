@@ -504,9 +504,13 @@ export class DatabaseStorage implements IStorage {
       let contactName = 'Unknown';
       
       if (call.fromUserId === userId) {
-        // Outgoing call - get target user name
-        const targetUser = await this.getUser(call.toUserId);
-        contactName = targetUser ? (targetUser.callsign || targetUser.fullName || 'Unknown') : 'Unknown';
+        // Outgoing call - get target user name or group name
+        if (call.toUserName) {
+          contactName = call.toUserName; // For group calls, use group name directly
+        } else {
+          const targetUser = await this.getUser(call.toUserId);
+          contactName = targetUser ? (targetUser.callsign || targetUser.fullName || 'Unknown') : 'Unknown';
+        }
       } else {
         // Incoming call - get caller name
         const callerUser = await this.getUser(call.fromUserId);
