@@ -289,41 +289,47 @@ export default function GroupVideoCall() {
     }
   }, [participants, localStream, activeCall?.callId, user?.id]);
 
-  // Auto-initiate WebRTC connections when participants change
+  // Auto-initiate WebRTC connections when participants change - Only if current user has lower ID to avoid conflicts
   useEffect(() => {
-    if (participants.length > 0 && localStream && activeCall?.callId) {
+    if (participants.length > 0 && localStream && activeCall?.callId && user?.id) {
       console.log('[GroupVideoCall] Auto-initiating WebRTC connections for all participants');
       
       participants.forEach(participant => {
-        const existingConnection = peerConnections.current[participant.userId];
-        if (existingConnection && existingConnection.signalingState === 'stable') {
-          console.log('[GroupVideoCall] Auto-creating offer for participant:', participant.userId);
-          
-          // Small delay to ensure proper timing
-          setTimeout(() => {
-            existingConnection.createOffer({
-              offerToReceiveAudio: true,
-              offerToReceiveVideo: true
-            }).then(offer => {
-              return existingConnection.setLocalDescription(offer);
-            }).then(() => {
-              console.log('[GroupVideoCall] Auto-sending offer to participant:', participant.userId);
-              const ws = (window as any).__callWebSocket;
-              if (ws?.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({
-                  type: 'group_webrtc_offer',
-                  payload: {
-                    callId: activeCall.callId,
-                    offer: existingConnection.localDescription,
-                    targetUserId: participant.userId,
-                    fromUserId: user?.id
+        // Only initiate if current user has lower ID to avoid simultaneous offers
+        if (user.id < participant.userId) {
+          const existingConnection = peerConnections.current[participant.userId];
+          if (existingConnection && existingConnection.signalingState === 'stable') {
+            console.log('[GroupVideoCall] Auto-creating offer for participant:', participant.userId);
+            
+            // Small delay to ensure proper timing
+            setTimeout(() => {
+              // Double check signaling state before creating offer
+              if (existingConnection.signalingState === 'stable') {
+                existingConnection.createOffer({
+                  offerToReceiveAudio: true,
+                  offerToReceiveVideo: true
+                }).then(offer => {
+                  return existingConnection.setLocalDescription(offer);
+                }).then(() => {
+                  console.log('[GroupVideoCall] Auto-sending offer to participant:', participant.userId);
+                  const ws = (window as any).__callWebSocket;
+                  if (ws?.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({
+                      type: 'group_webrtc_offer',
+                      payload: {
+                        callId: activeCall.callId,
+                        offer: existingConnection.localDescription,
+                        targetUserId: participant.userId,
+                        fromUserId: user?.id
+                      }
+                    }));
                   }
-                }));
+                }).catch(error => {
+                  console.error('[GroupVideoCall] Error auto-creating offer for participant:', participant.userId, error);
+                });
               }
-            }).catch(error => {
-              console.error('[GroupVideoCall] Error auto-creating offer for participant:', participant.userId, error);
-            });
-          }, 500 + Math.random() * 1000); // Random delay to avoid conflicts
+            }, 500 + Math.random() * 1000); // Random delay to avoid conflicts
+          }
         }
       });
     }
