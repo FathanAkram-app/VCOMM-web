@@ -645,15 +645,36 @@ export default function GroupVideoCall() {
       }
       
       try {
-        // Check if peer connection is in correct state for setting remote description
+        console.log('[GroupVideoCall] Current signaling state:', peerConnection.signalingState);
+        console.log('[GroupVideoCall] Current connection state:', peerConnection.connectionState);
+        
+        // Only set remote description if in the correct signaling state
         if (peerConnection.signalingState === 'have-local-offer') {
           await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-          console.log('[GroupVideoCall] Set remote description from answer');
+          console.log('[GroupVideoCall] Successfully set remote description from answer');
+        } else if (peerConnection.signalingState === 'stable') {
+          console.warn('[GroupVideoCall] Peer connection already stable, ignoring answer');
         } else {
-          console.warn('[GroupVideoCall] Ignoring answer - peer connection not in correct state:', peerConnection.signalingState);
+          console.warn('[GroupVideoCall] Invalid signaling state for answer:', peerConnection.signalingState);
+          
+          // Try to recover by restarting the connection
+          if (peerConnection.connectionState === 'failed' || peerConnection.connectionState === 'disconnected') {
+            console.log('[GroupVideoCall] Attempting to restart connection for user:', fromUserId);
+            peerConnection.restartIce();
+          }
         }
       } catch (error) {
         console.error('[GroupVideoCall] Error handling answer:', error);
+        
+        // Attempt recovery by restarting ICE if SSL role error
+        if (error.message.includes('SSL role') || error.message.includes('transport')) {
+          console.log('[GroupVideoCall] SSL role error detected, restarting ICE for user:', fromUserId);
+          try {
+            peerConnection.restartIce();
+          } catch (restartError) {
+            console.error('[GroupVideoCall] Failed to restart ICE:', restartError);
+          }
+        }
       }
     };
 
