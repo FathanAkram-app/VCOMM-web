@@ -902,7 +902,7 @@ export default function Chat() {
                   <p className="text-sm text-gray-400 mb-3">Uji fungsi mikrofon dan speaker Anda</p>
                   <Button 
                     className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
-                    onClick={() => navigate('/audio-test')}
+                    onClick={() => navigate('/settings')}
                   >
                     Buka Test Audio
                   </Button>
