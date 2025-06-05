@@ -46,17 +46,24 @@ export default function AudioCall() {
       if (isMobileDevice) {
         // Start with earpiece (phone speaker) for mobile calls
         audioElement.setAttribute('playsinline', 'true');
+        audioElement.setAttribute('webkit-playsinline', 'true');
         
-        // Apply mobile audio settings
+        // Force audio to use earpiece by default on mobile
         if (!isLoudspeaker) {
-          // Earpiece mode - lower volume for phone speaker
+          // Earpiece mode - optimize for phone speaker
           audioElement.volume = 0.8;
+          audioElement.style.display = 'none'; // Hide completely to force system audio routing
           console.log("[AudioCall] 📱 Mobile earpiece mode enabled");
         } else {
-          // Loudspeaker mode - full volume for external speaker
+          // Loudspeaker mode - optimize for external speaker
           audioElement.volume = 1.0;
+          audioElement.style.display = 'block';
           console.log("[AudioCall] 🔊 Mobile loudspeaker mode enabled");
         }
+        
+        // Add mobile-specific audio attributes
+        audioElement.setAttribute('preload', 'auto');
+        audioElement.setAttribute('controls', 'false');
       }
       
       // Force audio to play with multiple attempts and debugging
@@ -229,19 +236,97 @@ export default function AudioCall() {
   }, [remoteAudioStream, isLoudspeaker, isMobileDevice]);
 
   // Toggle loudspeaker function for mobile devices
-  const toggleLoudspeaker = () => {
-    setIsLoudspeaker(!isLoudspeaker);
+  const toggleLoudspeaker = async () => {
+    const newLoudspeakerState = !isLoudspeaker;
+    setIsLoudspeaker(newLoudspeakerState);
     
     const audioElement = document.querySelector('#remoteAudio') as HTMLAudioElement;
     if (audioElement && isMobileDevice) {
-      if (!isLoudspeaker) {
-        // Switching to loudspeaker
-        audioElement.volume = 1.0;
-        console.log("[AudioCall] 🔊 Switching to loudspeaker mode");
-      } else {
-        // Switching to earpiece
-        audioElement.volume = 0.8;
-        console.log("[AudioCall] 📱 Switching to earpiece mode");
+      try {
+        // Use setSinkId for audio output routing (if supported)
+        if ('setSinkId' in audioElement) {
+          if (newLoudspeakerState) {
+            // Use default speakers (loudspeaker)
+            await (audioElement as any).setSinkId('default');
+            console.log("[AudioCall] 🔊 Switched to loudspeaker using setSinkId");
+          } else {
+            // Try to use communications device (earpiece)
+            await (audioElement as any).setSinkId('communications');
+            console.log("[AudioCall] 📱 Switched to earpiece using setSinkId");
+          }
+        } else {
+          // Fallback: modify audio context and volume
+          if (newLoudspeakerState) {
+            audioElement.volume = 1.0;
+            audioElement.style.display = 'block';
+            // Force external speaker by setting audio attributes
+            audioElement.setAttribute('x-webkit-airplay', 'allow');
+            audioElement.setAttribute('autoplay', 'true');
+            console.log("[AudioCall] 🔊 Loudspeaker mode (fallback method)");
+          } else {
+            audioElement.volume = 0.7;
+            audioElement.style.display = 'none';
+            // Remove external speaker attributes for earpiece mode
+            audioElement.removeAttribute('x-webkit-airplay');
+            audioElement.setAttribute('autoplay', 'false');
+            console.log("[AudioCall] 📱 Earpiece mode (fallback method)");
+          }
+        }
+        
+        // Additional mobile-specific audio routing using Web Audio API
+        if (remoteAudioStream) {
+          try {
+            // Create or get existing audio context
+            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+            
+            if (audioContext.state === 'suspended') {
+              await audioContext.resume();
+            }
+            
+            // Create media stream source
+            const source = audioContext.createMediaStreamSource(remoteAudioStream);
+            const gainNode = audioContext.createGain();
+            
+            // Route audio based on speaker mode
+            if (newLoudspeakerState) {
+              // Loudspeaker mode - higher gain and connect to speakers
+              gainNode.gain.value = 1.0;
+              console.log("[AudioCall] 🔊 Web Audio: Routing to loudspeaker");
+            } else {
+              // Earpiece mode - lower gain for phone speaker
+              gainNode.gain.value = 0.7;
+              console.log("[AudioCall] 📱 Web Audio: Routing to earpiece");
+            }
+            
+            // Connect the audio graph
+            source.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Re-apply stream to HTML audio element as backup
+            audioElement.srcObject = null;
+            await new Promise(resolve => setTimeout(resolve, 100));
+            audioElement.srcObject = remoteAudioStream;
+            audioElement.play().catch(console.error);
+            
+            // Store references for cleanup
+            (window as any).currentAudioContext = audioContext;
+            (window as any).currentAudioSource = source;
+            (window as any).currentGainNode = gainNode;
+            
+          } catch (webAudioError) {
+            console.error("[AudioCall] Web Audio API failed:", webAudioError);
+            // Fallback to basic stream re-assignment
+            audioElement.srcObject = null;
+            await new Promise(resolve => setTimeout(resolve, 100));
+            audioElement.srcObject = remoteAudioStream;
+            audioElement.play().catch(console.error);
+          }
+        }
+        
+      } catch (error) {
+        console.error("[AudioCall] Error switching audio output:", error);
+        // Fallback to volume adjustment
+        audioElement.volume = newLoudspeakerState ? 1.0 : 0.7;
       }
     }
   };
