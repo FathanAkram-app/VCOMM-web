@@ -209,6 +209,69 @@ export function CallProvider({ children }: { children: ReactNode }) {
   // Queue for WebRTC offers that arrive before incoming call is created
   const pendingOffers = useRef<any[]>([]);
 
+  // Function to aggressively stop all ringtones
+  const stopAllRingtones = () => {
+    console.log('[CallContext] 🔇 STOPPING ALL RINGTONES AGGRESSIVELY');
+    
+    // Stop HTML5 ringtone audio
+    if (ringtoneAudio) {
+      try {
+        console.log('[CallContext] Stopping HTML5 ringtone audio');
+        ringtoneAudio.pause();
+        ringtoneAudio.currentTime = 0;
+        ringtoneAudio.volume = 0;
+        ringtoneAudio.muted = true;
+        ringtoneAudio.src = '';
+        ringtoneAudio.srcObject = null;
+        ringtoneAudio.load();
+        console.log('[CallContext] ✅ HTML5 ringtone stopped');
+      } catch (e) {
+        console.log('[CallContext] Error stopping HTML5 ringtone:', e);
+      }
+    }
+    
+    // Find and stop ALL audio elements with ringtone sources
+    try {
+      const audioElements = document.querySelectorAll('audio');
+      audioElements.forEach((audio: HTMLAudioElement, index: number) => {
+        if (audio.src && (audio.src.includes('ringtone') || audio.src.includes('ring') || audio.currentTime > 0)) {
+          console.log(`[CallContext] Stopping audio element ${index}:`, audio.src);
+          audio.pause();
+          audio.currentTime = 0;
+          audio.volume = 0;
+          audio.muted = true;
+          audio.src = '';
+          audio.srcObject = null;
+          audio.load();
+        }
+      });
+      console.log('[CallContext] ✅ All potential ringtone audio elements stopped');
+    } catch (e) {
+      console.log('[CallContext] Error stopping audio elements:', e);
+    }
+    
+    // Stop any Web Audio API ringtone sources
+    try {
+      if ((window as any).__ringtoneSource) {
+        (window as any).__ringtoneSource.stop();
+        (window as any).__ringtoneSource.disconnect();
+        (window as any).__ringtoneSource = null;
+        console.log('[CallContext] ✅ Web Audio API ringtone source stopped');
+      }
+    } catch (e) {
+      console.log('[CallContext] Error stopping Web Audio API ringtone:', e);
+    }
+    
+    // Clear any ringtone-related timeouts
+    if ((window as any).__ringtoneTimeout) {
+      clearTimeout((window as any).__ringtoneTimeout);
+      (window as any).__ringtoneTimeout = null;
+      console.log('[CallContext] ✅ Ringtone timeout cleared');
+    }
+    
+    console.log('[CallContext] ✅ ALL RINGTONES STOPPED');
+  };
+
   // Function to create waiting tone (tuuutt sound)
   const createWaitingTone = () => {
     if (!audioContext) {
@@ -840,6 +903,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     
     // FORCE STOP ALL WAITING TONES AND RINGTONES IMMEDIATELY
     console.log('[CallContext] FORCE STOPPING ALL RINGTONES - call accepted');
+    stopAllRingtones();
     stopWaitingTone();
     
     // Additional comprehensive audio cleanup
@@ -1040,6 +1104,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     
     // FORCE STOP ALL WAITING TONES AND RINGTONES IMMEDIATELY
     console.log('[CallContext] FORCE STOPPING ALL RINGTONES - call rejected');
+    stopAllRingtones();
     stopWaitingTone();
     
     // Additional comprehensive audio cleanup for call rejected
