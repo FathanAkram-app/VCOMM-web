@@ -465,6 +465,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
               detail: message.payload || message
             }));
             break;
+          case 'group_webrtc_ice_candidate':
+            // Forward group WebRTC ICE candidate to GroupVideoCall component
+            console.log('[CallContext] Forwarding group WebRTC ICE candidate:', message.payload || message);
+            window.dispatchEvent(new CustomEvent('group-webrtc-ice-candidate', {
+              detail: message.payload || message
+            }));
+            break;
         }
       } catch (error) {
         // Ignore non-JSON messages (they might be for chat)

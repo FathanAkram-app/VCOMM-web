@@ -1,0 +1,38 @@
+[GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:50 [GroupVideoCall] isVideoEnabled: false
+GroupVideoCall.tsx:51 [GroupVideoCall] localStream: MediaStream {id: '5d9078c0-4c8c-43e1-b39d-0ae2ffe99da5', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:109 [GroupVideoCall] Local video stream attached to element
+GroupVideoCall.tsx:115 [GroupVideoCall] Initial video state: true
+GroupVideoCall.tsx:160 [GroupVideoCall] Setting up WebRTC connections for participants: [3]
+GroupVideoCall.tsx:164 [GroupVideoCall] Creating peer connection for user: 3
+GroupVideoCall.tsx:176 [GroupVideoCall] Adding local track to peer connection: audio
+GroupVideoCall.tsx:176 [GroupVideoCall] Adding local track to peer connection: video
+GroupVideoCall.tsx:282 [GroupVideoCall] Auto-initiating WebRTC connections for all participants
+GroupVideoCall.tsx:287 [GroupVideoCall] Auto-creating offer for participant: 3
+GroupVideoCall.tsx:48 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749099559462_37_2', callType: 'video', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:49 [GroupVideoCall] user?.id: 2
+GroupVideoCall.tsx:50 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:51 [GroupVideoCall] localStream: MediaStream {id: '5d9078c0-4c8c-43e1-b39d-0ae2ffe99da5', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:238 [GroupVideoCall] Sending offer to user: 3
+GroupVideoCall.tsx:239 [GroupVideoCall] Offer details: RTCSessionDescription {type: 'offer', sdp: 'v=0\r\no=- 1902219194632573279 2 IN IP4 127.0.0.1\r\ns…e2ffe99da5 447ad8e8-3d31-4943-97c7-f4037bc37f97\r\n'}
+GroupVideoCall.tsx:254 [GroupVideoCall] WebSocket not ready, state: undefined
+(anonymous) @ GroupVideoCall.tsx:254
+Promise.then
+(anonymous) @ GroupVideoCall.tsx:237
+(anonymous) @ GroupVideoCall.tsx:162
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=768c3251:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=768c3251:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=768c3251:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=768c3251:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=768c3251:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=768c3251:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=768c3251:19447
+(anonymous) @ chunk-RPCDYKBN.js?v=768c3251:19328
+workLoop @ chunk-RPCDYKBN.js?v=768c3251:197
+flushWork @ chunk-RPCDYKBN.js?v=768c3251:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=768c3251:384Understand this error
+6GroupVideoCall.tsx:208 [GroupVideoCall] Sending ICE candidate to user: 3
+CallContext.tsx:412 [CallContext] Received message: {type: 'user_status', payload: {…}}
+GroupVideoCall.tsx:297 [GroupVideoCall] Auto-sending offer to participant: 3
+CallContext.tsx:412 [CallContext] Received message: {type: 'user_status', payload: {…}}
+GroupVideoCall.tsx:48 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1749099559462_37_2', callType: 'video', status: 'calling', isIncoming: false, localStream: MediaStream, …}

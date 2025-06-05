@@ -237,22 +237,30 @@ export default function GroupVideoCall() {
           }).then(() => {
             console.log('[GroupVideoCall] Sending offer to user:', participant.userId);
             console.log('[GroupVideoCall] Offer details:', peerConnection.localDescription);
-            const ws = (window as any).__callWebSocket;
-            if (ws?.readyState === WebSocket.OPEN) {
-              const message = {
-                type: 'group_webrtc_offer',
-                payload: {
-                  callId: activeCall.callId,
-                  offer: peerConnection.localDescription,
-                  targetUserId: participant.userId,
-                  fromUserId: user?.id
-                }
-              };
-              console.log('[GroupVideoCall] Sending WebRTC message:', message);
-              ws.send(JSON.stringify(message));
-            } else {
-              console.error('[GroupVideoCall] WebSocket not ready, state:', ws?.readyState);
-            }
+            
+            // Send WebRTC offer through CallContext WebSocket
+            const sendWebRTCOffer = () => {
+              const ws = (window as any).__callWebSocket;
+              if (ws?.readyState === WebSocket.OPEN) {
+                const message = {
+                  type: 'group_webrtc_offer',
+                  payload: {
+                    callId: activeCall.callId,
+                    offer: peerConnection.localDescription,
+                    targetUserId: participant.userId,
+                    fromUserId: user?.id
+                  }
+                };
+                console.log('[GroupVideoCall] Sending WebRTC message:', message);
+                ws.send(JSON.stringify(message));
+              } else {
+                console.error('[GroupVideoCall] WebSocket not ready, state:', ws?.readyState);
+                console.log('[GroupVideoCall] Retrying WebRTC offer in 1 second...');
+                setTimeout(sendWebRTCOffer, 1000);
+              }
+            };
+            
+            sendWebRTCOffer();
           }).catch(error => {
             console.error('[GroupVideoCall] Error creating offer for user', participant.userId, ':', error);
           });
@@ -322,7 +330,7 @@ export default function GroupVideoCall() {
       const { callId, offer, fromUserId } = event.detail;
       console.log('[GroupVideoCall] Received WebRTC offer from user:', fromUserId);
       
-      if (activeCall?.callId !== callId) {
+      if (!activeCall || activeCall.callId !== callId) {
         console.log('[GroupVideoCall] Call ID mismatch, ignoring offer');
         return;
       }
@@ -342,18 +350,24 @@ export default function GroupVideoCall() {
         await peerConnection.setLocalDescription(answer);
         
         console.log('[GroupVideoCall] Sending answer to user:', fromUserId);
-        const ws = (window as any).__callWebSocket;
-        if (ws?.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({
-            type: 'group_webrtc_answer',
-            payload: {
-              callId: activeCall?.callId,
-              answer: peerConnection.localDescription,
-              targetUserId: fromUserId,
-              fromUserId: user?.id
-            }
-          }));
-        }
+        const sendAnswer = () => {
+          const ws = (window as any).__callWebSocket;
+          if (ws?.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+              type: 'group_webrtc_answer',
+              payload: {
+                callId: activeCall.callId,
+                answer: peerConnection.localDescription,
+                targetUserId: fromUserId,
+                fromUserId: user?.id
+              }
+            }));
+          } else {
+            console.log('[GroupVideoCall] WebSocket not ready for answer, retrying...');
+            setTimeout(sendAnswer, 500);
+          }
+        };
+        sendAnswer();
       } catch (error) {
         console.error('[GroupVideoCall] Error handling offer:', error);
       }
