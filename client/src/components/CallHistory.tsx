@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Phone, Video, Users, Clock, Calendar, ArrowLeft, PhoneCall, VideoIcon, PhoneOff, Trash2, MoreVertical } from 'lucide-react';
+import { Phone, Video, Users, Clock, Calendar, ArrowLeft, PhoneCall, VideoIcon, PhoneOff, Trash2, MoreVertical, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -37,6 +37,13 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [filter, setFilter] = useState<'all' | 'audio' | 'video' | 'group'>('all');
+
+  // Force refresh handler
+  const handleForceRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['/api/call-history'] });
+    queryClient.refetchQueries({ queryKey: ['/api/call-history'] });
+    refetch();
+  };
 
   // Delete call history mutation
   const deleteCallMutation = useMutation({
@@ -97,12 +104,14 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
   };
 
   // Fetch call history with fresh data from database
-  const { data: callHistory = [], isLoading, refetch, error } = useQuery({
+  const { data: callHistory = [], isLoading, refetch, error } = useQuery<any[]>({
     queryKey: ['/api/call-history'],
     enabled: !!user,
     retry: 1,
     staleTime: 0,
     gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
 
   // Force console logging for debugging
