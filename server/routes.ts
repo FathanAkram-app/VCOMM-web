@@ -612,19 +612,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Delete conversation endpoint
-  app.delete('/api/conversations/:id', isAuthenticated, async (req: AuthRequest, res) => {
+  app.delete('/api/conversations/:id', async (req, res) => {
+    console.log('[DEBUG] DELETE endpoint reached');
+    
+    // Check authentication manually first
+    if (!req.session?.user?.id) {
+      console.log('[DEBUG] No authentication found in session');
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
     try {
       const conversationId = parseInt(req.params.id);
-      console.log('[DEBUG DELETE] Full session object:', JSON.stringify(req.session, null, 2));
-      console.log('[DEBUG DELETE] req.session?.user:', req.session?.user);
-      console.log('[DEBUG DELETE] req.user:', req.user);
-      
-      const userId = req.session?.user?.id;
-      
-      if (!userId) {
-        console.log('[DEBUG DELETE] Authentication failed - no user ID found');
-        return res.status(400).json({ message: "User ID not found in session" });
-      }
+      const userId = req.session.user.id;
       
       console.log(`[API] User ${userId} attempting to delete conversation ${conversationId}`);
       
@@ -654,14 +653,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Clear chat history endpoint
-  app.post('/api/conversations/:id/clear', isAuthenticated, async (req: AuthRequest, res) => {
+  app.post('/api/conversations/:id/clear', async (req, res) => {
+    console.log('[DEBUG] CLEAR endpoint reached');
+    
+    // Check authentication manually first
+    if (!req.session?.user?.id) {
+      console.log('[DEBUG] No authentication found in session for clear');
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
     try {
       const conversationId = parseInt(req.params.id);
-      const userId = req.session?.user?.id;
+      const userId = req.session.user.id;
       
-      if (!userId) {
-        return res.status(400).json({ message: "User ID not found in session" });
-      }
+      console.log(`[API] User ${userId} attempting to clear conversation ${conversationId}`);
       
       if (isNaN(conversationId)) {
         return res.status(400).json({ message: "Invalid conversation ID" });
