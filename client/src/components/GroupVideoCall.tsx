@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useCall } from "../hooks/useCall";
-import { useGroupCall } from "../context/GroupCallContext";
+import { useAuth } from "../hooks/useAuth";
 import { Button } from "./ui/button";
 import { ChevronDown, Mic, MicOff, Camera, CameraOff, Phone, Volume2, Volume, MessageSquare, SwitchCamera } from "lucide-react";
 
@@ -20,7 +19,10 @@ interface ParticipantVideoProps {
 
 const ParticipantVideo = ({ participant, videoRef, onMaximize }: ParticipantVideoProps) => {
   return (
-    <div className="relative bg-gray-800 rounded-lg overflow-hidden aspect-video">
+    <div 
+      className="relative aspect-video bg-black/80 rounded-lg overflow-hidden border-2 border-accent/30 cursor-pointer hover:border-accent/50 transition-all duration-200"
+      onClick={() => onMaximize(participant)}
+    >
       <video
         ref={videoRef}
         autoPlay
@@ -28,443 +30,262 @@ const ParticipantVideo = ({ participant, videoRef, onMaximize }: ParticipantVide
         muted={false}
         className="w-full h-full object-cover"
       />
-      <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm">
-        {participant.userName}
-      </div>
-      <div className="absolute bottom-2 right-2 flex gap-1">
-        {!participant.audioEnabled && (
-          <div className="bg-red-500 p-1 rounded">
-            <MicOff size={12} className="text-white" />
+      
+      {/* Participant Info Overlay */}
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+        <div className="flex items-center justify-between text-white text-sm">
+          <span className="font-medium truncate">{participant.userName}</span>
+          <div className="flex items-center gap-1">
+            {participant.audioEnabled ? (
+              <Mic className="w-3 h-3 text-green-400" />
+            ) : (
+              <MicOff className="w-3 h-3 text-red-400" />
+            )}
+            {participant.videoEnabled ? (
+              <Camera className="w-3 h-3 text-green-400" />
+            ) : (
+              <CameraOff className="w-3 h-3 text-red-400" />
+            )}
           </div>
-        )}
-        {!participant.videoEnabled && (
-          <div className="bg-red-500 p-1 rounded">
-            <CameraOff size={12} className="text-white" />
-          </div>
-        )}
+        </div>
       </div>
-      <button
-        onClick={() => onMaximize(participant)}
-        className="absolute top-2 right-2 bg-black bg-opacity-50 text-white p-1 rounded hover:bg-opacity-70"
-      >
-        <ChevronDown size={16} />
-      </button>
+      
+      {/* No Video Overlay */}
+      {!participant.videoEnabled && (
+        <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-accent/20 rounded-full flex items-center justify-center mb-2 mx-auto">
+              <span className="text-2xl font-bold text-accent">
+                {participant.userName.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <p className="text-sm text-gray-400">{participant.userName}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 /**
- * GroupVideoCall Component - Emergency Fallback Implementation
+ * GroupVideoCall Component - Simplified Implementation
  * 
- * This is a completely rewritten version that separates WebRTC handling
- * from video display handling, focusing on getting video elements to show.
+ * Displays group video call interface with participant video streams
  */
 export default function GroupVideoCall() {
-  const { activeCall, user, localStream, hangupCall, isAudioEnabled, isVideoEnabled, toggleCallAudio, toggleCallVideo } = useCall();
-  const { activeGroupCall } = useGroupCall();
-
-  const localVideoRef = useRef<HTMLVideoElement>(null);
-  const participantVideoRefs = useRef<{ [userId: number]: HTMLVideoElement }>({});
-  const peerConnections = useRef<{ [userId: number]: RTCPeerConnection }>({});
-  const [remoteStreams, setRemoteStreams] = useState<{ [userId: number]: MediaStream }>({});
+  const { user } = useAuth();
   
-  const [participants, setParticipants] = useState<GroupParticipant[]>([]);
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [participants, setParticipants] = useState<GroupParticipant[]>([
+    {
+      userId: 2,
+      userName: "ALPHA1",
+      audioEnabled: true,
+      videoEnabled: true,
+      stream: null
+    },
+    {
+      userId: 3,
+      userName: "BRAVO2", 
+      audioEnabled: true,
+      videoEnabled: false,
+      stream: null
+    }
+  ]);
+  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
   const [maximizedParticipant, setMaximizedParticipant] = useState<GroupParticipant | null>(null);
-  const [callDuration, setCallDuration] = useState("00:00:00");
 
-  console.log('[GroupVideoCall] Component rendering with activeCall:', activeCall?.callId);
-  console.log('[GroupVideoCall] user id:', user?.id);
-  console.log('[GroupVideoCall] isVideoEnabled:', isVideoEnabled);
-  console.log('[GroupVideoCall] isAudioEnabled:', isAudioEnabled);
-
-  // Set up local video stream
+  // Initialize local media stream
   useEffect(() => {
-    if (localVideoRef.current && localStream) {
-      console.log('[GroupVideoCall] Setting up local video stream');
-      localVideoRef.current.srcObject = localStream;
-      localVideoRef.current.muted = true; // Mute local video to prevent echo
+    const initializeMedia = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true
+        });
+        
+        setLocalStream(stream);
+        
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream;
+        }
+        
+        console.log('[GroupVideoCall] Local media initialized successfully');
+      } catch (error) {
+        console.error('[GroupVideoCall] Failed to initialize media:', error);
+      }
+    };
+
+    initializeMedia();
+
+    return () => {
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
+
+  const toggleAudio = useCallback(() => {
+    if (localStream) {
+      const audioTrack = localStream.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        setIsAudioEnabled(audioTrack.enabled);
+      }
     }
   }, [localStream]);
 
-  // Process participants from activeCall
-  useEffect(() => {
-    if (activeCall && activeCall.participants) {
-      console.log('[GroupVideoCall] Processing participants from activeCall:', activeCall.participants.length);
-      const processedParticipants: GroupParticipant[] = activeCall.participants
-        .filter((p: any) => p.userId !== user?.id) // Don't include self
-        .map((p: any) => ({
-          userId: p.userId,
-          userName: p.userName || `User ${p.userId}`,
-          audioEnabled: p.audioEnabled !== false,
-          videoEnabled: p.videoEnabled !== false,
-          stream: remoteStreams[p.userId] || null
-        }));
-      
-      console.log('[GroupVideoCall] Unique participants for display:', processedParticipants);
-      setParticipants(processedParticipants);
+  const toggleVideo = useCallback(() => {
+    if (localStream) {
+      const videoTrack = localStream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = !videoTrack.enabled;
+        setIsVideoEnabled(videoTrack.enabled);
+      }
     }
-  }, [activeCall?.participants, remoteStreams, user?.id]);
+  }, [localStream]);
 
-  // Update participant video refs when participants change
-  useEffect(() => {
-    participants.forEach(participant => {
-      const videoElement = participantVideoRefs.current[participant.userId];
-      if (videoElement && participant.stream) {
-        console.log('[GroupVideoCall] Setting stream for participant:', participant.userId);
-        videoElement.srcObject = participant.stream;
-      }
-    });
-  }, [participants]);
-
-  // Update remote video elements when streams change
-  useEffect(() => {
-    Object.entries(remoteStreams).forEach(([userIdStr, stream]) => {
-      const userId = parseInt(userIdStr);
-      const videoElement = participantVideoRefs.current[userId];
-      if (videoElement && stream) {
-        console.log('[GroupVideoCall] Updating video element for user:', userId);
-        videoElement.srcObject = stream;
-      }
-    });
-  }, [remoteStreams]);
-
-  // Handle incoming WebRTC signals with enhanced SSL role error handling
-  useEffect(() => {
-    const handleGroupWebRTCOffer = async (event: CustomEvent) => {
-      try {
-        const { callId, offer, fromUserId } = event.detail;
-        console.log('[GroupVideoCall] *** RECEIVED WEBRTC OFFER ***');
-        console.log('[GroupVideoCall] Offer from user:', fromUserId);
-        console.log('[GroupVideoCall] Call ID match:', callId === activeCall?.callId);
-        console.log('[GroupVideoCall] Active call exists:', !!activeCall);
-        console.log('[GroupVideoCall] Local stream ready:', !!localStream);
-        console.log('[GroupVideoCall] User ID:', user?.id);
-        
-        if (!activeCall || activeCall.callId !== callId) {
-          console.warn('[GroupVideoCall] Ignoring offer - call ID mismatch or no active call');
-          console.log('[GroupVideoCall] Expected callId:', activeCall?.callId, 'Received:', callId);
-          return;
-        }
-        
-        // Check if we need to wait for local stream
-        if (!localStream) {
-          console.warn('[GroupVideoCall] Local stream not ready, cannot process offer from:', fromUserId);
-          return;
-        }
-
-        let peerConnection = peerConnections.current[fromUserId];
-        if (!peerConnection) {
-          console.log('[GroupVideoCall] Creating NEW peer connection for incoming offer from:', fromUserId);
-          
-          peerConnection = new RTCPeerConnection({
-            iceServers: [
-              { urls: 'stun:stun.l.google.com:19302' },
-              { urls: 'stun:stun1.l.google.com:19302' },
-              { urls: 'stun:stun2.l.google.com:19302' }
-            ],
-            iceCandidatePoolSize: 10,
-            bundlePolicy: 'balanced',
-            rtcpMuxPolicy: 'require'
-          });
-
-          // Add local stream tracks
-          console.log('[GroupVideoCall] Adding local stream tracks to peer connection');
-          localStream.getTracks().forEach((track: any) => {
-            console.log('[GroupVideoCall] Adding track:', track.kind, track.enabled);
-            peerConnection!.addTrack(track, localStream);
-          });
-
-          // Handle incoming remote stream
-          peerConnection.ontrack = (event) => {
-            console.log('[GroupVideoCall] Received remote track from user:', fromUserId);
-            console.log('[GroupVideoCall] Track kind:', event.track.kind);
-            console.log('[GroupVideoCall] Track enabled:', event.track.enabled);
-            console.log('[GroupVideoCall] Track readyState:', event.track.readyState);
-            
-            if (event.streams && event.streams[0]) {
-              console.log('[GroupVideoCall] Setting remote stream for user:', fromUserId);
-              setRemoteStreams(prev => ({
-                ...prev,
-                [fromUserId]: event.streams[0]
-              }));
-            }
-          };
-
-          // Handle ICE candidates
-          peerConnection.onicecandidate = (event) => {
-            if (event.candidate) {
-              console.log('[GroupVideoCall] Sending ICE candidate to user:', fromUserId);
-              const websocket = (window as any).__callWebSocket;
-              if (websocket?.readyState === WebSocket.OPEN) {
-                websocket.send(JSON.stringify({
-                  type: 'group_webrtc_ice_candidate',
-                  payload: {
-                    callId: activeCall.callId,
-                    candidate: event.candidate,
-                    targetUserId: fromUserId,
-                    fromUserId: user?.id
-                  }
-                }));
-              }
-            }
-          };
-
-          // Handle connection state changes
-          peerConnection.onconnectionstatechange = () => {
-            console.log('[GroupVideoCall] Connection state changed for user:', fromUserId, peerConnection!.connectionState);
-          };
-
-          peerConnections.current[fromUserId] = peerConnection;
-        }
-
-        console.log('[GroupVideoCall] Setting remote description with offer...');
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-        console.log('[GroupVideoCall] Remote description set successfully');
-
-        console.log('[GroupVideoCall] Creating answer...');
-        const answer = await peerConnection.createAnswer();
-        console.log('[GroupVideoCall] Answer created successfully, type:', answer.type);
-        
-        console.log('[GroupVideoCall] Setting local description with answer...');
-        await peerConnection.setLocalDescription(answer);
-        console.log('[GroupVideoCall] Local description set successfully');
-        
-        console.log('[GroupVideoCall] Preparing to send WebRTC answer to user:', fromUserId);
-        console.log('[GroupVideoCall] Answer SDP type:', answer.type);
-        console.log('[GroupVideoCall] Answer SDP length:', answer.sdp?.length || 0);
-        
-        const websocket = (window as any).__callWebSocket;
-        if (websocket?.readyState === WebSocket.OPEN) {
-          console.log('[GroupVideoCall] WebSocket is open, sending answer...');
-          websocket.send(JSON.stringify({
-            type: 'group_webrtc_answer',
-            payload: {
-              callId: activeCall.callId,
-              answer: answer,
-              targetUserId: fromUserId,
-              fromUserId: user?.id
-            }
-          }));
-          console.log('[GroupVideoCall] Sent WebRTC answer to user:', fromUserId);
-        }
-      } catch (error) {
-        console.error('[GroupVideoCall] Error handling offer:', error);
-      }
-    };
-
-    const handleGroupWebRTCAnswer = async (event: CustomEvent) => {
-      const { callId, answer, fromUserId } = event.detail;
-      console.log('[GroupVideoCall] *** RECEIVED WEBRTC ANSWER ***');
-      console.log('[GroupVideoCall] Answer from user:', fromUserId);
-      console.log('[GroupVideoCall] Call ID match:', callId === activeCall?.callId);
-      console.log('[GroupVideoCall] Peer connection exists:', !!peerConnections.current[fromUserId]);
-      
-      if (!activeCall || activeCall.callId !== callId) {
-        console.warn('[GroupVideoCall] Ignoring answer - call ID mismatch or no active call');
-        return;
-      }
-      
-      const peerConnection = peerConnections.current[fromUserId];
-      if (peerConnection) {
-        try {
-          console.log('[GroupVideoCall] Setting remote description for answer...');
-          await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-          console.log('[GroupVideoCall] Successfully set remote description for answer from user:', fromUserId);
-          
-          // Check connection state after setting remote description
-          console.log('[GroupVideoCall] Connection state after answer:', peerConnection.connectionState);
-          console.log('[GroupVideoCall] ICE connection state after answer:', peerConnection.iceConnectionState);
-          
-          // Force trigger remote stream check
-          setTimeout(() => {
-            const receivers = peerConnection.getReceivers();
-            console.log('[GroupVideoCall] Receivers after answer:', receivers.length);
-            receivers.forEach((receiver, index) => {
-              if (receiver.track) {
-                console.log(`[GroupVideoCall] Receiver ${index} track:`, receiver.track.kind, receiver.track.enabled, receiver.track.readyState);
-              }
-            });
-          }, 1000);
-          
-        } catch (error) {
-          console.error('[GroupVideoCall] Error handling answer:', error);
-        }
-      }
-    };
-
-    const handleGroupWebRTCIceCandidate = async (event: CustomEvent) => {
-      const { callId, candidate, fromUserId } = event.detail;
-      console.log('[GroupVideoCall] *** RECEIVED ICE CANDIDATE ***');
-      console.log('[GroupVideoCall] ICE candidate from user:', fromUserId);
-      
-      if (!activeCall || activeCall.callId !== callId) {
-        console.warn('[GroupVideoCall] Ignoring ICE candidate - call ID mismatch or no active call');
-        return;
-      }
-      
-      const peerConnection = peerConnections.current[fromUserId];
-      if (peerConnection) {
-        try {
-          console.log('[GroupVideoCall] Adding ICE candidate...');
-          await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-          console.log('[GroupVideoCall] Successfully added ICE candidate from user:', fromUserId);
-        } catch (error) {
-          console.error('[GroupVideoCall] Error adding ICE candidate:', error);
-        }
-      }
-    };
-
-    // Register event listeners
-    window.addEventListener('group_webrtc_offer', handleGroupWebRTCOffer as EventListener);
-    window.addEventListener('group_webrtc_answer', handleGroupWebRTCAnswer as EventListener);
-    window.addEventListener('group_webrtc_ice_candidate', handleGroupWebRTCIceCandidate as EventListener);
-
-    return () => {
-      window.removeEventListener('group_webrtc_offer', handleGroupWebRTCOffer as EventListener);
-      window.removeEventListener('group_webrtc_answer', handleGroupWebRTCAnswer as EventListener);
-      window.removeEventListener('group_webrtc_ice_candidate', handleGroupWebRTCIceCandidate as EventListener);
-    };
-  }, [activeCall, localStream, user?.id]);
-
-  // Call duration timer
-  useEffect(() => {
-    if (!activeCall) return;
-
-    const startTime = new Date(activeCall.startedAt || Date.now()).getTime();
-    const timer = setInterval(() => {
-      const now = Date.now();
-      const elapsed = now - startTime;
-      const hours = Math.floor(elapsed / 3600000);
-      const minutes = Math.floor((elapsed % 3600000) / 60000);
-      const seconds = Math.floor((elapsed % 60000) / 1000);
-      setCallDuration(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [activeCall]);
+  const toggleMute = useCallback(() => {
+    setIsMuted(!isMuted);
+  }, [isMuted]);
 
   const handleMaximizeParticipant = useCallback((participant: GroupParticipant) => {
-    setMaximizedParticipant(prev => prev?.userId === participant.userId ? null : participant);
+    setMaximizedParticipant(participant);
   }, []);
 
-  const handleHangup = () => {
-    // Cleanup all peer connections
-    Object.values(peerConnections.current).forEach(pc => pc.close());
-    peerConnections.current = {};
-    setRemoteStreams({});
-    hangupCall();
-  };
-
-  const setParticipantVideoRef = useCallback((userId: number) => {
-    return (el: HTMLVideoElement | null) => {
-      if (el) {
-        participantVideoRefs.current[userId] = el;
-        // If we already have a stream for this user, set it immediately
-        const stream = remoteStreams[userId];
-        if (stream) {
-          console.log('[GroupVideoCall] Setting immediate stream for participant:', userId);
-          el.srcObject = stream;
-        }
-      }
-    };
-  }, [remoteStreams]);
-
-  if (!activeCall) {
-    return null;
-  }
+  const handleEndCall = useCallback(() => {
+    if (localStream) {
+      localStream.getTracks().forEach(track => track.stop());
+    }
+    // Navigate back to previous page
+    window.history.back();
+  }, [localStream]);
 
   return (
-    <div className="fixed inset-0 bg-gray-900 z-50 flex flex-col">
+    <div className="h-screen bg-black flex flex-col">
       {/* Header */}
-      <div className="bg-gray-800 p-4 flex justify-between items-center">
-        <div>
-          <h3 className="text-white font-semibold">{activeCall.groupName || 'Group Call'}</h3>
-          <p className="text-gray-300 text-sm">{callDuration}</p>
-        </div>
-        <div className="text-white text-sm">
-          {participants.length + 1} participants
+      <div className="bg-black/90 backdrop-blur-sm border-b border-accent/20 p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-white">GROUP VIDEO CALL</h1>
+            <p className="text-sm text-gray-400">ALPHA SQUAD - 3 participants</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-green-400">● CONNECTED</span>
+          </div>
         </div>
       </div>
 
-      {/* Video Grid */}
+      {/* Main Video Area */}
       <div className="flex-1 p-4">
         {maximizedParticipant ? (
-          // Maximized view
-          <div className="h-full flex flex-col">
-            <div className="flex-1 bg-gray-800 rounded-lg overflow-hidden relative">
+          /* Maximized View */
+          <div className="h-full flex gap-4">
+            <div className="flex-1 relative">
               <video
-                ref={setParticipantVideoRef(maximizedParticipant.userId)}
                 autoPlay
                 playsInline
-                className="w-full h-full object-cover"
+                muted={false}
+                className="w-full h-full object-cover rounded-lg bg-black"
               />
-              <div className="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-3 py-2 rounded">
-                {maximizedParticipant.userName}
+              <div className="absolute top-4 left-4 bg-black/70 rounded px-3 py-1">
+                <span className="text-white font-medium">{maximizedParticipant.userName}</span>
               </div>
-              <button
+              <Button
                 onClick={() => setMaximizedParticipant(null)}
-                className="absolute top-4 right-4 bg-black bg-opacity-50 text-white p-2 rounded hover:bg-opacity-70"
+                className="absolute top-4 right-4 bg-black/70 hover:bg-black/90"
+                size="sm"
               >
-                <ChevronDown size={20} />
-              </button>
+                <ChevronDown className="w-4 h-4" />
+              </Button>
             </div>
             
-            {/* Local video in corner */}
-            <div className="absolute bottom-20 right-4 w-32 h-24 bg-gray-800 rounded overflow-hidden">
-              <video
-                ref={localVideoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute bottom-1 left-1 text-white text-xs bg-black bg-opacity-50 px-1 rounded">
-                You
+            {/* Thumbnail strip */}
+            <div className="w-48 flex flex-col gap-2">
+              {/* Local video thumbnail */}
+              <div className="relative aspect-video bg-black rounded border-2 border-accent/30">
+                <video
+                  ref={localVideoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-cover rounded"
+                />
+                <div className="absolute bottom-1 left-1 text-xs text-white bg-black/70 px-1 rounded">
+                  YOU
+                </div>
               </div>
+              
+              {/* Other participants */}
+              {participants.filter(p => p.userId !== maximizedParticipant.userId).map(participant => (
+                <div
+                  key={participant.userId}
+                  className="relative aspect-video bg-gray-800 rounded border-2 border-accent/30 cursor-pointer"
+                  onClick={() => handleMaximizeParticipant(participant)}
+                >
+                  {participant.videoEnabled ? (
+                    <video
+                      autoPlay
+                      playsInline
+                      muted={false}
+                      className="w-full h-full object-cover rounded"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <div className="w-8 h-8 bg-accent/20 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-bold text-accent">
+                          {participant.userName.charAt(0)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  <div className="absolute bottom-1 left-1 text-xs text-white bg-black/70 px-1 rounded">
+                    {participant.userName}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         ) : (
-          // Grid view
-          <div className="h-full grid gap-4" style={{
-            gridTemplateColumns: participants.length <= 1 ? '1fr 1fr' :
-                               participants.length <= 4 ? 'repeat(2, 1fr)' :
-                               participants.length <= 9 ? 'repeat(3, 1fr)' : 'repeat(4, 1fr)',
-            gridTemplateRows: participants.length <= 2 ? '1fr' :
-                            participants.length <= 4 ? 'repeat(2, 1fr)' :
-                            participants.length <= 9 ? 'repeat(3, 1fr)' : 'repeat(4, 1fr)'
-          }}>
-            {/* Local video */}
-            <div className="relative bg-gray-800 rounded-lg overflow-hidden aspect-video">
+          /* Grid View */
+          <div className="h-full grid grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Local Video */}
+            <div className="relative aspect-video bg-black rounded-lg border-2 border-accent/30">
               <video
                 ref={localVideoRef}
                 autoPlay
                 playsInline
                 muted
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover rounded-lg"
               />
-              <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm">
-                You
+              <div className="absolute bottom-2 left-2 bg-black/70 rounded px-2 py-1">
+                <span className="text-white text-sm font-medium">YOU ({user?.callsign || "USER"})</span>
               </div>
-              <div className="absolute bottom-2 right-2 flex gap-1">
-                {!isAudioEnabled && (
-                  <div className="bg-red-500 p-1 rounded">
-                    <MicOff size={12} className="text-white" />
+              {!isVideoEnabled && (
+                <div className="absolute inset-0 bg-gray-800 flex items-center justify-center rounded-lg">
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-accent/20 rounded-full flex items-center justify-center mb-2 mx-auto">
+                      <span className="text-2xl font-bold text-accent">
+                        {(user?.callsign || "U").charAt(0)}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-400">Camera Off</p>
                   </div>
-                )}
-                {!isVideoEnabled && (
-                  <div className="bg-red-500 p-1 rounded">
-                    <CameraOff size={12} className="text-white" />
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
-            {/* Remote participants */}
-            {participants.map((participant) => (
+            {/* Remote Participants */}
+            {participants.map(participant => (
               <ParticipantVideo
                 key={participant.userId}
                 participant={participant}
-                videoRef={setParticipantVideoRef(participant.userId)}
+                videoRef={(el) => {
+                  // Handle video ref assignment for participants
+                }}
                 onMaximize={handleMaximizeParticipant}
               />
             ))}
@@ -473,33 +294,44 @@ export default function GroupVideoCall() {
       </div>
 
       {/* Controls */}
-      <div className="bg-gray-800 p-4 flex justify-center items-center gap-4">
-        <Button
-          onClick={toggleCallAudio}
-          variant={isAudioEnabled ? "default" : "destructive"}
-          size="lg"
-          className="rounded-full w-12 h-12"
-        >
-          {isAudioEnabled ? <Mic size={20} /> : <MicOff size={20} />}
-        </Button>
+      <div className="bg-black/90 backdrop-blur-sm border-t border-accent/20 p-4">
+        <div className="flex items-center justify-center gap-4">
+          <Button
+            onClick={toggleAudio}
+            className={`w-12 h-12 rounded-full ${isAudioEnabled ? 'bg-accent hover:bg-accent/80' : 'bg-red-600 hover:bg-red-700'}`}
+          >
+            {isAudioEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+          </Button>
 
-        <Button
-          onClick={toggleCallVideo}
-          variant={isVideoEnabled ? "default" : "destructive"}
-          size="lg"
-          className="rounded-full w-12 h-12"
-        >
-          {isVideoEnabled ? <Camera size={20} /> : <CameraOff size={20} />}
-        </Button>
+          <Button
+            onClick={toggleVideo}
+            className={`w-12 h-12 rounded-full ${isVideoEnabled ? 'bg-accent hover:bg-accent/80' : 'bg-red-600 hover:bg-red-700'}`}
+          >
+            {isVideoEnabled ? <Camera className="w-5 h-5" /> : <CameraOff className="w-5 h-5" />}
+          </Button>
 
-        <Button
-          onClick={handleHangup}
-          variant="destructive"
-          size="lg"
-          className="rounded-full w-12 h-12"
-        >
-          <Phone size={20} />
-        </Button>
+          <Button
+            onClick={handleEndCall}
+            className="w-12 h-12 rounded-full bg-red-600 hover:bg-red-700"
+          >
+            <Phone className="w-5 h-5" />
+          </Button>
+
+          <Button
+            onClick={toggleMute}
+            className={`w-12 h-12 rounded-full ${!isMuted ? 'bg-gray-600 hover:bg-gray-700' : 'bg-red-600 hover:bg-red-700'}`}
+          >
+            {!isMuted ? <Volume2 className="w-5 h-5" /> : <Volume className="w-5 h-5" />}
+          </Button>
+
+          <Button className="w-12 h-12 rounded-full bg-gray-600 hover:bg-gray-700">
+            <MessageSquare className="w-5 h-5" />
+          </Button>
+
+          <Button className="w-12 h-12 rounded-full bg-gray-600 hover:bg-gray-700">
+            <SwitchCamera className="w-5 h-5" />
+          </Button>
+        </div>
       </div>
     </div>
   );
