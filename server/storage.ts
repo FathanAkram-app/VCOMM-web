@@ -566,7 +566,7 @@ export class DatabaseStorage implements IStorage {
 
   async addCallHistory(callData: any): Promise<void> {
     try {
-      const isGroupCall = callData.callType?.startsWith('group_') || callData.toUserId > 1000;
+      const isGroupCall = callData.callType?.startsWith('group_') || callData.callType === 'video' && callData.toUserId > 10;
       
       await db.insert(callHistory).values({
         callId: callData.callId,
@@ -579,7 +579,7 @@ export class DatabaseStorage implements IStorage {
         duration: callData.duration || 0
       });
       
-      console.log(`[Storage] Added call history: ${callData.callId} (${callData.callType}) - ${callData.status}`);
+      console.log(`[Storage] Added call history: ${callData.callId} (${callData.callType}) - ${callData.status} - isGroupCall: ${isGroupCall}`);
     } catch (error) {
       console.error('Error adding call history:', error);
     }

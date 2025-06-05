@@ -1067,7 +1067,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Log group call initiation to call history
             await storage.addCallHistory({
               callId,
-              callType: callType,
+              callType: `group_${callType}`,
               fromUserId,
               toUserId: groupId, // For group calls, use groupId as conversation ID
               status: 'initiated',
