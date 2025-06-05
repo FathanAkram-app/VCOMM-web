@@ -1117,12 +1117,15 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                           <DropdownMenuItem 
                             onClick={() => {
                               console.log("Setting reply to message:", msg);
+                              console.log("Current replyToMessage state:", replyToMessage);
                               setReplyToMessage(msg);
+                              console.log("After setting reply, new state should be:", msg);
                               
                               setTimeout(() => {
                                 const input = document.getElementById("message-input");
                                 if (input) {
                                   input.focus();
+                                  console.log("Input focused successfully");
                                 }
                               }, 100);
                             }}
