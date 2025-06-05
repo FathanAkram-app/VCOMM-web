@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { Phone, Video, Users, Clock, Calendar, ArrowLeft, PhoneCall, VideoIcon, PhoneOff } from 'lucide-react';
+import { Phone, Video, Users, Clock, Calendar, ArrowLeft, PhoneCall, VideoIcon, PhoneOff, Trash2, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { formatDistanceToNow } from 'date-fns';
 import { id } from 'date-fns/locale';
+import { apiRequest } from '@/lib/queryClient';
+import { useCall } from '@/hooks/useCall';
+import { useToast } from '@/hooks/use-toast';
 
 interface CallHistoryProps {
   onBack: () => void;
@@ -28,7 +31,65 @@ interface CallHistoryItem {
 
 export default function CallHistory({ onBack }: CallHistoryProps) {
   const { user } = useAuth();
+  const { startVideoCall, startAudioCall, startGroupCall } = useCall();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [filter, setFilter] = useState<'all' | 'audio' | 'video' | 'group'>('all');
+
+  // Delete call history mutation
+  const deleteCallMutation = useMutation({
+    mutationFn: async (callId: number) => {
+      await apiRequest(`/api/call-history/${callId}`, {
+        method: 'DELETE',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/call-history'] });
+      toast({
+        title: "Call deleted",
+        description: "Call history entry has been deleted successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Delete failed",
+        description: "Failed to delete call history entry.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Callback functions
+  const handleCallback = async (call: CallHistoryItem) => {
+    try {
+      if (call.callType?.startsWith('group_')) {
+        // For group calls, we need to get the group ID from the call
+        const groupId = call.callType.includes('video') ? 
+          call.toUserId : // Assuming group ID is stored in toUserId for group calls
+          call.fromUserId;
+        await startGroupCall(groupId, call.callType.includes('video'));
+      } else if (call.callType?.includes('video')) {
+        // Video callback
+        const targetUserId = call.isOutgoing ? call.toUserId : call.fromUserId;
+        await startVideoCall(targetUserId);
+      } else {
+        // Audio callback
+        const targetUserId = call.isOutgoing ? call.toUserId : call.fromUserId;
+        await startAudioCall(targetUserId);
+      }
+      
+      toast({
+        title: "Call initiated",
+        description: `Calling ${call.contactName}...`,
+      });
+    } catch (error) {
+      toast({
+        title: "Call failed",
+        description: "Failed to initiate callback.",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Fetch call history
   const { data: callHistory = [], isLoading, refetch } = useQuery({
@@ -271,16 +332,16 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
                   </div>
 
                   {/* Participants (for group calls) */}
-                  {call.callType.startsWith('group_') && call.participantNames.length > 0 && (
+                  {call.callType?.startsWith('group_') && call.participantNames?.length > 0 && (
                     <div className="flex -space-x-2 ml-4">
-                      {call.participantNames.slice(0, 3).map((name, index) => (
+                      {call.participantNames?.slice(0, 3).map((name, index) => (
                         <Avatar key={index} className="w-8 h-8 border-2 border-gray-700">
                           <AvatarFallback className="bg-gray-600 text-white text-xs">
                             {name.substring(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                       ))}
-                      {call.participantNames.length > 3 && (
+                      {call.participantNames?.length > 3 && (
                         <div className="w-8 h-8 bg-gray-600 border-2 border-gray-700 rounded-full flex items-center justify-center">
                           <span className="text-xs text-white">
                             +{call.participantNames.length - 3}
