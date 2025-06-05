@@ -83,6 +83,9 @@ export default function GroupVideoCall() {
   const participantVideoRefs = useRef<{ [userId: number]: HTMLVideoElement }>({});
   const peerConnections = useRef<{ [userId: number]: RTCPeerConnection }>({});
   const [remoteStreams, setRemoteStreams] = useState<{ [userId: number]: MediaStream }>({});
+  const createdConnections = useRef<Set<number>>(new Set());
+  const connectionQueue = useRef<number[]>([]);
+  const isProcessingConnection = useRef<boolean>(false);
 
   // Extract group info
   const groupName = activeCall?.groupName || 'Unknown Group';
@@ -223,8 +226,7 @@ export default function GroupVideoCall() {
     }
   }, [activeCall?.participants, user?.id, allUsers]);
 
-  // Track created peer connections to prevent duplicates
-  const createdConnections = useRef<Set<number>>(new Set());
+
   
   // Setup WebRTC peer connections for group video call participants with stream preservation
   useEffect(() => {
@@ -325,20 +327,33 @@ export default function GroupVideoCall() {
             }
           };
 
-          // Handle connection state changes with restart mechanism
+          // Handle connection state changes with improved error recovery
           peerConnection.onconnectionstatechange = () => {
-            console.log('[GroupVideoCall] Connection state for user', participant.userId, ':', peerConnection.connectionState);
+            const state = peerConnection.connectionState;
+            console.log('[GroupVideoCall] Connection state for user', participant.userId, ':', state);
             
-            if (peerConnection.connectionState === 'failed') {
-              console.warn(`[GroupVideoCall] Connection failed for user ${participant.userId}, attempting restart`);
+            if (state === 'failed' || state === 'disconnected') {
+              console.warn(`[GroupVideoCall] Connection ${state} for user ${participant.userId}, cleaning up`);
               
-              // Restart connection after delay
-              setTimeout(() => {
-                if (peerConnection.connectionState === 'failed') {
-                  console.log(`[GroupVideoCall] Restarting ICE for user ${participant.userId}`);
-                  peerConnection.restartIce();
+              // Clean up failed connection immediately
+              if (peerConnections.current[participant.userId]) {
+                try {
+                  peerConnections.current[participant.userId].close();
+                } catch (error) {
+                  console.warn(`[GroupVideoCall] Error closing connection:`, error);
                 }
-              }, 2000);
+                delete peerConnections.current[participant.userId];
+                createdConnections.current.delete(participant.userId);
+                
+                // Remove from remote streams
+                setRemoteStreams(prev => {
+                  const updated = { ...prev };
+                  delete updated[participant.userId];
+                  return updated;
+                });
+              }
+            } else if (state === 'connected') {
+              console.log(`[GroupVideoCall] Successfully connected to user ${participant.userId}`);
             }
           };
 
@@ -493,16 +508,17 @@ export default function GroupVideoCall() {
       if (!peerConnection && localStream) {
         console.log('[GroupVideoCall] Creating peer connection for new participant:', fromUserId);
         
-        // Create peer connection for this user
+        // Create peer connection for this user with optimized config
         peerConnection = new RTCPeerConnection({
           iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
             { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:stun2.l.google.com:19302' },
-            { urls: 'stun:stun3.l.google.com:19302' },
-            { urls: 'stun:stun4.l.google.com:19302' }
+            { urls: 'stun:stun2.l.google.com:19302' }
           ],
-          iceCandidatePoolSize: 10
+          iceCandidatePoolSize: 10,
+          bundlePolicy: 'max-bundle',
+          rtcpMuxPolicy: 'require',
+          iceTransportPolicy: 'all'
         });
 
         // Add local stream tracks
@@ -683,9 +699,8 @@ export default function GroupVideoCall() {
           setTimeout(() => {
             console.log('[GroupVideoCall] Retrying connection setup for user:', fromUserId);
             if (localStream && activeCall) {
-              // Force re-create connection for this user
-              const retryParticipants = [{ userId: fromUserId, userName: '', audioEnabled: true, videoEnabled: true }];
-              createWebRTCConnections(retryParticipants);
+              // Trigger re-render to recreate connections
+              setParticipants(prev => [...prev]);
             }
           }, 1000);
         }
