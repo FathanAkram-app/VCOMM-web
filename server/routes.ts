@@ -866,7 +866,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Get target user's name
           const targetUser = await storage.getUser(toUserId);
-          const targetUserName = targetUser ? (targetUser.callsign || targetUser.firstName || 'Unknown') : 'Unknown';
+          const targetUserName = targetUser ? (targetUser.callsign || targetUser.fullName || 'Unknown') : 'Unknown';
           
           // Log call initiation
           await storage.addCallHistory({
