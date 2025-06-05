@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Phone, Video, Users, Clock, Calendar, ArrowLeft, PhoneCall, VideoIcon } from 'lucide-react';
+import { Phone, Video, Users, Clock, Calendar, ArrowLeft, PhoneCall, VideoIcon, PhoneOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useQuery } from '@tanstack/react-query';
@@ -19,6 +19,8 @@ interface CallHistoryItem {
   fromUserName: string;
   toUserId: number;
   toUserName: string;
+  contactName: string;
+  isOutgoing: boolean;
   status: string;
   duration: number;
   timestamp: string;
@@ -192,20 +194,45 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
                     <div className="flex-1">
                       <div className="flex items-center">
                         <h3 className="font-medium text-white">
-                          {call.conversationName || call.initiatorName}
+                          {call.contactName || 'Unknown'}
                         </h3>
-                        {call.callType.startsWith('group_') && (
+                        {call.callType.includes('group') && (
                           <span className="ml-2 px-2 py-1 text-xs bg-gray-700 rounded-full text-gray-300">
-                            {call.participantNames.length} peserta
+                            Group
                           </span>
                         )}
                       </div>
                       
                       <div className="flex items-center mt-1 text-sm text-gray-400">
-                        <span className={getStatusColor(call.status)}>
-                          {getStatusText(call.status)}
-                        </span>
-                        {call.duration && (
+                        {/* Arah panggilan dengan icon */}
+                        <div className="flex items-center mr-2">
+                          {call.status === 'missed' && (
+                            <>
+                              <PhoneOff className="w-4 h-4 mr-1 text-red-500" />
+                              <span className="text-red-500">Missed call</span>
+                            </>
+                          )}
+                          {call.status === 'initiated' && (
+                            <>
+                              <PhoneCall className="w-4 h-4 mr-1 text-green-500 rotate-45" />
+                              <span>Outgoing</span>
+                            </>
+                          )}
+                          {call.status === 'accepted' && (
+                            <>
+                              <PhoneCall className="w-4 h-4 mr-1 text-blue-500 -rotate-45" />
+                              <span>Incoming</span>
+                            </>
+                          )}
+                          {!['missed', 'initiated', 'accepted'].includes(call.status) && (
+                            <>
+                              <PhoneCall className="w-4 h-4 mr-1" />
+                              <span>{call.status}</span>
+                            </>
+                          )}
+                        </div>
+                        
+                        {call.duration > 0 && (
                           <>
                             <span className="mx-2">•</span>
                             <Clock className="w-4 h-4 mr-1" />

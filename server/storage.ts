@@ -495,9 +495,34 @@ export class DatabaseStorage implements IStorage {
   private callHistory: any[] = [];
 
   async getCallHistory(userId: number): Promise<any[]> {
-    return this.callHistory.filter(call => 
+    const userCalls = this.callHistory.filter(call => 
       call.fromUserId === userId || call.toUserId === userId
     ).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    // Enrich with user names
+    const enrichedCalls = await Promise.all(userCalls.map(async (call) => {
+      let contactName = 'Unknown';
+      
+      if (call.fromUserId === userId) {
+        // Outgoing call - get target user name
+        const targetUser = await this.getUser(call.toUserId);
+        contactName = targetUser ? (targetUser.callsign || targetUser.fullName || 'Unknown') : 'Unknown';
+      } else {
+        // Incoming call - get caller name
+        const callerUser = await this.getUser(call.fromUserId);
+        contactName = callerUser ? (callerUser.callsign || callerUser.fullName || 'Unknown') : 'Unknown';
+      }
+
+      return {
+        ...call,
+        contactName,
+        isOutgoing: call.fromUserId === userId,
+        toUserName: call.fromUserId === userId ? contactName : undefined,
+        fromUserName: call.fromUserId !== userId ? contactName : undefined
+      };
+    }));
+
+    return enrichedCalls;
   }
 
   async addCallHistory(callData: any): Promise<void> {
