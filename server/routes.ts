@@ -961,6 +961,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }));
             console.log(`[Call] Sent incoming call notification to user ${toUserId}`);
+            
+            // Set timeout for unanswered calls (30 seconds)
+            setTimeout(async () => {
+              try {
+                // Check if call is still in "incoming" status (not answered)
+                const existingCall = await storage.getCallHistory(callId);
+                if (existingCall && existingCall.status === 'incoming') {
+                  // Update to missed call status
+                  await storage.updateCallStatus(callId, 'missed');
+                  console.log(`[Call] Call ${callId} marked as missed (timeout)`);
+                  
+                  // Notify both users that call was missed
+                  [fromUserId, toUserId].forEach(userId => {
+                    const client = clients.get(userId);
+                    if (client && client.readyState === client.OPEN) {
+                      client.send(JSON.stringify({
+                        type: 'call_missed',
+                        payload: { callId, reason: 'timeout' }
+                      }));
+                    }
+                  });
+                }
+              } catch (error) {
+                console.error('[Call] Error handling call timeout:', error);
+              }
+            }, 30000); // 30 seconds timeout
           } else {
             // User is offline, log missed call
             await storage.addCallHistory({

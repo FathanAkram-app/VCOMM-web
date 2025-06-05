@@ -182,14 +182,14 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed':
+      case 'incoming':
         return 'text-green-600';
-      case 'missed':
+      case 'missed call':
         return 'text-red-600';
-      case 'rejected':
+      case 'reject':
         return 'text-yellow-600';
-      case 'failed':
-        return 'text-red-600';
+      case 'outgoing':
+        return 'text-blue-600';
       default:
         return 'text-gray-600';
     }
@@ -197,14 +197,14 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'completed':
-        return 'Selesai';
-      case 'missed':
+      case 'incoming':
+        return 'Masuk';
+      case 'missed call':
         return 'Terlewat';
-      case 'rejected':
+      case 'reject':
         return 'Ditolak';
-      case 'failed':
-        return 'Gagal';
+      case 'outgoing':
+        return 'Keluar';
       default:
         return status;
     }

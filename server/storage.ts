@@ -571,6 +571,16 @@ export class DatabaseStorage implements IStorage {
           contactName = callerUser ? (callerUser.callsign || callerUser.fullName || 'Unknown') : 'Unknown';
         }
 
+        // Map database status to display status
+        let displayStatus = call.status;
+        if (call.status === 'ended') {
+          displayStatus = isIncoming ? 'incoming' : 'outgoing';
+        } else if (call.status === 'initiated') {
+          displayStatus = 'missed call';
+        } else if (call.status === 'rejected') {
+          displayStatus = 'reject';
+        }
+
         return {
           id: call.id,
           callId: call.callId,
@@ -579,7 +589,7 @@ export class DatabaseStorage implements IStorage {
           toUserId: userId,
           contactName,
           isOutgoing: false, // Always false since we only show incoming calls
-          status: call.status,
+          status: displayStatus,
           duration: call.duration || 0,
           timestamp: call.startTime.toISOString(),
           fromUserName: contactName
@@ -610,6 +620,35 @@ export class DatabaseStorage implements IStorage {
       console.log(`[Storage] Added call history: ${callData.callId} (${callData.callType}) - ${callData.status}`);
     } catch (error) {
       console.error('Error adding call history:', error);
+    }
+  }
+
+  async getCallHistory(callId: string): Promise<any | null> {
+    try {
+      const [call] = await db
+        .select()
+        .from(callHistory)
+        .where(eq(callHistory.callId, callId));
+      return call || null;
+    } catch (error) {
+      console.error('Error getting single call history:', error);
+      return null;
+    }
+  }
+
+  async updateCallStatus(callId: string, status: string): Promise<void> {
+    try {
+      await db
+        .update(callHistory)
+        .set({ 
+          status,
+          endTime: status === 'missed' || status === 'ended' || status === 'rejected' ? new Date() : undefined 
+        })
+        .where(eq(callHistory.callId, callId));
+      
+      console.log(`[Storage] Updated call ${callId} status to ${status}`);
+    } catch (error) {
+      console.error('Error updating call status:', error);
     }
   }
 
