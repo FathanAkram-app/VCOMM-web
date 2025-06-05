@@ -22,12 +22,31 @@ interface ParticipantVideoProps {
 
 const ParticipantVideo = ({ participant, videoRef, onMaximize }: ParticipantVideoProps) => {
   const hasVideo = participant.stream && participant.videoEnabled;
+  const videoElementRef = useRef<HTMLVideoElement>(null);
+  
+  // Ensure stream is attached to video element
+  useEffect(() => {
+    if (videoElementRef.current && participant.stream) {
+      console.log('[ParticipantVideo] Attaching stream to video element for user:', participant.userId);
+      videoElementRef.current.srcObject = participant.stream;
+      videoElementRef.current.play().catch(e => 
+        console.error('[ParticipantVideo] Error playing video for user:', participant.userId, e)
+      );
+    }
+  }, [participant.stream, participant.userId]);
+  
+  // Forward ref to parent component
+  useEffect(() => {
+    if (videoElementRef.current) {
+      videoRef(videoElementRef.current);
+    }
+  }, [videoRef]);
   
   return (
     <div className="relative bg-[#1a1a1a] rounded-lg overflow-hidden border-2 border-[#4a7c59] shadow-lg aspect-video">
       {hasVideo ? (
         <video
-          ref={videoRef}
+          ref={videoElementRef}
           autoPlay
           playsInline
           muted={false}
@@ -225,21 +244,39 @@ export default function GroupVideoCall() {
         // Handle incoming remote stream
         peerConnection.ontrack = (event) => {
           console.log('[GroupVideoCall] Received remote stream from user:', userId);
+          console.log('[GroupVideoCall] Remote stream tracks:', event.streams[0].getTracks().length);
+          console.log('[GroupVideoCall] Track details:', event.streams[0].getTracks().map(t => `${t.kind}:${t.enabled}`));
+          
           const [remoteStream] = event.streams;
           
           if (remoteStream && remoteStream.active) {
             console.log('[GroupVideoCall] Setting remote stream for user:', userId);
-            setRemoteStreams(prev => ({
-              ...prev,
-              [userId]: remoteStream
-            }));
+            setRemoteStreams(prev => {
+              const updated = { ...prev, [userId]: remoteStream };
+              console.log('[GroupVideoCall] Updated remoteStreams keys:', Object.keys(updated));
+              return updated;
+            });
             
-            // Directly attach to video element
+            // Update participants with new stream immediately
+            setParticipants(prevParticipants => {
+              const updated = prevParticipants.map(p => 
+                p.userId === userId 
+                  ? { ...p, stream: remoteStream }
+                  : p
+              );
+              console.log('[GroupVideoCall] Updated participants with remote stream for user:', userId);
+              return updated;
+            });
+            
+            // Also directly attach to video element as backup
             setTimeout(() => {
               const videoElement = participantVideoRefs.current[userId];
               if (videoElement && remoteStream) {
                 videoElement.srcObject = remoteStream;
+                videoElement.autoplay = true;
+                videoElement.playsInline = true;
                 videoElement.play().catch(e => console.error('[GroupVideoCall] Error playing remote video:', e));
+                console.log('[GroupVideoCall] Remote video element configured for user:', userId);
               }
             }, 100);
           }
