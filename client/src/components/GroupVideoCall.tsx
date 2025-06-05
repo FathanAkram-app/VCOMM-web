@@ -226,12 +226,21 @@ export default function GroupVideoCall() {
   const participantsRef = useRef<string>('');
   
   useEffect(() => {
+    console.log('[GroupVideoCall] Participants effect triggered');
+    console.log('[GroupVideoCall] activeCall:', activeCall);
+    console.log('[GroupVideoCall] activeCall?.participants:', activeCall?.participants);
+    console.log('[GroupVideoCall] user?.id:', user?.id);
+    
     if (activeCall?.participants && Array.isArray(activeCall.participants)) {
       // Create stable string representation to avoid unnecessary re-renders
       const participantsStr = JSON.stringify(activeCall.participants.sort());
       
+      console.log('[GroupVideoCall] Current participants string:', participantsRef.current);
+      console.log('[GroupVideoCall] New participants string:', participantsStr);
+      
       // Only update if participants actually changed
       if (participantsRef.current === participantsStr) {
+        console.log('[GroupVideoCall] Participants unchanged, skipping update');
         return;
       }
       
@@ -242,10 +251,12 @@ export default function GroupVideoCall() {
       const otherParticipants = activeCall.participants.filter((participant: any) => {
         // Handle both object format and ID format
         const participantId = typeof participant === 'object' ? participant.userId : participant;
-        return Number(participantId) !== user?.id;
+        const isCurrentUser = Number(participantId) === user?.id;
+        console.log(`[GroupVideoCall] Checking participant ${participantId}, is current user: ${isCurrentUser}`);
+        return !isCurrentUser;
       });
       
-      console.log('[GroupVideoCall] Other participants:', otherParticipants);
+      console.log('[GroupVideoCall] Other participants after filtering:', otherParticipants);
       
       setParticipants(prevParticipants => {
         const updatedParticipants = otherParticipants.map((participant: any) => {
