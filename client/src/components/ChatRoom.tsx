@@ -1028,6 +1028,11 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                 
                 // Debug logging untuk setiap pesan
                 console.log(`[Message Debug] Message ID: ${msg.id}, replyToId: ${msg.replyToId}, content: ${msg.content}`);
+                
+                // Log raw message object untuk melihat semua field
+                if (msg.id === 205) {
+                  console.log(`[DEBUG] Full message 205 object:`, msg);
+                }
               
               return (
                 <div 
