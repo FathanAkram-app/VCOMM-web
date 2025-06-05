@@ -51,14 +51,14 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
   const queryClient = useQueryClient();
 
   // Fetch group info
-  const { data: groupInfo } = useQuery<GroupInfo>({
-    queryKey: ['/api/group-info', groupId],
+  const { data: groupInfo, isLoading: isLoadingInfo } = useQuery<GroupInfo>({
+    queryKey: [`/api/group-info/${groupId}`],
     enabled: !!groupId
   });
 
   // Fetch group members
-  const { data: members = [] } = useQuery<GroupMember[]>({
-    queryKey: ['/api/group-members', groupId],
+  const { data: members = [], isLoading: isLoadingMembers } = useQuery<GroupMember[]>({
+    queryKey: [`/api/group-members/${groupId}`],
     enabled: !!groupId
   });
 
@@ -271,6 +271,18 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
     }
   }, [groupInfo?.description]);
 
+  // Debug information
+  console.log('GroupManagement render:', {
+    groupId,
+    groupName,
+    groupInfo,
+    members,
+    allUsers,
+    isLoadingInfo,
+    isLoadingMembers,
+    currentUserId
+  });
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] rounded-lg border border-[#4a7c59] w-full max-w-4xl max-h-[90vh] overflow-hidden">
@@ -283,7 +295,9 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
               </div>
               <div>
                 <h2 className="text-lg font-bold text-[#a6c455]">Kelola Grup</h2>
-                <p className="text-sm text-[#7d9f7d]">{members.length} anggota</p>
+                <p className="text-sm text-[#7d9f7d]">
+                  {isLoadingMembers ? 'Memuat...' : `${members.length} anggota`}
+                </p>
               </div>
             </div>
             <Button
@@ -519,6 +533,19 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
             {/* Members List */}
             <div className="flex-1 p-4">
               <ScrollArea className="h-full">
+                {/* Debug info */}
+                {(isLoadingMembers || isLoadingInfo) && (
+                  <div className="bg-[#2d4a2d]/30 p-3 rounded border border-[#4a7c59]/50 mb-4">
+                    <p className="text-[#a6c455] text-sm">Memuat data grup...</p>
+                  </div>
+                )}
+
+                {members.length === 0 && !isLoadingMembers && (
+                  <div className="bg-[#2d4a2d]/30 p-3 rounded border border-[#4a7c59]/50 mb-4">
+                    <p className="text-[#7d9f7d] text-sm">Tidak ada data anggota ditemukan. Total: {members.length}</p>
+                  </div>
+                )}
+
                 <div className="space-y-3">
                   {members.map(member => (
                     <div
