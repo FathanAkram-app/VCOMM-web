@@ -343,18 +343,18 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
   });
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] rounded-lg border border-[#4a7c59] w-full max-w-4xl max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+      <div className="bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] rounded-lg border border-[#4a7c59] w-full max-w-4xl max-h-[90vh] overflow-hidden animate-in slide-in-from-bottom-4 duration-500 shadow-2xl">
         {/* Header */}
         <div className="bg-gradient-to-r from-[#2d4a2d] to-[#1e3a1e] p-4 border-b border-[#4a7c59]/30">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="p-2 rounded-full bg-[#4a7c59]/20">
+              <div className="p-2 rounded-full bg-[#4a7c59]/20 animate-pulse">
                 <Users className="h-5 w-5 text-[#a6c455]" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-[#a6c455]">Kelola Grup</h2>
-                <p className="text-sm text-[#7d9f7d]">
+                <h2 className="text-lg font-bold text-[#a6c455] animate-in slide-in-from-left-4 duration-700">Kelola Grup</h2>
+                <p className="text-sm text-[#7d9f7d] animate-in slide-in-from-left-4 duration-700 delay-150">
                   {isLoadingMembers ? 'Memuat...' : `${members.length} anggota`}
                 </p>
               </div>
@@ -363,7 +363,7 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
               onClick={onClose}
               variant="ghost"
               size="sm"
-              className="text-[#7d9f7d] hover:text-[#a6c455] hover:bg-[#4a7c59]/20"
+              className="text-[#7d9f7d] hover:text-[#a6c455] hover:bg-[#4a7c59]/20 transition-all duration-300 hover:scale-110 active:scale-95"
             >
               <X className="h-5 w-5" />
             </Button>
@@ -383,15 +383,20 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
                       <Input
                         value={newGroupName}
                         onChange={(e) => setNewGroupName(e.target.value)}
-                        className="bg-[#2d4a2d]/50 border-[#4a7c59] text-white"
+                        className="bg-[#2d4a2d]/50 border-[#4a7c59] text-white transition-all duration-300 focus:border-[#a6c455] focus:ring-2 focus:ring-[#a6c455]/20 hover:border-[#5a8c69]"
                         placeholder="Nama grup"
                       />
                       <Button
                         onClick={handleSaveGroupName}
                         size="sm"
-                        className="bg-[#4a7c59] hover:bg-[#5a8c69] text-white"
+                        disabled={updateGroupNameMutation.isPending}
+                        className="bg-[#4a7c59] hover:bg-[#5a8c69] text-white transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50"
                       >
-                        <Save className="h-4 w-4" />
+                        {updateGroupNameMutation.isPending ? (
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        ) : (
+                          <Save className="h-4 w-4" />
+                        )}
                       </Button>
                       <Button
                         onClick={() => {
@@ -400,7 +405,7 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
                         }}
                         size="sm"
                         variant="outline"
-                        className="border-[#4a7c59] text-[#7d9f7d] hover:bg-[#4a7c59]/20"
+                        className="border-[#4a7c59] text-[#7d9f7d] hover:bg-[#4a7c59]/20 transition-all duration-300 hover:scale-105 active:scale-95"
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -606,51 +611,52 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
                 )}
 
                 <div className="space-y-3">
-                  {members.map(member => (
+                  {members.map((member, index) => (
                     <div
                       key={member.id}
-                      className="flex items-center justify-between p-3 bg-[#2d4a2d]/30 rounded border border-[#4a7c59]/50 hover:bg-[#2d4a2d]/50 transition-colors"
+                      className="flex items-center justify-between p-3 bg-[#2d4a2d]/30 rounded border border-[#4a7c59]/50 hover:bg-[#2d4a2d]/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg animate-in slide-in-from-right-4 duration-500"
+                      style={{ animationDelay: `${index * 100}ms` }}
                     >
                       <div className="flex items-center space-x-3">
                         <div className="relative">
-                          <Avatar className="h-10 w-10 bg-[#4a7c59]">
+                          <Avatar className="h-10 w-10 bg-[#4a7c59] transition-all duration-300 hover:scale-110">
                             <AvatarFallback className="bg-[#4a7c59] text-white">
                               {member.callsign.substring(0, 2).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
                           {member.isOnline && (
-                            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-[#1a2f1a]" />
+                            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-[#1a2f1a] animate-pulse" />
                           )}
                         </div>
                         <div>
                           <div className="flex items-center space-x-2">
-                            <p className="text-white font-medium">{member.callsign}</p>
+                            <p className="text-white font-medium transition-colors duration-300 hover:text-[#a6c455]">{member.callsign}</p>
                             {member.role === 'admin' && (
-                              <Badge className="bg-gradient-to-r from-yellow-600 to-yellow-500 text-white text-xs font-bold border border-yellow-400">
-                                <Crown className="h-3 w-3 mr-1" />
+                              <Badge className="bg-gradient-to-r from-yellow-600 to-yellow-500 text-white text-xs font-bold border border-yellow-400 animate-in slide-in-from-left-2 duration-700 hover:scale-105 transition-transform">
+                                <Crown className="h-3 w-3 mr-1 animate-bounce" />
                                 ADMIN GRUP
                               </Badge>
                             )}
                             {member.role === 'member' && (
-                              <Badge variant="outline" className="border-[#4a7c59] text-[#7d9f7d] text-xs">
+                              <Badge variant="outline" className="border-[#4a7c59] text-[#7d9f7d] text-xs hover:border-[#a6c455] hover:text-[#a6c455] transition-all duration-300">
                                 Anggota
                               </Badge>
                             )}
                             {member.id === currentUserId && (
-                              <Badge variant="outline" className="border-[#4a7c59] text-[#a6c455] text-xs">
+                              <Badge variant="outline" className="border-[#4a7c59] text-[#a6c455] text-xs animate-pulse">
                                 Anda
                               </Badge>
                             )}
                           </div>
                           {member.fullName && (
-                            <p className="text-[#7d9f7d] text-sm">{member.fullName}</p>
+                            <p className="text-[#7d9f7d] text-sm transition-colors duration-300 hover:text-[#9db59d]">{member.fullName}</p>
                           )}
                         </div>
                       </div>
 
                       {/* Member Actions */}
                       {isCurrentUserAdmin && member.id !== currentUserId && (
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2 animate-in slide-in-from-right-2 duration-700" style={{ animationDelay: `${index * 150}ms` }}>
                           <Button
                             onClick={() => changeRoleMutation.mutate({
                               userId: member.id,
@@ -658,21 +664,21 @@ export default function GroupManagement({ groupId, groupName, onClose, currentUs
                             })}
                             size="sm"
                             variant="outline"
-                            className="border-[#4a7c59] text-[#7d9f7d] hover:bg-[#4a7c59]/20"
+                            className="border-[#4a7c59] text-[#7d9f7d] hover:bg-[#4a7c59]/20 transition-all duration-300 hover:scale-110 active:scale-95 hover:border-[#a6c455] hover:text-[#a6c455]"
                           >
                             {member.role === 'admin' ? (
-                              <Shield className="h-4 w-4" />
+                              <Shield className="h-4 w-4 transition-transform duration-300 hover:rotate-12" />
                             ) : (
-                              <Crown className="h-4 w-4" />
+                              <Crown className="h-4 w-4 transition-transform duration-300 hover:rotate-12" />
                             )}
                           </Button>
                           <Button
                             onClick={() => removeMemberMutation.mutate(member.id)}
                             size="sm"
                             variant="outline"
-                            className="border-red-600 text-red-400 hover:bg-red-900/20"
+                            className="border-red-600 text-red-400 hover:bg-red-900/20 transition-all duration-300 hover:scale-110 active:scale-95 hover:border-red-400 hover:text-red-300"
                           >
-                            <UserMinus className="h-4 w-4" />
+                            <UserMinus className="h-4 w-4 transition-transform duration-300 hover:scale-125" />
                           </Button>
                         </div>
                       )}
