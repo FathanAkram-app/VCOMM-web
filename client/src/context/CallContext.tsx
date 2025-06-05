@@ -730,8 +730,27 @@ export function CallProvider({ children }: { children: ReactNode }) {
     console.log('[CallContext] Current activeCall (ref):', activeCallRef.current);
     console.log('[CallContext] Current incomingCall:', incomingCall);
     
-    // Stop waiting tone when call is accepted
+    // FORCE STOP ALL WAITING TONES AND RINGTONES IMMEDIATELY
+    console.log('[CallContext] FORCE STOPPING ALL RINGTONES - call accepted');
     stopWaitingTone();
+    
+    // Additional comprehensive audio cleanup
+    if (waitingToneInterval) {
+      clearInterval(waitingToneInterval);
+      setWaitingToneInterval(null);
+      console.log('[CallContext] ✅ Waiting tone interval cleared');
+    }
+    
+    // Stop any running audio contexts or oscillators
+    if (audioContext) {
+      try {
+        audioContext.close();
+        setAudioContext(null);
+        console.log('[CallContext] ✅ Audio context closed');
+      } catch (e) {
+        console.log('[CallContext] Audio context already closed');
+      }
+    }
     
     // Use ref for stable call reference
     const currentActiveCall = activeCallRef.current || activeCall;
@@ -1809,8 +1828,27 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     console.log('[CallContext] Rejecting call');
     
-    // Stop waiting tone when call is rejected
+    // FORCE STOP ALL WAITING TONES AND RINGTONES IMMEDIATELY
+    console.log('[CallContext] FORCE STOPPING ALL RINGTONES - reject call');
     stopWaitingTone();
+    
+    // Additional comprehensive audio cleanup for reject
+    if (waitingToneInterval) {
+      clearInterval(waitingToneInterval);
+      setWaitingToneInterval(null);
+      console.log('[CallContext] ✅ Waiting tone interval cleared on reject');
+    }
+    
+    // Stop any running audio contexts or oscillators
+    if (audioContext) {
+      try {
+        audioContext.close();
+        setAudioContext(null);
+        console.log('[CallContext] ✅ Audio context closed on reject');
+      } catch (e) {
+        console.log('[CallContext] Audio context already closed');
+      }
+    }
 
     // Stop ringtone when call is rejected
     if (ringtoneAudio) {
@@ -1834,8 +1872,27 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const hangupCall = () => {
     console.log('[CallContext] Hanging up call - start');
     
-    // Stop waiting tone when hanging up
+    // FORCE STOP ALL WAITING TONES AND RINGTONES IMMEDIATELY
+    console.log('[CallContext] FORCE STOPPING ALL RINGTONES - hangup call');
     stopWaitingTone();
+    
+    // Additional comprehensive audio cleanup for hangup
+    if (waitingToneInterval) {
+      clearInterval(waitingToneInterval);
+      setWaitingToneInterval(null);
+      console.log('[CallContext] ✅ Waiting tone interval cleared on hangup');
+    }
+    
+    // Stop any running audio contexts or oscillators
+    if (audioContext) {
+      try {
+        audioContext.close();
+        setAudioContext(null);
+        console.log('[CallContext] ✅ Audio context closed on hangup');
+      } catch (e) {
+        console.log('[CallContext] Audio context already closed');
+      }
+    }
     
     // Stop ringtone when call is ended
     if (ringtoneAudio) {
