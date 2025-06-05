@@ -718,9 +718,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Authentication required" });
       }
       
-      // Return empty array for now since table doesn't exist yet
-      // Once table is created, implement: await storage.getCallHistory(userId);
-      res.json([]);
+      // Get call history from storage (use in-memory for now)
+      const callHistory = await storage.getCallHistory(userId);
+      res.json(callHistory);
     } catch (error) {
       console.error("Error fetching call history:", error);
       res.status(500).json({ message: "Failed to fetch call history" });
@@ -864,6 +864,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const { callId, toUserId, callType, fromUserId, fromUserName } = data.payload;
           console.log(`[Call] User ${fromUserId} (${fromUserName}) initiating ${callType} call to ${toUserId}`);
           
+          // Get target user's name
+          const targetUser = await storage.getUser(toUserId);
+          const targetUserName = targetUser ? (targetUser.callsign || targetUser.firstName || 'Unknown') : 'Unknown';
+          
+          // Log call initiation
+          await storage.addCallHistory({
+            callId,
+            fromUserId,
+            fromUserName,
+            toUserId,
+            toUserName: targetUserName,
+            callType,
+            status: 'initiated',
+            duration: 0
+          });
+          
           const targetClient = clients.get(toUserId);
           if (targetClient && targetClient.readyState === targetClient.OPEN) {
             targetClient.send(JSON.stringify({
@@ -877,7 +893,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }));
             console.log(`[Call] Sent incoming call notification to user ${toUserId}`);
           } else {
-            // User is offline, send failure response
+            // User is offline, log missed call
+            await storage.addCallHistory({
+              callId,
+              fromUserId,
+              fromUserName,
+              toUserId,
+              toUserName: targetUserName,
+              callType,
+              status: 'missed',
+              duration: 0
+            });
+            
+            // Send failure response
             ws.send(JSON.stringify({
               type: 'call_failed',
               payload: {

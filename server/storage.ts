@@ -49,6 +49,10 @@ export interface IStorage {
   getMessagesByConversation(conversationId: number): Promise<Message[]>;
   clearConversationMessages(conversationId: number): Promise<void>;
   
+  // Call history operations
+  getCallHistory(userId: number): Promise<any[]>;
+  addCallHistory(callData: any): Promise<void>;
+  
   // Message operations for delete, reply, and forward
   deleteMessage(messageId: number): Promise<Message>;
   getMessage(messageId: number): Promise<Message | undefined>;
@@ -485,6 +489,23 @@ export class DatabaseStorage implements IStorage {
           eq(conversationMembers.conversationId, conversationId)
         )
       );
+  }
+
+  // In-memory call history storage (temporary until database table is added)
+  private callHistory: any[] = [];
+
+  async getCallHistory(userId: number): Promise<any[]> {
+    return this.callHistory.filter(call => 
+      call.fromUserId === userId || call.toUserId === userId
+    ).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }
+
+  async addCallHistory(callData: any): Promise<void> {
+    this.callHistory.push({
+      id: this.callHistory.length + 1,
+      ...callData,
+      timestamp: new Date().toISOString()
+    });
   }
 }
 
