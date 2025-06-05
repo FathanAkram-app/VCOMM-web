@@ -164,6 +164,11 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
       console.log(`Fetched ${messages.length} messages for chat ${chatId}`);
     }
   }, [messages, chatId]);
+
+  // Debug replyToMessage state changes
+  useEffect(() => {
+    console.log("ReplyToMessage state changed:", replyToMessage);
+  }, [replyToMessage]);
   
   // Fungsi untuk handle voice recording
   const handleStartVoiceRecording = () => {
