@@ -4,6 +4,7 @@ import { useCall } from '@/hooks/useCall';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { PhoneOff, Mic, MicOff, Video, VideoOff, Users, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 
 interface GroupParticipant {
   userId: number;
@@ -28,6 +29,12 @@ export default function GroupVideoCall() {
 
   // Extract group info
   const groupName = activeCall?.groupName || 'Unknown Group';
+
+  // Fetch all users to get real names
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ['/api/all-users'],
+    enabled: !!activeCall?.participants
+  });
   
   // Pagination constants - 2x3 grid (6 total slots, 1 for current user + 5 for participants)
   const PARTICIPANTS_PER_PAGE = 5;
@@ -114,19 +121,29 @@ export default function GroupVideoCall() {
     if (activeCall?.participants && Array.isArray(activeCall.participants)) {
       console.log('[GroupVideoCall] Processing participants from activeCall:', activeCall.participants);
       
-      // Filter out current user and create participants
-      const otherParticipantIds = activeCall.participants.filter((id: any) => Number(id) !== user?.id);
-      console.log('[GroupVideoCall] Other participants:', otherParticipantIds);
+      // Extract participant objects and filter out current user
+      const otherParticipants = activeCall.participants.filter((participant: any) => {
+        // Handle both object format and ID format
+        const participantId = typeof participant === 'object' ? participant.userId : participant;
+        return Number(participantId) !== user?.id;
+      });
       
-      const updatedParticipants = otherParticipantIds.map((participantId: any) => {
-        const id = Number(participantId);
-        const existingParticipant = participants.find(p => p.userId === id);
+      console.log('[GroupVideoCall] Other participants:', otherParticipants);
+      
+      const updatedParticipants = otherParticipants.map((participant: any) => {
+        // Handle both object format and ID format
+        const participantId = typeof participant === 'object' ? participant.userId : participant;
+        const existingParticipant = participants.find(p => p.userId === Number(participantId));
+        
+        // Get real user name from allUsers data
+        const realUser = allUsers.find((u: any) => u.id === Number(participantId));
+        const participantName = realUser?.callsign || realUser?.fullName || `User ${participantId}`;
         
         return {
-          userId: id,
-          userName: `Participant ${id}`,
-          audioEnabled: true,
-          videoEnabled: false,
+          userId: Number(participantId),
+          userName: participantName,
+          audioEnabled: typeof participant === 'object' ? participant.audioEnabled : true,
+          videoEnabled: typeof participant === 'object' ? participant.videoEnabled : false,
           stream: existingParticipant?.stream || undefined
         };
       });
@@ -134,7 +151,7 @@ export default function GroupVideoCall() {
       setParticipants(updatedParticipants);
       console.log('[GroupVideoCall] Updated participants list:', updatedParticipants);
     }
-  }, [activeCall?.participants, user?.id, participants]);
+  }, [activeCall?.participants, user?.id, allUsers]);
 
   // For now, show participants visually without WebRTC streams
   // In a real implementation, this would involve WebRTC peer connections
