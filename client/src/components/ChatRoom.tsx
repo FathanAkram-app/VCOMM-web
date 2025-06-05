@@ -362,7 +362,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
           replyToId: replyToMessage ? replyToMessage.id : undefined
         };
       } else {
-        // Message with attachment
+        // Message with attachment or complex object
         payload = {
           conversationId: chatId,
           content: content.content,
@@ -372,7 +372,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
           attachmentUrl: content.attachmentUrl,
           attachmentName: content.attachmentName,
           attachmentSize: content.attachmentSize,
-          replyToId: replyToMessage ? replyToMessage.id : undefined
+          replyToId: content.replyToId || (replyToMessage ? replyToMessage.id : undefined)
         };
       }
       
