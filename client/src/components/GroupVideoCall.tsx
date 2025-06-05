@@ -572,8 +572,13 @@ export default function GroupVideoCall() {
           await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
           console.log('[GroupVideoCall] Remote description set successfully');
           
+          console.log('[GroupVideoCall] Creating WebRTC answer...');
           const answer = await peerConnection.createAnswer();
+          console.log('[GroupVideoCall] Answer created successfully, type:', answer.type);
+          
+          console.log('[GroupVideoCall] Setting local description with answer...');
           await peerConnection.setLocalDescription(answer);
+          console.log('[GroupVideoCall] Local description set successfully');
           
           console.log('[GroupVideoCall] Preparing to send WebRTC answer to user:', fromUserId);
           console.log('[GroupVideoCall] Answer SDP type:', answer.type);
