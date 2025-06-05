@@ -38,7 +38,15 @@ import {
   Trash2,
   RefreshCw,
   Database,
-  Network
+  Network,
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX,
+  Speaker,
+  Headphones,
+  Play,
+  Square
 } from 'lucide-react';
 
 interface UserSettings {
@@ -83,6 +91,16 @@ export default function Settings({ onBack }: SettingsProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Audio test states
+  const [audioTestMode, setAudioTestMode] = useState<'earpiece' | 'speaker' | 'loudspeaker'>('earpiece');
+  const [isTestingAudio, setIsTestingAudio] = useState(false);
+  const [isMicTesting, setIsMicTesting] = useState(false);
+  const [micLevel, setMicLevel] = useState(0);
+  const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedAudioDevice, setSelectedAudioDevice] = useState<string>('');
+  const [testAudioElement, setTestAudioElement] = useState<HTMLAudioElement | null>(null);
+  const [micStream, setMicStream] = useState<MediaStream | null>(null);
 
   // Default settings
   const [settings, setSettings] = useState<UserSettings>({
@@ -147,23 +165,195 @@ export default function Settings({ onBack }: SettingsProps) {
     },
   });
 
-  // Apply theme
-  useEffect(() => {
-    const root = document.documentElement;
-    if (settings.theme === 'dark') {
-      root.classList.add('dark');
-    } else if (settings.theme === 'light') {
-      root.classList.remove('dark');
-    } else {
-      // System theme
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      if (mediaQuery.matches) {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
+
+
+  // Audio test functions
+  const loadAudioDevices = async () => {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioOutputDevices = devices.filter(device => device.kind === 'audiooutput');
+      setAudioDevices(audioOutputDevices);
+      if (audioOutputDevices.length > 0 && !selectedAudioDevice) {
+        setSelectedAudioDevice(audioOutputDevices[0].deviceId);
       }
+    } catch (error) {
+      console.error('Failed to load audio devices:', error);
     }
-  }, [settings.theme]);
+  };
+
+  const startAudioTest = async (mode: 'earpiece' | 'speaker' | 'loudspeaker') => {
+    try {
+      setIsTestingAudio(true);
+      setAudioTestMode(mode);
+      
+      // Stop any existing audio
+      if (testAudioElement) {
+        testAudioElement.pause();
+        testAudioElement.currentTime = 0;
+      }
+      
+      // Create test audio element
+      const audio = new Audio();
+      audio.loop = true;
+      audio.volume = mode === 'loudspeaker' ? 1.0 : 0.8;
+      
+      // Generate test tone URL (simple beep)
+      const testToneUrl = generateTestTone(440, 2); // 440Hz for 2 seconds
+      audio.src = testToneUrl;
+      
+      // Configure audio output based on mode
+      if (mode === 'earpiece') {
+        // Earpiece mode - use phone speaker (receiver)
+        audio.setAttribute('preload', 'auto');
+        if ('setSinkId' in audio && selectedAudioDevice) {
+          await (audio as any).setSinkId('communications');
+        }
+      } else if (mode === 'speaker') {
+        // Speaker mode - use device speaker
+        audio.setAttribute('preload', 'auto');
+        if ('setSinkId' in audio && selectedAudioDevice) {
+          await (audio as any).setSinkId(selectedAudioDevice);
+        }
+      } else if (mode === 'loudspeaker') {
+        // Loudspeaker mode - use external speaker
+        audio.setAttribute('preload', 'auto');
+        audio.setAttribute('playsinline', 'true');
+        if ('setSinkId' in audio) {
+          await (audio as any).setSinkId('default');
+        }
+      }
+      
+      setTestAudioElement(audio);
+      await audio.play();
+      
+      toast({
+        title: `Audio Test - ${mode.toUpperCase()}`,
+        description: `Testing audio output melalui ${mode}. Tekan Stop untuk menghentikan.`,
+      });
+      
+    } catch (error) {
+      console.error('Failed to start audio test:', error);
+      toast({
+        title: "Audio Test Error",
+        description: "Gagal memulai test audio. Pastikan browser mendukung audio output.",
+        variant: "destructive",
+      });
+      setIsTestingAudio(false);
+    }
+  };
+
+  const stopAudioTest = () => {
+    if (testAudioElement) {
+      testAudioElement.pause();
+      testAudioElement.currentTime = 0;
+      testAudioElement.src = '';
+    }
+    setIsTestingAudio(false);
+    setTestAudioElement(null);
+  };
+
+  const startMicTest = async () => {
+    try {
+      setIsMicTesting(true);
+      
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        }
+      });
+      
+      setMicStream(stream);
+      
+      // Create audio context for microphone level monitoring
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+      
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      
+      const updateMicLevel = () => {
+        if (isMicTesting) {
+          analyser.getByteFrequencyData(dataArray);
+          const average = dataArray.reduce((sum, value) => sum + value, 0) / bufferLength;
+          setMicLevel(Math.round((average / 255) * 100));
+          requestAnimationFrame(updateMicLevel);
+        }
+      };
+      
+      updateMicLevel();
+      
+      toast({
+        title: "Microphone Test",
+        description: "Berbicara untuk melihat level microphone. Tekan Stop untuk menghentikan.",
+      });
+      
+    } catch (error) {
+      console.error('Failed to start microphone test:', error);
+      toast({
+        title: "Microphone Test Error",
+        description: "Gagal mengakses microphone. Pastikan izin microphone diberikan.",
+        variant: "destructive",
+      });
+      setIsMicTesting(false);
+    }
+  };
+
+  const stopMicTest = () => {
+    if (micStream) {
+      micStream.getTracks().forEach(track => track.stop());
+      setMicStream(null);
+    }
+    setIsMicTesting(false);
+    setMicLevel(0);
+  };
+
+  const generateTestTone = (frequency: number, duration: number): string => {
+    const sampleRate = 44100;
+    const numSamples = sampleRate * duration;
+    const buffer = new ArrayBuffer(44 + numSamples * 2);
+    const view = new DataView(buffer);
+    
+    // WAV header
+    const writeString = (offset: number, string: string) => {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    };
+    
+    writeString(0, 'RIFF');
+    view.setUint32(4, 36 + numSamples * 2, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeString(36, 'data');
+    view.setUint32(40, numSamples * 2, true);
+    
+    // Generate sine wave
+    for (let i = 0; i < numSamples; i++) {
+      const sample = Math.sin(2 * Math.PI * frequency * i / sampleRate) * 0.3;
+      view.setInt16(44 + i * 2, sample * 32767, true);
+    }
+    
+    const blob = new Blob([buffer], { type: 'audio/wav' });
+    return URL.createObjectURL(blob);
+  };
+
+  // Load audio devices on component mount
+  useEffect(() => {
+    loadAudioDevices();
+  }, []);
 
   // Load settings if available
   useEffect(() => {
@@ -257,8 +447,8 @@ export default function Settings({ onBack }: SettingsProps) {
             <TabsTrigger value="security" className="data-[state=active]:bg-green-600">
               <Lock className="w-4 h-4" />
             </TabsTrigger>
-            <TabsTrigger value="advanced" className="data-[state=active]:bg-green-600">
-              <Database className="w-4 h-4" />
+            <TabsTrigger value="audio" className="data-[state=active]:bg-green-600">
+              <Volume2 className="w-4 h-4" />
             </TabsTrigger>
           </TabsList>
 
@@ -665,47 +855,232 @@ export default function Settings({ onBack }: SettingsProps) {
               </Card>
             </TabsContent>
 
-            {/* Advanced Tab */}
-            <TabsContent value="advanced" className="space-y-6">
+            {/* Audio Test Tab */}
+            <TabsContent value="audio" className="space-y-6">
               <Card className="bg-gray-800 border-gray-700">
                 <CardHeader>
                   <CardTitle className="flex items-center text-white">
-                    <Database className="w-5 h-5 mr-2 text-green-500" />
-                    Pengaturan Lanjutan
+                    <Volume2 className="w-5 h-5 mr-2 text-green-500" />
+                    Audio Test Mobile
                   </CardTitle>
                   <CardDescription>
-                    Pengaturan jaringan dan sistem
+                    Test audio output dan microphone untuk HP
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {/* Network Settings */}
+                  {/* Audio Output Test */}
                   <div className="space-y-4">
                     <h4 className="font-semibold text-white flex items-center">
-                      <Network className="w-4 h-4 mr-2" />
-                      Jaringan
+                      <Speaker className="w-4 h-4 mr-2" />
+                      Test Audio Output
                     </h4>
 
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label className="text-white">Download Otomatis</Label>
-                        <p className="text-sm text-gray-400">Download file secara otomatis</p>
+                    {/* Audio Device Selection */}
+                    {audioDevices.length > 0 && (
+                      <div className="space-y-2">
+                        <Label className="text-white">Audio Device</Label>
+                        <Select value={selectedAudioDevice} onValueChange={setSelectedAudioDevice}>
+                          <SelectTrigger className="bg-gray-700 border-gray-600">
+                            <SelectValue placeholder="Pilih audio device" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-gray-700 border-gray-600">
+                            {audioDevices.map((device) => (
+                              <SelectItem key={device.deviceId} value={device.deviceId}>
+                                {device.label || `Audio Device ${device.deviceId.slice(0, 8)}`}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
-                      <Switch
-                        checked={settings.network.autoDownload}
-                        onCheckedChange={(checked) => updateSettings('network.autoDownload', checked)}
-                      />
-                    </div>
+                    )}
 
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label className="text-white">Hanya WiFi</Label>
-                        <p className="text-sm text-gray-400">Gunakan hanya koneksi WiFi</p>
+                    {/* Audio Test Buttons */}
+                    <div className="grid grid-cols-1 gap-3">
+                      {/* Earpiece Test */}
+                      <div className="p-4 bg-gray-700 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center">
+                            <Smartphone className="w-5 h-5 mr-2 text-blue-400" />
+                            <span className="text-white font-medium">Earpiece (Speaker Telinga)</span>
+                          </div>
+                          <Badge variant={audioTestMode === 'earpiece' && isTestingAudio ? 'default' : 'secondary'}>
+                            {audioTestMode === 'earpiece' && isTestingAudio ? 'Testing' : 'Ready'}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-gray-400 mb-3">Test audio melalui speaker telinga HP</p>
+                        <Button
+                          onClick={() => isTestingAudio ? stopAudioTest() : startAudioTest('earpiece')}
+                          className={`w-full ${
+                            audioTestMode === 'earpiece' && isTestingAudio 
+                              ? 'bg-red-600 hover:bg-red-700' 
+                              : 'bg-blue-600 hover:bg-blue-700'
+                          }`}
+                        >
+                          {audioTestMode === 'earpiece' && isTestingAudio ? (
+                            <>
+                              <Square className="w-4 h-4 mr-2" />
+                              Stop Test
+                            </>
+                          ) : (
+                            <>
+                              <Play className="w-4 h-4 mr-2" />
+                              Test Earpiece
+                            </>
+                          )}
+                        </Button>
                       </div>
-                      <Switch
-                        checked={settings.network.wifiOnly}
-                        onCheckedChange={(checked) => updateSettings('network.wifiOnly', checked)}
-                      />
+
+                      {/* Speaker Test */}
+                      <div className="p-4 bg-gray-700 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center">
+                            <Volume2 className="w-5 h-5 mr-2 text-green-400" />
+                            <span className="text-white font-medium">Speaker Normal</span>
+                          </div>
+                          <Badge variant={audioTestMode === 'speaker' && isTestingAudio ? 'default' : 'secondary'}>
+                            {audioTestMode === 'speaker' && isTestingAudio ? 'Testing' : 'Ready'}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-gray-400 mb-3">Test audio melalui speaker normal HP</p>
+                        <Button
+                          onClick={() => isTestingAudio ? stopAudioTest() : startAudioTest('speaker')}
+                          className={`w-full ${
+                            audioTestMode === 'speaker' && isTestingAudio 
+                              ? 'bg-red-600 hover:bg-red-700' 
+                              : 'bg-green-600 hover:bg-green-700'
+                          }`}
+                        >
+                          {audioTestMode === 'speaker' && isTestingAudio ? (
+                            <>
+                              <Square className="w-4 h-4 mr-2" />
+                              Stop Test
+                            </>
+                          ) : (
+                            <>
+                              <Play className="w-4 h-4 mr-2" />
+                              Test Speaker
+                            </>
+                          )}
+                        </Button>
+                      </div>
+
+                      {/* Loudspeaker Test */}
+                      <div className="p-4 bg-gray-700 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center">
+                            <Speaker className="w-5 h-5 mr-2 text-yellow-400" />
+                            <span className="text-white font-medium">Loudspeaker</span>
+                          </div>
+                          <Badge variant={audioTestMode === 'loudspeaker' && isTestingAudio ? 'default' : 'secondary'}>
+                            {audioTestMode === 'loudspeaker' && isTestingAudio ? 'Testing' : 'Ready'}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-gray-400 mb-3">Test audio melalui loudspeaker HP</p>
+                        <Button
+                          onClick={() => isTestingAudio ? stopAudioTest() : startAudioTest('loudspeaker')}
+                          className={`w-full ${
+                            audioTestMode === 'loudspeaker' && isTestingAudio 
+                              ? 'bg-red-600 hover:bg-red-700' 
+                              : 'bg-yellow-600 hover:bg-yellow-700'
+                          }`}
+                        >
+                          {audioTestMode === 'loudspeaker' && isTestingAudio ? (
+                            <>
+                              <Square className="w-4 h-4 mr-2" />
+                              Stop Test
+                            </>
+                          ) : (
+                            <>
+                              <Play className="w-4 h-4 mr-2" />
+                              Test Loudspeaker
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
+                  </div>
+
+                  <Separator className="bg-gray-700" />
+
+                  {/* Microphone Test */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-white flex items-center">
+                      <Mic className="w-4 h-4 mr-2" />
+                      Test Microphone
+                    </h4>
+
+                    <div className="p-4 bg-gray-700 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center">
+                          <Mic className="w-5 h-5 mr-2 text-purple-400" />
+                          <span className="text-white font-medium">Microphone Level</span>
+                        </div>
+                        <Badge variant={isMicTesting ? 'default' : 'secondary'}>
+                          {isMicTesting ? 'Recording' : 'Ready'}
+                        </Badge>
+                      </div>
+                      
+                      {/* Microphone Level Indicator */}
+                      <div className="mb-4">
+                        <div className="flex items-center justify-between text-sm text-gray-400 mb-1">
+                          <span>Level: {micLevel}%</span>
+                          <span>{isMicTesting ? 'Berbicara untuk test' : 'Tekan Start untuk test'}</span>
+                        </div>
+                        <div className="w-full bg-gray-600 rounded-full h-3">
+                          <div 
+                            className={`h-3 rounded-full transition-all duration-100 ${
+                              micLevel > 70 ? 'bg-red-500' : 
+                              micLevel > 40 ? 'bg-yellow-500' : 
+                              'bg-green-500'
+                            }`}
+                            style={{ width: `${micLevel}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <Button
+                        onClick={() => isMicTesting ? stopMicTest() : startMicTest()}
+                        className={`w-full ${
+                          isMicTesting 
+                            ? 'bg-red-600 hover:bg-red-700' 
+                            : 'bg-purple-600 hover:bg-purple-700'
+                        }`}
+                      >
+                        {isMicTesting ? (
+                          <>
+                            <MicOff className="w-4 h-4 mr-2" />
+                            Stop Mic Test
+                          </>
+                        ) : (
+                          <>
+                            <Mic className="w-4 h-4 mr-2" />
+                            Start Mic Test
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <Separator className="bg-gray-700" />
+
+                  {/* Audio Test Info */}
+                  <div className="p-4 bg-blue-900/20 border border-blue-700 rounded-lg">
+                    <div className="flex items-start">
+                      <Info className="w-5 h-5 mr-2 text-blue-400 mt-0.5" />
+                      <div className="text-sm">
+                        <p className="text-blue-200 font-medium mb-1">Petunjuk Test Audio:</p>
+                        <ul className="text-blue-300 space-y-1">
+                          <li>• Earpiece: Audio keluar dari speaker telinga HP</li>
+                          <li>• Speaker Normal: Audio keluar dari speaker bawah HP</li>
+                          <li>• Loudspeaker: Audio keluar dengan volume maksimal</li>
+                          <li>• Mic Test: Berbicara untuk melihat level microphone</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
                     <div className="space-y-2">
                       <Label className="text-white">Penggunaan Data</Label>
