@@ -1012,8 +1012,8 @@ export default function GroupVideoCall() {
     setIsAudioEnabled(true);
     setParticipants([]);
     
-    // Clear participant refs
-    participantVideoRefs.current = {};
+    // DON'T clear participant refs to preserve them for UI transitions
+    // participantVideoRefs.current = {};
     
     console.log('[GroupVideoCall] All media cleanup completed');
   };
