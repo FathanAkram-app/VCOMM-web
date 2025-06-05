@@ -686,7 +686,10 @@ export default function Chat() {
                         try {
                           const response = await fetch(`/api/conversations/${id}`, {
                             method: 'DELETE',
-                            credentials: 'include'
+                            credentials: 'include',
+                            headers: {
+                              'Content-Type': 'application/json',
+                            }
                           });
                           
                           if (response.ok) {
@@ -712,7 +715,10 @@ export default function Chat() {
                         try {
                           const response = await fetch(`/api/conversations/${id}/clear`, {
                             method: 'POST',
-                            credentials: 'include'
+                            credentials: 'include',
+                            headers: {
+                              'Content-Type': 'application/json',
+                            }
                           });
                           
                           if (response.ok) {
