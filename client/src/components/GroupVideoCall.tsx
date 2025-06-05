@@ -433,40 +433,71 @@ export default function GroupVideoCall() {
             peerConnection!.addTrack(track, localStream);
           });
 
-          // Handle incoming remote stream
+          // Handle incoming remote stream with comprehensive debugging
           peerConnection.ontrack = (event) => {
+            console.log('[GroupVideoCall] *** ONTRACK EVENT TRIGGERED ***');
             console.log('[GroupVideoCall] Received remote stream from user:', fromUserId);
-            console.log('[GroupVideoCall] Remote stream tracks:', event.streams[0].getTracks().length);
-            console.log('[GroupVideoCall] Track details:', event.streams[0].getTracks().map(t => `${t.kind}:${t.enabled}`));
+            console.log('[GroupVideoCall] Event details:', event);
+            console.log('[GroupVideoCall] Streams count:', event.streams.length);
             
-            const [remoteStream] = event.streams;
-            
-            if (remoteStream && remoteStream.active) {
-              console.log('[GroupVideoCall] Setting remote stream for user:', fromUserId);
-              setRemoteStreams(prev => {
-                const updated = { ...prev, [fromUserId]: remoteStream };
-                console.log('[GroupVideoCall] Updated remoteStreams keys:', Object.keys(updated));
-                return updated;
-              });
+            if (event.streams.length > 0) {
+              const [remoteStream] = event.streams;
+              console.log('[GroupVideoCall] Remote stream ID:', remoteStream.id);
+              console.log('[GroupVideoCall] Remote stream active:', remoteStream.active);
+              console.log('[GroupVideoCall] Remote stream tracks:', remoteStream.getTracks().length);
+              console.log('[GroupVideoCall] Track details:', remoteStream.getTracks().map(t => `${t.kind}:${t.enabled}:${t.readyState}`));
               
-              // Update participants with new stream immediately
-              setParticipants(prevParticipants => {
-                const updated = prevParticipants.map(p => 
-                  p.userId === fromUserId 
-                    ? { ...p, stream: remoteStream }
-                    : p
-                );
-                console.log('[GroupVideoCall] Updated participants with remote stream for user:', fromUserId);
-                return updated;
-              });
-              
-              setTimeout(() => {
-                const videoElement = participantVideoRefs.current[fromUserId];
-                if (videoElement && remoteStream) {
-                  videoElement.srcObject = remoteStream;
-                  videoElement.play().catch(e => console.error('[GroupVideoCall] Error playing remote video:', e));
-                }
-              }, 100);
+              if (remoteStream && remoteStream.active) {
+                console.log('[GroupVideoCall] Setting remote stream for user:', fromUserId);
+                setRemoteStreams(prev => {
+                  const updated = { ...prev, [fromUserId]: remoteStream };
+                  console.log('[GroupVideoCall] Updated remoteStreams keys:', Object.keys(updated));
+                  return updated;
+                });
+                
+                // Update participants with new stream immediately
+                setParticipants(prevParticipants => {
+                  const updated = prevParticipants.map(p => 
+                    p.userId === fromUserId 
+                      ? { ...p, stream: remoteStream }
+                      : p
+                  );
+                  console.log('[GroupVideoCall] Updated participants with remote stream for user:', fromUserId);
+                  return updated;
+                });
+                
+                // Immediately try to attach to video element
+                setTimeout(() => {
+                  const videoElement = participantVideoRefs.current[fromUserId];
+                  console.log('[GroupVideoCall] Video element for user', fromUserId, ':', !!videoElement);
+                  if (videoElement && remoteStream) {
+                    console.log('[GroupVideoCall] Attaching stream to video element for user:', fromUserId);
+                    videoElement.srcObject = remoteStream;
+                    videoElement.autoplay = true;
+                    videoElement.playsInline = true;
+                    videoElement.muted = false;
+                    
+                    const playPromise = videoElement.play();
+                    if (playPromise !== undefined) {
+                      playPromise
+                        .then(() => {
+                          console.log('[GroupVideoCall] Video playing successfully for user:', fromUserId);
+                        })
+                        .catch((e) => {
+                          console.error('[GroupVideoCall] Error playing remote video for user:', fromUserId, e);
+                          // Try muted play
+                          videoElement.muted = true;
+                          return videoElement.play();
+                        })
+                        .catch((e2) => {
+                          console.error('[GroupVideoCall] Muted play also failed for user:', fromUserId, e2);
+                        });
+                    }
+                  }
+                }, 100);
+              }
+            } else {
+              console.warn('[GroupVideoCall] No streams in ontrack event from user:', fromUserId);
             }
           };
 
@@ -488,16 +519,37 @@ export default function GroupVideoCall() {
             }
           };
 
-          // Enhanced connection state handling
+          // Enhanced connection state handling with detailed debugging
           peerConnection.onconnectionstatechange = () => {
             const state = peerConnection!.connectionState;
             console.log('[GroupVideoCall] Connection state for user', fromUserId, ':', state);
+            console.log('[GroupVideoCall] Local description set:', !!peerConnection!.localDescription);
+            console.log('[GroupVideoCall] Remote description set:', !!peerConnection!.remoteDescription);
+            console.log('[GroupVideoCall] ICE connection state:', peerConnection!.iceConnectionState);
+            console.log('[GroupVideoCall] ICE gathering state:', peerConnection!.iceGatheringState);
+            
+            // Log current receivers and senders
+            const receivers = peerConnection!.getReceivers();
+            const senders = peerConnection!.getSenders();
+            console.log('[GroupVideoCall] Active receivers:', receivers.length);
+            console.log('[GroupVideoCall] Active senders:', senders.length);
+            
+            receivers.forEach((receiver, index) => {
+              console.log(`[GroupVideoCall] Receiver ${index}:`, receiver.track?.kind, receiver.track?.enabled);
+            });
             
             if (state === 'failed' || state === 'disconnected') {
               console.warn(`[GroupVideoCall] Connection ${state} for user ${fromUserId}, cleaning up`);
               cleanupConnection(fromUserId);
             } else if (state === 'connected') {
               console.log(`[GroupVideoCall] Successfully connected to user ${fromUserId}`);
+              // Force check for remote streams when connected
+              setTimeout(() => {
+                const currentRemoteStreams = peerConnection!.getReceivers()
+                  .map(receiver => receiver.track)
+                  .filter(track => track !== null);
+                console.log('[GroupVideoCall] Remote tracks after connection:', currentRemoteStreams.length);
+              }, 1000);
             }
           };
 
