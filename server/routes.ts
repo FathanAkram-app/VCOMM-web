@@ -1152,7 +1152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Group Management API Routes
   
   // Get group information
-  app.get('/api/group-info/:groupId', isAuthenticated, async (req: AuthRequest, res) => {
+  app.get('/api/group-info/:groupId', isAuthenticated, async (req: any, res) => {
     try {
       const groupId = parseInt(req.params.groupId);
       const userId = req.session?.user?.id;
@@ -1192,7 +1192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get group members
-  app.get('/api/group-members/:groupId', isAuthenticated, async (req: AuthRequest, res) => {
+  app.get('/api/group-members/:groupId', isAuthenticated, async (req: any, res) => {
     try {
       const groupId = parseInt(req.params.groupId);
       const userId = req.session?.user?.id;
@@ -1219,7 +1219,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             fullName: user?.fullName,
             role: member.role,
             joinedAt: member.joinedAt,
-            isOnline: userConnections.has(member.userId)
+            isOnline: clients.has(member.userId)
           };
         })
       );
@@ -1232,7 +1232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Update group name
-  app.patch('/api/groups/:groupId/name', isAuthenticated, async (req: AuthRequest, res) => {
+  app.patch('/api/groups/:groupId/name', isAuthenticated, async (req: any, res) => {
     try {
       const groupId = parseInt(req.params.groupId);
       const userId = req.session?.user?.id;
@@ -1258,7 +1258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Update group description
-  app.patch('/api/groups/:groupId/description', isAuthenticated, async (req: AuthRequest, res) => {
+  app.patch('/api/groups/:groupId/description', isAuthenticated, async (req: any, res) => {
     try {
       const groupId = parseInt(req.params.groupId);
       const userId = req.session?.user?.id;
@@ -1284,7 +1284,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Add members to group
-  app.post('/api/groups/:groupId/members', isAuthenticated, async (req: AuthRequest, res) => {
+  app.post('/api/groups/:groupId/members', isAuthenticated, async (req: any, res) => {
     try {
       const groupId = parseInt(req.params.groupId);
       const userId = req.session?.user?.id;
@@ -1316,7 +1316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Remove member from group
-  app.delete('/api/groups/:groupId/members/:memberId', isAuthenticated, async (req: AuthRequest, res) => {
+  app.delete('/api/groups/:groupId/members/:memberId', isAuthenticated, async (req: any, res) => {
     try {
       const groupId = parseInt(req.params.groupId);
       const memberId = parseInt(req.params.memberId);
