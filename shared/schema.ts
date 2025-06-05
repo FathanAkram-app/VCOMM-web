@@ -142,7 +142,11 @@ export type InsertConversationMember = z.infer<typeof insertConversationMemberSc
 
 // WebSocket message types
 export type WebSocketMessage = {
-  type: 'new_message' | 'user_status' | 'typing' | 'read_receipt';
+  type: 'new_message' | 'user_status' | 'typing' | 'read_receipt' | 
+        'webrtc_offer' | 'webrtc_answer' | 'webrtc_ice_candidate' |
+        'group_webrtc_offer' | 'group_webrtc_answer' | 'group_webrtc_ice_candidate' |
+        'start_group_call' | 'join_group_call' | 'end_call' | 
+        'incoming_group_call' | 'group_call_participants_update' | 'group_call_ended';
   payload: any;
 };
 

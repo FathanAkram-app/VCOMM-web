@@ -236,9 +236,10 @@ export default function GroupVideoCall() {
             return peerConnection.setLocalDescription(offer);
           }).then(() => {
             console.log('[GroupVideoCall] Sending offer to user:', participant.userId);
+            console.log('[GroupVideoCall] Offer details:', peerConnection.localDescription);
             const ws = (window as any).__callWebSocket;
             if (ws?.readyState === WebSocket.OPEN) {
-              ws.send(JSON.stringify({
+              const message = {
                 type: 'group_webrtc_offer',
                 payload: {
                   callId: activeCall.callId,
@@ -246,7 +247,11 @@ export default function GroupVideoCall() {
                   targetUserId: participant.userId,
                   fromUserId: user?.id
                 }
-              }));
+              };
+              console.log('[GroupVideoCall] Sending WebRTC message:', message);
+              ws.send(JSON.stringify(message));
+            } else {
+              console.error('[GroupVideoCall] WebSocket not ready, state:', ws?.readyState);
             }
           }).catch(error => {
             console.error('[GroupVideoCall] Error creating offer for user', participant.userId, ':', error);
@@ -342,7 +347,7 @@ export default function GroupVideoCall() {
           ws.send(JSON.stringify({
             type: 'group_webrtc_answer',
             payload: {
-              callId: activeCall.callId,
+              callId: activeCall?.callId,
               answer: peerConnection.localDescription,
               targetUserId: fromUserId,
               fromUserId: user?.id
