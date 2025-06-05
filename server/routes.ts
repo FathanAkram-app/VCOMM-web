@@ -710,6 +710,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Call history route
+  app.get('/api/call-history', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.session?.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Return empty array for now since table doesn't exist yet
+      // Once table is created, implement: await storage.getCallHistory(userId);
+      res.json([]);
+    } catch (error) {
+      console.error("Error fetching call history:", error);
+      res.status(500).json({ message: "Failed to fetch call history" });
+    }
+  });
+
   // Users route
   app.get('/api/users', isAuthenticated, async (_req, res) => {
     try {
