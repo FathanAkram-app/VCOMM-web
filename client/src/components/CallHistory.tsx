@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Phone, Video, Users, Clock, Calendar, ArrowLeft, PhoneCall, VideoIcon, PhoneOff, Trash2, MoreVertical, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -52,6 +52,40 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
       window.location.reload();
     }, 1000);
   };
+
+  // Fetch call history with fresh data from database
+  const { data: callHistory = [], isLoading, refetch, error } = useQuery<any[]>({
+    queryKey: ['/api/call-history'],
+    enabled: !!user,
+    retry: 1,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+  });
+
+  // Real-time updates - listen for call events via WebSocket
+  useEffect(() => {
+    const handleCallUpdate = (event: any) => {
+      if (event.detail && (
+        event.detail.type === 'call_ended' || 
+        event.detail.type === 'call_missed' ||
+        event.detail.type === 'incoming_call'
+      )) {
+        console.log('[CallHistory] Call event received, refreshing data:', event.detail);
+        // Auto-refresh call history when call events occur
+        queryClient.invalidateQueries({ queryKey: ['/api/call-history'] });
+        refetch();
+      }
+    };
+
+    // Listen for custom call events
+    window.addEventListener('callHistoryUpdate', handleCallUpdate);
+    
+    return () => {
+      window.removeEventListener('callHistoryUpdate', handleCallUpdate);
+    };
+  }, [queryClient, refetch]);
 
   // Delete call history mutation
   const deleteCallMutation = useMutation({
@@ -110,17 +144,6 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
       });
     }
   };
-
-  // Fetch call history with fresh data from database
-  const { data: callHistory = [], isLoading, refetch, error } = useQuery<any[]>({
-    queryKey: ['/api/call-history'],
-    enabled: !!user,
-    retry: 1,
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
-  });
 
   // Force console logging for debugging
   console.log('[CallHistory] Component rendered');

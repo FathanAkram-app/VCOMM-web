@@ -639,6 +639,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
         switch (message.type) {
           case 'incoming_call':
             handleIncomingCall(message.payload || message);
+            // Trigger call history update
+            window.dispatchEvent(new CustomEvent('callHistoryUpdate', { 
+              detail: { type: 'incoming_call', data: message.payload || message } 
+            }));
             break;
           case 'incoming_group_call':
             handleIncomingGroupCall(message.payload || message);
