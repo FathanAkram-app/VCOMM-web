@@ -1193,6 +1193,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const { callId, toUserId } = data.payload;
           console.log(`[Call] User ${ws.userId} ended call ${callId}`);
           
+          // Update call history status to ended
+          await storage.updateCallHistoryStatus(callId, 'ended');
+          
           // Check if it's a group call
           if (callId.includes('group_call_')) {
             const groupId = data.payload.groupId;

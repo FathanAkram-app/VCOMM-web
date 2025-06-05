@@ -536,14 +536,27 @@ export class DatabaseStorage implements IStorage {
   // Call history using database storage
   async getCallHistory(userId: number): Promise<any[]> {
     try {
-      // Get calls where user is either initiator or participant  
+      // Get calls where user is a participant (received calls) or missed calls only
+      // Exclude outgoing calls where user is the initiator
       const calls = await db
         .select()
         .from(callHistory)
         .where(
-          or(
-            eq(callHistory.initiatorId, userId),
-            sql`${callHistory.participants} @> ARRAY[${userId.toString()}]::text[]`
+          and(
+            or(
+              // Incoming calls where user is not the initiator
+              and(
+                sql`${callHistory.participants} @> ARRAY[${userId.toString()}]::text[]`,
+                sql`${callHistory.initiatorId} != ${userId}`
+              ),
+              // Missed calls where user is the target
+              and(
+                eq(callHistory.status, 'missed'),
+                sql`${callHistory.participants} @> ARRAY[${userId.toString()}]::text[]`
+              )
+            ),
+            // Only show incoming, missed, rejected calls - not outgoing
+            sql`${callHistory.status} IN ('incoming', 'missed', 'rejected', 'accepted', 'ended')`
           )
         )
         .orderBy(desc(callHistory.startTime));
