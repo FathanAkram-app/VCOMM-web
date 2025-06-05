@@ -15,6 +15,7 @@ import MessageAttachment from './MessageAttachment';
 import VoiceRecorder from './VoiceRecorder';
 import AudioPlayerInline from './AudioPlayerInline';
 import SimpleAudioPlayer from './SimpleAudioPlayer';
+import GroupManagement from './GroupManagement';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,6 +79,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   const [selectedMessage, setSelectedMessage] = useState<ChatMessage | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isForwardDialogOpen, setIsForwardDialogOpen] = useState(false);
+  const [isGroupManagementOpen, setIsGroupManagementOpen] = useState(false);
   const [replyToMessage, setReplyToMessage] = useState<ChatMessage | null>(null);
   const [conversations, setConversations] = useState<{id: number, name: string, isGroup?: boolean}[]>([]);
   
@@ -868,9 +870,8 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                 size="icon"
                 className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
                 onClick={() => {
-                  // TODO: Show group members dialog
                   console.log('Show group members for:', chatData?.name);
-                  alert('Dialog anggota grup akan segera tersedia!');
+                  setIsGroupManagementOpen(true);
                 }}
                 title="Group Members"
               >
@@ -1258,6 +1259,16 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
           )}
         </form>
       </div>
+
+      {/* Group Management Dialog */}
+      {isGroupManagementOpen && chatData && user && (
+        <GroupManagement
+          groupId={chatId}
+          groupName={chatData.name}
+          onClose={() => setIsGroupManagementOpen(false)}
+          currentUserId={user.id}
+        />
+      )}
     </div>
   );
 }
