@@ -27,6 +27,10 @@ export interface IStorage {
   createUser(user: RegisterUser): Promise<User>;
   updateUserStatus(userId: number, status: string): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
+  
+  // User settings operations
+  getUserSettings(userId: number): Promise<any>;
+  updateUserSettings(userId: number, settings: any): Promise<any>;
 
   // Conversation operations (both groups and direct)
   getConversation(id: number): Promise<Conversation | undefined>;
@@ -604,6 +608,74 @@ export class DatabaseStorage implements IStorage {
       console.log(`[Storage] Added call history: ${callData.callId} (${callData.callType}) - ${callData.status} - isGroupCall: ${isGroupCall}`);
     } catch (error) {
       console.error('Error adding call history:', error);
+    }
+  }
+
+  // User settings methods
+  async getUserSettings(userId: number): Promise<any> {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Return default settings structure based on Settings.tsx interface
+      return {
+        id: userId,
+        theme: 'dark',
+        status: user.status || 'online',
+        statusMessage: user.statusMessage || '',
+        language: 'id',
+        notifications: {
+          push: true,
+          sound: true,
+          vibration: true,
+          calls: true,
+          messages: true,
+          groups: true,
+        },
+        privacy: {
+          showOnline: true,
+          showLastSeen: true,
+          readReceipts: true,
+          profilePhoto: true,
+          allowGroups: true,
+        },
+        security: {
+          twoFactor: false,
+          sessionTimeout: 30,
+          autoLock: false,
+          biometric: false,
+        },
+        network: {
+          autoDownload: true,
+          dataUsage: 'medium',
+          wifiOnly: false,
+        }
+      };
+    } catch (error) {
+      console.error('Error fetching user settings:', error);
+      throw error;
+    }
+  }
+
+  async updateUserSettings(userId: number, settings: any): Promise<any> {
+    try {
+      // Update user status if provided
+      if (settings.status || settings.statusMessage) {
+        await db.update(users)
+          .set({
+            status: settings.status,
+            statusMessage: settings.statusMessage,
+          })
+          .where(eq(users.id, userId));
+      }
+
+      // Return updated settings (in a real app, you'd store these in a user_settings table)
+      return await this.getUserSettings(userId);
+    } catch (error) {
+      console.error('Error updating user settings:', error);
+      throw error;
     }
   }
 }

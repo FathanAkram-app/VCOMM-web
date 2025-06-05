@@ -760,6 +760,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User Settings endpoints
+  app.get('/api/user-settings', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.session?.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      console.log('[API] Fetching settings for user:', userId);
+      const settings = await storage.getUserSettings(userId);
+      res.json(settings);
+    } catch (error) {
+      console.error('[API] Error fetching user settings:', error);
+      res.status(500).json({ error: 'Failed to fetch settings' });
+    }
+  });
+
+  app.put('/api/user-settings', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.session?.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const settings = req.body;
+      console.log('[API] Updating settings for user:', userId);
+      
+      const updatedSettings = await storage.updateUserSettings(userId, settings);
+      res.json(updatedSettings);
+    } catch (error) {
+      console.error('[API] Error updating user settings:', error);
+      res.status(500).json({ error: 'Failed to update settings' });
+    }
+  });
+
   app.put('/api/users/status', isAuthenticated, async (req: AuthRequest, res) => {
     try {
       const userId = req.session.user.id;
