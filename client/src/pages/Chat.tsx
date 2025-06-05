@@ -664,19 +664,56 @@ export default function Chat() {
                     <ChatList 
                       activeChat={activeChat}
                       onSelectChat={handleSelectChat}
-                      onChatDeleted={(id, isGroup) => {
-                        // Handle chat deletion
-                        console.log(`Delete chat: ${id}, isGroup: ${isGroup}`);
-                        // Refresh chat list
-                        if (user) fetchUserChats(user.id);
+                      onChatDeleted={async (id, isGroup) => {
+                        try {
+                          const response = await fetch(`/api/conversations/${id}`, {
+                            method: 'DELETE',
+                            credentials: 'include'
+                          });
+                          
+                          if (response.ok) {
+                            console.log(`Chat ${id} berhasil dihapus`);
+                            // Refresh chat list
+                            if (user) fetchUserChats(user.id);
+                            // Jika chat yang dihapus sedang aktif, kembali ke list
+                            if (activeChat?.id === id) {
+                              setActiveChat(null);
+                              setShowChatRoom(false);
+                            }
+                          } else {
+                            const error = await response.text();
+                            console.error('Gagal menghapus chat:', error);
+                            alert(`Gagal menghapus chat: ${error}`);
+                          }
+                        } catch (error) {
+                          console.error('Error menghapus chat:', error);
+                          alert('Terjadi kesalahan saat menghapus chat');
+                        }
                       }}
-                      onClearChatHistory={(id, isGroup) => {
-                        // Handle clearing chat history
-                        console.log(`Clear chat history: ${id}, isGroup: ${isGroup}`);
-                        // Refresh chat list and messages if this is active chat
-                        if (user) fetchUserChats(user.id);
-                        if (activeChat?.id === id) {
-                          setDatabaseMessages([]);
+                      onClearChatHistory={async (id, isGroup) => {
+                        try {
+                          const response = await fetch(`/api/conversations/${id}/clear`, {
+                            method: 'POST',
+                            credentials: 'include'
+                          });
+                          
+                          if (response.ok) {
+                            console.log(`Riwayat chat ${id} berhasil dibersihkan`);
+                            // Refresh chat list and messages if this is active chat
+                            if (user) fetchUserChats(user.id);
+                            if (activeChat?.id === id) {
+                              setDatabaseMessages([]);
+                              // Refresh messages
+                              fetchMessages(id);
+                            }
+                          } else {
+                            const error = await response.text();
+                            console.error('Gagal membersihkan riwayat chat:', error);
+                            alert(`Gagal membersihkan riwayat chat: ${error}`);
+                          }
+                        } catch (error) {
+                          console.error('Error membersihkan riwayat chat:', error);
+                          alert('Terjadi kesalahan saat membersihkan riwayat chat');
                         }
                       }}
                       onCreateGroup={() => setShowNewGroupDialog(true)}

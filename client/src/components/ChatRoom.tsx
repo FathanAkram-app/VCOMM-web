@@ -534,36 +534,9 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     },
   });
 
-  // Delete group mutation
-  const deleteGroupMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch(`/api/conversations/${chatId}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to delete group');
-      }
-      
-      return response.json();
-    },
-    onSuccess: () => {
-      // Navigate back after deleting group
-      onBack();
-      // Refresh conversations list
-      queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/rooms'] });
-    },
-  });
-
   // Functions to handle menu actions
   const clearChatHistory = () => {
     clearChatHistoryMutation.mutate();
-  };
-
-  const deleteGroup = () => {
-    deleteGroupMutation.mutate();
   };
   
   // Load conversations for forward dialog
@@ -990,20 +963,6 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                 <MessageSquare className="mr-2 h-4 w-4" />
                 Bersihkan Chat
               </DropdownMenuItem>
-              
-              {isGroup && (
-                <DropdownMenuItem 
-                  className="text-red-500 cursor-pointer hover:bg-[#3d5040] focus:bg-[#3d5040] focus:text-red-400"
-                  onClick={() => {
-                    if (confirm(`Apakah Anda yakin ingin menghapus grup ${chatData?.name || 'ini'}?`)) {
-                      deleteGroup();
-                    }
-                  }}
-                >
-                  <Trash className="mr-2 h-4 w-4" />
-                  Hapus Grup
-                </DropdownMenuItem>
-              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
