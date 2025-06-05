@@ -57,6 +57,8 @@ export interface IStorage {
   // Call history operations
   getCallHistory(userId: number): Promise<any[]>;
   addCallHistory(callData: any): Promise<void>;
+  updateCallHistoryStatus(callId: string, status: string): Promise<void>;
+  deleteCallHistory(callId: number, userId: number): Promise<void>;
   
   // Message operations for delete, reply, and forward
   deleteMessage(messageId: number): Promise<Message>;
@@ -515,6 +517,19 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error(`Error deleting call history ${callId}:`, error);
       throw error;
+    }
+  }
+
+  // Update call history status
+  async updateCallHistoryStatus(callId: string, status: string): Promise<void> {
+    try {
+      await db
+        .update(callHistory)
+        .set({ status })
+        .where(eq(callHistory.callId, callId));
+      console.log(`[Storage] Updated call history status for ${callId} to ${status}`);
+    } catch (error) {
+      console.error(`Error updating call history status for ${callId}:`, error);
     }
   }
 
