@@ -451,6 +451,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
           case 'webrtc_ice_candidate':
             handleWebRTCIceCandidate(message.payload || message);
             break;
+          case 'group_webrtc_offer':
+            handleGroupWebRTCOffer(message.payload || message);
+            break;
+          case 'group_webrtc_answer':
+            handleGroupWebRTCAnswer(message.payload || message);
+            break;
         }
       } catch (error) {
         // Ignore non-JSON messages (they might be for chat)

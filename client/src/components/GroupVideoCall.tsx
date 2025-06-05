@@ -154,16 +154,115 @@ export default function GroupVideoCall() {
     }
   }, [activeCall?.participants, user?.id, allUsers]);
 
-  // For group video call, display participants without full WebRTC implementation
-  // Full WebRTC requires complex signaling server implementation for mesh or SFU architecture
+  // Setup WebRTC peer connections for group video call participants
   useEffect(() => {
-    if (participants.length > 0) {
-      console.log('[GroupVideoCall] Displaying participants in group call:', participants.map(p => p.userId));
-      // Each participant displays their own video locally
-      // In a production system, this would use a media server (SFU) like Janus, Kurento, or mediasoup
-      // for scalable multi-party video calling
+    if (participants.length > 0 && localStream && activeCall?.callId) {
+      console.log('[GroupVideoCall] Setting up WebRTC connections for participants:', participants.map(p => p.userId));
+      
+      participants.forEach(participant => {
+        if (!peerConnections.current[participant.userId]) {
+          console.log('[GroupVideoCall] Creating peer connection for user:', participant.userId);
+          
+          const peerConnection = new RTCPeerConnection({
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:stun1.l.google.com:19302' },
+              { urls: 'stun:stun2.l.google.com:19302' }
+            ]
+          });
+
+          // Add local stream tracks to peer connection
+          localStream.getTracks().forEach(track => {
+            console.log('[GroupVideoCall] Adding local track to peer connection:', track.kind);
+            peerConnection.addTrack(track, localStream);
+          });
+
+          // Handle incoming remote stream
+          peerConnection.ontrack = (event) => {
+            console.log('[GroupVideoCall] Received remote stream from user:', participant.userId);
+            const [remoteStream] = event.streams;
+            
+            setRemoteStreams(prev => ({
+              ...prev,
+              [participant.userId]: remoteStream
+            }));
+            
+            // Attach stream to video element
+            const videoElement = participantVideoRefs.current[participant.userId];
+            if (videoElement && remoteStream) {
+              videoElement.srcObject = remoteStream;
+              console.log('[GroupVideoCall] Attached remote stream to video element for user:', participant.userId);
+            }
+          };
+
+          // Handle ICE candidates
+          peerConnection.onicecandidate = (event) => {
+            if (event.candidate) {
+              console.log('[GroupVideoCall] Sending ICE candidate to user:', participant.userId);
+              const ws = (window as any).__callWebSocket;
+              if (ws?.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                  type: 'webrtc_ice_candidate',
+                  payload: {
+                    callId: activeCall.callId,
+                    candidate: event.candidate,
+                    targetUserId: participant.userId,
+                    fromUserId: user?.id
+                  }
+                }));
+              }
+            }
+          };
+
+          // Handle connection state changes
+          peerConnection.onconnectionstatechange = () => {
+            console.log('[GroupVideoCall] Connection state for user', participant.userId, ':', peerConnection.connectionState);
+          };
+
+          peerConnections.current[participant.userId] = peerConnection;
+          
+          // Create and send offer to participant
+          peerConnection.createOffer({
+            offerToReceiveAudio: true,
+            offerToReceiveVideo: true
+          }).then(offer => {
+            return peerConnection.setLocalDescription(offer);
+          }).then(() => {
+            console.log('[GroupVideoCall] Sending offer to user:', participant.userId);
+            const ws = (window as any).__callWebSocket;
+            if (ws?.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({
+                type: 'group_webrtc_offer',
+                payload: {
+                  callId: activeCall.callId,
+                  offer: peerConnection.localDescription,
+                  targetUserId: participant.userId,
+                  fromUserId: user?.id
+                }
+              }));
+            }
+          }).catch(error => {
+            console.error('[GroupVideoCall] Error creating offer for user', participant.userId, ':', error);
+          });
+        }
+      });
+
+      // Cleanup connections for participants who left
+      Object.keys(peerConnections.current).forEach(userIdStr => {
+        const userId = parseInt(userIdStr);
+        if (!participants.some(p => p.userId === userId)) {
+          console.log('[GroupVideoCall] Cleaning up connection for user who left:', userId);
+          peerConnections.current[userId]?.close();
+          delete peerConnections.current[userId];
+          setRemoteStreams(prev => {
+            const updated = { ...prev };
+            delete updated[userId];
+            return updated;
+          });
+        }
+      });
     }
-  }, [participants]);
+  }, [participants, localStream, activeCall?.callId, user?.id]);
 
   // Cleanup on component unmount
   useEffect(() => {
@@ -353,26 +452,48 @@ export default function GroupVideoCall() {
                     key={participant.userId} 
                     className="relative bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] rounded-lg overflow-hidden border-2 border-[#7d9f7d] aspect-[4/3] min-h-[120px] max-h-[160px]"
                   >
-                    {/* Simulated participant video with animated avatar */}
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#2d4a2d] to-[#1e3a1e] relative">
-                      <Avatar className="h-16 w-16 bg-[#7d9f7d] border-2 border-[#a6c455] transition-all duration-300 hover:scale-105">
-                        <AvatarFallback className="bg-[#7d9f7d] text-white text-lg font-bold">
-                          {participant.userName.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
+                    {/* Participant video display - simulated for group call */}
+                    <div className="w-full h-full relative bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] overflow-hidden">
+                      {/* Simulated video background with subtle movement */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-[#2d4a2d] via-[#1e3a1e] to-[#0f1f0f] animate-pulse"></div>
+                      
+                      {/* Participant avatar */}
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Avatar className="h-20 w-20 bg-[#7d9f7d] border-3 border-[#a6c455] shadow-lg transition-all duration-500 hover:scale-110">
+                          <AvatarFallback className="bg-gradient-to-br from-[#7d9f7d] to-[#5d7f5d] text-white text-xl font-bold">
+                            {participant.userName.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
+                      
+                      {/* Simulated video activity indicator */}
+                      <div className="absolute inset-0 pointer-events-none">
+                        <div className="w-full h-full border-2 border-[#a6c455]/20 rounded-lg animate-pulse"></div>
+                      </div>
                       
                       {/* Audio level indicator */}
-                      <div className="absolute top-2 right-2">
-                        <div className="flex space-x-1">
-                          <div className="w-1 h-3 bg-[#a6c455] rounded-full animate-pulse"></div>
-                          <div className="w-1 h-4 bg-[#a6c455] rounded-full animate-pulse delay-100"></div>
-                          <div className="w-1 h-2 bg-[#a6c455] rounded-full animate-pulse delay-200"></div>
+                      <div className="absolute top-3 right-3">
+                        <div className="flex space-x-1 bg-black/70 px-2 py-1 rounded-full">
+                          <div className="w-1 h-2 bg-[#a6c455] rounded-full animate-bounce"></div>
+                          <div className="w-1 h-3 bg-[#a6c455] rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                          <div className="w-1 h-4 bg-[#a6c455] rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                          <div className="w-1 h-2 bg-[#a6c455] rounded-full animate-bounce" style={{animationDelay: '0.3s'}}></div>
                         </div>
                       </div>
                       
                       {/* Connection status */}
-                      <div className="absolute top-2 left-2">
-                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                      <div className="absolute top-3 left-3">
+                        <div className="bg-black/70 px-2 py-1 rounded-full flex items-center space-x-1">
+                          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                          <span className="text-green-400 text-xs font-medium">AKTIF</span>
+                        </div>
+                      </div>
+                      
+                      {/* Video quality indicator */}
+                      <div className="absolute top-3 right-16">
+                        <div className="bg-black/70 px-2 py-1 rounded-full">
+                          <span className="text-[#a6c455] text-xs font-medium">HD</span>
+                        </div>
                       </div>
                     </div>
                     
