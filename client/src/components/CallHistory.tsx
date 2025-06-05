@@ -256,7 +256,7 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
           <div className="divide-y divide-gray-700">
             {filteredHistory.map((call: CallHistoryItem) => (
               <div key={call.id} className="p-4 hover:bg-gray-800 transition-colors">
-                <div className="flex items-center justify-between">
+                <div className="flex items-start justify-between">
                   <div className="flex items-center flex-1">
                     {/* Call Icon */}
                     <div className="mr-3">
@@ -338,16 +338,16 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
                   </div>
 
                   {/* Participants (for group calls) */}
-                  {call.callType?.startsWith('group_') && call.participantNames?.length > 0 && (
+                  {call.callType?.startsWith('group_') && call.participantNames && call.participantNames.length > 0 && (
                     <div className="flex -space-x-2 ml-4">
-                      {call.participantNames?.slice(0, 3).map((name, index) => (
+                      {call.participantNames.slice(0, 3).map((name: string, index: number) => (
                         <Avatar key={index} className="w-8 h-8 border-2 border-gray-700">
                           <AvatarFallback className="bg-gray-600 text-white text-xs">
                             {name.substring(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                       ))}
-                      {call.participantNames?.length > 3 && (
+                      {call.participantNames.length > 3 && (
                         <div className="w-8 h-8 bg-gray-600 border-2 border-gray-700 rounded-full flex items-center justify-center">
                           <span className="text-xs text-white">
                             +{call.participantNames.length - 3}
@@ -358,37 +358,37 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
                   )}
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex items-center space-x-2 ml-4">
-                  {/* Callback Button */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleCallback(call)}
-                    className="p-2 h-8 w-8 text-green-500 hover:text-green-400 hover:bg-green-500/10"
-                    title="Call back"
-                  >
-                    {call.callType?.includes('video') ? (
-                      <VideoIcon className="w-4 h-4" />
-                    ) : call.callType?.startsWith('group_') ? (
-                      <Users className="w-4 h-4" />
-                    ) : (
-                      <Phone className="w-4 h-4" />
-                    )}
-                  </Button>
+                  {/* Action Buttons - Moved to the right */}
+                  <div className="flex items-center space-x-1 ml-4 flex-shrink-0">
+                    {/* Callback Button */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleCallback(call)}
+                      className="p-2 h-8 w-8 text-green-500 hover:text-green-400 hover:bg-green-500/10"
+                      title="Call back"
+                    >
+                      {call.callType?.includes('video') ? (
+                        <VideoIcon className="w-4 h-4" />
+                      ) : call.callType?.startsWith('group_') ? (
+                        <Users className="w-4 h-4" />
+                      ) : (
+                        <Phone className="w-4 h-4" />
+                      )}
+                    </Button>
 
-                  {/* Delete Button */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => deleteCallMutation.mutate(call.id)}
-                    disabled={deleteCallMutation.isPending}
-                    className="p-2 h-8 w-8 text-red-500 hover:text-red-400 hover:bg-red-500/10"
-                    title="Delete call history"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
+                    {/* Delete Button */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteCallMutation.mutate(call.id)}
+                      disabled={deleteCallMutation.isPending}
+                      className="p-2 h-8 w-8 text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                      title="Delete call history"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
               </div>
             ))}
           </div>
