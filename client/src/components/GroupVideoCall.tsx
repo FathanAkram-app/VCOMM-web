@@ -39,9 +39,17 @@ const StableParticipantVideo = memo(({
     // Only clean up when component is truly destroyed
   }, [participant.userId, participantVideoRefs]);
   
-  // Attach stream once and keep it stable with enhanced debugging
+  // Attach stream once and keep it stable - prevent duplicate attachments
   useEffect(() => {
     if (videoRef.current && stream && stream.active) {
+      const videoElement = videoRef.current;
+      
+      // Check if stream is already attached to prevent duplicate attachment
+      if (videoElement.srcObject === stream) {
+        console.log(`[StableParticipantVideo] Stream already attached for user ${participant.userId}`);
+        return;
+      }
+      
       console.log(`[StableParticipantVideo] Attaching stream for user ${participant.userId}:`, {
         streamId: stream.id,
         active: stream.active,
@@ -49,34 +57,27 @@ const StableParticipantVideo = memo(({
         videoTracks: stream.getVideoTracks().length
       });
       
-      const videoElement = videoRef.current;
-      videoElement.srcObject = stream;
+      // Set video element properties before attaching stream
       videoElement.autoplay = true;
       videoElement.playsInline = true;
-      videoElement.muted = false;
+      videoElement.muted = true; // Start muted to avoid autoplay issues
+      videoElement.controls = false;
       
-      // Enhanced play with error handling
-      const playPromise = videoElement.play();
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            console.log(`[StableParticipantVideo] ✅ Video playing for user ${participant.userId}`);
-          })
-          .catch((error: any) => {
-            console.warn(`[StableParticipantVideo] Autoplay failed for user ${participant.userId}, trying muted:`, error);
-            videoElement.muted = true;
-            return videoElement.play();
-          })
-          .catch((muteError: any) => {
-            console.error(`[StableParticipantVideo] ❌ All play attempts failed for user ${participant.userId}:`, muteError);
-          });
-      }
-    } else {
-      console.log(`[StableParticipantVideo] Cannot attach stream for user ${participant.userId}:`, {
-        hasVideoRef: !!videoRef.current,
-        hasStream: !!stream,
-        streamActive: stream?.active
-      });
+      // Attach stream
+      videoElement.srcObject = stream;
+      
+      // Play with proper error handling
+      const attemptPlay = async () => {
+        try {
+          await videoElement.play();
+          console.log(`[StableParticipantVideo] ✅ Video playing for user ${participant.userId}`);
+        } catch (error: any) {
+          console.warn(`[StableParticipantVideo] Play failed for user ${participant.userId}:`, error);
+        }
+      };
+      
+      // Delay play to ensure stream is ready
+      setTimeout(attemptPlay, 100);
     }
   }, [stream, participant.userId]);
   
