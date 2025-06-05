@@ -41,6 +41,8 @@ export interface IStorage {
   removeConversationMember(userId: number, conversationId: number): Promise<void>;
   updateConversationMemberRole(userId: number, conversationId: number, role: string): Promise<ConversationMember>;
   updateConversation(conversationId: number, data: Partial<Conversation>): Promise<Conversation>;
+  isUserMemberOfConversation(userId: number, conversationId: number): Promise<boolean>;
+  removeUserFromConversation(userId: number, conversationId: number): Promise<void>;
   
   // Message operations
   createMessage(data: InsertMessage): Promise<Message>;
@@ -419,6 +421,30 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(conversations)
       .where(eq(conversations.id, conversationId));
+  }
+
+  async isUserMemberOfConversation(userId: number, conversationId: number): Promise<boolean> {
+    const [membership] = await db
+      .select()
+      .from(conversationMembers)
+      .where(
+        and(
+          eq(conversationMembers.userId, userId),
+          eq(conversationMembers.conversationId, conversationId)
+        )
+      );
+    return !!membership;
+  }
+
+  async removeUserFromConversation(userId: number, conversationId: number): Promise<void> {
+    await db
+      .delete(conversationMembers)
+      .where(
+        and(
+          eq(conversationMembers.userId, userId),
+          eq(conversationMembers.conversationId, conversationId)
+        )
+      );
   }
 }
 

@@ -646,13 +646,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Conversation not found" });
       }
       
-      // Only allow creator or admin to delete
-      if (conversation.createdById !== userId) {
-        return res.status(403).json({ message: "Not authorized to delete this conversation" });
+      // Check if user is a member of this conversation
+      const isMember = await storage.isUserMemberOfConversation(userId, conversationId);
+      if (!isMember) {
+        return res.status(403).json({ message: "Not authorized - not a member of this conversation" });
       }
       
-      // Delete conversation
-      await storage.deleteConversation(conversationId);
+      // If user is the creator, delete the entire conversation
+      // If user is a member, just remove them from the conversation
+      if (conversation.createdById === userId) {
+        // Creator deletes entire conversation
+        await storage.deleteConversation(conversationId);
+      } else {
+        // Member removes themselves from conversation
+        await storage.removeUserFromConversation(userId, conversationId);
+      }
       
       res.json({ message: "Conversation deleted successfully" });
     } catch (error) {
