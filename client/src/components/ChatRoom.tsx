@@ -1006,21 +1006,25 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
       
       {/* Messages container with space for input at bottom */}
       <div className="flex-1 overflow-y-auto p-4 pb-32 space-y-6">
-        {messageGroups.map(group => (
-          <div key={group.date} className="space-y-3">
-            <div className="flex justify-center">
-              <span className="text-xs bg-[#2a2a2a] text-gray-400 px-2 py-1 rounded-md">
-                {new Date(group.date).toLocaleDateString('id-ID', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}
-              </span>
-            </div>
-            
-            {group.messages.map(msg => {
-              const isOwnMessage = msg.senderId === user?.id;
+        {messageGroups.map(group => {
+          // Buat array semua pesan untuk mencari referenced messages
+          const allMessages = messageGroups.flatMap(g => g.messages);
+          
+          return (
+            <div key={group.date} className="space-y-3">
+              <div className="flex justify-center">
+                <span className="text-xs bg-[#2a2a2a] text-gray-400 px-2 py-1 rounded-md">
+                  {new Date(group.date).toLocaleDateString('id-ID', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
+                </span>
+              </div>
+              
+              {group.messages.map(msg => {
+                const isOwnMessage = msg.senderId === user?.id;
               
               return (
                 <div 
@@ -1043,19 +1047,15 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       <div className="bg-black/20 rounded-lg p-2 mb-2 border-l-4 border-[#a6c455]">
                         <div className="text-xs font-medium text-[#a6c455] mb-1">
                           {(() => {
-                            // Dapatkan nama pengirim pesan yang dibalas
-                            const repliedMessage = messages && Array.isArray(messages) 
-                              ? messages.find((m: any) => m.id === msg.replyToId)
-                              : null;
+                            // Dapatkan nama pengirim pesan yang dibalas dari allMessages
+                            const repliedMessage = allMessages.find((m: any) => m.id === msg.replyToId);
                             return repliedMessage?.senderName || 'Unknown User';
                           })()}
                         </div>
                         <div className="text-xs text-gray-300 opacity-80">
                           {(() => {
-                            // Dapatkan konten pesan yang dibalas
-                            const repliedMessage = messages && Array.isArray(messages) 
-                              ? messages.find((m: any) => m.id === msg.replyToId)
-                              : null;
+                            // Dapatkan konten pesan yang dibalas dari allMessages
+                            const repliedMessage = allMessages.find((m: any) => m.id === msg.replyToId);
                             
                             if (repliedMessage?.hasAttachment) {
                               return `📎 ${repliedMessage.attachmentName || 'File'}`;
@@ -1164,9 +1164,10 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                   </div>
                 </div>
               );
-            })}
-          </div>
-        ))}
+              })}
+            </div>
+          );
+        })}
         
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center p-4">
