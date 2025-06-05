@@ -402,30 +402,40 @@ export class DatabaseStorage implements IStorage {
   }
 
   async clearConversationMessages(conversationId: number): Promise<void> {
-    // First, handle messages that reference other messages (forwarded messages)
-    // Set forwardedFromId to null for messages that reference messages in this conversation
-    await db
-      .update(messages)
-      .set({ forwardedFromId: null })
-      .where(
-        and(
-          eq(messages.conversationId, conversationId),
-          sql`forwarded_from_id IS NOT NULL`
-        )
-      );
-    
-    // Also update any messages in other conversations that reference messages in this conversation
-    await db
-      .update(messages)
-      .set({ forwardedFromId: null })
-      .where(
-        sql`forwarded_from_id IN (SELECT id FROM messages WHERE conversation_id = ${conversationId})`
-      );
-    
-    // Now delete all messages in the conversation
-    await db
-      .delete(messages)
-      .where(eq(messages.conversationId, conversationId));
+    try {
+      // First get all message IDs in this conversation
+      const messageIds = await db
+        .select({ id: messages.id })
+        .from(messages)
+        .where(eq(messages.conversationId, conversationId));
+      
+      const idsToDelete = messageIds.map(m => m.id);
+      
+      if (idsToDelete.length === 0) {
+        console.log(`No messages to clear in conversation ${conversationId}`);
+        return;
+      }
+      
+      console.log(`Clearing ${idsToDelete.length} messages from conversation ${conversationId}`);
+      
+      // Update any messages that reference the messages we're about to delete
+      if (idsToDelete.length > 0) {
+        await db
+          .update(messages)
+          .set({ forwardedFromId: null })
+          .where(inArray(messages.forwardedFromId, idsToDelete));
+      }
+      
+      // Now delete all messages in the conversation
+      await db
+        .delete(messages)
+        .where(eq(messages.conversationId, conversationId));
+        
+      console.log(`Successfully cleared messages from conversation ${conversationId}`);
+    } catch (error) {
+      console.error(`Error clearing messages from conversation ${conversationId}:`, error);
+      throw error;
+    }
   }
 
   async deleteConversation(conversationId: number): Promise<void> {

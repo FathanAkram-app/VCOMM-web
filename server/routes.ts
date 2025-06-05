@@ -670,18 +670,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Clear chat history endpoint
-  app.post('/api/conversations/:id/clear', async (req, res) => {
+  app.post('/api/conversations/:id/clear', isAuthenticated, async (req: AuthRequest, res) => {
     console.log('[DEBUG] CLEAR endpoint reached');
-    
-    // Check authentication manually first
-    if (!req.session?.user?.id) {
-      console.log('[DEBUG] No authentication found in session for clear');
-      return res.status(401).json({ message: "Unauthorized" });
-    }
     
     try {
       const conversationId = parseInt(req.params.id);
-      const userId = req.session.user.id;
+      const userId = req.session?.user?.id;
+      
+      if (!userId) {
+        console.log('[DEBUG] No user ID in session for clear');
+        return res.status(401).json({ message: "Authentication required" });
+      }
       
       console.log(`[API] User ${userId} attempting to clear conversation ${conversationId}`);
       
@@ -693,6 +692,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const conversation = await storage.getConversation(conversationId);
       if (!conversation) {
         return res.status(404).json({ message: "Conversation not found" });
+      }
+      
+      // Check if user is a member of this conversation
+      const isMember = await storage.isUserMemberOfConversation(userId, conversationId);
+      if (!isMember) {
+        return res.status(403).json({ message: "Not authorized - not a member of this conversation" });
       }
       
       // Clear messages
