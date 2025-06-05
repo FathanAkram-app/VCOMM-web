@@ -238,9 +238,19 @@ export function CallProvider({ children }: { children: ReactNode }) {
       // Set volume
       gainNode.gain.value = 0.3;
       
+      // Store oscillator globally for emergency cleanup
+      (window as any).__currentOscillator = oscillator;
+      (window as any).__currentGainNode = gainNode;
+      
       // Start and stop the tone (0.8 seconds on, 0.8 seconds off)
       oscillator.start();
       oscillator.stop(ctx.currentTime + 0.8);
+      
+      // Clear references when oscillator ends
+      oscillator.onended = () => {
+        (window as any).__currentOscillator = null;
+        (window as any).__currentGainNode = null;
+      };
       
       console.log('[CallContext] Playing waiting tone - tuuutt');
     } catch (error) {
@@ -281,6 +291,29 @@ export function CallProvider({ children }: { children: ReactNode }) {
       console.log('[CallContext] Clearing waiting tone interval');
       clearInterval(waitingToneInterval);
       setWaitingToneInterval(null);
+    }
+    
+    // Stop current oscillator if playing
+    if ((window as any).__currentOscillator) {
+      try {
+        console.log('[CallContext] Force stopping current oscillator');
+        (window as any).__currentOscillator.stop();
+        (window as any).__currentOscillator.disconnect();
+        (window as any).__currentOscillator = null;
+      } catch (e) {
+        console.log('[CallContext] Oscillator already stopped or error:', e);
+      }
+    }
+    
+    // Disconnect current gain node
+    if ((window as any).__currentGainNode) {
+      try {
+        console.log('[CallContext] Force disconnecting current gain node');
+        (window as any).__currentGainNode.disconnect();
+        (window as any).__currentGainNode = null;
+      } catch (e) {
+        console.log('[CallContext] Gain node already disconnected or error:', e);
+      }
     }
     
     // Force close any audio contexts that might be playing waiting tones
@@ -1959,6 +1992,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
       console.log('[CallContext] ✅ Waiting tone interval cleared on hangup');
     }
     
+    // Clear stored interval ID for waiting tone
+    if ((window as any).__waitingToneIntervalId) {
+      console.log('[CallContext] Clearing stored waiting tone interval on hangup');
+      clearInterval((window as any).__waitingToneIntervalId);
+      (window as any).__waitingToneIntervalId = null;
+    }
+    
     // Stop any running audio contexts or oscillators
     if (audioContext) {
       try {
@@ -1968,6 +2008,20 @@ export function CallProvider({ children }: { children: ReactNode }) {
       } catch (e) {
         console.log('[CallContext] Audio context already closed');
       }
+    }
+    
+    // Force stop all audio elements on the page
+    try {
+      const audioElements = document.querySelectorAll('audio');
+      audioElements.forEach((audio: HTMLAudioElement) => {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.volume = 0;
+        audio.muted = true;
+      });
+      console.log('[CallContext] ✅ All page audio elements forcefully stopped on hangup');
+    } catch (e) {
+      console.log('[CallContext] Error stopping all audio elements:', e);
     }
     
     // Stop ringtone when call is ended
