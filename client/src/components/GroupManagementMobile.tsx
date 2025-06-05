@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { useCall } from '@/hooks/useCall';
 
 interface GroupMember {
   id: number;
@@ -46,6 +47,38 @@ export default function GroupManagementMobile({ groupId, groupName, onClose, cur
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { ws } = useCall();
+
+  // Listen for real-time group updates
+  useEffect(() => {
+    if (!ws) return;
+
+    const handleMessage = (event: MessageEvent) => {
+      try {
+        const message = JSON.parse(event.data);
+        if (message.type === 'group_update' && message.payload?.groupId === groupId) {
+          const { updateType, data } = message.payload;
+          
+          if (updateType === 'name_updated') {
+            // Update local state for immediate UI response
+            setNewGroupName(data.name);
+            // Invalidate queries to refresh data
+            queryClient.invalidateQueries({ queryKey: [`/api/group-info/${groupId}`] });
+            queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/rooms'] });
+          } else if (updateType === 'member_removed' || updateType === 'members_added') {
+            // Refresh member list when members change
+            queryClient.invalidateQueries({ queryKey: [`/api/group-members/${groupId}`] });
+          }
+        }
+      } catch (error) {
+        console.error('Error processing WebSocket message:', error);
+      }
+    };
+
+    ws.addEventListener('message', handleMessage);
+    return () => ws.removeEventListener('message', handleMessage);
+  }, [ws, groupId, queryClient]);
 
   // Fetch group info
   const { data: groupInfo, isLoading: isLoadingInfo } = useQuery<GroupInfo>({
