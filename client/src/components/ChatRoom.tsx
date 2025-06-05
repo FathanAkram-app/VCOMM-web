@@ -1102,41 +1102,42 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                     )}
                     
                     {/* Message action dropdown menu */}
-                    <div className="relative">
+                    <div className="relative group">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="absolute right-0 -top-6 h-6 w-6 opacity-50 hover:opacity-100"
+                            className="absolute right-2 -top-8 h-8 w-8 opacity-0 group-hover:opacity-100 hover:bg-[#444444] transition-opacity"
                           >
-                            <MoreVertical className="h-4 w-4" />
+                            <MoreVertical className="h-4 w-4 text-white" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => {
-                            // Set reply message
-                            console.log("Setting reply to message:", msg);
-                            setReplyToMessage(msg);
-                            
-                            // Focus on message input after a small delay to ensure DOM is updated
-                            setTimeout(() => {
-                              const input = document.getElementById("message-input");
-                              if (input) {
-                                console.log("Focusing input element");
-                                input.focus();
-                              } else {
-                                console.warn("Input element not found");
-                              }
-                            }, 100);
-                          }}>
+                        <DropdownMenuContent align="end" className="bg-[#2a2a2a] border-[#444444]">
+                          <DropdownMenuItem 
+                            onClick={() => {
+                              console.log("Setting reply to message:", msg);
+                              setReplyToMessage(msg);
+                              
+                              setTimeout(() => {
+                                const input = document.getElementById("message-input");
+                                if (input) {
+                                  input.focus();
+                                }
+                              }, 100);
+                            }}
+                            className="text-white hover:bg-[#444444] cursor-pointer"
+                          >
                             <Reply className="mr-2 h-4 w-4" />
                             Balas
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => {
-                            setSelectedMessage(msg);
-                            setIsForwardDialogOpen(true);
-                          }}>
+                          <DropdownMenuItem 
+                            onClick={() => {
+                              setSelectedMessage(msg);
+                              setIsForwardDialogOpen(true);
+                            }}
+                            className="text-white hover:bg-[#444444] cursor-pointer"
+                          >
                             <Forward className="mr-2 h-4 w-4" />
                             Teruskan
                           </DropdownMenuItem>
@@ -1145,7 +1146,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                               setSelectedMessage(msg);
                               setIsDeleteDialogOpen(true);
                             }}
-                            className="text-red-500 focus:text-red-500"
+                            className="text-red-400 hover:bg-[#444444] hover:text-red-300 cursor-pointer"
                           >
                             <Trash className="mr-2 h-4 w-4" />
                             Hapus
