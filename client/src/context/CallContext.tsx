@@ -2096,6 +2096,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     
     // FORCE STOP ALL WAITING TONES AND RINGTONES IMMEDIATELY
     console.log('[CallContext] FORCE STOPPING ALL RINGTONES - reject call');
+    stopAllRingtones();
     stopWaitingTone();
     
     // Additional comprehensive audio cleanup for reject
@@ -2140,6 +2141,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     
     // FORCE STOP ALL WAITING TONES AND RINGTONES IMMEDIATELY
     console.log('[CallContext] FORCE STOPPING ALL RINGTONES - hangup call');
+    stopAllRingtones();
     stopWaitingTone();
     
     // Additional comprehensive audio cleanup for hangup
