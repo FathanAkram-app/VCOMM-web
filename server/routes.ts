@@ -1069,11 +1069,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               callId,
               callType: callType,
               fromUserId,
-              fromUserName,
-              toUserId: groupId, // For group calls, use groupId as target
-              toUserName: groupName,
+              toUserId: groupId, // For group calls, use groupId as conversation ID
               status: 'initiated',
-              duration: 0
+              participants: [fromUserId.toString()]
             });
             
             // Add the initiator to the group call participants
