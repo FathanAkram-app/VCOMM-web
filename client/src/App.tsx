@@ -15,6 +15,7 @@ import GroupCall from "@/components/GroupCall";
 import GroupVideoCall from "@/components/GroupVideoCall";
 import AudioTest from "@/components/AudioTest";
 import { CallProvider } from "@/context/CallContext";
+import { useServiceWorker } from "@/hooks/useServiceWorker";
 // import { usePWA } from "@/hooks/usePWA"; // Removed PWA install prompts
 
 // Komponen sederhana untuk mengecek login
@@ -109,10 +110,92 @@ function Router() {
   );
 }
 
+// Background Manager Component
+function BackgroundManager() {
+  const {
+    isSupported,
+    isRegistered,
+    requestNotificationPermission,
+    registerForPushNotifications,
+    showNotification,
+    registerForCalls,
+    keepAlive
+  } = useServiceWorker();
+
+  useEffect(() => {
+    if (isRegistered) {
+      console.log('[App] Service Worker registered, setting up background features...');
+      
+      // Request notification permission
+      requestNotificationPermission().then((granted) => {
+        if (granted) {
+          console.log('[App] Notification permission granted');
+          registerForPushNotifications();
+          registerForCalls();
+        }
+      });
+
+      // Keep connection alive every 30 seconds
+      const keepAliveInterval = setInterval(() => {
+        keepAlive();
+      }, 30000);
+
+      // Listen for service worker messages
+      const handleSWMessage = (event: Event) => {
+        const customEvent = event as CustomEvent;
+        console.log('[App] Service worker message:', customEvent.detail);
+        // Handle call actions from notifications
+      };
+
+      window.addEventListener('sw-answer-call', handleSWMessage as EventListener);
+      window.addEventListener('sw-reject-call', handleSWMessage as EventListener);
+
+      return () => {
+        clearInterval(keepAliveInterval);
+        window.removeEventListener('sw-answer-call', handleSWMessage as EventListener);
+        window.removeEventListener('sw-reject-call', handleSWMessage as EventListener);
+      };
+    }
+  }, [isRegistered]);
+
+  // Add visibility change handler to keep app alive
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        console.log('[App] App went to background, maintaining connection...');
+      } else {
+        console.log('[App] App returned to foreground');
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
+  // Add beforeunload handler to show notification
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (isSupported && isRegistered) {
+        showNotification('NXZZ-VComm Aktif', {
+          body: 'Aplikasi berjalan di background. Anda akan menerima notifikasi panggilan masuk.',
+          tag: 'background-active',
+          silent: true
+        });
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isSupported, isRegistered, showNotification]);
+
+  return null;
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <CallProvider>
+        <BackgroundManager />
         <Toaster />
         <Router />
       </CallProvider>
