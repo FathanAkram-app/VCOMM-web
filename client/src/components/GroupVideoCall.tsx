@@ -167,8 +167,11 @@ export default function GroupVideoCall() {
             iceServers: [
               { urls: 'stun:stun.l.google.com:19302' },
               { urls: 'stun:stun1.l.google.com:19302' },
-              { urls: 'stun:stun2.l.google.com:19302' }
-            ]
+              { urls: 'stun:stun2.l.google.com:19302' },
+              { urls: 'stun:stun3.l.google.com:19302' },
+              { urls: 'stun:stun4.l.google.com:19302' }
+            ],
+            iceCandidatePoolSize: 10
           });
 
           // Add local stream tracks to peer connection
@@ -212,9 +215,21 @@ export default function GroupVideoCall() {
             }
           };
 
-          // Handle connection state changes
+          // Handle connection state changes with restart mechanism
           peerConnection.onconnectionstatechange = () => {
             console.log('[GroupVideoCall] Connection state for user', participant.userId, ':', peerConnection.connectionState);
+            
+            if (peerConnection.connectionState === 'failed') {
+              console.warn(`[GroupVideoCall] Connection failed for user ${participant.userId}, attempting restart`);
+              
+              // Restart connection after delay
+              setTimeout(() => {
+                if (peerConnection.connectionState === 'failed') {
+                  console.log(`[GroupVideoCall] Restarting ICE for user ${participant.userId}`);
+                  peerConnection.restartIce();
+                }
+              }, 2000);
+            }
           };
 
           peerConnections.current[participant.userId] = peerConnection;
@@ -316,7 +331,8 @@ export default function GroupVideoCall() {
 
   // Attach remote streams to video elements when streams are available
   useEffect(() => {
-    Object.keys(remoteStreams).forEach(userId => {
+    Object.keys(remoteStreams).forEach(userIdStr => {
+      const userId = parseInt(userIdStr);
       const stream = remoteStreams[userId];
       const videoElement = participantVideoRefs.current[userId];
       
@@ -333,10 +349,10 @@ export default function GroupVideoCall() {
           // Try to play with fallback
           const playPromise = videoElement.play();
           if (playPromise !== undefined) {
-            playPromise.catch(error => {
+            playPromise.catch((error: any) => {
               console.warn(`[GroupVideoCall] Autoplay failed for user ${userId}, trying muted play`);
               videoElement.muted = true;
-              videoElement.play().catch(muteErr => {
+              videoElement.play().catch((muteErr: any) => {
                 console.warn(`[GroupVideoCall] Muted play failed for user ${userId}:`, muteErr);
               });
             });
@@ -663,28 +679,7 @@ export default function GroupVideoCall() {
                         ref={(el) => {
                           if (el) {
                             participantVideoRefs.current[participant.userId] = el;
-                            
-                            // Immediately attach stream if available
-                            const remoteStream = remoteStreams[participant.userId];
-                            if (remoteStream && remoteStream.active) {
-                              console.log(`[GroupVideoCall] Attaching stream to video element for user ${participant.userId}`);
-                              el.srcObject = remoteStream;
-                              el.autoplay = true;
-                              el.playsInline = true;
-                              el.muted = false;
-                              
-                              // Force play immediately
-                              const playPromise = el.play();
-                              if (playPromise !== undefined) {
-                                playPromise.catch(error => {
-                                  console.warn(`[GroupVideoCall] Auto-play failed for user ${participant.userId}, trying muted:`, error);
-                                  el.muted = true;
-                                  el.play().catch(muteErr => {
-                                    console.warn(`[GroupVideoCall] Muted play also failed:`, muteErr);
-                                  });
-                                });
-                              }
-                            }
+                            // Let useEffect handle stream attachment to avoid conflicts
                           }
                         }}
                         className="w-full h-full object-cover"
