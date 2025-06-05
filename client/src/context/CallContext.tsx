@@ -956,6 +956,36 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   const handleCallRejected = (message: any) => {
     console.log('[CallContext] Call rejected');
+    
+    // FORCE STOP ALL WAITING TONES AND RINGTONES IMMEDIATELY
+    console.log('[CallContext] FORCE STOPPING ALL RINGTONES - call rejected');
+    stopWaitingTone();
+    
+    // Additional comprehensive audio cleanup for call rejected
+    if (waitingToneInterval) {
+      clearInterval(waitingToneInterval);
+      setWaitingToneInterval(null);
+      console.log('[CallContext] ✅ Waiting tone interval cleared on call rejected');
+    }
+    
+    // Stop any running audio contexts or oscillators
+    if (audioContext) {
+      try {
+        audioContext.close();
+        setAudioContext(null);
+        console.log('[CallContext] ✅ Audio context closed on call rejected');
+      } catch (e) {
+        console.log('[CallContext] Audio context already closed');
+      }
+    }
+    
+    // Clear stored interval ID
+    if ((window as any).__waitingToneIntervalId) {
+      console.log('[CallContext] Clearing stored waiting tone interval on call rejected');
+      clearInterval((window as any).__waitingToneIntervalId);
+      (window as any).__waitingToneIntervalId = null;
+    }
+    
     setActiveCall(null);
     alert('Panggilan ditolak');
   };
