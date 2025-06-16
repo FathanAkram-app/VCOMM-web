@@ -121,7 +121,13 @@ NXZZ-VComm is a military communications platform designed for intranet environme
 - Port configuration for different deployment targets
 
 # Changelog
-- June 16, 2025. Initial setup
+- June 16, 2025: Initial setup with local server deployment optimization
+- June 16, 2025: Added comprehensive local deployment guides:
+  - LOCAL-DEPLOYMENT-GUIDE.md: Hardware specs and deployment strategy
+  - MANUAL-DEPLOYMENT-LOCAL.md: Step-by-step manual deployment
+  - deploy-local.sh: Automated deployment script with Docker
+  - mobile-setup-guide.md: Mobile user setup instructions
+  - Docker-based deployment for 1000+ concurrent mobile users
 
 # User Preferences
 
