@@ -779,48 +779,20 @@ export default function Chat() {
               </div>
               
               <div className="flex-1 overflow-y-auto p-4">
-                <div className="grid gap-4">
-                  {/* Sample report cards - akan diganti dengan data real */}
-                  <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#333] hover:border-[#8d9c6b] transition-colors">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-semibold text-[#8d9c6b]">Contact Enemy</h3>
-                      <span className="text-xs px-2 py-1 bg-red-900 text-red-200 rounded">URGENT</span>
-                    </div>
-                    <p className="text-sm text-gray-400 mb-2">
-                      Kontak musuh di grid 12345678. Estimasi 1 section infantry...
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                  <div className="max-w-md">
+                    <FileText className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-400 mb-2">Belum Ada Laporan Situasi</h3>
+                    <p className="text-sm text-gray-500 mb-6">
+                      Mulai buat laporan situasi pertama Anda untuk melacak kejadian di lapangan.
                     </p>
-                    <div className="flex justify-between items-center text-xs text-gray-500">
-                      <span>Situasi Tactical</span>
-                      <span>2 jam yang lalu</span>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#333] hover:border-[#8d9c6b] transition-colors">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-semibold text-[#8d9c6b]">Personnel Casualty</h3>
-                      <span className="text-xs px-2 py-1 bg-orange-900 text-orange-200 rounded">HIGH</span>
-                    </div>
-                    <p className="text-sm text-gray-400 mb-2">
-                      Satu personel injured ringan dari friendly fire incident...
-                    </p>
-                    <div className="flex justify-between items-center text-xs text-gray-500">
-                      <span>Personnel Status</span>
-                      <span>4 jam yang lalu</span>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#333] hover:border-[#8d9c6b] transition-colors">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-semibold text-[#8d9c6b]">Equipment Malfunction</h3>
-                      <span className="text-xs px-2 py-1 bg-green-900 text-green-200 rounded">NORMAL</span>
-                    </div>
-                    <p className="text-sm text-gray-400 mb-2">
-                      Radio komunikasi mengalami gangguan di frequency 123.45...
-                    </p>
-                    <div className="flex justify-between items-center text-xs text-gray-500">
-                      <span>Equipment Status</span>
-                      <span>1 hari yang lalu</span>
-                    </div>
+                    <Button 
+                      className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
+                      onClick={() => {/* TODO: Add new report modal */}}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Buat Laporan Pertama
+                    </Button>
                   </div>
                 </div>
               </div>

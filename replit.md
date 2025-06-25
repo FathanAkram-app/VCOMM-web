@@ -121,13 +121,18 @@ NXZZ-VComm is a military communications platform designed for intranet environme
 - Port configuration for different deployment targets
 
 # Changelog
-- June 16, 2025: Initial setup with local server deployment optimization
-- June 16, 2025: Added comprehensive local deployment guides:
+- June 25, 2025: Initial setup with local server deployment optimization
+- June 25, 2025: Added comprehensive local deployment guides:
   - LOCAL-DEPLOYMENT-GUIDE.md: Hardware specs and deployment strategy
   - MANUAL-DEPLOYMENT-LOCAL.md: Step-by-step manual deployment
   - deploy-local.sh: Automated deployment script with Docker
   - mobile-setup-guide.md: Mobile user setup instructions
   - Docker-based deployment for 1000+ concurrent mobile users
+- June 25, 2025: Added Lapsit (Situation Report) system:
+  - Database tables: lapsit_categories and lapsit_reports
+  - Menu Lapsit added between Settings and Personnel
+  - Empty state UI with creation prompt
+  - Sample data with military tactical categories
 
 # User Preferences
 
