@@ -159,7 +159,9 @@ export default function Chat() {
         setImagePreview(null);
         
         // Reload reports to show the new one
-        loadLapsitReports();
+        setTimeout(() => {
+          loadLapsitReports();
+        }, 500);
       }
     } catch (error) {
       console.error('Error submitting lapsit report:', error);

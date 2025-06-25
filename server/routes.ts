@@ -859,7 +859,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.file) {
         const timestamp = Date.now();
         const fileName = `lapsit_${timestamp}_${req.file.originalname}`;
-        const filePath = path.join(__dirname, '../uploads', fileName);
+        const filePath = path.join(process.cwd(), 'uploads', fileName);
         
         // Save file
         await fs.promises.writeFile(filePath, req.file.buffer);
