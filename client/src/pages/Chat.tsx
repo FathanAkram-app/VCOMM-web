@@ -118,12 +118,23 @@ export default function Chat() {
         attachmentUrl: attachmentUrl
       };
 
-      const response = await apiRequest('/api/lapsit/reports', {
+      const formData = new FormData();
+      formData.append('categoryId', selectedLapsitCategory.id.toString());
+      formData.append('title', lapsitReportData.title);
+      formData.append('content', lapsitReportData.content);
+      formData.append('priority', lapsitReportData.priority);
+      formData.append('classification', lapsitReportData.classification);
+      if (lapsitReportData.location) {
+        formData.append('location', lapsitReportData.location);
+      }
+      if (selectedImage) {
+        formData.append('image', selectedImage);
+      }
+
+      const response = await fetch('/api/lapsit/reports', {
         method: 'POST',
-        body: JSON.stringify(reportPayload),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        credentials: 'include',
+        body: formData,
       });
 
       if (response.ok) {
