@@ -100,33 +100,54 @@ export default function Chat() {
     }
 
     try {
-      // TODO: Implement API call to submit lapsit report
-      console.log('Submitting lapsit report:', {
-        category: selectedLapsitCategory,
-        subCategory: selectedLapsitSubCategory,
-        data: lapsitReportData,
-        image: selectedImage
+      // TODO: Upload image if exists
+      let attachmentUrl = null;
+      if (selectedImage) {
+        // For now, we'll skip image upload and implement it later
+        console.log('Image selected but upload not implemented yet:', selectedImage.name);
+      }
+
+      const reportPayload = {
+        categoryId: selectedLapsitCategory.id,
+        subCategoryId: null, // Will be mapped from database
+        title: lapsitReportData.title,
+        content: lapsitReportData.content,
+        priority: lapsitReportData.priority,
+        classification: lapsitReportData.classification,
+        location: lapsitReportData.location || null,
+        attachmentUrl: attachmentUrl
+      };
+
+      const response = await apiRequest('/api/lapsit/reports', {
+        method: 'POST',
+        body: JSON.stringify(reportPayload),
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
-      
-      toast({
-        title: "Berhasil",
-        description: "Laporan situasi berhasil dibuat",
-      });
-      
-      // Reset form
-      setShowLapsitReportForm(false);
-      setSelectedLapsitCategory(null);
-      setSelectedLapsitSubCategory(null);
-      setLapsitReportData({
-        title: '',
-        content: '',
-        location: '',
-        priority: 'normal',
-        classification: 'UNCLASSIFIED'
-      });
-      setSelectedImage(null);
-      setImagePreview(null);
+
+      if (response.ok) {
+        toast({
+          title: "Berhasil",
+          description: "Laporan situasi berhasil dibuat",
+        });
+        
+        // Reset form
+        setShowLapsitReportForm(false);
+        setSelectedLapsitCategory(null);
+        setSelectedLapsitSubCategory(null);
+        setLapsitReportData({
+          title: '',
+          content: '',
+          location: '',
+          priority: 'normal',
+          classification: 'UNCLASSIFIED'
+        });
+        setSelectedImage(null);
+        setImagePreview(null);
+      }
     } catch (error) {
+      console.error('Error submitting lapsit report:', error);
       toast({
         title: "Error",
         description: "Gagal membuat laporan situasi",
@@ -1336,7 +1357,8 @@ export default function Chat() {
                     className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338] justify-start text-left h-auto p-3"
                     onClick={() => {
                       setShowLapsitSubCategoryModal(false);
-                      // TODO: Open report form with this sub category
+                      setSelectedLapsitSubCategory({name: subCat, index: index + 1});
+                      setShowLapsitReportForm(true);
                     }}
                   >
                     <span className="text-sm">{index + 1}. {subCat}</span>
@@ -1361,7 +1383,8 @@ export default function Chat() {
                     className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338] justify-start text-left h-auto p-3"
                     onClick={() => {
                       setShowLapsitSubCategoryModal(false);
-                      // TODO: Open report form with this sub category
+                      setSelectedLapsitSubCategory({name: subCat, index: index + 1});
+                      setShowLapsitReportForm(true);
                     }}
                   >
                     <span className="text-sm">{index + 1}. {subCat}</span>
@@ -1387,7 +1410,8 @@ export default function Chat() {
                     className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338] justify-start text-left h-auto p-3"
                     onClick={() => {
                       setShowLapsitSubCategoryModal(false);
-                      // TODO: Open report form with this sub category
+                      setSelectedLapsitSubCategory({name: subCat, index: index + 1});
+                      setShowLapsitReportForm(true);
                     }}
                   >
                     <span className="text-sm">{index + 1}. {subCat}</span>
