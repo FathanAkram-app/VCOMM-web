@@ -173,11 +173,40 @@ export default function Chat() {
   
   // Load lapsit reports
   const loadLapsitReports = async () => {
+    if (!user) {
+      console.log('No user logged in, skipping lapsit reports load');
+      setLapsitReports([]);
+      return;
+    }
+    
     try {
-      console.log('Loading lapsit reports...');
-      const reports = await apiRequest('/api/lapsit/reports');
-      console.log('Loaded reports:', reports);
-      setLapsitReports(reports || []);
+      console.log('Loading lapsit reports for user:', user.callsign);
+      const response = await fetch('/api/lapsit/reports', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('Lapsit API response status:', response.status);
+      
+      if (response.ok) {
+        const reports = await response.json();
+        console.log('Loaded reports count:', reports.length);
+        console.log('Reports data:', reports);
+        setLapsitReports(reports || []);
+      } else {
+        const errorText = await response.text();
+        console.error('Failed to load reports:', response.status, errorText);
+        setLapsitReports([]);
+        
+        if (response.status === 401) {
+          console.log('Authentication failed, redirecting to login');
+          window.location.href = '/login';
+        }
+      }
     } catch (error) {
       console.error('Error loading lapsit reports:', error);
       setLapsitReports([]);
@@ -239,12 +268,13 @@ export default function Chat() {
     checkAuth();
   }, []);
 
-  // Load lapsit reports when lapsit view is active
+  // Load lapsit reports when lapsit view is active or user changes
   useEffect(() => {
-    if (activeView === 'lapsit') {
+    if (activeView === 'lapsit' && user) {
+      console.log('Loading lapsit reports for user:', user.callsign);
       loadLapsitReports();
     }
-  }, [activeView]);
+  }, [activeView, user]);
   
   // Fetch user chats
   const fetchUserChats = async (userId: number) => {
@@ -948,13 +978,23 @@ export default function Chat() {
                   </Button>
                 </div>
                 
+                {/* Debug information */}
+                <div className="mb-2 p-2 bg-gray-800 rounded text-xs text-gray-400">
+                  Debug: {lapsitReports.length} laporan dimuat | User: {user?.callsign} | Auth: {user ? 'OK' : 'Tidak login'}
+                </div>
+                
                 {lapsitReports.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center">
                     <div className="max-w-md">
                       <FileText className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-400 mb-2">Belum Ada Laporan Situasi</h3>
+                      <h3 className="text-lg font-medium text-gray-400 mb-2">
+                        {user ? 'Belum Ada Laporan Situasi' : 'Silakan Login Terlebih Dahulu'}
+                      </h3>
                       <p className="text-sm text-gray-500 mb-6">
-                        Mulai buat laporan situasi pertama Anda untuk melacak kejadian di lapangan.
+                        {user 
+                          ? 'Mulai buat laporan situasi pertama Anda untuk melacak kejadian di lapangan.'
+                          : 'Anda perlu login untuk melihat dan membuat laporan situasi.'
+                        }
                       </p>
                     </div>
                   </div>
