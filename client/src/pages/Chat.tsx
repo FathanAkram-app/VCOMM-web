@@ -64,6 +64,7 @@ export default function Chat() {
   });
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [lapsitReports, setLapsitReports] = useState<any[]>([]);
   
   // Handle image selection
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -156,6 +157,9 @@ export default function Chat() {
         });
         setSelectedImage(null);
         setImagePreview(null);
+        
+        // Reload reports to show the new one
+        loadLapsitReports();
       }
     } catch (error) {
       console.error('Error submitting lapsit report:', error);
@@ -167,6 +171,21 @@ export default function Chat() {
     }
   };
   
+  // Load lapsit reports
+  const loadLapsitReports = async () => {
+    try {
+      const response = await fetch('/api/lapsit/reports', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const reports = await response.json();
+        setLapsitReports(reports);
+      }
+    } catch (error) {
+      console.error('Error loading lapsit reports:', error);
+    }
+  };
+
   // State untuk WebSocket
   const [wsConnected, setWsConnected] = useState(false);
   const [socket, setSocket] = useState<WebSocket | null>(null);
@@ -900,32 +919,59 @@ export default function Chat() {
               </div>
               
               <div className="flex-1 overflow-y-auto p-4">
-                <div className="space-y-4">
-                  {/* Sample report to test display */}
-                  <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#333] hover:border-[#8d9c6b] transition-colors">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-semibold text-[#8d9c6b]">Test Laporan</h3>
-                      <span className="text-xs px-2 py-1 bg-blue-900 text-blue-200 rounded">NORMAL</span>
-                    </div>
-                    <p className="text-sm text-gray-400 mb-2">
-                      Ini adalah test laporan situasi umum untuk memastikan database berfungsi
-                    </p>
-                    <div className="flex justify-between items-center text-xs text-gray-500">
-                      <span>Situasi Umum</span>
-                      <span>Baru saja</span>
+                {lapsitReports.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center">
+                    <div className="max-w-md">
+                      <FileText className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-400 mb-2">Belum Ada Laporan Situasi</h3>
+                      <p className="text-sm text-gray-500 mb-6">
+                        Mulai buat laporan situasi pertama Anda untuk melacak kejadian di lapangan.
+                      </p>
                     </div>
                   </div>
-                  
-                  <div className="text-center mt-8">
-                    <Button 
-                      className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
-                      onClick={() => setShowLapsitCategoryModal(true)}
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Buat Laporan Baru
-                    </Button>
+                ) : (
+                  <div className="space-y-4">
+                    {lapsitReports.map((report) => (
+                      <div key={report.id} className="bg-[#1a1a1a] rounded-lg p-4 border border-[#333] hover:border-[#8d9c6b] transition-colors">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="font-semibold text-[#8d9c6b]">{report.title}</h3>
+                          <span className={`text-xs px-2 py-1 rounded ${
+                            report.priority === 'urgent' ? 'bg-red-900 text-red-200' :
+                            report.priority === 'high' ? 'bg-orange-900 text-orange-200' :
+                            report.priority === 'normal' ? 'bg-blue-900 text-blue-200' :
+                            'bg-green-900 text-green-200'
+                          }`}>
+                            {report.priority?.toUpperCase()}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-400 mb-2">
+                          {report.content}
+                        </p>
+                        {report.location && (
+                          <p className="text-xs text-gray-500 mb-2">
+                            📍 {report.location}
+                          </p>
+                        )}
+                        {report.attachmentUrl && (
+                          <div className="mb-2">
+                            <img 
+                              src={report.attachmentUrl} 
+                              alt={report.attachmentName || 'Attachment'}
+                              className="max-w-full max-h-32 rounded border border-[#333]"
+                            />
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center text-xs text-gray-500">
+                          <span>{report.categoryName} {report.subCategoryName && `- ${report.subCategoryName}`}</span>
+                          <span>oleh {report.reporterCallsign}</span>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {new Date(report.createdAt).toLocaleString('id-ID')}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </div>
+                )}
               </div>
             </div>
           )}
