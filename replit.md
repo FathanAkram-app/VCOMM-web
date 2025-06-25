@@ -128,11 +128,13 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - deploy-local.sh: Automated deployment script with Docker
   - mobile-setup-guide.md: Mobile user setup instructions
   - Docker-based deployment for 1000+ concurrent mobile users
-- June 25, 2025: Added Lapsit (Situation Report) system:
-  - Database tables: lapsit_categories and lapsit_reports
-  - Menu Lapsit added between Settings and Personnel
-  - Empty state UI with creation prompt
-  - Sample data with military tactical categories
+- June 25, 2025: Added complete Lapsit (Situation Report) system:
+  - Database tables: lapsit_categories, lapsit_subcategories, lapsit_reports
+  - 3 main categories with 19 sub-categories for detailed reporting
+  - Full form with photo upload/camera capture functionality
+  - API endpoints for creating and retrieving lapsit reports
+  - File upload support with multer for image attachments
+  - Complete UI flow: category selection → sub-category → detailed form
 
 # User Preferences
 

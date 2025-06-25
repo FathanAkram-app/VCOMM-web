@@ -724,6 +724,62 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+
+  // Lapsit operations
+  async getLapsitCategories() {
+    const categories = await db
+      .select({
+        id: lapsitCategories.id,
+        name: lapsitCategories.name,
+        description: lapsitCategories.description
+      })
+      .from(lapsitCategories)
+      .orderBy(lapsitCategories.id);
+    return categories;
+  }
+
+  async createLapsitReport(reportData: any) {
+    const [report] = await db
+      .insert(lapsitReports)
+      .values({
+        categoryId: reportData.categoryId,
+        subCategoryId: reportData.subCategoryId,
+        title: reportData.title,
+        content: reportData.content,
+        priority: reportData.priority,
+        classification: reportData.classification,
+        location: reportData.location,
+        attachmentUrl: reportData.attachmentUrl,
+        attachmentName: reportData.attachmentName,
+        reportedById: reportData.reportedById
+      })
+      .returning();
+    return report;
+  }
+
+  async getLapsitReports() {
+    const reports = await db
+      .select({
+        id: lapsitReports.id,
+        title: lapsitReports.title,
+        content: lapsitReports.content,
+        priority: lapsitReports.priority,
+        classification: lapsitReports.classification,
+        location: lapsitReports.location,
+        attachmentUrl: lapsitReports.attachmentUrl,
+        attachmentName: lapsitReports.attachmentName,
+        createdAt: lapsitReports.createdAt,
+        categoryName: lapsitCategories.name,
+        subCategoryName: lapsitSubCategories.name,
+        reporterCallsign: users.callsign
+      })
+      .from(lapsitReports)
+      .leftJoin(lapsitCategories, eq(lapsitReports.categoryId, lapsitCategories.id))
+      .leftJoin(lapsitSubCategories, eq(lapsitReports.subCategoryId, lapsitSubCategories.id))
+      .leftJoin(users, eq(lapsitReports.reportedById, users.id))
+      .orderBy(desc(lapsitReports.createdAt));
+    return reports;
+  }
 }
 
 // Export DatabaseStorage instance to be used in the application
