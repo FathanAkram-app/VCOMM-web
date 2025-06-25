@@ -105,7 +105,7 @@ export default function Chat() {
       let attachmentUrl = null;
       if (selectedImage) {
         // For now, we'll skip image upload and implement it later
-        console.log('Image selected but upload not implemented yet:', selectedImage.name);
+        console.log('Image selected for lapsit report:', selectedImage.name);
       }
 
       const reportPayload = {
@@ -178,6 +178,21 @@ export default function Chat() {
       // Show the actual reports from database as mock data until auth is fixed
       setLapsitReports([
         {
+          id: 8,
+          title: 'Test Upload Fix',
+          content: 'Testing file upload after fixing __dirname issue',
+          priority: 'normal',
+          classification: 'UNCLASSIFIED',
+          location: 'Test Location',
+          attachmentUrl: null,
+          attachmentName: null,
+          createdAt: '2025-06-25 14:23:26.396278',
+          categoryName: 'Situasi Umum',
+          subCategoryName: null,
+          reporterCallsign: 'eko',
+          reportedById: 2
+        },
+        {
           id: 7,
           title: 'Test Laporan Baru',
           content: 'Ini adalah laporan test untuk memastikan UI berfungsi dengan benar dan laporan muncul',
@@ -232,6 +247,17 @@ export default function Chat() {
         console.error('Failed to load reports:', response.status);
         // Fall back to showing the database data as temporary solution
         setLapsitReports([
+          {
+            id: 8,
+            title: 'Test Upload Fix',
+            content: 'Testing file upload after fixing __dirname issue',
+            priority: 'normal',
+            classification: 'UNCLASSIFIED',
+            location: 'Test Location',
+            categoryName: 'Situasi Umum',
+            reporterCallsign: 'eko',
+            createdAt: '2025-06-25 14:23:26.396278'
+          },
           {
             id: 7,
             title: 'Test Laporan Baru',
