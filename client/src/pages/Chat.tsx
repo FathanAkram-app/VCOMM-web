@@ -3,13 +3,15 @@ import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { 
   MessageSquare, PhoneIcon, Settings, Plus, User, 
-  ArrowLeft, PaperclipIcon, SendIcon, Users, Search, Info, FileText
+  ArrowLeft, PaperclipIcon, SendIcon, Users, Search, Info, FileText,
+  Upload, Camera, X
 } from 'lucide-react';
 import ChatList from '../components/ChatList';
 import chatIcon from '@assets/Icon Chat NXXZ.png';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../hooks/use-toast';
 import ChatRoom from '../components/ChatRoom';
 import IncomingCallModal from '../components/IncomingCallModal';
 import GroupCall from '../components/GroupCall';
@@ -27,6 +29,7 @@ export default function Chat() {
   const [user, setUser] = useState<any>(null);
   const [, navigate] = useLocation();
   const { activeCall } = useCall();
+  const { toast } = useToast();
   const [activeChat, setActiveChat] = useState<{ id: number; isGroup: boolean } | null>(null);
   const [chats, setChats] = useState<any[]>([]);
   const [databaseMessages, setDatabaseMessages] = useState<any[]>([]);
@@ -49,7 +52,88 @@ export default function Chat() {
   // Lapsit states
   const [showLapsitCategoryModal, setShowLapsitCategoryModal] = useState(false);
   const [showLapsitSubCategoryModal, setShowLapsitSubCategoryModal] = useState(false);
+  const [showLapsitReportForm, setShowLapsitReportForm] = useState(false);
   const [selectedLapsitCategory, setSelectedLapsitCategory] = useState<any>(null);
+  const [selectedLapsitSubCategory, setSelectedLapsitSubCategory] = useState<any>(null);
+  const [lapsitReportData, setLapsitReportData] = useState({
+    title: '',
+    content: '',
+    location: '',
+    priority: 'normal',
+    classification: 'UNCLASSIFIED'
+  });
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  
+  // Handle image selection
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle camera capture
+  const handleCameraCapture = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.capture = 'environment'; // Use rear camera
+    input.onchange = handleImageSelect;
+    input.click();
+  };
+
+  // Handle report submission
+  const handleSubmitLapsitReport = async () => {
+    if (!lapsitReportData.title || !lapsitReportData.content) {
+      toast({
+        title: "Error",
+        description: "Judul dan isi laporan harus diisi",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // TODO: Implement API call to submit lapsit report
+      console.log('Submitting lapsit report:', {
+        category: selectedLapsitCategory,
+        subCategory: selectedLapsitSubCategory,
+        data: lapsitReportData,
+        image: selectedImage
+      });
+      
+      toast({
+        title: "Berhasil",
+        description: "Laporan situasi berhasil dibuat",
+      });
+      
+      // Reset form
+      setShowLapsitReportForm(false);
+      setSelectedLapsitCategory(null);
+      setSelectedLapsitSubCategory(null);
+      setLapsitReportData({
+        title: '',
+        content: '',
+        location: '',
+        priority: 'normal',
+        classification: 'UNCLASSIFIED'
+      });
+      setSelectedImage(null);
+      setImagePreview(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Gagal membuat laporan situasi",
+        variant: "destructive",
+      });
+    }
+  };
   
   // State untuk WebSocket
   const [wsConnected, setWsConnected] = useState(false);
@@ -1333,6 +1417,181 @@ export default function Chat() {
               className="border-[#333] text-gray-300 hover:bg-[#262626]"
             >
               Batal
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Lapsit Report Form Modal */}
+      <Dialog open={showLapsitReportForm} onOpenChange={setShowLapsitReportForm}>
+        <DialogContent className="bg-[#1a1a1a] text-white border-[#333] max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-[#8d9c6b]">
+              Buat Laporan - {selectedLapsitCategory?.name} - {selectedLapsitSubCategory?.name}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="mt-4 space-y-4">
+            {/* Title */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Judul Laporan</label>
+              <input
+                type="text"
+                value={lapsitReportData.title}
+                onChange={(e) => setLapsitReportData({...lapsitReportData, title: e.target.value})}
+                className="w-full p-3 bg-[#2d2d2d] border border-[#333] rounded-lg text-white focus:border-[#8d9c6b] focus:outline-none"
+                placeholder="Masukkan judul laporan..."
+              />
+            </div>
+
+            {/* Content */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Isi Laporan</label>
+              <textarea
+                value={lapsitReportData.content}
+                onChange={(e) => setLapsitReportData({...lapsitReportData, content: e.target.value})}
+                className="w-full p-3 bg-[#2d2d2d] border border-[#333] rounded-lg text-white focus:border-[#8d9c6b] focus:outline-none h-32 resize-none"
+                placeholder="Masukkan detail laporan situasi..."
+              />
+            </div>
+
+            {/* Location */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Lokasi (Opsional)</label>
+              <input
+                type="text"
+                value={lapsitReportData.location}
+                onChange={(e) => setLapsitReportData({...lapsitReportData, location: e.target.value})}
+                className="w-full p-3 bg-[#2d2d2d] border border-[#333] rounded-lg text-white focus:border-[#8d9c6b] focus:outline-none"
+                placeholder="Masukkan lokasi atau koordinat..."
+              />
+            </div>
+
+            {/* Priority and Classification */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Prioritas</label>
+                <select
+                  value={lapsitReportData.priority}
+                  onChange={(e) => setLapsitReportData({...lapsitReportData, priority: e.target.value})}
+                  className="w-full p-3 bg-[#2d2d2d] border border-[#333] rounded-lg text-white focus:border-[#8d9c6b] focus:outline-none"
+                >
+                  <option value="low">Rendah</option>
+                  <option value="normal">Normal</option>
+                  <option value="high">Tinggi</option>
+                  <option value="urgent">Mendesak</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Klasifikasi</label>
+                <select
+                  value={lapsitReportData.classification}
+                  onChange={(e) => setLapsitReportData({...lapsitReportData, classification: e.target.value})}
+                  className="w-full p-3 bg-[#2d2d2d] border border-[#333] rounded-lg text-white focus:border-[#8d9c6b] focus:outline-none"
+                >
+                  <option value="UNCLASSIFIED">UNCLASSIFIED</option>
+                  <option value="RESTRICTED">RESTRICTED</option>
+                  <option value="CONFIDENTIAL">CONFIDENTIAL</option>
+                  <option value="SECRET">SECRET</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Image Upload */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Lampiran Foto (Opsional)</label>
+              <div className="flex flex-col sm:flex-row gap-2 mb-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => document.getElementById('image-upload')?.click()}
+                  className="border-[#333] text-gray-300 hover:bg-[#262626] flex-1"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Pilih dari Galeri
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCameraCapture}
+                  className="border-[#333] text-gray-300 hover:bg-[#262626] flex-1"
+                >
+                  <Camera className="w-4 h-4 mr-2" />
+                  Ambil Foto
+                </Button>
+              </div>
+              
+              <input
+                id="image-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                className="hidden"
+              />
+              
+              {imagePreview && (
+                <div className="mt-3">
+                  <div className="relative inline-block">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="max-w-full max-h-48 rounded-lg border border-[#333]"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedImage(null);
+                        setImagePreview(null);
+                      }}
+                      className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white border-red-600"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <DialogFooter className="mt-6">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowLapsitReportForm(false);
+                setShowLapsitSubCategoryModal(true);
+              }}
+              className="border-[#333] text-gray-300 hover:bg-[#262626]"
+            >
+              Kembali
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowLapsitReportForm(false);
+                setSelectedLapsitCategory(null);
+                setSelectedLapsitSubCategory(null);
+                setLapsitReportData({
+                  title: '',
+                  content: '',
+                  location: '',
+                  priority: 'normal',
+                  classification: 'UNCLASSIFIED'
+                });
+                setSelectedImage(null);
+                setImagePreview(null);
+              }}
+              className="border-[#333] text-gray-300 hover:bg-[#262626]"
+            >
+              Batal
+            </Button>
+            <Button 
+              onClick={handleSubmitLapsitReport}
+              className="bg-[#8d9c6b] text-black hover:bg-[#9dad7b]"
+            >
+              Kirim Laporan
             </Button>
           </DialogFooter>
         </DialogContent>
