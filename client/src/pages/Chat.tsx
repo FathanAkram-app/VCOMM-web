@@ -474,6 +474,10 @@ export default function Chat() {
     setActiveView('calls');
   };
   
+  const handleShowLapsit = () => {
+    setActiveView('lapsit');
+  };
+  
   const handleShowPersonnel = () => {
     setActiveView('personnel');
     fetchAllUsers(); // Refresh personnel list
@@ -605,6 +609,13 @@ export default function Chat() {
             </button>
             
             <button 
+              className={`p-3 rounded-lg ${activeView === 'lapsit' ? 'bg-[#2d3328] text-[#8d9c6b]' : 'text-gray-500 hover:bg-[#262626]'}`}
+              onClick={handleShowLapsit}
+            >
+              <FileText className="h-6 w-6" />
+            </button>
+            
+            <button 
               className={`p-3 rounded-lg ${activeView === 'personnel' ? 'bg-[#2d3328] text-[#8d9c6b]' : 'text-gray-500 hover:bg-[#262626]'}`}
               onClick={handleShowPersonnel}
             >
@@ -645,6 +656,13 @@ export default function Chat() {
             onClick={handleShowCalls}
           >
             <PhoneIcon className="h-6 w-6" />
+          </button>
+          
+          <button 
+            className={`p-3 rounded-lg ${activeView === 'lapsit' ? 'text-[#8d9c6b]' : 'text-gray-500'}`}
+            onClick={handleShowLapsit}
+          >
+            <FileText className="h-6 w-6" />
           </button>
           
           <button 
