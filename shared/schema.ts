@@ -99,11 +99,46 @@ export const callHistory = pgTable("call_history", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Lapsit Categories table
+export const lapsitCategories = pgTable("lapsit_categories", {
+  id: serial("id").primaryKey(),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  createdById: integer("created_by_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Lapsit Reports table
+export const lapsitReports = pgTable("lapsit_reports", {
+  id: serial("id").primaryKey(),
+  categoryId: integer("category_id").references(() => lapsitCategories.id).notNull(),
+  title: varchar("title").notNull(),
+  content: text("content").notNull(),
+  reportedById: integer("reported_by_id").references(() => users.id).notNull(),
+  status: varchar("status").default("pending"), // 'pending', 'reviewed', 'approved', 'rejected'
+  classification: varchar("classification").default("UNCLASSIFIED"), // same as message classifications
+  priority: varchar("priority").default("normal"), // 'low', 'normal', 'high', 'urgent'
+  location: varchar("location"), // optional location info
+  coordinates: varchar("coordinates"), // optional GPS coordinates
+  attachmentUrl: varchar("attachment_url"), // optional file attachment
+  attachmentName: varchar("attachment_name"),
+  reviewedById: integer("reviewed_by_id").references(() => users.id), // who reviewed the report
+  reviewedAt: timestamp("reviewed_at"),
+  reviewNotes: text("review_notes"), // notes from reviewer
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Schema types
 export type User = typeof users.$inferSelect;
 export type UpsertUser = typeof users.$inferInsert;
 export type CallHistory = typeof callHistory.$inferSelect;
 export type InsertCallHistory = typeof callHistory.$inferInsert;
+export type LapsitCategory = typeof lapsitCategories.$inferSelect;
+export type InsertLapsitCategory = typeof lapsitCategories.$inferInsert;
+export type LapsitReport = typeof lapsitReports.$inferSelect;
+export type InsertLapsitReport = typeof lapsitReports.$inferInsert;
 
 // Create schema for user registration
 export const registerUserSchema = createInsertSchema(users).pick({
@@ -185,3 +220,34 @@ export const BRANCHES = [
 export const CLASSIFICATION_LEVELS = [
   "UNCLASSIFIED", "CONFIDENTIAL", "SECRET", "TOP SECRET"
 ] as const;
+
+// Lapsit report status options
+export const LAPSIT_STATUS = [
+  "pending", "reviewed", "approved", "rejected"
+] as const;
+
+// Lapsit priority levels
+export const LAPSIT_PRIORITY = [
+  "low", "normal", "high", "urgent"
+] as const;
+
+// Lapsit category schemas
+export const insertLapsitCategorySchema = createInsertSchema(lapsitCategories).pick({
+  name: true,
+  description: true,
+});
+export type InsertLapsitCategoryData = z.infer<typeof insertLapsitCategorySchema>;
+
+// Lapsit report schemas
+export const insertLapsitReportSchema = createInsertSchema(lapsitReports).pick({
+  categoryId: true,
+  title: true,
+  content: true,
+  classification: true,
+  priority: true,
+  location: true,
+  coordinates: true,
+  attachmentUrl: true,
+  attachmentName: true,
+});
+export type InsertLapsitReportData = z.infer<typeof insertLapsitReportSchema>;
