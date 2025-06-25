@@ -46,6 +46,9 @@ export default function Chat() {
   // State untuk loading status
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   
+  // Lapsit states
+  const [showLapsitCategoryModal, setShowLapsitCategoryModal] = useState(false);
+  
   // State untuk WebSocket
   const [wsConnected, setWsConnected] = useState(false);
   const [socket, setSocket] = useState<WebSocket | null>(null);
@@ -771,7 +774,7 @@ export default function Chat() {
                 <Button 
                   size="sm" 
                   className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
-                  onClick={() => {/* TODO: Add new report modal */}}
+                  onClick={() => setShowLapsitCategoryModal(true)}
                 >
                   <Plus className="w-4 h-4 mr-1" />
                   Buat Laporan
@@ -788,7 +791,7 @@ export default function Chat() {
                     </p>
                     <Button 
                       className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
-                      onClick={() => {/* TODO: Add new report modal */}}
+                      onClick={() => setShowLapsitCategoryModal(true)}
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Buat Laporan Pertama
@@ -1157,6 +1160,66 @@ export default function Chat() {
       {activeCall && activeCall.callType === 'video' && activeCall.groupId && (
         <GroupVideoCall />
       )}
+
+      {/* Lapsit Category Selection Modal */}
+      <Dialog open={showLapsitCategoryModal} onOpenChange={setShowLapsitCategoryModal}>
+        <DialogContent className="bg-[#1a1a1a] text-white border-[#333]">
+          <DialogHeader>
+            <DialogTitle className="text-[#8d9c6b]">Pilih Kategori Laporan</DialogTitle>
+          </DialogHeader>
+          
+          <div className="mt-4 space-y-3">
+            <Button 
+              className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338] justify-start text-left h-auto p-4"
+              onClick={() => {
+                setShowLapsitCategoryModal(false);
+                // TODO: Open form for Situasi Umum
+              }}
+            >
+              <div className="flex flex-col items-start">
+                <span className="font-medium">1. Situasi Umum</span>
+                <span className="text-xs text-gray-400 mt-1">Laporan situasi umum dan kondisi keseluruhan area operasi</span>
+              </div>
+            </Button>
+            
+            <Button 
+              className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338] justify-start text-left h-auto p-4"
+              onClick={() => {
+                setShowLapsitCategoryModal(false);
+                // TODO: Open form for Situasi Lapangan
+              }}
+            >
+              <div className="flex flex-col items-start">
+                <span className="font-medium">2. Situasi Lapangan</span>
+                <span className="text-xs text-gray-400 mt-1">Laporan kondisi lapangan, medan, dan infrastruktur</span>
+              </div>
+            </Button>
+            
+            <Button 
+              className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338] justify-start text-left h-auto p-4"
+              onClick={() => {
+                setShowLapsitCategoryModal(false);
+                // TODO: Open form for Situasi Operasi/Tempur
+              }}
+            >
+              <div className="flex flex-col items-start">
+                <span className="font-medium">3. Situasi Operasi/Tempur</span>
+                <span className="text-xs text-gray-400 mt-1">Laporan aktivitas operasi, kontak musuh, dan situasi tempur</span>
+              </div>
+            </Button>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowLapsitCategoryModal(false)}
+              className="border-[#333] text-gray-300 hover:bg-[#262626]"
+            >
+              Batal
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
