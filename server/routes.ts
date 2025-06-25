@@ -888,6 +888,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+
+
   app.get('/api/lapsit/reports', isAuthenticated, async (req: AuthRequest, res) => {
     try {
       console.log('[API] Fetching lapsit reports for authenticated user');

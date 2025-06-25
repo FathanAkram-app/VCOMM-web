@@ -758,6 +758,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getLapsitReports() {
+    console.log('[Storage] Getting lapsit reports from database');
     const reports = await db
       .select({
         id: lapsitReports.id,
@@ -771,13 +772,16 @@ export class DatabaseStorage implements IStorage {
         createdAt: lapsitReports.createdAt,
         categoryName: lapsitCategories.name,
         subCategoryName: lapsitSubCategories.name,
-        reporterCallsign: users.callsign
+        reporterCallsign: users.callsign,
+        reportedById: lapsitReports.reportedById
       })
       .from(lapsitReports)
       .leftJoin(lapsitCategories, eq(lapsitReports.categoryId, lapsitCategories.id))
       .leftJoin(lapsitSubCategories, eq(lapsitReports.subCategoryId, lapsitSubCategories.id))
       .leftJoin(users, eq(lapsitReports.reportedById, users.id))
       .orderBy(desc(lapsitReports.createdAt));
+    
+    console.log(`[Storage] Found ${reports.length} lapsit reports`);
     return reports;
   }
 }
