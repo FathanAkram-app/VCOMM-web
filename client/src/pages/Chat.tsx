@@ -174,12 +174,21 @@ export default function Chat() {
   // Load lapsit reports
   const loadLapsitReports = async () => {
     try {
+      console.log('Loading lapsit reports...');
       const response = await fetch('/api/lapsit/reports', {
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
       });
+      console.log('Lapsit reports response status:', response.status);
       if (response.ok) {
         const reports = await response.json();
+        console.log('Loaded reports:', reports);
         setLapsitReports(reports);
+      } else {
+        console.error('Failed to load reports:', response.status, response.statusText);
       }
     } catch (error) {
       console.error('Error loading lapsit reports:', error);
@@ -240,6 +249,13 @@ export default function Chat() {
     
     checkAuth();
   }, []);
+
+  // Load lapsit reports when lapsit view is active
+  useEffect(() => {
+    if (activeView === 'lapsit') {
+      loadLapsitReports();
+    }
+  }, [activeView]);
   
   // Fetch user chats
   const fetchUserChats = async (userId: number) => {
@@ -919,6 +935,20 @@ export default function Chat() {
               </div>
               
               <div className="flex-1 overflow-y-auto p-4">
+                <div className="mb-4">
+                  <Button 
+                    onClick={loadLapsitReports}
+                    variant="outline"
+                    size="sm"
+                    className="border-[#333] text-gray-300 hover:bg-[#262626]"
+                  >
+                    🔄 Refresh Laporan
+                  </Button>
+                  <span className="ml-2 text-xs text-gray-500">
+                    Total: {lapsitReports.length} laporan
+                  </span>
+                </div>
+                
                 {lapsitReports.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center">
                     <div className="max-w-md">
@@ -952,13 +982,22 @@ export default function Chat() {
                             📍 {report.location}
                           </p>
                         )}
+                        {report.classification && (
+                          <p className="text-xs text-yellow-400 mb-2">
+                            🔒 {report.classification}
+                          </p>
+                        )}
                         {report.attachmentUrl && (
                           <div className="mb-2">
                             <img 
                               src={report.attachmentUrl} 
                               alt={report.attachmentName || 'Attachment'}
-                              className="max-w-full max-h-32 rounded border border-[#333]"
+                              className="max-w-full max-h-32 rounded border border-[#333] cursor-pointer hover:border-[#8d9c6b]"
+                              onClick={() => window.open(report.attachmentUrl, '_blank')}
                             />
+                            <p className="text-xs text-gray-500 mt-1">
+                              📎 {report.attachmentName}
+                            </p>
                           </div>
                         )}
                         <div className="flex justify-between items-center text-xs text-gray-500">

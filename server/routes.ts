@@ -890,7 +890,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/lapsit/reports', isAuthenticated, async (req: AuthRequest, res) => {
     try {
+      console.log('[API] Fetching lapsit reports for authenticated user');
       const reports = await storage.getLapsitReports();
+      console.log(`[API] Found ${reports.length} lapsit reports`);
       res.json(reports);
     } catch (error) {
       console.error("Error fetching lapsit reports:", error);
