@@ -109,10 +109,21 @@ export const lapsitCategories = pgTable("lapsit_categories", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Lapsit Sub Categories table
+export const lapsitSubCategories = pgTable("lapsit_subcategories", {
+  id: serial("id").primaryKey(),
+  categoryId: integer("category_id").notNull().references(() => lapsitCategories.id),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  orderIndex: integer("order_index").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Lapsit Reports table
 export const lapsitReports = pgTable("lapsit_reports", {
   id: serial("id").primaryKey(),
   categoryId: integer("category_id").references(() => lapsitCategories.id).notNull(),
+  subCategoryId: integer("sub_category_id").references(() => lapsitSubCategories.id),
   title: varchar("title").notNull(),
   content: text("content").notNull(),
   reportedById: integer("reported_by_id").references(() => users.id).notNull(),
@@ -137,6 +148,8 @@ export type CallHistory = typeof callHistory.$inferSelect;
 export type InsertCallHistory = typeof callHistory.$inferInsert;
 export type LapsitCategory = typeof lapsitCategories.$inferSelect;
 export type InsertLapsitCategory = typeof lapsitCategories.$inferInsert;
+export type LapsitSubCategory = typeof lapsitSubCategories.$inferSelect;
+export type InsertLapsitSubCategory = typeof lapsitSubCategories.$inferInsert;
 export type LapsitReport = typeof lapsitReports.$inferSelect;
 export type InsertLapsitReport = typeof lapsitReports.$inferInsert;
 

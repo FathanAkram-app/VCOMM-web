@@ -48,6 +48,8 @@ export default function Chat() {
   
   // Lapsit states
   const [showLapsitCategoryModal, setShowLapsitCategoryModal] = useState(false);
+  const [showLapsitSubCategoryModal, setShowLapsitSubCategoryModal] = useState(false);
+  const [selectedLapsitCategory, setSelectedLapsitCategory] = useState<any>(null);
   
   // State untuk WebSocket
   const [wsConnected, setWsConnected] = useState(false);
@@ -1173,7 +1175,8 @@ export default function Chat() {
               className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338] justify-start text-left h-auto p-4"
               onClick={() => {
                 setShowLapsitCategoryModal(false);
-                // TODO: Open form for Situasi Umum
+                setSelectedLapsitCategory({id: 10, name: 'Situasi Umum'});
+                setShowLapsitSubCategoryModal(true);
               }}
             >
               <div className="flex flex-col items-start">
@@ -1186,7 +1189,8 @@ export default function Chat() {
               className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338] justify-start text-left h-auto p-4"
               onClick={() => {
                 setShowLapsitCategoryModal(false);
-                // TODO: Open form for Situasi Lapangan
+                setSelectedLapsitCategory({id: 11, name: 'Situasi Lapangan'});
+                setShowLapsitSubCategoryModal(true);
               }}
             >
               <div className="flex flex-col items-start">
@@ -1199,7 +1203,8 @@ export default function Chat() {
               className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338] justify-start text-left h-auto p-4"
               onClick={() => {
                 setShowLapsitCategoryModal(false);
-                // TODO: Open form for Situasi Operasi/Tempur
+                setSelectedLapsitCategory({id: 12, name: 'Situasi Operasi/Tempur'});
+                setShowLapsitSubCategoryModal(true);
               }}
             >
               <div className="flex flex-col items-start">
@@ -1213,6 +1218,118 @@ export default function Chat() {
             <Button 
               variant="outline" 
               onClick={() => setShowLapsitCategoryModal(false)}
+              className="border-[#333] text-gray-300 hover:bg-[#262626]"
+            >
+              Batal
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Lapsit Sub Category Selection Modal */}
+      <Dialog open={showLapsitSubCategoryModal} onOpenChange={setShowLapsitSubCategoryModal}>
+        <DialogContent className="bg-[#1a1a1a] text-white border-[#333] max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-[#8d9c6b]">
+              Pilih Sub Kategori - {selectedLapsitCategory?.name}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="mt-4 space-y-2 max-h-96 overflow-y-auto">
+            {selectedLapsitCategory?.id === 10 && (
+              <>
+                {/* Situasi Umum Sub Categories */}
+                {[
+                  'Lokasi Pengamatan',
+                  'Kondisi Cuaca dan Alam', 
+                  'Kondisi Sosial',
+                  'Kondisi Keamanan',
+                  'Kondisi Kekuatan Sendiri',
+                  'Kesimpulan Situasi'
+                ].map((subCat, index) => (
+                  <Button
+                    key={index}
+                    className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338] justify-start text-left h-auto p-3"
+                    onClick={() => {
+                      setShowLapsitSubCategoryModal(false);
+                      // TODO: Open report form with this sub category
+                    }}
+                  >
+                    <span className="text-sm">{index + 1}. {subCat}</span>
+                  </Button>
+                ))}
+              </>
+            )}
+            
+            {selectedLapsitCategory?.id === 11 && (
+              <>
+                {/* Situasi Lapangan Sub Categories */}
+                {[
+                  'Situasi Keamanan Terkini',
+                  'Situasi Lingkungan Sekitar',
+                  'Ancaman Tersembunyi',
+                  'Gangguan Operasional',
+                  'Situasi Pasukan Sendiri',
+                  'Kesimpulan Situasi Lapangan'
+                ].map((subCat, index) => (
+                  <Button
+                    key={index}
+                    className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338] justify-start text-left h-auto p-3"
+                    onClick={() => {
+                      setShowLapsitSubCategoryModal(false);
+                      // TODO: Open report form with this sub category
+                    }}
+                  >
+                    <span className="text-sm">{index + 1}. {subCat}</span>
+                  </Button>
+                ))}
+              </>
+            )}
+            
+            {selectedLapsitCategory?.id === 12 && (
+              <>
+                {/* Situasi Operasi/Tempur Sub Categories */}
+                {[
+                  'Situasi Kontak Tempur',
+                  'Situasi Kekuatan Pasukan',
+                  'Situasi Kondisi Musuh',
+                  'Kondisi Hilang/Rusak',
+                  'Analisa Taktis',
+                  'Situasi Pasca Tempur',
+                  'Kebutuhan Darurat'
+                ].map((subCat, index) => (
+                  <Button
+                    key={index}
+                    className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338] justify-start text-left h-auto p-3"
+                    onClick={() => {
+                      setShowLapsitSubCategoryModal(false);
+                      // TODO: Open report form with this sub category
+                    }}
+                  >
+                    <span className="text-sm">{index + 1}. {subCat}</span>
+                  </Button>
+                ))}
+              </>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowLapsitSubCategoryModal(false);
+                setShowLapsitCategoryModal(true);
+              }}
+              className="border-[#333] text-gray-300 hover:bg-[#262626]"
+            >
+              Kembali
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowLapsitSubCategoryModal(false);
+                setSelectedLapsitCategory(null);
+              }}
               className="border-[#333] text-gray-300 hover:bg-[#262626]"
             >
               Batal
