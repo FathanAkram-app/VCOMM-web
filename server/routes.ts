@@ -838,6 +838,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Lapsit routes
+  app.get('/api/lapsit/categories', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const categories = await storage.getLapsitCategories();
+      res.json(categories);
+    } catch (error) {
+      console.error("Error fetching lapsit categories:", error);
+      res.status(500).json({ message: "Failed to fetch lapsit categories" });
+    }
+  });
+
+  app.post('/api/lapsit/reports', isAuthenticated, upload.single('image'), async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      let attachmentUrl = null;
+      let attachmentName = null;
+
+      // Handle file upload if present
+      if (req.file) {
+        const timestamp = Date.now();
+        const fileName = `lapsit_${timestamp}_${req.file.originalname}`;
+        const filePath = path.join(__dirname, '../uploads', fileName);
+        
+        // Save file
+        await fs.promises.writeFile(filePath, req.file.buffer);
+        attachmentUrl = `/uploads/${fileName}`;
+        attachmentName = req.file.originalname;
+      }
+
+      const reportData = {
+        categoryId: parseInt(req.body.categoryId),
+        subCategoryId: req.body.subCategoryId ? parseInt(req.body.subCategoryId) : null,
+        title: req.body.title,
+        content: req.body.content,
+        priority: req.body.priority || 'normal',
+        classification: req.body.classification || 'UNCLASSIFIED',
+        location: req.body.location || null,
+        attachmentUrl,
+        attachmentName,
+        reportedById: userId
+      };
+      
+      const report = await storage.createLapsitReport(reportData);
+      res.json(report);
+    } catch (error) {
+      console.error("Error creating lapsit report:", error);
+      res.status(500).json({ message: "Failed to create lapsit report" });
+    }
+  });
+
+  app.get('/api/lapsit/reports', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const reports = await storage.getLapsitReports();
+      res.json(reports);
+    } catch (error) {
+      console.error("Error fetching lapsit reports:", error);
+      res.status(500).json({ message: "Failed to fetch lapsit reports" });
+    }
+  });
+
   const httpServer = createServer(app);
   
   // WebSocket server - ini akan menggunakan path yang sama untuk semua koneksi

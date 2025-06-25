@@ -900,19 +900,29 @@ export default function Chat() {
               </div>
               
               <div className="flex-1 overflow-y-auto p-4">
-                <div className="flex flex-col items-center justify-center h-full text-center">
-                  <div className="max-w-md">
-                    <FileText className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-400 mb-2">Belum Ada Laporan Situasi</h3>
-                    <p className="text-sm text-gray-500 mb-6">
-                      Mulai buat laporan situasi pertama Anda untuk melacak kejadian di lapangan.
+                <div className="space-y-4">
+                  {/* Sample report to test display */}
+                  <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#333] hover:border-[#8d9c6b] transition-colors">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-semibold text-[#8d9c6b]">Test Laporan</h3>
+                      <span className="text-xs px-2 py-1 bg-blue-900 text-blue-200 rounded">NORMAL</span>
+                    </div>
+                    <p className="text-sm text-gray-400 mb-2">
+                      Ini adalah test laporan situasi umum untuk memastikan database berfungsi
                     </p>
+                    <div className="flex justify-between items-center text-xs text-gray-500">
+                      <span>Situasi Umum</span>
+                      <span>Baru saja</span>
+                    </div>
+                  </div>
+                  
+                  <div className="text-center mt-8">
                     <Button 
                       className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
                       onClick={() => setShowLapsitCategoryModal(true)}
                     >
                       <Plus className="w-4 h-4 mr-2" />
-                      Buat Laporan Pertama
+                      Buat Laporan Baru
                     </Button>
                   </div>
                 </div>
