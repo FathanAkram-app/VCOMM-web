@@ -861,10 +861,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const fileName = `lapsit_${timestamp}_${req.file.originalname}`;
         const filePath = path.join(process.cwd(), 'uploads', fileName);
         
+        // Ensure uploads directory exists
+        const uploadsDir = path.join(process.cwd(), 'uploads');
+        if (!fs.existsSync(uploadsDir)) {
+          fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+        
         // Save file
         await fs.promises.writeFile(filePath, req.file.buffer);
         attachmentUrl = `/uploads/${fileName}`;
         attachmentName = req.file.originalname;
+        
+        console.log(`File saved: ${fileName} to ${filePath}`);
       }
 
       const reportData = {
