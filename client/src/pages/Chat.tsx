@@ -175,23 +175,12 @@ export default function Chat() {
   const loadLapsitReports = async () => {
     try {
       console.log('Loading lapsit reports...');
-      const response = await fetch('/api/lapsit/reports', {
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
-      });
-      console.log('Lapsit reports response status:', response.status);
-      if (response.ok) {
-        const reports = await response.json();
-        console.log('Loaded reports:', reports);
-        setLapsitReports(reports);
-      } else {
-        console.error('Failed to load reports:', response.status, response.statusText);
-      }
+      const reports = await apiRequest('/api/lapsit/reports');
+      console.log('Loaded reports:', reports);
+      setLapsitReports(reports || []);
     } catch (error) {
       console.error('Error loading lapsit reports:', error);
+      setLapsitReports([]);
     }
   };
 
@@ -935,18 +924,28 @@ export default function Chat() {
               </div>
               
               <div className="flex-1 overflow-y-auto p-4">
-                <div className="mb-4">
+                <div className="mb-4 flex justify-between items-center">
+                  <div>
+                    <Button 
+                      onClick={loadLapsitReports}
+                      variant="outline"
+                      size="sm"
+                      className="border-[#333] text-gray-300 hover:bg-[#262626]"
+                    >
+                      🔄 Refresh Laporan
+                    </Button>
+                    <span className="ml-2 text-xs text-gray-500">
+                      Total: {lapsitReports.length} laporan
+                    </span>
+                  </div>
                   <Button 
-                    onClick={loadLapsitReports}
-                    variant="outline"
+                    className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
+                    onClick={() => setShowLapsitCategoryModal(true)}
                     size="sm"
-                    className="border-[#333] text-gray-300 hover:bg-[#262626]"
                   >
-                    🔄 Refresh Laporan
+                    <Plus className="w-4 h-4 mr-1" />
+                    Laporan Baru
                   </Button>
-                  <span className="ml-2 text-xs text-gray-500">
-                    Total: {lapsitReports.length} laporan
-                  </span>
                 </div>
                 
                 {lapsitReports.length === 0 ? (
