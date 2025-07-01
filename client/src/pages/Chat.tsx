@@ -101,23 +101,9 @@ export default function Chat() {
     }
 
     try {
-      // TODO: Upload image if exists
-      let attachmentUrl = null;
-      if (selectedImage) {
-        // For now, we'll skip image upload and implement it later
-        console.log('Image selected for lapsit report:', selectedImage.name);
-      }
 
-      const reportPayload = {
-        categoryId: selectedLapsitCategory.id,
-        subCategoryId: null, // Will be mapped from database
-        title: lapsitReportData.title,
-        content: lapsitReportData.content,
-        priority: lapsitReportData.priority,
-        classification: lapsitReportData.classification,
-        location: lapsitReportData.location || null,
-        attachmentUrl: attachmentUrl
-      };
+
+
 
       const formData = new FormData();
       formData.append('categoryId', selectedLapsitCategory.id.toString());

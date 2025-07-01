@@ -11,6 +11,7 @@ import {
 } from "@shared/schema";
 import { upload, getAttachmentType, handleUploadError } from "./uploads";
 import path from "path";
+import * as fs from "fs";
 
 interface AuthenticatedWebSocket extends WebSocket {
   userId?: number;
