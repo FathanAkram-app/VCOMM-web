@@ -432,6 +432,7 @@ export default function Chat() {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        console.log('[Chat] WebSocket message received:', data.type, data);
         
         // Handle new message for real-time unread count updates
         if (data.type === 'new_message') {
