@@ -29,6 +29,16 @@ export default function Sidebar({ isOpen, onClose, onCreateGroup, user }: Sideba
   const directMessages = filteredConversations.filter(conv => !conv.isGroup);
   const groupChats = filteredConversations.filter(conv => conv.isGroup);
 
+  // Debug logging for unread counts
+  useEffect(() => {
+    console.log('[Sidebar] All conversations:', conversations);
+    console.log('[Sidebar] Direct messages with unread counts:', directMessages.map(conv => ({
+      id: conv.id,
+      name: conv.name,
+      unreadCount: conv.unreadCount
+    })));
+  }, [conversations, directMessages]);
+
   // Handle conversation click
   const handleConversationClick = (conversation: typeof conversations[0]) => {
     setCurrentConversation(conversation);
@@ -39,16 +49,23 @@ export default function Sidebar({ isOpen, onClose, onCreateGroup, user }: Sideba
 
   // Listen for new messages to update unread counts
   useEffect(() => {
-    if (!ws) return;
+    if (!ws || !user) return;
 
     const handleMessage = (event: MessageEvent) => {
       try {
         const message = JSON.parse(event.data);
         
-        // When a new message arrives, refresh conversations to update unread counts
+        // When a new message arrives from someone else, refresh conversations to update unread counts
         if (message.type === 'new_message') {
-          console.log('[Sidebar] New message received, refreshing conversations for unread count');
-          queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+          const payload = message.payload;
+          
+          // Only update unread count if the message is NOT from current user
+          if (payload && payload.senderId !== user.id) {
+            console.log(`[Sidebar] New message from user ${payload.senderId}, refreshing conversations for unread count`);
+            queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+          } else {
+            console.log(`[Sidebar] Message from self (${user.id}), not updating unread count`);
+          }
         }
       } catch (error) {
         console.error('[Sidebar] Error parsing WebSocket message:', error);
@@ -60,7 +77,7 @@ export default function Sidebar({ isOpen, onClose, onCreateGroup, user }: Sideba
     return () => {
       ws.removeEventListener('message', handleMessage);
     };
-  }, [ws, queryClient]);
+  }, [ws, queryClient, user]);
 
   // Get user status
   const getUserStatus = (userId: string) => {
