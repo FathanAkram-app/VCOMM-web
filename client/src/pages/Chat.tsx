@@ -400,6 +400,75 @@ export default function Chat() {
       loadLapsitReports();
     }
   }, [activeView, user]);
+
+  // WebSocket listener for real-time chat updates
+  useEffect(() => {
+    if (!user) return;
+
+    // Find WebSocket connection from CallContext
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    
+    const ws = new WebSocket(wsUrl);
+    
+    ws.onopen = () => {
+      console.log('[Chat] WebSocket connected for real-time updates');
+      ws.send(JSON.stringify({
+        type: 'auth',
+        payload: { userId: user.id }
+      }));
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        
+        // Handle new message for real-time unread count updates
+        if (data.type === 'new_message') {
+          console.log('[Chat] Received new message, refreshing chat list');
+          
+          // Only refresh if the message is for a different conversation or from another user
+          if (data.payload?.senderId !== user.id || !activeChat || data.payload?.conversationId !== activeChat.id) {
+            // Refresh chat list to update unread counts
+            fetchUserChats(user.id);
+          }
+        }
+        
+        // Handle message read events
+        if (data.type === 'message_read') {
+          console.log('[Chat] Messages marked as read, refreshing chat list');
+          fetchUserChats(user.id);
+        }
+        
+        // Handle conversation updates
+        if (data.type === 'conversation_updated') {
+          console.log('[Chat] Conversation updated, refreshing chat list');
+          fetchUserChats(user.id);
+        }
+        
+      } catch (error) {
+        console.error('[Chat] Error parsing WebSocket message:', error);
+      }
+    };
+
+    ws.onerror = (error) => {
+      console.error('[Chat] WebSocket error:', error);
+    };
+
+    ws.onclose = () => {
+      console.log('[Chat] WebSocket disconnected');
+    };
+
+    // Store WebSocket reference
+    setSocket(ws);
+
+    // Cleanup WebSocket on unmount
+    return () => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+    };
+  }, [user, activeChat]);
   
   // Fetch user chats
   const fetchUserChats = async (userId: number) => {
@@ -426,8 +495,26 @@ export default function Chat() {
           console.log('All conversations from server:', conversations);
           
           if (conversations && Array.isArray(conversations)) {
+            // Map conversations data to match ChatList format with unread count
+            const formattedConversations = conversations.map(conv => ({
+              id: conv.id,
+              name: conv.name || `Conversation ${conv.id}`,
+              isGroup: conv.isGroup || false,
+              lastMessage: conv.lastMessage || "",
+              lastMessageTime: conv.lastMessageTime || conv.updatedAt,
+              unread: conv.unreadCount || 0, // Map unreadCount to unread field
+              memberCount: conv.memberCount || 0,
+              otherUserId: conv.otherUserId
+            }));
+            
+            console.log('Formatted conversations with unread counts:', formattedConversations.map(c => ({ 
+              id: c.id, 
+              name: c.name, 
+              unread: c.unread 
+            })));
+            
             // Save all conversations for processing
-            allChats = [...allChats, ...conversations];
+            allChats = [...allChats, ...formattedConversations];
           }
         }
       } catch (conversationsError) {
