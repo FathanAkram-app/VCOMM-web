@@ -307,6 +307,7 @@ export const compressUploadedMedia = async (req: any, res: any, next: any) => {
           req.file.filename = compressedFilename;
           req.file.path = compressedPath;
           req.file.mimetype = 'image/jpeg';
+          req.file.size = result.compressedSize; // Update file size to compressed size
           
           console.log(`[COMPRESSION] Image compressed successfully: ${(result.originalSize / 1024).toFixed(2)}KB -> ${(result.compressedSize / 1024).toFixed(2)}KB`);
         } else {
@@ -334,6 +335,7 @@ export const compressUploadedMedia = async (req: any, res: any, next: any) => {
           req.file.filename = compressedFilename;
           req.file.path = compressedPath;
           req.file.mimetype = 'video/mp4';
+          req.file.size = result.compressedSize; // Update file size to compressed size
           
           console.log(`[COMPRESSION] Video compressed successfully: ${(result.originalSize / (1024 * 1024)).toFixed(2)}MB -> ${(result.compressedSize / (1024 * 1024)).toFixed(2)}MB`);
         } else {
