@@ -953,13 +953,21 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
               <Button
                 variant="outline"
                 className="w-full justify-start text-left border-[#444444] hover:bg-[#2a2a2a] text-white"
-                onClick={() => {
-                  console.log("Hapus untuk saya clicked:", selectedMessage);
+                onClick={(e) => {
+                  console.log("🔥 Hapus untuk saya button clicked!");
+                  console.log("🔥 Event:", e);
+                  console.log("🔥 selectedMessage:", selectedMessage);
+                  console.log("🔥 deleteMessageMutation.isPending:", deleteMessageMutation.isPending);
+                  console.log("🔥 user:", user);
+                  
                   if (selectedMessage) {
+                    console.log("🔥 About to call deleteMessageMutation.mutate");
                     deleteMessageMutation.mutate({ 
                       messageId: selectedMessage.id, 
                       deleteForEveryone: false 
                     });
+                  } else {
+                    console.log("🔥 selectedMessage is null!");
                   }
                 }}
                 disabled={deleteMessageMutation.isPending}
