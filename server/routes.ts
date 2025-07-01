@@ -1525,13 +1525,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   async function broadcastToConversation(conversationId: number, message: WebSocketMessage) {
     try {
       const members = await storage.getConversationMembers(conversationId);
+      console.log(`[BROADCAST] Found ${members.length} members in conversation ${conversationId}`);
+      console.log(`[BROADCAST] Active WebSocket clients: ${clients.size}`);
       
+      let sentCount = 0;
       members.forEach((member) => {
         const client = clients.get(member.userId);
+        console.log(`[BROADCAST] Member ${member.userId}: client exists=${!!client}, connected=${client?.readyState === WebSocket.OPEN}`);
+        
         if (client && client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify(message));
+          sentCount++;
+          console.log(`[BROADCAST] Message sent to user ${member.userId}`);
         }
       });
+      
+      console.log(`[BROADCAST] Successfully sent message to ${sentCount}/${members.length} members`);
     } catch (error) {
       console.error('Error broadcasting to conversation:', error);
     }

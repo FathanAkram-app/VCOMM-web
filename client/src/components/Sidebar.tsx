@@ -143,10 +143,20 @@ export default function Sidebar({ isOpen, onClose, onCreateGroup, user }: Sideba
                         {otherUser && renderStatusIndicator(getUserStatus(otherUser.id))}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium ${isActive ? 'text-gray-900' : 'text-gray-700'} truncate`}>
-                          {conversation.name || otherUser?.username || 'User'}
+                        <div className="flex items-center justify-between">
+                          <p className={`text-sm font-medium ${isActive ? 'text-gray-900' : 'text-gray-700'} truncate`}>
+                            {conversation.name || otherUser?.username || 'User'}
+                          </p>
+                          {/* Unread message badge */}
+                          {conversation.unreadCount && conversation.unreadCount > 0 && (
+                            <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                              {conversation.unreadCount > 99 ? '99+' : conversation.unreadCount}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 truncate">
+                          {conversation.lastMessage || conversation.description || 'Start a conversation'}
                         </p>
-                        <p className="text-xs text-gray-500 truncate">{conversation.description || 'Start a conversation'}</p>
                       </div>
                     </button>
                   );
@@ -183,10 +193,20 @@ export default function Sidebar({ isOpen, onClose, onCreateGroup, user }: Sideba
                         <Users className="h-5 w-5" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium ${isActive ? 'text-gray-900' : 'text-gray-700'} truncate`}>
-                          {group.name || 'Unnamed Group'}
+                        <div className="flex items-center justify-between">
+                          <p className={`text-sm font-medium ${isActive ? 'text-gray-900' : 'text-gray-700'} truncate`}>
+                            {group.name || 'Unnamed Group'}
+                          </p>
+                          {/* Unread message badge for groups */}
+                          {group.unreadCount && group.unreadCount > 0 && (
+                            <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                              {group.unreadCount > 99 ? '99+' : group.unreadCount}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 truncate">
+                          {group.lastMessage || group.description || 'Group chat'}
                         </p>
-                        <p className="text-xs text-gray-500 truncate">{group.description || 'Group chat'}</p>
                       </div>
                     </button>
                   );
