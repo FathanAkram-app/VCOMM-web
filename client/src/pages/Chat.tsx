@@ -41,7 +41,7 @@ export default function Chat() {
     enabled: !!user,
     refetchInterval: false,
     staleTime: 0,
-    cacheTime: 0
+    gcTime: 0
   });
   const [databaseMessages, setDatabaseMessages] = useState<any[]>([]);
   const [showChatRoom, setShowChatRoom] = useState(false);
@@ -442,22 +442,22 @@ export default function Chat() {
           queryClient.invalidateQueries({ queryKey: ['/api/direct-chats'] });
           queryClient.invalidateQueries({ queryKey: ['/api/rooms'] });
           
-          // Also trigger manual refresh as backup
-          fetchUserChats(user.id);
+          // Force refetch conversations immediately
+          refetchConversations();
         }
         
         // Handle message read events
         if (data.type === 'message_read') {
           console.log('[Chat] Messages marked as read, invalidating cache');
           queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
-          fetchUserChats(user.id);
+          refetchConversations();
         }
         
         // Handle conversation updates
         if (data.type === 'conversation_updated') {
           console.log('[Chat] Conversation updated, invalidating cache');
           queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
-          fetchUserChats(user.id);
+          refetchConversations();
         }
         
       } catch (error) {
@@ -483,6 +483,33 @@ export default function Chat() {
       }
     };
   }, [user, activeChat]);
+
+  // Update chats state when React Query data changes
+  useEffect(() => {
+    if (conversationsData && Array.isArray(conversationsData)) {
+      console.log('[Chat] Updating chats from React Query data:', conversationsData.length, 'conversations');
+      
+      // Map conversations data to match ChatList format with unread count
+      const formattedConversations = conversationsData.map(conv => ({
+        id: conv.id,
+        name: conv.name || `Conversation ${conv.id}`,
+        isGroup: conv.isGroup || false,
+        lastMessage: conv.lastMessage || "",
+        lastMessageTime: conv.lastMessageTime || conv.updatedAt,
+        unread: conv.unreadCount || 0, // Map unreadCount to unread field
+        memberCount: conv.memberCount || 0,
+        otherUserId: conv.otherUserId
+      }));
+      
+      console.log('[Chat] Setting chats with unread counts:', formattedConversations.map(c => ({ 
+        id: c.id, 
+        name: c.name, 
+        unread: c.unread 
+      })));
+      
+      setChats(formattedConversations);
+    }
+  }, [conversationsData]);
   
   // Fetch user chats
   const fetchUserChats = async (userId: number) => {
