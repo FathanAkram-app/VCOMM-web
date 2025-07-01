@@ -850,7 +850,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/lapsit/reports', isAuthenticated, upload.single('image'), async (req: AuthRequest, res) => {
+  app.post('/api/lapsit/reports', isAuthenticated, (req: AuthRequest, res, next) => {
+  upload.single('image')(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ 
+          message: "File terlalu besar! Maksimal 10MB." 
+        });
+      }
+      return res.status(400).json({ 
+        message: `Error upload: ${err.message}` 
+      });
+    } else if (err) {
+      return res.status(400).json({ 
+        message: err.message 
+      });
+    }
+    next();
+  });
+}, async (req: AuthRequest, res) => {
     try {
       const userId = req.user?.claims?.sub;
       console.log('[LAPSIT] User ID from auth:', userId);
