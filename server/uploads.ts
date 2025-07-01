@@ -213,43 +213,101 @@ export const compressVideoServer = async (
     try {
       const originalStats = fs.statSync(inputPath);
       
-      ffmpeg(inputPath)
-        .videoCodec('libx264')
-        .audioCodec('aac')
-        .videoBitrate('1000k') // 1Mbps video bitrate
-        .audioBitrate('128k')  // 128kbps audio bitrate
-        .size('1280x720')      // HD resolution
-        .fps(30)               // 30 FPS
-        .format('mp4')
-        .on('end', () => {
-          try {
-            const compressedStats = fs.statSync(outputPath);
-            resolve({
-              success: true,
-              originalSize: originalStats.size,
-              compressedSize: compressedStats.size,
-              path: outputPath
-            });
-          } catch (error) {
-            console.error('Error reading compressed video stats:', error);
-            resolve({
-              success: false,
-              originalSize: originalStats.size,
-              compressedSize: 0,
-              path: inputPath
-            });
-          }
-        })
-        .on('error', (error) => {
-          console.error('Error compressing video:', error);
+      // First, get video info to determine orientation
+      ffmpeg.ffprobe(inputPath, (err, metadata) => {
+        if (err) {
+          console.error('Error getting video metadata:', err);
           resolve({
             success: false,
             originalSize: originalStats.size,
             compressedSize: 0,
             path: inputPath
           });
-        })
-        .save(outputPath);
+          return;
+        }
+
+        const videoStream = metadata.streams.find(stream => stream.codec_type === 'video');
+        if (!videoStream) {
+          console.error('No video stream found');
+          resolve({
+            success: false,
+            originalSize: originalStats.size,
+            compressedSize: 0,
+            path: inputPath
+          });
+          return;
+        }
+
+        const width = videoStream.width || 720;
+        const height = videoStream.height || 1280;
+        const isPortrait = height > width;
+        
+        console.log(`[COMPRESSION] Original video: ${width}x${height}, Portrait: ${isPortrait}`);
+        
+        // Set compression parameters based on orientation
+        let targetWidth, targetHeight;
+        if (isPortrait) {
+          // Portrait video: limit height, maintain aspect ratio
+          targetHeight = Math.min(height, 1280);
+          targetWidth = Math.round((width / height) * targetHeight);
+          // Ensure even numbers for encoding
+          if (targetWidth % 2 !== 0) targetWidth--;
+          if (targetHeight % 2 !== 0) targetHeight--;
+        } else {
+          // Landscape video: limit width, maintain aspect ratio
+          targetWidth = Math.min(width, 1280);
+          targetHeight = Math.round((height / width) * targetWidth);
+          // Ensure even numbers for encoding
+          if (targetWidth % 2 !== 0) targetWidth--;
+          if (targetHeight % 2 !== 0) targetHeight--;
+        }
+        
+        console.log(`[COMPRESSION] Target resolution: ${targetWidth}x${targetHeight}`);
+        
+        ffmpeg(inputPath)
+          .videoCodec('libx264')
+          .audioCodec('aac')
+          .videoBitrate('800k')  // 800kbps video bitrate
+          .audioBitrate('128k')  // 128kbps audio bitrate
+          .size(`${targetWidth}x${targetHeight}`)  // Maintain aspect ratio
+          .fps(30)               // 30 FPS
+          .format('mp4')
+          .outputOptions([
+            '-preset fast',      // Faster encoding
+            '-crf 28',          // Quality setting (lower = better quality)
+            '-movflags +faststart' // Optimize for streaming
+          ])
+          .on('end', () => {
+            try {
+              const compressedStats = fs.statSync(outputPath);
+              console.log(`[COMPRESSION] Video compression completed: ${targetWidth}x${targetHeight}`);
+              resolve({
+                success: true,
+                originalSize: originalStats.size,
+                compressedSize: compressedStats.size,
+                path: outputPath
+              });
+            } catch (error) {
+              console.error('Error reading compressed video stats:', error);
+              resolve({
+                success: false,
+                originalSize: originalStats.size,
+                compressedSize: 0,
+                path: inputPath
+              });
+            }
+          })
+          .on('error', (error) => {
+            console.error('Error compressing video:', error);
+            resolve({
+              success: false,
+              originalSize: originalStats.size,
+              compressedSize: 0,
+              path: inputPath
+            });
+          })
+          .save(outputPath);
+      });
     } catch (error) {
       console.error('Error in video compression setup:', error);
       const originalStats = fs.statSync(inputPath);
