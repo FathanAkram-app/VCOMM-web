@@ -23,7 +23,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { compressImage, shouldCompressImage } from '@/utils/imageCompression';
+import { compressImage, shouldCompressImage, shouldCompressVideo, getCompressionMessage } from '@/utils/imageCompression';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Chat() {
@@ -98,22 +98,26 @@ export default function Chat() {
       
       let finalFile = file;
       
-      // Cek apakah perlu kompresi (jika lebih dari 1MB)
-      if (shouldCompressImage(file)) {
+      // Handle compression notification
+      const compressionMessage = getCompressionMessage(file);
+      if (compressionMessage) {
         toast({
-          title: "Mengkompresi gambar...",
-          description: `File ${(file.size / (1024 * 1024)).toFixed(2)}MB akan dikompres menjadi 1MB`,
+          title: "File akan dikompres...",
+          description: compressionMessage,
         });
-        
+      }
+      
+      // Only compress images on frontend (videos are compressed on server)
+      if (shouldCompressImage(file)) {
         try {
           finalFile = await compressImage(file, 1);
           toast({
-            title: "Berhasil dikompres",
+            title: "Gambar berhasil dikompres",
             description: `Ukuran file sekarang: ${(finalFile.size / (1024 * 1024)).toFixed(2)}MB`,
           });
         } catch (error) {
           toast({
-            title: "Gagal kompresi",
+            title: "Gagal kompresi gambar",
             description: "Menggunakan file asli",
             variant: "destructive",
           });

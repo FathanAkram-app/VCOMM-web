@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Paperclip, X, File, Image, FileText, Music, Video } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { compressImage, shouldCompressImage } from '@/utils/imageCompression';
+import { compressImage, shouldCompressImage, shouldCompressVideo, getCompressionMessage } from '@/utils/imageCompression';
 
 interface AttachmentUploaderProps {
   onFileUploaded: (fileData: {
@@ -23,35 +23,49 @@ export default function AttachmentUploader({ onFileUploaded }: AttachmentUploade
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
       
-      // Validasi ukuran file
-      const maxSize = 10 * 1024 * 1024; // 10MB
+      // Validasi ukuran file berdasarkan tipe
+      let maxSize = 10 * 1024 * 1024; // Default 10MB
+      let maxSizeText = "10MB";
+      
+      if (file.type.startsWith('video/')) {
+        maxSize = 100 * 1024 * 1024; // 100MB untuk video
+        maxSizeText = "100MB";
+      } else if (file.type.startsWith('audio/')) {
+        maxSize = 20 * 1024 * 1024; // 20MB untuk audio
+        maxSizeText = "20MB";
+      }
+      
       if (file.size > maxSize) {
         toast({
           variant: "destructive",
           title: "File terlalu besar",
-          description: "Ukuran file maksimum 10MB"
+          description: `Ukuran file maksimum ${maxSizeText}`
         });
         return;
       }
       
       let finalFile = file;
       
-      // Cek apakah perlu kompresi untuk gambar (jika lebih dari 1MB)
-      if (shouldCompressImage(file)) {
+      // Handle compression
+      const compressionMessage = getCompressionMessage(file);
+      if (compressionMessage) {
         toast({
-          title: "Mengkompresi gambar...",
-          description: `File ${(file.size / (1024 * 1024)).toFixed(2)}MB akan dikompres`,
+          title: "File akan dikompres...",
+          description: compressionMessage,
         });
-        
+      }
+      
+      // Only compress images on frontend (videos are compressed on server)
+      if (shouldCompressImage(file)) {
         try {
           finalFile = await compressImage(file, 1);
           toast({
-            title: "Berhasil dikompres",
+            title: "Gambar berhasil dikompres",
             description: `Ukuran file sekarang: ${(finalFile.size / (1024 * 1024)).toFixed(2)}MB`,
           });
         } catch (error) {
           toast({
-            title: "Gagal kompresi",
+            title: "Gagal kompresi gambar",
             description: "Menggunakan file asli",
             variant: "destructive",
           });

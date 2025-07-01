@@ -9,7 +9,7 @@ import {
   insertConversationSchema,
   insertConversationMemberSchema
 } from "@shared/schema";
-import { upload, getAttachmentType, handleUploadError, compressUploadedImage } from "./uploads";
+import { upload, getAttachmentType, handleUploadError, compressUploadedMedia } from "./uploads";
 import path from "path";
 import * as fs from "fs";
 
@@ -45,7 +45,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/uploads', isAuthenticated, express.static(path.join(process.cwd(), 'uploads')));
   
   // Upload file attachment
-  app.post('/api/attachments/upload', isAuthenticated, upload.single('file'), handleUploadError, compressUploadedImage, async (req: any, res: Response) => {
+  app.post('/api/attachments/upload', isAuthenticated, upload.single('file'), handleUploadError, compressUploadedMedia, async (req: any, res: Response) => {
     try {
       // Pastikan file berhasil diupload
       if (!req.file) {
@@ -850,7 +850,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/lapsit/reports', isAuthenticated, upload.single('image'), handleUploadError, compressUploadedImage, async (req: AuthRequest, res) => {
+  app.post('/api/lapsit/reports', isAuthenticated, upload.single('image'), handleUploadError, compressUploadedMedia, async (req: AuthRequest, res) => {
     try {
       const userId = req.user?.claims?.sub;
       console.log('[LAPSIT] User ID from auth:', userId);

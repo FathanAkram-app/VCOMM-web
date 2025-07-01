@@ -33,3 +33,19 @@ export const shouldCompressImage = (file: File): boolean => {
   const maxSize = 1 * 1024 * 1024; // 1MB
   return file.size > maxSize && file.type.startsWith('image/');
 };
+
+export const shouldCompressVideo = (file: File): boolean => {
+  const maxSize = 20 * 1024 * 1024; // 20MB
+  return file.size > maxSize && file.type.startsWith('video/');
+};
+
+// Note: Video compression on frontend is complex and resource-intensive
+// We'll handle video compression on the server side only
+export const getCompressionMessage = (file: File): string => {
+  if (shouldCompressImage(file)) {
+    return `Gambar ${(file.size / (1024 * 1024)).toFixed(2)}MB akan dikompres menjadi 1MB`;
+  } else if (shouldCompressVideo(file)) {
+    return `Video ${(file.size / (1024 * 1024)).toFixed(2)}MB akan dikompres di server`;
+  }
+  return '';
+};

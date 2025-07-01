@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto';
 import multer from 'multer';
 import { Request, Response, NextFunction } from 'express';
 import sharp from 'sharp';
+import ffmpeg from 'fluent-ffmpeg';
 
 // Pastikan folder uploads ada
 const uploadDir = path.join(process.cwd(), 'uploads');
@@ -63,19 +64,19 @@ const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCa
   }
 };
 
-// Size limits based on file type
+// Size limits based on file type - Increased limits for compression handling
 const fileSizeLimits = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   const maxSize = 10 * 1024 * 1024; // Default 10MB
   
   if (file.mimetype.startsWith('image/')) {
-    // Image: max 5MB
-    if (req.file?.size > 5 * 1024 * 1024) {
-      cb(new Error('Ukuran gambar maksimum 5MB'));
+    // Image: max 10MB (will be compressed if >1MB)
+    if (req.file?.size > 10 * 1024 * 1024) {
+      cb(new Error('Ukuran gambar maksimum 10MB'));
     }
   } else if (file.mimetype.startsWith('video/')) {
-    // Video: max 50MB
-    if (req.file?.size > 50 * 1024 * 1024) {
-      cb(new Error('Ukuran video maksimum 50MB'));
+    // Video: max 100MB (will be compressed if >20MB)
+    if (req.file?.size > 100 * 1024 * 1024) {
+      cb(new Error('Ukuran video maksimum 100MB'));
     }
   } else if (file.mimetype.startsWith('audio/')) {
     // Audio: max 20MB
@@ -97,7 +98,7 @@ export const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 50 * 1024 * 1024 // Max 50MB (will be further restricted by file type)
+    fileSize: 100 * 1024 * 1024 // Max 100MB (will be further restricted by file type)
   }
 });
 
@@ -202,38 +203,139 @@ export const shouldCompressImageServer = async (filePath: string): Promise<boole
   }
 };
 
-// Middleware untuk kompresi gambar setelah upload
-export const compressUploadedImage = async (req: any, res: any, next: any) => {
-  if (!req.file || !req.file.mimetype.startsWith('image/')) {
+// Video compression utility
+export const compressVideoServer = async (
+  inputPath: string,
+  outputPath: string,
+  maxSizeMB: number = 20
+): Promise<{ success: boolean; originalSize: number; compressedSize: number; path: string }> => {
+  return new Promise((resolve) => {
+    try {
+      const originalStats = fs.statSync(inputPath);
+      
+      ffmpeg(inputPath)
+        .videoCodec('libx264')
+        .audioCodec('aac')
+        .videoBitrate('1000k') // 1Mbps video bitrate
+        .audioBitrate('128k')  // 128kbps audio bitrate
+        .size('1280x720')      // HD resolution
+        .fps(30)               // 30 FPS
+        .format('mp4')
+        .on('end', () => {
+          try {
+            const compressedStats = fs.statSync(outputPath);
+            resolve({
+              success: true,
+              originalSize: originalStats.size,
+              compressedSize: compressedStats.size,
+              path: outputPath
+            });
+          } catch (error) {
+            console.error('Error reading compressed video stats:', error);
+            resolve({
+              success: false,
+              originalSize: originalStats.size,
+              compressedSize: 0,
+              path: inputPath
+            });
+          }
+        })
+        .on('error', (error) => {
+          console.error('Error compressing video:', error);
+          resolve({
+            success: false,
+            originalSize: originalStats.size,
+            compressedSize: 0,
+            path: inputPath
+          });
+        })
+        .save(outputPath);
+    } catch (error) {
+      console.error('Error in video compression setup:', error);
+      const originalStats = fs.statSync(inputPath);
+      resolve({
+        success: false,
+        originalSize: originalStats.size,
+        compressedSize: 0,
+        path: inputPath
+      });
+    }
+  });
+};
+
+export const shouldCompressVideoServer = async (filePath: string): Promise<boolean> => {
+  try {
+    const stats = fs.statSync(filePath);
+    const fileSizeMB = stats.size / (1024 * 1024);
+    return fileSizeMB > 20; // Compress if larger than 20MB
+  } catch (error) {
+    return false;
+  }
+};
+
+// Middleware untuk kompresi media setelah upload
+export const compressUploadedMedia = async (req: any, res: any, next: any) => {
+  if (!req.file) {
     return next();
   }
 
   try {
     const filePath = req.file.path;
-    const shouldCompress = await shouldCompressImageServer(filePath);
     
-    if (shouldCompress) {
-      console.log('Compressing image:', req.file.filename);
+    // Handle image compression
+    if (req.file.mimetype.startsWith('image/')) {
+      const shouldCompress = await shouldCompressImageServer(filePath);
       
-      const compressedFilename = `compressed_${req.file.filename.replace(path.extname(req.file.filename), '.jpg')}`;
-      const compressedPath = path.join('./uploads', compressedFilename);
-      
-      const result = await compressImageServer(filePath, compressedPath, 1024);
-      
-      if (result.success) {
-        // Delete original file and update req.file to point to compressed version
-        fs.unlinkSync(filePath);
-        req.file.filename = compressedFilename;
-        req.file.path = compressedPath;
-        req.file.mimetype = 'image/jpeg';
+      if (shouldCompress) {
+        console.log('Compressing image:', req.file.filename);
         
-        console.log(`Image compressed: ${(result.originalSize / 1024).toFixed(2)}KB -> ${(result.compressedSize / 1024).toFixed(2)}KB`);
+        const compressedFilename = `compressed_${req.file.filename.replace(path.extname(req.file.filename), '.jpg')}`;
+        const compressedPath = path.join('./uploads', compressedFilename);
+        
+        const result = await compressImageServer(filePath, compressedPath, 1024);
+        
+        if (result.success) {
+          // Delete original file and update req.file to point to compressed version
+          fs.unlinkSync(filePath);
+          req.file.filename = compressedFilename;
+          req.file.path = compressedPath;
+          req.file.mimetype = 'image/jpeg';
+          
+          console.log(`Image compressed: ${(result.originalSize / 1024).toFixed(2)}KB -> ${(result.compressedSize / 1024).toFixed(2)}KB`);
+        }
+      }
+    }
+    
+    // Handle video compression
+    else if (req.file.mimetype.startsWith('video/')) {
+      const shouldCompress = await shouldCompressVideoServer(filePath);
+      
+      if (shouldCompress) {
+        console.log('Compressing video:', req.file.filename);
+        
+        const compressedFilename = `compressed_${req.file.filename.replace(path.extname(req.file.filename), '.mp4')}`;
+        const compressedPath = path.join('./uploads', compressedFilename);
+        
+        const result = await compressVideoServer(filePath, compressedPath, 20);
+        
+        if (result.success) {
+          // Delete original file and update req.file to point to compressed version
+          fs.unlinkSync(filePath);
+          req.file.filename = compressedFilename;
+          req.file.path = compressedPath;
+          req.file.mimetype = 'video/mp4';
+          
+          console.log(`Video compressed: ${(result.originalSize / (1024 * 1024)).toFixed(2)}MB -> ${(result.compressedSize / (1024 * 1024)).toFixed(2)}MB`);
+        }
       }
     }
     
     next();
   } catch (error) {
-    console.error('Error in image compression middleware:', error);
+    console.error('Error in media compression middleware:', error);
     next(); // Continue without compression if error occurs
   }
 };
+
+// Keep backward compatibility
+export const compressUploadedImage = compressUploadedMedia;
