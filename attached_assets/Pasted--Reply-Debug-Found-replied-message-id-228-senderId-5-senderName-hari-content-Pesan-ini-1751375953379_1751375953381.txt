@@ -1,0 +1,85 @@
+[Reply Debug] Found replied message: {id: 228, senderId: 5, senderName: 'hari', content: '[Pesan ini telah dihapus]', timestamp: '2025-07-01T12:39:23.352Z', …}
+ChatRoom.tsx:1103 [Message Debug] Message ID: 230, replyToId: null, content: [Pesan ini telah dihapus]
+ChatRoom.tsx:1103 [Message Debug] Message ID: 231, replyToId: null, content: halooo
+ChatRoom.tsx:1103 [Message Debug] Message ID: 232, replyToId: null, content: Okekme
+ChatRoom.tsx:475 
+            
+            
+           DELETE https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/api/messages/231 500 (Internal Server Error)
+mutationFn @ ChatRoom.tsx:475
+fn @ @tanstack_react-query.js?v=01fe63e0:1189
+run @ @tanstack_react-query.js?v=01fe63e0:494
+start @ @tanstack_react-query.js?v=01fe63e0:536
+execute @ @tanstack_react-query.js?v=01fe63e0:1225
+await in execute
+mutate @ @tanstack_react-query.js?v=01fe63e0:2630
+(anonymous) @ @tanstack_react-query.js?v=01fe63e0:3295
+onClick @ ChatRoom.tsx:965
+callCallback2 @ chunk-RPCDYKBN.js?v=01fe63e0:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=01fe63e0:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=01fe63e0:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=01fe63e0:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=01fe63e0:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=01fe63e0:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=01fe63e0:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=01fe63e0:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=01fe63e0:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=01fe63e0:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=01fe63e0:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=01fe63e0:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=01fe63e0:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=01fe63e0:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=01fe63e0:5449Understand this error
+ChatRoom.tsx:485 Delete failed: {"message":"Failed to delete message"}
+mutationFn @ ChatRoom.tsx:485
+await in mutationFn
+fn @ @tanstack_react-query.js?v=01fe63e0:1189
+run @ @tanstack_react-query.js?v=01fe63e0:494
+start @ @tanstack_react-query.js?v=01fe63e0:536
+execute @ @tanstack_react-query.js?v=01fe63e0:1225
+await in execute
+mutate @ @tanstack_react-query.js?v=01fe63e0:2630
+(anonymous) @ @tanstack_react-query.js?v=01fe63e0:3295
+onClick @ ChatRoom.tsx:965
+callCallback2 @ chunk-RPCDYKBN.js?v=01fe63e0:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=01fe63e0:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=01fe63e0:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=01fe63e0:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=01fe63e0:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=01fe63e0:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=01fe63e0:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=01fe63e0:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=01fe63e0:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=01fe63e0:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=01fe63e0:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=01fe63e0:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=01fe63e0:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=01fe63e0:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=01fe63e0:5449Understand this error
+ChatRoom.tsx:501 Delete mutation error: Error: Failed to delete message: 500 {"message":"Failed to delete message"}
+    at Object.mutationFn (ChatRoom.tsx:486:15)
+onError @ ChatRoom.tsx:501
+execute @ @tanstack_react-query.js?v=01fe63e0:1254
+await in execute
+mutate @ @tanstack_react-query.js?v=01fe63e0:2630
+(anonymous) @ @tanstack_react-query.js?v=01fe63e0:3295
+onClick @ ChatRoom.tsx:965
+callCallback2 @ chunk-RPCDYKBN.js?v=01fe63e0:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=01fe63e0:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=01fe63e0:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=01fe63e0:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=01fe63e0:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=01fe63e0:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=01fe63e0:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=01fe63e0:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=01fe63e0:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=01fe63e0:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=01fe63e0:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=01fe63e0:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=01fe63e0:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=01fe63e0:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=01fe63e0:5449Understand this error
+ChatRoom.tsx:684 Processing message data for grouping: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:685 Total messages to process: 15
+ChatRoom.tsx:690 Messages with replies: [{…}]
+ChatRoom.tsx:757 Grouped messages: (2) [{…}, {…}]
