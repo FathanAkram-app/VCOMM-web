@@ -470,10 +470,12 @@ export default function Chat() {
     
     ws.onopen = () => {
       console.log('[Chat] WebSocket connected for real-time updates');
+      setWsConnected(true);
       ws.send(JSON.stringify({
         type: 'auth',
         payload: { userId: user.id }
       }));
+      console.log('[Chat] Sent auth message for user:', user.id);
     };
 
     ws.onmessage = (event) => {
@@ -561,10 +563,12 @@ export default function Chat() {
 
     ws.onerror = (error) => {
       console.error('[Chat] WebSocket error:', error);
+      setWsConnected(false);
     };
 
     ws.onclose = () => {
       console.log('[Chat] WebSocket disconnected');
+      setWsConnected(false);
     };
 
     // Store WebSocket reference
