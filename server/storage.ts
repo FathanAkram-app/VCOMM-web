@@ -142,7 +142,7 @@ export class DatabaseStorage implements IStorage {
     return conversation;
   }
   
-  async getUserConversations(userId: number): Promise<Conversation[]> {
+  async getUserConversations(userId: number): Promise<any[]> {
     console.log(`[Storage] Getting conversations for user ID: ${userId}`);
     
     // Get all conversations where user is a member
@@ -168,7 +168,78 @@ export class DatabaseStorage implements IStorage {
     
     console.log(`[Storage] Retrieved ${userConversations.length} conversations for user ${userId}`);
     
-    return userConversations;
+    // Add unread count for each conversation
+    const conversationsWithUnread = await Promise.all(
+      userConversations.map(async (conv) => {
+        // Get unread message count for this user in this conversation
+        const unreadCount = await this.getUnreadMessageCount(conv.id, userId);
+        
+        return {
+          ...conv,
+          unreadCount
+        };
+      })
+    );
+    
+    return conversationsWithUnread;
+  }
+
+  // Helper function to get unread message count for a user in a conversation
+  async getUnreadMessageCount(conversationId: number, userId: number): Promise<number> {
+    try {
+      // Get all messages in this conversation that are not read by this user
+      const unreadMessages = await db
+        .select({ id: messages.id })
+        .from(messages)
+        .where(
+          and(
+            eq(messages.conversationId, conversationId),
+            ne(messages.senderId, userId), // Don't count user's own messages
+            eq(messages.isRead, false), // Only unread messages
+            eq(messages.isDeleted, false) // Don't count deleted messages
+          )
+        );
+      
+      // Also filter out messages deleted by this specific user
+      const deletedByUser = await db
+        .select({ messageId: deletedMessagesPerUser.messageId })
+        .from(deletedMessagesPerUser)
+        .where(eq(deletedMessagesPerUser.userId, userId));
+      
+      const deletedMessageIds = new Set(deletedByUser.map(d => d.messageId));
+      
+      // Filter out messages deleted by this user
+      const actualUnreadMessages = unreadMessages.filter(msg => !deletedMessageIds.has(msg.id));
+      
+      console.log(`[Storage] Unread count for user ${userId} in conversation ${conversationId}: ${actualUnreadMessages.length}`);
+      return actualUnreadMessages.length;
+    } catch (error) {
+      console.error('Error getting unread message count:', error);
+      return 0;
+    }
+  }
+
+  // Mark messages as read for a specific user in a conversation
+  async markConversationMessagesAsRead(conversationId: number, userId: number): Promise<void> {
+    try {
+      console.log(`[Storage] Marking messages as read for user ${userId} in conversation ${conversationId}`);
+      
+      // Update all unread messages in this conversation (except user's own messages) to read
+      await db
+        .update(messages)
+        .set({ isRead: true })
+        .where(
+          and(
+            eq(messages.conversationId, conversationId),
+            ne(messages.senderId, userId), // Don't mark user's own messages
+            eq(messages.isRead, false) // Only update unread messages
+          )
+        );
+      
+      console.log(`[Storage] Messages marked as read for user ${userId} in conversation ${conversationId}`);
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
   }
   
   async deleteConversation(id: number): Promise<void> {

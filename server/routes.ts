@@ -569,6 +569,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Mark conversation messages as read
+  app.post('/api/conversations/:id/mark-read', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.session?.user?.id;
+      const conversationId = parseInt(req.params.id);
+      
+      if (!userId) {
+        return res.status(400).json({ message: "User ID not found in session" });
+      }
+      
+      if (isNaN(conversationId)) {
+        return res.status(400).json({ message: "Invalid conversation ID" });
+      }
+      
+      console.log(`[API] Marking messages as read for user ${userId} in conversation ${conversationId}`);
+      
+      // Mark messages as read
+      await storage.markConversationMessagesAsRead(conversationId, userId);
+      
+      res.json({ success: true, message: "Messages marked as read" });
+    } catch (error) {
+      console.error("Error marking messages as read:", error);
+      res.status(500).json({ message: "Failed to mark messages as read" });
+    }
+  });
+
   // Messages routes
   app.get('/api/conversations/:id/messages', isAuthenticated, async (req: AuthRequest, res) => {
     try {

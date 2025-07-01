@@ -118,12 +118,34 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     }
   });
   
-  // Memastikan pesan dimuat ulang saat chat diubah
+  // Memastikan pesan dimuat ulang saat chat diubah dan mark as read
   useEffect(() => {
     if (chatId) {
       refetchMessages();
+      // Mark messages as read when opening chat
+      markMessagesAsRead();
     }
   }, [chatId, refetchMessages]);
+
+  // Function to mark messages as read
+  const markMessagesAsRead = async () => {
+    try {
+      const response = await fetch(`/api/conversations/${chatId}/mark-read`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        console.log(`Messages marked as read for conversation ${chatId}`);
+        // Refresh the conversations list to update unread counts
+        queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+      }
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
+  };
 
   // Listen for real-time updates (both group updates and new messages)
   useEffect(() => {
