@@ -281,13 +281,20 @@ export const compressUploadedMedia = async (req: any, res: any, next: any) => {
 
   try {
     const filePath = req.file.path;
+    const fileStats = fs.statSync(filePath);
+    const fileSizeMB = fileStats.size / (1024 * 1024);
+    
+    console.log(`[COMPRESSION] Processing file: ${req.file.filename}`);
+    console.log(`[COMPRESSION] File type: ${req.file.mimetype}`);
+    console.log(`[COMPRESSION] File size: ${fileSizeMB.toFixed(2)}MB`);
     
     // Handle image compression
     if (req.file.mimetype.startsWith('image/')) {
       const shouldCompress = await shouldCompressImageServer(filePath);
+      console.log(`[COMPRESSION] Image should compress: ${shouldCompress}`);
       
       if (shouldCompress) {
-        console.log('Compressing image:', req.file.filename);
+        console.log('[COMPRESSION] Starting image compression...');
         
         const compressedFilename = `compressed_${req.file.filename.replace(path.extname(req.file.filename), '.jpg')}`;
         const compressedPath = path.join('./uploads', compressedFilename);
@@ -301,7 +308,9 @@ export const compressUploadedMedia = async (req: any, res: any, next: any) => {
           req.file.path = compressedPath;
           req.file.mimetype = 'image/jpeg';
           
-          console.log(`Image compressed: ${(result.originalSize / 1024).toFixed(2)}KB -> ${(result.compressedSize / 1024).toFixed(2)}KB`);
+          console.log(`[COMPRESSION] Image compressed successfully: ${(result.originalSize / 1024).toFixed(2)}KB -> ${(result.compressedSize / 1024).toFixed(2)}KB`);
+        } else {
+          console.log('[COMPRESSION] Image compression failed, using original file');
         }
       }
     }
@@ -309,9 +318,10 @@ export const compressUploadedMedia = async (req: any, res: any, next: any) => {
     // Handle video compression
     else if (req.file.mimetype.startsWith('video/')) {
       const shouldCompress = await shouldCompressVideoServer(filePath);
+      console.log(`[COMPRESSION] Video should compress: ${shouldCompress} (size: ${fileSizeMB.toFixed(2)}MB, threshold: 20MB)`);
       
       if (shouldCompress) {
-        console.log('Compressing video:', req.file.filename);
+        console.log('[COMPRESSION] Starting video compression...');
         
         const compressedFilename = `compressed_${req.file.filename.replace(path.extname(req.file.filename), '.mp4')}`;
         const compressedPath = path.join('./uploads', compressedFilename);
@@ -325,14 +335,18 @@ export const compressUploadedMedia = async (req: any, res: any, next: any) => {
           req.file.path = compressedPath;
           req.file.mimetype = 'video/mp4';
           
-          console.log(`Video compressed: ${(result.originalSize / (1024 * 1024)).toFixed(2)}MB -> ${(result.compressedSize / (1024 * 1024)).toFixed(2)}MB`);
+          console.log(`[COMPRESSION] Video compressed successfully: ${(result.originalSize / (1024 * 1024)).toFixed(2)}MB -> ${(result.compressedSize / (1024 * 1024)).toFixed(2)}MB`);
+        } else {
+          console.log('[COMPRESSION] Video compression failed, using original file');
         }
       }
+    } else {
+      console.log(`[COMPRESSION] File type ${req.file.mimetype} does not need compression`);
     }
     
     next();
   } catch (error) {
-    console.error('Error in media compression middleware:', error);
+    console.error('[COMPRESSION] Error in media compression middleware:', error);
     next(); // Continue without compression if error occurs
   }
 };
