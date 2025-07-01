@@ -8,13 +8,15 @@ interface MessageAttachmentProps {
   attachmentUrl: string;
   attachmentName: string;
   attachmentSize?: number;
+  onImageClick?: (imageUrl: string) => void;
 }
 
 export default function MessageAttachment({
   attachmentType,
   attachmentUrl,
   attachmentName,
-  attachmentSize
+  attachmentSize,
+  onImageClick
 }: MessageAttachmentProps) {
   const formatFileSize = (bytes?: number): string => {
     if (!bytes) return '';
@@ -43,17 +45,16 @@ export default function MessageAttachment({
       case 'image':
         return (
           <div className="mb-1">
-            <a href={attachmentUrl} target="_blank" rel="noopener noreferrer">
-              <img 
-                src={attachmentUrl} 
-                alt={attachmentName} 
-                className="max-h-56 max-w-full rounded-md object-contain" 
+            <img 
+              src={attachmentUrl} 
+              alt={attachmentName} 
+              className="max-h-56 max-w-full rounded-md object-contain cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => onImageClick?.(attachmentUrl)} 
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = '/broken-image.svg';
                   (e.target as HTMLImageElement).classList.add('max-h-32');
                 }}
               />
-            </a>
           </div>
         );
       case 'video':

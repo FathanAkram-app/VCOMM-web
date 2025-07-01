@@ -81,6 +81,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   const [isForwardDialogOpen, setIsForwardDialogOpen] = useState(false);
   const [isGroupManagementOpen, setIsGroupManagementOpen] = useState(false);
   const [replyToMessage, setReplyToMessage] = useState<ChatMessage | null>(null);
+  const [selectedImageModal, setSelectedImageModal] = useState<string | null>(null);
   const [conversations, setConversations] = useState<{id: number, name: string, isGroup?: boolean}[]>([]);
   
   // State untuk voice recording
@@ -1143,6 +1144,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                             attachmentUrl={msg.attachmentUrl} 
                             attachmentName={msg.attachmentName || 'file'} 
                             attachmentSize={msg.attachmentSize}
+                            onImageClick={setSelectedImageModal}
                           />
                         )}
                       </>
