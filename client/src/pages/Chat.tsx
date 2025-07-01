@@ -444,6 +444,44 @@ export default function Chat() {
           
           // Force refetch conversations immediately
           refetchConversations();
+          
+          // Fallback: Force manual refresh if React Query doesn't update
+          setTimeout(async () => {
+            console.log('[Chat] Fallback refresh after WebSocket message');
+            
+            // Force fresh data fetch bypassing cache
+            try {
+              const response = await fetch('/api/conversations', {
+                credentials: 'include',
+                headers: { 'Accept': 'application/json' },
+                cache: 'no-cache'
+              });
+              
+              if (response.ok) {
+                const freshData = await response.json();
+                console.log('[Chat] Fresh conversation data:', freshData);
+                
+                if (freshData && Array.isArray(freshData)) {
+                  const formattedConversations = freshData.map(conv => ({
+                    id: conv.id,
+                    name: conv.name || `Conversation ${conv.id}`,
+                    isGroup: conv.isGroup || false,
+                    lastMessage: conv.lastMessage || "",
+                    lastMessageTime: conv.lastMessageTime || conv.updatedAt,
+                    unread: conv.unreadCount || 0,
+                    memberCount: conv.memberCount || 0,
+                    otherUserId: conv.otherUserId
+                  }));
+                  
+                  console.log('[Chat] Force updating chats state with fresh data');
+                  setChats(formattedConversations);
+                }
+              }
+            } catch (error) {
+              console.error('[Chat] Error fetching fresh data:', error);
+              fetchUserChats(user.id);
+            }
+          }, 500);
         }
         
         // Handle message read events
