@@ -1781,8 +1781,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/messages/:id', isAuthenticated, async (req: AuthRequest, res) => {
     try {
       const messageId = parseInt(req.params.id);
+      const { deleteForEveryone } = req.body;
+      const userId = req.session?.user?.id;
+      
       if (isNaN(messageId)) {
         return res.status(400).json({ message: "Invalid message ID" });
+      }
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
       }
       
       const message = await storage.getMessage(messageId);
@@ -1791,23 +1798,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Message not found" });
       }
       
-      // Dalam versi militer, semua pengguna dapat menghapus pesan apapun
-      // Tidak perlu pengecekan pengirim pesan
+      // Check permissions for "delete for everyone"
+      if (deleteForEveryone && message.senderId !== userId) {
+        return res.status(403).json({ message: "You can only delete your own messages for everyone" });
+      }
       
-      const deletedMessage = await storage.deleteMessage(messageId);
-      
-      // Send real-time notification about the deleted message
-      const wsMessage: WebSocketMessage = {
-        type: 'new_message',
-        payload: {
-          ...deletedMessage,
-          action: 'delete'
-        }
-      };
-      
-      await broadcastToConversation(deletedMessage.conversationId, wsMessage);
-      
-      res.status(200).json(deletedMessage);
+      if (deleteForEveryone) {
+        // Delete for everyone - actually delete the message
+        const deletedMessage = await storage.deleteMessage(messageId);
+        
+        // Send real-time notification about the deleted message
+        const wsMessage: WebSocketMessage = {
+          type: 'new_message',
+          payload: {
+            ...deletedMessage,
+            action: 'delete_for_everyone'
+          }
+        };
+        
+        await broadcastToConversation(deletedMessage.conversationId, wsMessage);
+        res.status(200).json({ message: "Message deleted for everyone", deletedMessage });
+      } else {
+        // Delete for me only - mark as deleted for this user
+        await storage.markMessageAsDeletedForUser(messageId, userId);
+        res.status(200).json({ message: "Message deleted for you" });
+      }
     } catch (error) {
       console.error("Error deleting message:", error);
       res.status(500).json({ message: "Failed to delete message" });

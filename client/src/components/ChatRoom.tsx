@@ -73,6 +73,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [selectedMessage, setSelectedMessage] = useState<ChatMessage | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deleteForEveryone, setDeleteForEveryone] = useState(false);
   const [isForwardDialogOpen, setIsForwardDialogOpen] = useState(false);
   const [isGroupManagementOpen, setIsGroupManagementOpen] = useState(false);
   const [replyToMessage, setReplyToMessage] = useState<ChatMessage | null>(null);
@@ -468,9 +469,13 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
 
   // Delete message mutation
   const deleteMessageMutation = useMutation({
-    mutationFn: async (messageId: number) => {
+    mutationFn: async ({ messageId, deleteForEveryone }: { messageId: number, deleteForEveryone: boolean }) => {
       const response = await fetch(`/api/messages/${messageId}`, {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ deleteForEveryone }),
       });
       
       if (!response.ok) {
@@ -482,6 +487,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     onSuccess: () => {
       setIsDeleteDialogOpen(false);
       setSelectedMessage(null);
+      setDeleteForEveryone(false);
       queryClient.invalidateQueries({ queryKey: [`/api/conversations/${chatId}/messages`] });
     },
   });
@@ -921,25 +927,74 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
           <DialogHeader>
             <DialogTitle>Hapus Pesan</DialogTitle>
             <DialogDescription className="text-gray-400">
-              Apakah Anda yakin ingin menghapus pesan ini? Tindakan ini tidak dapat dibatalkan.
+              Pilih cara menghapus pesan ini. Tindakan ini tidak dapat dibatalkan.
             </DialogDescription>
           </DialogHeader>
           <div className="bg-[#2a2a2a] p-3 rounded-md max-h-[100px] overflow-auto my-2">
             <p className="text-sm">{selectedMessage?.content}</p>
+            {selectedMessage?.hasAttachment && (
+              <p className="text-xs text-[#a6c455] mt-1">
+                📎 {selectedMessage.attachmentName}
+              </p>
+            )}
+          </div>
+          <div className="space-y-3 my-4">
+            <div className="space-y-2">
+              <Button
+                variant="outline"
+                className="w-full justify-start text-left border-[#444444] hover:bg-[#2a2a2a] text-white"
+                onClick={() => {
+                  if (selectedMessage) {
+                    deleteMessageMutation.mutate({ 
+                      messageId: selectedMessage.id, 
+                      deleteForEveryone: false 
+                    });
+                  }
+                }}
+                disabled={deleteMessageMutation.isPending}
+              >
+                <Trash className="mr-2 h-4 w-4" />
+                Hapus untuk saya
+              </Button>
+              <p className="text-xs text-gray-400 ml-6">
+                Pesan akan dihapus hanya dari perangkat Anda
+              </p>
+            </div>
+            
+            {selectedMessage?.senderId === user?.id && (
+              <div className="space-y-2">
+                <Button
+                  variant="destructive"
+                  className="w-full justify-start text-left"
+                  onClick={() => {
+                    if (selectedMessage) {
+                      deleteMessageMutation.mutate({ 
+                        messageId: selectedMessage.id, 
+                        deleteForEveryone: true 
+                      });
+                    }
+                  }}
+                  disabled={deleteMessageMutation.isPending}
+                >
+                  <Trash className="mr-2 h-4 w-4" />
+                  Hapus untuk semua
+                </Button>
+                <p className="text-xs text-gray-400 ml-6">
+                  Pesan akan dihapus untuk semua orang dalam chat ini
+                </p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button
               variant="ghost"
-              onClick={() => setIsDeleteDialogOpen(false)}
-            >
-              Batal
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => selectedMessage && deleteMessageMutation.mutate(selectedMessage.id)}
+              onClick={() => {
+                setIsDeleteDialogOpen(false);
+                setDeleteForEveryone(false);
+              }}
               disabled={deleteMessageMutation.isPending}
             >
-              {deleteMessageMutation.isPending ? "Menghapus..." : "Hapus"}
+              Batal
             </Button>
           </DialogFooter>
         </DialogContent>

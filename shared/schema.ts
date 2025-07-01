@@ -99,6 +99,16 @@ export const callHistory = pgTable("call_history", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Deleted messages per user table (for "delete for me" functionality)
+export const deletedMessagesPerUser = pgTable("deleted_messages_per_user", {
+  id: serial("id").primaryKey(),
+  messageId: integer("message_id").references(() => messages.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  deletedAt: timestamp("deleted_at").defaultNow(),
+}, (table) => ({
+  uniqueUserMessage: unique().on(table.messageId, table.userId),
+}));
+
 // Lapsit Categories table
 export const lapsitCategories = pgTable("lapsit_categories", {
   id: serial("id").primaryKey(),
