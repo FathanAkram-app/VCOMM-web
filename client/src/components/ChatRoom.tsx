@@ -1356,6 +1356,30 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
           currentUserId={user.id}
         />
       )}
+
+      {/* Image Modal Fullscreen */}
+      {selectedImageModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
+          onClick={() => setSelectedImageModal(null)}
+        >
+          <div className="relative max-w-full max-h-full p-4">
+            <Button
+              className="absolute top-2 right-2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white border-none z-10"
+              size="sm"
+              onClick={() => setSelectedImageModal(null)}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+            <img 
+              src={selectedImageModal} 
+              alt="Chat image" 
+              className="max-w-full max-h-full object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
