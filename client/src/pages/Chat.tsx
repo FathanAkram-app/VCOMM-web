@@ -65,6 +65,7 @@ export default function Chat() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [lapsitReports, setLapsitReports] = useState<any[]>([]);
+  const [selectedImageModal, setSelectedImageModal] = useState<string | null>(null);
   
   // Handle image selection
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
