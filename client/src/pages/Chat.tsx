@@ -478,13 +478,14 @@ export default function Chat() {
       console.log('[Chat] Sent auth message for user:', user.id);
     };
 
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        console.log('[Chat] WebSocket message received:', data.type, data);
-        
-        // Handle new message for real-time unread count updates
-        if (data.type === 'new_message') {
+    // Listen to new message events from CallContext instead of direct WebSocket
+    const handleNewMessage = (event: CustomEvent) => {
+      console.log('[Chat] Received new message event from CallContext:', event.detail);
+      
+      const data = { type: 'new_message', payload: event.detail };
+      
+      // Handle new message for real-time unread count updates
+      if (data.type === 'new_message') {
           console.log('[Chat] Received new message, invalidating React Query cache');
           
           // Play notification sound untuk pesan baru (hanya jika bukan dari user sendiri)
@@ -555,10 +556,6 @@ export default function Chat() {
           queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
           refetchConversations();
         }
-        
-      } catch (error) {
-        console.error('[Chat] Error parsing WebSocket message:', error);
-      }
     };
 
     ws.onerror = (error) => {
@@ -571,6 +568,9 @@ export default function Chat() {
       setWsConnected(false);
     };
 
+    // Register event listener for new messages from CallContext
+    window.addEventListener('new-message', handleNewMessage as EventListener);
+
     // Store WebSocket reference
     setSocket(ws);
 
@@ -579,6 +579,7 @@ export default function Chat() {
       if (ws.readyState === WebSocket.OPEN) {
         ws.close();
       }
+      window.removeEventListener('new-message', handleNewMessage as EventListener);
     };
   }, [user, activeChat]);
 

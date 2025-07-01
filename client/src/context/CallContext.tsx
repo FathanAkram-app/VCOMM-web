@@ -707,6 +707,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
               detail: message.payload || message
             }));
             break;
+          case 'new_message':
+            // Forward new message to Chat component for real-time updates
+            console.log('[CallContext] Forwarding new message for Chat:', message.payload || message);
+            window.dispatchEvent(new CustomEvent('new-message', {
+              detail: message.payload || message
+            }));
+            break;
         }
       } catch (error) {
         // Ignore non-JSON messages (they might be for chat)
