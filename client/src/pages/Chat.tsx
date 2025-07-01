@@ -23,6 +23,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { compressImage, shouldCompressImage } from '@/utils/imageCompression';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Chat() {
@@ -134,7 +135,17 @@ export default function Chat() {
     input.type = 'file';
     input.accept = 'image/*';
     input.capture = 'environment'; // Use rear camera
-    input.onchange = (event) => handleImageSelect(event as any);
+    input.onchange = (event: Event) => {
+      const target = event.target as HTMLInputElement;
+      if (target.files && target.files[0]) {
+        handleImageSelect({
+          target: {
+            files: target.files,
+            value: target.value
+          }
+        } as React.ChangeEvent<HTMLInputElement>);
+      }
+    };
     input.click();
   };
 

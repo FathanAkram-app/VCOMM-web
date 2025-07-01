@@ -3,6 +3,7 @@ import fs from 'fs';
 import { randomUUID } from 'crypto';
 import multer from 'multer';
 import { Request, Response, NextFunction } from 'express';
+import sharp from 'sharp';
 
 // Pastikan folder uploads ada
 const uploadDir = path.join(process.cwd(), 'uploads');
@@ -136,3 +137,103 @@ export function deleteFile(filePath: string) {
     console.error('Error saat menghapus file:', error);
   }
 }
+
+// Server-side image compression utility
+export const compressImageServer = async (
+  inputPath: string, 
+  outputPath: string, 
+  maxSizeKB: number = 1024
+): Promise<{ success: boolean; originalSize: number; compressedSize: number; path: string }> => {
+  try {
+    const originalStats = fs.statSync(inputPath);
+    
+    // Start with 80% quality
+    let quality = 80;
+    let compressedBuffer: Buffer;
+    
+    do {
+      compressedBuffer = await sharp(inputPath)
+        .resize(1920, 1080, { 
+          fit: 'inside', 
+          withoutEnlargement: true 
+        })
+        .jpeg({ 
+          quality: quality,
+          progressive: true,
+          mozjpeg: true 
+        })
+        .toBuffer();
+      
+      // If still too large, reduce quality
+      if (compressedBuffer.length > maxSizeKB * 1024 && quality > 20) {
+        quality -= 10;
+      } else {
+        break;
+      }
+    } while (quality > 20);
+    
+    // Write the compressed image
+    await sharp(compressedBuffer).toFile(outputPath);
+    
+    return {
+      success: true,
+      originalSize: originalStats.size,
+      compressedSize: compressedBuffer.length,
+      path: outputPath
+    };
+  } catch (error) {
+    console.error('Error compressing image:', error);
+    return {
+      success: false,
+      originalSize: 0,
+      compressedSize: 0,
+      path: inputPath
+    };
+  }
+};
+
+export const shouldCompressImageServer = async (filePath: string): Promise<boolean> => {
+  try {
+    const stats = fs.statSync(filePath);
+    const fileSizeKB = stats.size / 1024;
+    return fileSizeKB > 1024; // Compress if larger than 1MB
+  } catch (error) {
+    return false;
+  }
+};
+
+// Middleware untuk kompresi gambar setelah upload
+export const compressUploadedImage = async (req: any, res: any, next: any) => {
+  if (!req.file || !req.file.mimetype.startsWith('image/')) {
+    return next();
+  }
+
+  try {
+    const filePath = req.file.path;
+    const shouldCompress = await shouldCompressImageServer(filePath);
+    
+    if (shouldCompress) {
+      console.log('Compressing image:', req.file.filename);
+      
+      const compressedFilename = `compressed_${req.file.filename.replace(path.extname(req.file.filename), '.jpg')}`;
+      const compressedPath = path.join('./uploads', compressedFilename);
+      
+      const result = await compressImageServer(filePath, compressedPath, 1024);
+      
+      if (result.success) {
+        // Delete original file and update req.file to point to compressed version
+        fs.unlinkSync(filePath);
+        req.file.filename = compressedFilename;
+        req.file.path = compressedPath;
+        req.file.mimetype = 'image/jpeg';
+        
+        console.log(`Image compressed: ${(result.originalSize / 1024).toFixed(2)}KB -> ${(result.compressedSize / 1024).toFixed(2)}KB`);
+      }
+    }
+    
+    next();
+  } catch (error) {
+    console.error('Error in image compression middleware:', error);
+    next(); // Continue without compression if error occurs
+  }
+};
