@@ -9,7 +9,7 @@ import {
   insertConversationSchema,
   insertConversationMemberSchema
 } from "@shared/schema";
-import { upload, getAttachmentType, handleUploadError } from "./uploads";
+import { upload, getAttachmentType, handleUploadError, compressUploadedImage } from "./uploads";
 import path from "path";
 import * as fs from "fs";
 
@@ -45,7 +45,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/uploads', isAuthenticated, express.static(path.join(process.cwd(), 'uploads')));
   
   // Upload file attachment
-  app.post('/api/attachments/upload', isAuthenticated, upload.single('file'), handleUploadError, async (req: any, res: Response) => {
+  app.post('/api/attachments/upload', isAuthenticated, upload.single('file'), handleUploadError, compressUploadedImage, async (req: any, res: Response) => {
     try {
       // Pastikan file berhasil diupload
       if (!req.file) {
@@ -850,25 +850,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/lapsit/reports', isAuthenticated, (req: AuthRequest, res, next) => {
-  upload.single('image')(req, res, (err) => {
-    if (err instanceof multer.MulterError) {
-      if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ 
-          message: "File terlalu besar! Maksimal 10MB." 
-        });
-      }
-      return res.status(400).json({ 
-        message: `Error upload: ${err.message}` 
-      });
-    } else if (err) {
-      return res.status(400).json({ 
-        message: err.message 
-      });
-    }
-    next();
-  });
-}, async (req: AuthRequest, res) => {
+  app.post('/api/lapsit/reports', isAuthenticated, upload.single('image'), handleUploadError, compressUploadedImage, async (req: AuthRequest, res) => {
     try {
       const userId = req.user?.claims?.sub;
       console.log('[LAPSIT] User ID from auth:', userId);

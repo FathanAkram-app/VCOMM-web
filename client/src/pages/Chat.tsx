@@ -68,7 +68,7 @@ export default function Chat() {
   const [selectedImageModal, setSelectedImageModal] = useState<string | null>(null);
   
   // Handle image selection
-  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       // Cek ukuran file (10MB = 10 * 1024 * 1024 bytes)
@@ -95,12 +95,36 @@ export default function Chat() {
         return;
       }
       
-      setSelectedImage(file);
+      let finalFile = file;
+      
+      // Cek apakah perlu kompresi (jika lebih dari 1MB)
+      if (shouldCompressImage(file)) {
+        toast({
+          title: "Mengkompresi gambar...",
+          description: `File ${(file.size / (1024 * 1024)).toFixed(2)}MB akan dikompres menjadi 1MB`,
+        });
+        
+        try {
+          finalFile = await compressImage(file, 1);
+          toast({
+            title: "Berhasil dikompres",
+            description: `Ukuran file sekarang: ${(finalFile.size / (1024 * 1024)).toFixed(2)}MB`,
+          });
+        } catch (error) {
+          toast({
+            title: "Gagal kompresi",
+            description: "Menggunakan file asli",
+            variant: "destructive",
+          });
+        }
+      }
+      
+      setSelectedImage(finalFile);
       const reader = new FileReader();
       reader.onload = (e) => {
         setImagePreview(e.target?.result as string);
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(finalFile);
     }
   };
 
@@ -110,7 +134,7 @@ export default function Chat() {
     input.type = 'file';
     input.accept = 'image/*';
     input.capture = 'environment'; // Use rear camera
-    input.onchange = handleImageSelect;
+    input.onchange = (event) => handleImageSelect(event as any);
     input.click();
   };
 

@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Paperclip, X, File, Image, FileText, Music, Video } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { compressImage, shouldCompressImage } from '@/utils/imageCompression';
 
 interface AttachmentUploaderProps {
   onFileUploaded: (fileData: {
@@ -18,7 +19,7 @@ export default function AttachmentUploader({ onFileUploaded }: AttachmentUploade
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
       
@@ -33,7 +34,31 @@ export default function AttachmentUploader({ onFileUploaded }: AttachmentUploade
         return;
       }
       
-      setSelectedFile(file);
+      let finalFile = file;
+      
+      // Cek apakah perlu kompresi untuk gambar (jika lebih dari 1MB)
+      if (shouldCompressImage(file)) {
+        toast({
+          title: "Mengkompresi gambar...",
+          description: `File ${(file.size / (1024 * 1024)).toFixed(2)}MB akan dikompres`,
+        });
+        
+        try {
+          finalFile = await compressImage(file, 1);
+          toast({
+            title: "Berhasil dikompres",
+            description: `Ukuran file sekarang: ${(finalFile.size / (1024 * 1024)).toFixed(2)}MB`,
+          });
+        } catch (error) {
+          toast({
+            title: "Gagal kompresi",
+            description: "Menggunakan file asli",
+            variant: "destructive",
+          });
+        }
+      }
+      
+      setSelectedFile(finalFile);
     }
   };
 
