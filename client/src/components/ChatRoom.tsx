@@ -1383,6 +1383,27 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
               </Button>
               
               <Button 
+                type="button"
+                onClick={() => {
+                  console.log('🧪 Testing WebSocket broadcast...');
+                  fetch('/api/test-broadcast', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ conversationId: chatId })
+                  }).then(res => res.json()).then(result => {
+                    console.log('🧪 Test broadcast result:', result);
+                  }).catch(err => {
+                    console.error('🧪 Test broadcast error:', err);
+                  });
+                }}
+                variant="ghost"
+                size="icon"
+                className="text-orange-400 mr-2"
+              >
+                🧪
+              </Button>
+              
+              <Button 
                 type="submit"
                 disabled={(!message.trim() && !attachment && !voiceAttachment) || sendMessageMutation.isPending}
                 variant="ghost"
