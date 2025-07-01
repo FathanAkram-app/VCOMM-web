@@ -793,6 +793,33 @@ export class DatabaseStorage implements IStorage {
     console.log(`[Storage] Found ${reports.length} lapsit reports`);
     return reports;
   }
+
+  // Filter messages for user - exclude deleted messages for specific user
+  async filterMessagesForUser(messages: any[], userId: number): Promise<any[]> {
+    try {
+      // Get all deleted message IDs for this user
+      const deletedMessageResults = await db
+        .select({ messageId: deletedMessagesPerUser.messageId })
+        .from(deletedMessagesPerUser)
+        .where(eq(deletedMessagesPerUser.userId, userId));
+      
+      const deletedMessageIdSet = new Set(deletedMessageResults.map((dm: any) => dm.messageId));
+      
+      // Filter out messages that are deleted for this user or globally deleted
+      return messages.filter(msg => {
+        // If message is deleted globally, hide it for everyone
+        if (msg.isDeleted) return false;
+        
+        // If message is deleted for this specific user, hide it only for them
+        if (deletedMessageIdSet.has(msg.id)) return false;
+        
+        return true;
+      });
+    } catch (error) {
+      console.error("Error filtering messages for user:", error);
+      return messages; // Return original messages if filtering fails
+    }
+  }
 }
 
 // Export DatabaseStorage instance to be used in the application

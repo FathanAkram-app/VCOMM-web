@@ -535,13 +535,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/conversations/:id/messages', isAuthenticated, async (req: AuthRequest, res) => {
     try {
       const conversationId = parseInt(req.params.id);
+      const userId = req.session?.user?.id;
+      
       if (isNaN(conversationId)) {
         return res.status(400).json({ message: "Invalid conversation ID" });
       }
       
-      // Temporarily disable access check for debugging
-      // Sehingga semua pengguna bisa mengakses pesan dalam chat
-      const messages = await storage.getMessagesByConversation(conversationId);
+      if (!userId) {
+        return res.status(400).json({ message: "User ID not found in session" });
+      }
+      
+      // Get messages and filter out deleted messages for this user
+      const allMessages = await storage.getMessagesByConversation(conversationId);
+      const messages = await storage.filterMessagesForUser(allMessages, userId);
       
       // Log jumlah pesan yang ditemukan untuk debugging
       console.log(`Found ${messages.length} messages for conversation ${conversationId}`);
