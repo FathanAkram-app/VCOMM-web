@@ -238,45 +238,104 @@ export const compressVideoServer = async (
           return;
         }
 
-        const width = videoStream.width || 720;
-        const height = videoStream.height || 1280;
-        const isPortrait = height > width;
+        let width = videoStream.width || 720;
+        let height = videoStream.height || 1280;
         
-        console.log(`[COMPRESSION] Original video: ${width}x${height}, Portrait: ${isPortrait}`);
+        // Check for rotation metadata from various sources
+        let rotation = 0;
         
-        // Set compression parameters based on orientation
-        let targetWidth, targetHeight;
-        if (isPortrait) {
-          // Portrait video: limit height, maintain aspect ratio
-          targetHeight = Math.min(height, 1280);
-          targetWidth = Math.round((width / height) * targetHeight);
-          // Ensure even numbers for encoding
-          if (targetWidth % 2 !== 0) targetWidth--;
-          if (targetHeight % 2 !== 0) targetHeight--;
-        } else {
-          // Landscape video: limit width, maintain aspect ratio
-          targetWidth = Math.min(width, 1280);
-          targetHeight = Math.round((height / width) * targetWidth);
-          // Ensure even numbers for encoding
-          if (targetWidth % 2 !== 0) targetWidth--;
-          if (targetHeight % 2 !== 0) targetHeight--;
+        // Check video stream tags
+        if (videoStream.tags && videoStream.tags.rotate) {
+          rotation = parseInt(videoStream.tags.rotate) || 0;
         }
         
-        console.log(`[COMPRESSION] Target resolution: ${targetWidth}x${targetHeight}`);
+        // Check side_data for displaymatrix rotation
+        if (videoStream.side_data_list) {
+          const displayMatrix = videoStream.side_data_list.find((data: any) => 
+            data.side_data_type === 'Display Matrix' || 
+            data.type === 'displaymatrix'
+          );
+          if (displayMatrix && displayMatrix.rotation !== undefined) {
+            rotation = displayMatrix.rotation;
+          }
+        }
         
-        ffmpeg(inputPath)
+        console.log(`[COMPRESSION] Original video: ${width}x${height}, Rotation metadata: ${rotation}°`);
+        
+        // Determine actual display dimensions and target size
+        let targetWidth, targetHeight;
+        let videoFilter = '';
+        
+        // Handle rotation and set target dimensions
+        const absRotation = Math.abs(rotation);
+        if (absRotation === 90 || absRotation === 270) {
+          // Video is rotated 90° or 270°, swap dimensions for calculation
+          const isPortrait = width > height; // After rotation, original width becomes height
+          
+          if (isPortrait) {
+            targetHeight = Math.min(width, 1280);  // Original width becomes target height
+            targetWidth = Math.round((height / width) * targetHeight); // Original height becomes target width
+          } else {
+            targetWidth = Math.min(height, 1280);  // Original height becomes target width  
+            targetHeight = Math.round((width / height) * targetWidth); // Original width becomes target height
+          }
+          
+          // Set rotation filter based on rotation direction
+          if (rotation === 90 || rotation === -270) {
+            videoFilter = 'transpose=1'; // 90° clockwise
+          } else if (rotation === 270 || rotation === -90) {
+            videoFilter = 'transpose=2'; // 90° counter-clockwise  
+          }
+          
+          console.log(`[COMPRESSION] Rotated video detected, target: ${targetWidth}x${targetHeight}, filter: ${videoFilter}`);
+        } else {
+          // No rotation or 180° rotation, use normal dimensions
+          const isPortrait = height > width;
+          
+          if (isPortrait) {
+            targetHeight = Math.min(height, 1280);
+            targetWidth = Math.round((width / height) * targetHeight);
+          } else {
+            targetWidth = Math.min(width, 1280);
+            targetHeight = Math.round((height / width) * targetWidth);
+          }
+          
+          if (absRotation === 180) {
+            videoFilter = 'transpose=2,transpose=2'; // 180° rotation
+          }
+          
+          console.log(`[COMPRESSION] Normal video, target: ${targetWidth}x${targetHeight}`);
+        }
+        
+        // Ensure even numbers for encoding
+        if (targetWidth % 2 !== 0) targetWidth--;
+        if (targetHeight % 2 !== 0) targetHeight--;
+        
+        console.log(`[COMPRESSION] Final target resolution: ${targetWidth}x${targetHeight}`);
+        
+        const ffmpegCommand = ffmpeg(inputPath)
           .videoCodec('libx264')
           .audioCodec('aac')
-          .videoBitrate('800k')  // 800kbps video bitrate
-          .audioBitrate('128k')  // 128kbps audio bitrate
-          .size(`${targetWidth}x${targetHeight}`)  // Maintain aspect ratio
-          .fps(30)               // 30 FPS
+          .videoBitrate('800k')
+          .audioBitrate('128k')
+          .size(`${targetWidth}x${targetHeight}`)
+          .fps(30)
           .format('mp4')
           .outputOptions([
-            '-preset fast',      // Faster encoding
-            '-crf 28',          // Quality setting (lower = better quality)
-            '-movflags +faststart' // Optimize for streaming
-          ])
+            '-preset fast',
+            '-crf 28',
+            '-movflags +faststart',
+            '-metadata:s:v rotate=0', // Reset rotation metadata
+            '-avoid_negative_ts make_zero'
+          ]);
+        
+        // Apply video filter if needed
+        if (videoFilter) {
+          console.log(`[COMPRESSION] Applying video filter: ${videoFilter}`);
+          ffmpegCommand.videoFilters(videoFilter);
+        }
+        
+        ffmpegCommand
           .on('end', () => {
             try {
               const compressedStats = fs.statSync(outputPath);
