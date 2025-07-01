@@ -100,13 +100,13 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     enabled: !!chatId && !!user && !isGroup,
   });
   
-  // Fetch messages
+  // Fetch messages - remove polling, rely on WebSocket only
   const { data: messages = [], refetch: refetchMessages } = useQuery({
     queryKey: [`/api/conversations/${chatId}/messages`],
     enabled: !!chatId && !!user,
-    refetchInterval: 1000, // Reduced polling to 1 second for more responsive notifications
+    // Remove automatic polling - use WebSocket for real-time updates
     retry: 3, // Coba lagi jika gagal
-    staleTime: 5 * 1000, // Data dianggap stale setelah 5 detik
+    staleTime: 5 * 60 * 1000, // Data dianggap stale setelah 5 menit
     // Tambahkan console log untuk membantu debugging
     onSuccess: (data) => {
       console.log("Messages loaded:", data);
@@ -149,10 +149,31 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
         }
         
         // Handle new messages - real-time notification
-        if (message.type === 'new_message' && message.payload?.conversationId === chatId) {
-          console.log('🔥 Real-time message received:', message.payload);
-          // Instantly refresh messages when new message is received
-          queryClient.invalidateQueries({ queryKey: [`/api/conversations/${chatId}/messages`] });
+        if (message.type === 'new_message') {
+          console.log('🔥 NOTIFICATION: New message received!');
+          console.log('🔥 Message payload:', message.payload);
+          console.log('🔥 Current chatId:', chatId, 'Message conversationId:', message.payload?.conversationId);
+          console.log('🔥 WebSocket readyState:', ws?.readyState);
+          console.log('🔥 Browser location:', window.location.href);
+          
+          // Show browser notification if supported
+          if (Notification.permission === 'granted' && message.payload?.content) {
+            new Notification(`New message from ${message.payload.senderName || 'Unknown'}`, {
+              body: message.payload.content.substring(0, 100),
+              icon: '/icon-192x192.png'
+            });
+          }
+          
+          // Refresh messages for any conversation to see immediate updates
+          if (message.payload?.conversationId) {
+            queryClient.invalidateQueries({ queryKey: [`/api/conversations/${message.payload.conversationId}/messages`] });
+            console.log('🔥 Invalidated queries for conversation:', message.payload.conversationId);
+          }
+          
+          // Also refresh conversations list to update unread counts
+          queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/direct-chats'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/rooms'] });
         }
         
       } catch (error) {

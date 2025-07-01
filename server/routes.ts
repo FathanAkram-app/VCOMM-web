@@ -460,6 +460,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Clear chat history endpoint
+  // Test broadcast endpoint
+  app.post('/api/test-broadcast', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const conversationId = parseInt(req.body.conversationId) || 41;
+      const testMessage = {
+        type: 'new_message',
+        payload: {
+          id: 999999,
+          content: 'Test notification message',
+          conversationId: conversationId,
+          senderId: req.session?.user?.id || 1,
+          senderName: 'Test User',
+          timestamp: new Date().toISOString()
+        }
+      };
+      
+      console.log(`[TEST BROADCAST] Sending test notification to conversation ${conversationId}`);
+      console.log(`[TEST BROADCAST] Connected clients: ${clients.size}`);
+      
+      // Broadcast to all connected clients
+      clients.forEach((client, userId) => {
+        if (client.readyState === WebSocket.OPEN) {
+          try {
+            client.send(JSON.stringify(testMessage));
+            console.log(`[TEST BROADCAST] Sent to user ${userId}`);
+          } catch (error) {
+            console.error(`[TEST BROADCAST] Failed to send to user ${userId}:`, error);
+          }
+        }
+      });
+      
+      res.json({ success: true, message: 'Test broadcast sent', clientCount: clients.size });
+    } catch (error) {
+      console.error('Error sending test broadcast:', error);
+      res.status(500).json({ error: 'Failed to send test broadcast' });
+    }
+  });
+
   app.delete('/api/conversations/:id/clear', isAuthenticated, async (req: AuthRequest, res) => {
     try {
       const conversationId = parseInt(req.params.id);
@@ -617,10 +655,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Broadcast to WebSocket clients with enhanced logging
       console.log(`[BROADCAST] Sending notification for message ${message.id} to conversation ${message.conversationId}`);
+      console.log(`[BROADCAST] Current WebSocket clients count: ${clients.size}`);
+      console.log(`[BROADCAST] WebSocket clients map keys:`, Array.from(clients.keys()));
+      
       const wsMessage = {
         type: 'new_message',
         payload: message
       };
+      
+      // Also broadcast to all connected clients for debugging
+      console.log(`[BROADCAST] Broadcasting to all ${clients.size} clients for debugging`);
+      clients.forEach((client, userId) => {
+        if (client.readyState === WebSocket.OPEN) {
+          try {
+            client.send(JSON.stringify(wsMessage));
+            console.log(`[BROADCAST] Sent to user ${userId}`);
+          } catch (error) {
+            console.error(`[BROADCAST] Failed to send to user ${userId}:`, error);
+          }
+        } else {
+          console.log(`[BROADCAST] Client ${userId} not connected (readyState: ${client.readyState})`);
+        }
+      });
       
       await broadcastToConversation(message.conversationId, wsMessage);
       console.log(`[BROADCAST] Notification sent successfully`);
