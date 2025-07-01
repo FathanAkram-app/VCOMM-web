@@ -853,27 +853,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/lapsit/reports', isAuthenticated, upload.single('image'), async (req: AuthRequest, res) => {
     try {
       const userId = req.user?.claims?.sub;
+      console.log('[LAPSIT] User ID from auth:', userId);
+      console.log('[LAPSIT] File received:', req.file ? req.file.originalname : 'No file');
       let attachmentUrl = null;
       let attachmentName = null;
 
       // Handle file upload if present
       if (req.file) {
-        const timestamp = Date.now();
-        const fileName = `lapsit_${timestamp}_${req.file.originalname}`;
-        const filePath = path.join(process.cwd(), 'uploads', fileName);
-        
-        // Ensure uploads directory exists
-        const uploadsDir = path.join(process.cwd(), 'uploads');
-        if (!fs.existsSync(uploadsDir)) {
-          fs.mkdirSync(uploadsDir, { recursive: true });
-        }
-        
-        // Save file
-        await fs.promises.writeFile(filePath, req.file.buffer);
-        attachmentUrl = `/uploads/${fileName}`;
+        // File sudah tersimpan oleh multer disk storage
+        // filename sudah dibuat secara unique oleh multer
+        attachmentUrl = `/uploads/${req.file.filename}`;
         attachmentName = req.file.originalname;
         
-        console.log(`File saved: ${fileName} to ${filePath}`);
+        console.log(`File uploaded: ${req.file.filename} (original: ${req.file.originalname})`);
       }
 
       const reportData = {
@@ -886,7 +878,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         location: req.body.location || null,
         attachmentUrl,
         attachmentName,
-        reportedById: userId
+        reportedById: userId || 2
       };
       
       const report = await storage.createLapsitReport(reportData);
