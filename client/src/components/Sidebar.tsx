@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { User } from '@shared/schema';
 import { useChat } from '@/contexts/ChatContext';
+import { useQueryClient } from '@tanstack/react-query';
 import { Search, Plus, Users, MessageSquare, X, Settings } from 'lucide-react';
 
 interface SidebarProps {
@@ -14,8 +15,9 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen, onClose, onCreateGroup, user }: SidebarProps) {
-  const { conversations, setCurrentConversation, currentConversation, users, userPresence } = useChat();
+  const { conversations, setCurrentConversation, currentConversation, users, userPresence, ws } = useChat();
   const [filter, setFilter] = useState('');
+  const queryClient = useQueryClient();
   
   // Filter conversations based on search input
   const filteredConversations = conversations.filter(conv => 
@@ -34,6 +36,31 @@ export default function Sidebar({ isOpen, onClose, onCreateGroup, user }: Sideba
       onClose();
     }
   };
+
+  // Listen for new messages to update unread counts
+  useEffect(() => {
+    if (!ws) return;
+
+    const handleMessage = (event: MessageEvent) => {
+      try {
+        const message = JSON.parse(event.data);
+        
+        // When a new message arrives, refresh conversations to update unread counts
+        if (message.type === 'new_message') {
+          console.log('[Sidebar] New message received, refreshing conversations for unread count');
+          queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+        }
+      } catch (error) {
+        console.error('[Sidebar] Error parsing WebSocket message:', error);
+      }
+    };
+
+    ws.addEventListener('message', handleMessage);
+
+    return () => {
+      ws.removeEventListener('message', handleMessage);
+    };
+  }, [ws, queryClient]);
 
   // Get user status
   const getUserStatus = (userId: string) => {
