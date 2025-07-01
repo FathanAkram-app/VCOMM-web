@@ -353,6 +353,53 @@ export default function Chat() {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [lastMessageId, setLastMessageId] = useState<number>(0);
   
+  // Audio notification untuk pesan baru
+  const playNotificationSound = async () => {
+    try {
+      // Buat audio context untuk notification sound
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Resume audio context jika suspended (required by modern browsers)
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
+      
+      // Buat oscillator untuk tone notification
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      // Connect oscillator ke gain node ke destination
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Set frequency dan gain untuk notification sound
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime); // 800Hz tone
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime); // Start silent
+      
+      // Buat fade in/out untuk notification
+      gainNode.gain.linearRampToValueAtTime(0.2, audioContext.currentTime + 0.05); // Fade in
+      gainNode.gain.linearRampToValueAtTime(0.2, audioContext.currentTime + 0.15); // Hold
+      gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.3); // Fade out
+      
+      // Play sound selama 300ms
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
+      
+      console.log('[Chat] Notification sound played');
+    } catch (error) {
+      console.log('[Chat] Could not play notification sound:', error);
+      
+      // Fallback: try simple HTML5 audio beep
+      try {
+        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUfCCyBzvLZiTYIG2m99+OZSA0PUKjk7bZiFgU2k9n0y3QtCCl+zO/eizEJHWq9+OOaRw0NUarg7rhpGAU9k9n01XMuCCl9y++YgGPiwKSdIbsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWG==='); 
+        audio.volume = 0.1;
+        audio.play().catch(() => console.log('[Chat] Fallback beep also failed'));
+      } catch (fallbackError) {
+        console.log('[Chat] Fallback audio also failed:', fallbackError);
+      }
+    }
+  };
+  
   // Dialog states
   const [showNewGroupDialog, setShowNewGroupDialog] = useState(false);
   const [showNewDirectChatDialog, setShowNewDirectChatDialog] = useState(false);
@@ -437,6 +484,14 @@ export default function Chat() {
         // Handle new message for real-time unread count updates
         if (data.type === 'new_message') {
           console.log('[Chat] Received new message, invalidating React Query cache');
+          
+          // Play notification sound untuk pesan baru (hanya jika bukan dari user sendiri)
+          if (data.payload && data.payload.senderId !== user?.id) {
+            console.log('[Chat] Playing notification sound for message from user:', data.payload.senderId);
+            playNotificationSound();
+          } else {
+            console.log('[Chat] Skipping notification sound for own message');
+          }
           
           // Invalidate React Query cache for conversations to trigger automatic refresh
           queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
