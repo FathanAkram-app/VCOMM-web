@@ -470,6 +470,8 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   // Delete message mutation
   const deleteMessageMutation = useMutation({
     mutationFn: async ({ messageId, deleteForEveryone }: { messageId: number, deleteForEveryone: boolean }) => {
+      console.log(`Deleting message ${messageId}, deleteForEveryone: ${deleteForEveryone}`);
+      
       const response = await fetch(`/api/messages/${messageId}`, {
         method: 'DELETE',
         headers: {
@@ -479,16 +481,24 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to delete message');
+        const errorText = await response.text();
+        console.error('Delete failed:', errorText);
+        throw new Error(`Failed to delete message: ${response.status} ${errorText}`);
       }
       
-      return response.json();
+      const result = await response.json();
+      console.log('Delete response:', result);
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Delete successful:', data);
       setIsDeleteDialogOpen(false);
       setSelectedMessage(null);
       setDeleteForEveryone(false);
       queryClient.invalidateQueries({ queryKey: [`/api/conversations/${chatId}/messages`] });
+    },
+    onError: (error) => {
+      console.error('Delete mutation error:', error);
     },
   });
   
@@ -944,6 +954,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                 variant="outline"
                 className="w-full justify-start text-left border-[#444444] hover:bg-[#2a2a2a] text-white"
                 onClick={() => {
+                  console.log("Hapus untuk saya clicked:", selectedMessage);
                   if (selectedMessage) {
                     deleteMessageMutation.mutate({ 
                       messageId: selectedMessage.id, 

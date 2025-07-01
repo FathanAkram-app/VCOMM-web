@@ -1784,6 +1784,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { deleteForEveryone } = req.body;
       const userId = req.session?.user?.id;
       
+      console.log(`[DELETE] Message ${messageId}, deleteForEveryone: ${deleteForEveryone}, userId: ${userId}`);
+      console.log(`[DELETE] Request body:`, req.body);
+      
       if (isNaN(messageId)) {
         return res.status(400).json({ message: "Invalid message ID" });
       }
