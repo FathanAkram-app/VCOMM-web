@@ -389,11 +389,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async markMessageAsDeletedForUser(messageId: number, userId: number): Promise<void> {
-    // For now, we'll implement a simpler approach
-    // In a full implementation, this would use a separate table
-    // For the demo, we'll just return successfully
-    console.log(`Message ${messageId} marked as deleted for user ${userId} (local delete)`);
-    return Promise.resolve();
+    try {
+      // Insert record into deletedMessagesPerUser table
+      await db
+        .insert(deletedMessagesPerUser)
+        .values({
+          messageId: messageId,
+          userId: userId,
+        })
+        .onConflictDoNothing(); // Prevent duplicate entries
+      
+      console.log(`Message ${messageId} marked as deleted for user ${userId} (local delete)`);
+    } catch (error) {
+      console.error(`Error marking message ${messageId} as deleted for user ${userId}:`, error);
+      throw new Error("Failed to mark message as deleted for user");
+    }
   }
   
   async forwardMessage(originalMessageId: number, newConversationId: number, senderId: number): Promise<Message> {
