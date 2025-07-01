@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, MoreVertical, Shield, Trash, Reply, Forward, X, User, Users, ArrowLeft, Mic, Volume2, Play, Pause, CornerDownRight, Phone, Video, MessageSquare } from 'lucide-react';
+import { Send, Shield, Trash, Reply, Forward, X, User, Users, ArrowLeft, Mic, Volume2, Play, Pause, CornerDownRight, Phone, Video } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,12 +16,7 @@ import VoiceRecorder from './VoiceRecorder';
 import AudioPlayerInline from './AudioPlayerInline';
 import SimpleAudioPlayer from './SimpleAudioPlayer';
 import GroupManagementMobile from './GroupManagementMobile';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+
 import { 
   Dialog,
   DialogContent,
@@ -514,24 +509,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     },
   });
 
-  // Clear chat history mutation
-  const clearChatHistoryMutation = useMutation({
-    mutationFn: async () => {
-      await apiRequest('POST', `/api/conversations/${chatId}/clear`);
-    },
-    onSuccess: () => {
-      // Refresh messages after clearing
-      queryClient.invalidateQueries({ queryKey: [`/api/conversations/${chatId}/messages`] });
-      queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/direct-chats'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/rooms'] });
-    },
-  });
 
-  // Functions to handle menu actions
-  const clearChatHistory = () => {
-    clearChatHistoryMutation.mutate();
-  };
   
   // Load conversations for forward dialog
   useEffect(() => {
@@ -933,32 +911,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
               </Button>
             </>
           )}
-          
-          {/* Dropdown menu for chat options */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-[#a6c455] hover:bg-[#333333] h-8 w-8"
-              >
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-[#1e1e1e] border-[#3d5040] text-[#e4e6e3]">
-              <DropdownMenuItem 
-                className="hover:bg-[#3d5040] cursor-pointer focus:bg-[#3d5040] focus:text-white"
-                onClick={() => {
-                  if (confirm(`Apakah Anda yakin ingin membersihkan riwayat chat ${chatData?.name || 'ini'}? Semua pesan akan dihapus.`)) {
-                    clearChatHistory();
-                  }
-                }}
-              >
-                <MessageSquare className="mr-2 h-4 w-4" />
-                Bersihkan Chat
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+
         </div>
       </div>
       
@@ -1174,39 +1127,30 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                       >
                         <Reply className="h-3 w-3" />
                       </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            className="h-6 w-6 p-0 hover:bg-[#444444] text-white"
-                          >
-                            <MoreVertical className="h-3 w-3" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-[#2a2a2a] border-[#444444]">
-                          <DropdownMenuItem 
-                            onClick={() => {
-                              setSelectedMessage(msg);
-                              setIsForwardDialogOpen(true);
-                            }}
-                            className="text-white hover:bg-[#444444] cursor-pointer"
-                          >
-                            <Forward className="mr-2 h-4 w-4" />
-                            Teruskan
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setSelectedMessage(msg);
-                              setIsDeleteDialogOpen(true);
-                            }}
-                            className="text-red-400 hover:bg-[#444444] hover:text-red-300 cursor-pointer"
-                          >
-                            <Trash className="mr-2 h-4 w-4" />
-                            Hapus
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="h-6 w-6 p-0 hover:bg-[#444444] text-white"
+                        onClick={() => {
+                          setSelectedMessage(msg);
+                          setIsForwardDialogOpen(true);
+                        }}
+                        title="Teruskan"
+                      >
+                        <Forward className="h-3 w-3" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="h-6 w-6 p-0 hover:bg-[#444444] text-red-400 hover:text-red-300"
+                        onClick={() => {
+                          setSelectedMessage(msg);
+                          setIsDeleteDialogOpen(true);
+                        }}
+                        title="Hapus"
+                      >
+                        <Trash className="h-3 w-3" />
+                      </Button>
                     </div>
                     <div className="flex justify-end items-center mt-1 space-x-1">
                       {msg.classification && (
