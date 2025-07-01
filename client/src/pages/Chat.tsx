@@ -25,6 +25,7 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { compressImage, shouldCompressImage, shouldCompressVideo, getCompressionMessage } from '@/utils/imageCompression';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useQuery } from '@tanstack/react-query';
 
 export default function Chat() {
   const [user, setUser] = useState<any>(null);
@@ -33,6 +34,15 @@ export default function Chat() {
   const { toast } = useToast();
   const [activeChat, setActiveChat] = useState<{ id: number; isGroup: boolean } | null>(null);
   const [chats, setChats] = useState<any[]>([]);
+  
+  // React Query untuk conversations
+  const { data: conversationsData, refetch: refetchConversations } = useQuery({
+    queryKey: ['/api/conversations'],
+    enabled: !!user,
+    refetchInterval: false,
+    staleTime: 0,
+    cacheTime: 0
+  });
   const [databaseMessages, setDatabaseMessages] = useState<any[]>([]);
   const [showChatRoom, setShowChatRoom] = useState(false);
   const [allUsers, setAllUsers] = useState<any[]>([]);
@@ -425,24 +435,28 @@ export default function Chat() {
         
         // Handle new message for real-time unread count updates
         if (data.type === 'new_message') {
-          console.log('[Chat] Received new message, refreshing chat list');
+          console.log('[Chat] Received new message, invalidating React Query cache');
           
-          // Only refresh if the message is for a different conversation or from another user
-          if (data.payload?.senderId !== user.id || !activeChat || data.payload?.conversationId !== activeChat.id) {
-            // Refresh chat list to update unread counts
-            fetchUserChats(user.id);
-          }
+          // Invalidate React Query cache for conversations to trigger automatic refresh
+          queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/direct-chats'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/rooms'] });
+          
+          // Also trigger manual refresh as backup
+          fetchUserChats(user.id);
         }
         
         // Handle message read events
         if (data.type === 'message_read') {
-          console.log('[Chat] Messages marked as read, refreshing chat list');
+          console.log('[Chat] Messages marked as read, invalidating cache');
+          queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
           fetchUserChats(user.id);
         }
         
         // Handle conversation updates
         if (data.type === 'conversation_updated') {
-          console.log('[Chat] Conversation updated, refreshing chat list');
+          console.log('[Chat] Conversation updated, invalidating cache');
+          queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
           fetchUserChats(user.id);
         }
         
