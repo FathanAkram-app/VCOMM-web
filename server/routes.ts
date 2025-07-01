@@ -615,11 +615,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const message = await storage.createMessage(parseResult.data);
       console.log(`[API] Message created: ${message.id} in conversation ${message.conversationId}`);
       
-      // Broadcast to WebSocket clients
-      broadcastToConversation(message.conversationId, {
+      // Broadcast to WebSocket clients with enhanced logging
+      console.log(`[BROADCAST] Sending notification for message ${message.id} to conversation ${message.conversationId}`);
+      const wsMessage = {
         type: 'new_message',
         payload: message
-      });
+      };
+      
+      await broadcastToConversation(message.conversationId, wsMessage);
+      console.log(`[BROADCAST] Notification sent successfully`);
       
       res.status(201).json(message);
     } catch (error) {

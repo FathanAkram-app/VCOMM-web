@@ -104,9 +104,9 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   const { data: messages = [], refetch: refetchMessages } = useQuery({
     queryKey: [`/api/conversations/${chatId}/messages`],
     enabled: !!chatId && !!user,
-    refetchInterval: 3000, // Polling every 3 seconds
+    refetchInterval: 1000, // Reduced polling to 1 second for more responsive notifications
     retry: 3, // Coba lagi jika gagal
-    staleTime: 10 * 1000, // Data dianggap stale setelah 10 detik
+    staleTime: 5 * 1000, // Data dianggap stale setelah 5 detik
     // Tambahkan console log untuk membantu debugging
     onSuccess: (data) => {
       console.log("Messages loaded:", data);
@@ -125,13 +125,15 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     }
   }, [chatId, refetchMessages]);
 
-  // Listen for real-time group updates
+  // Listen for real-time updates (both group updates and new messages)
   useEffect(() => {
     if (!ws) return;
 
     const handleMessage = (event: MessageEvent) => {
       try {
         const message = JSON.parse(event.data);
+        
+        // Handle group updates
         if (message.type === 'group_update' && message.payload?.groupId === chatId) {
           const { updateType, data } = message.payload;
           
@@ -145,6 +147,14 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
             queryClient.invalidateQueries({ queryKey: [`/api/conversations/${chatId}/members`] });
           }
         }
+        
+        // Handle new messages - real-time notification
+        if (message.type === 'new_message' && message.payload?.conversationId === chatId) {
+          console.log('🔥 Real-time message received:', message.payload);
+          // Instantly refresh messages when new message is received
+          queryClient.invalidateQueries({ queryKey: [`/api/conversations/${chatId}/messages`] });
+        }
+        
       } catch (error) {
         console.error('Error processing WebSocket message in ChatRoom:', error);
       }
@@ -152,7 +162,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
 
     ws.addEventListener('message', handleMessage);
     return () => ws.removeEventListener('message', handleMessage);
-  }, [ws, chatId]);
+  }, [ws, chatId, queryClient]);
   
   // Add console log to debug message data
   useEffect(() => {
