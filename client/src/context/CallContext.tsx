@@ -110,7 +110,14 @@ interface CallContextType {
 const CallContext = createContext<CallContextType | undefined>(undefined);
 
 export function CallProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  // Get user data from useAuth hook, but handle cases where it's not available
+  let user = null;
+  try {
+    const authData = useAuth();
+    user = authData.user;
+  } catch (error) {
+    console.log('[CallProvider] Auth not available yet');
+  }
   const [location, setLocation] = useLocation();
   const [activeCall, setActiveCall] = useState<CallState | null>(null);
   const [incomingCall, setIncomingCall] = useState<CallState | null>(null);
@@ -591,7 +598,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   // Simple WebSocket connection - no reconnection, just stable connection
   useEffect(() => {
-    if (!user) return;
+    if (!user || !user.id) {
+      console.log('[CallContext] No user available for WebSocket connection');
+      return;
+    }
 
     console.log('[CallContext] Creating stable WebSocket for calls...');
     

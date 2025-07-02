@@ -57,11 +57,7 @@ function AuthCheck({ children }: { children: React.ReactNode }) {
     );
   }
   
-  return isLoggedIn ? (
-    <CallProvider>
-      {children}
-    </CallProvider>
-  ) : <Login />;
+  return isLoggedIn ? children : <Login />;
 }
 
 function Router() {
@@ -198,9 +194,11 @@ function BackgroundManager() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BackgroundManager />
-      <Toaster />
-      <Router />
+      <CallProvider>
+        <BackgroundManager />
+        <Toaster />
+        <Router />
+      </CallProvider>
     </QueryClientProvider>
   );
 }
