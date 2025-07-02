@@ -249,15 +249,12 @@ export default function GroupVideoCall() {
   // Track created peer connections to prevent duplicates
   const createdConnections = useRef<Set<number>>(new Set());
   
-  // Setup WebRTC peer connections for group video call participants with enhanced stability
+  // Setup WebRTC peer connections for group video call participants with stream preservation
   useEffect(() => {
     if (participants.length > 0 && localStream && activeCall?.callId) {
       console.log('[GroupVideoCall] Setting up WebRTC connections for participants:', participants.map(p => p.userId));
       
       participants.forEach(participant => {
-        // Skip self
-        if (participant.userId === user?.id) return;
-        
         // Only create if not already created and not currently being processed
         if (!peerConnections.current[participant.userId] && !createdConnections.current.has(participant.userId)) {
           console.log('[GroupVideoCall] Creating peer connection for user:', participant.userId);
@@ -267,9 +264,7 @@ export default function GroupVideoCall() {
             iceServers: [
               { urls: 'stun:stun.l.google.com:19302' },
               { urls: 'stun:stun1.l.google.com:19302' },
-              { urls: 'stun:stun2.l.google.com:19302' },
-              { urls: 'stun:stun3.l.google.com:19302' },
-              { urls: 'stun:stun4.l.google.com:19302' }
+              { urls: 'stun:stun2.l.google.com:19302' }
             ],
             iceCandidatePoolSize: 10,
             bundlePolicy: 'max-bundle',
@@ -346,105 +341,74 @@ export default function GroupVideoCall() {
             }
           };
 
-          // Enhanced connection state management with retry logic
-          let retryCount = 0;
-          const maxRetries = 3;
-          
+          // Handle connection state changes with delayed cleanup
           peerConnection.onconnectionstatechange = () => {
             console.log('[GroupVideoCall] Connection state for user', participant.userId, ':', peerConnection.connectionState);
             
             if (peerConnection.connectionState === 'failed') {
-              retryCount++;
-              console.warn(`[GroupVideoCall] Connection failed for user ${participant.userId}, retry attempt ${retryCount}/${maxRetries}`);
+              console.warn(`[GroupVideoCall] Connection failed for user ${participant.userId}, will retry in 5 seconds`);
               
-              if (retryCount <= maxRetries) {
-                // Attempt to restart ICE for potential recovery
-                setTimeout(() => {
-                  if (peerConnection.connectionState === 'failed' && peerConnection.signalingState === 'stable') {
-                    console.log(`[GroupVideoCall] Attempting ICE restart for user ${participant.userId}`);
-                    peerConnection.restartIce();
-                  }
-                }, 2000);
-              } else {
-                // Maximum retries reached, clean up connection
-                setTimeout(() => {
-                  if (peerConnection.connectionState === 'failed') {
-                    console.log(`[GroupVideoCall] Max retries reached, cleaning up connection for user ${participant.userId}`);
-                    
-                    // Clean up failed connection
-                    delete peerConnections.current[participant.userId];
-                    createdConnections.current.delete(participant.userId);
-                    
-                    // Remove from remote streams to trigger UI update
-                    setRemoteStreams(prev => {
-                      const updated = { ...prev };
-                      delete updated[participant.userId];
-                      return updated;
-                    });
-                  }
-                }, 1000);
-              }
+              // Delay cleanup to allow for potential recovery via answer processing
+              setTimeout(() => {
+                // Only clean up if still failed and no successful connection established
+                if (peerConnection.connectionState === 'failed') {
+                  console.log(`[GroupVideoCall] Cleaning up persistently failed connection for user ${participant.userId}`);
+                  
+                  // Clean up failed connection
+                  delete peerConnections.current[participant.userId];
+                  
+                  // Remove from remote streams to trigger UI update
+                  setRemoteStreams(prev => {
+                    const updated = { ...prev };
+                    delete updated[participant.userId];
+                    return updated;
+                  });
+                }
+              }, 5000); // Give 5 seconds for potential recovery
             } else if (peerConnection.connectionState === 'connected') {
               console.log(`[GroupVideoCall] ✅ Connection established with user ${participant.userId}`);
-              retryCount = 0; // Reset retry count on successful connection
             } else if (peerConnection.connectionState === 'connecting') {
               console.log(`[GroupVideoCall] Connection in progress for user ${participant.userId}`);
-            } else if (peerConnection.connectionState === 'disconnected') {
-              console.log(`[GroupVideoCall] Connection disconnected for user ${participant.userId}, waiting for reconnection...`);
             }
           };
 
           peerConnections.current[participant.userId] = peerConnection;
           
-          // Create and send offer to participant (only if we have lower ID to avoid conflicts)
-          if (user?.id && user.id < participant.userId) {
-            // Staggered timing based on participant ID to prevent simultaneous offers
-            const delay = (participant.userId - (user.id || 0)) * 500;
+          // Create and send offer to participant
+          peerConnection.createOffer({
+            offerToReceiveAudio: true,
+            offerToReceiveVideo: true
+          }).then(offer => {
+            return peerConnection.setLocalDescription(offer);
+          }).then(() => {
+            console.log('[GroupVideoCall] Sending offer to user:', participant.userId);
+            console.log('[GroupVideoCall] Offer details:', peerConnection.localDescription);
             
-            setTimeout(() => {
-              // Double-check connection state before creating offer
-              if (peerConnection.signalingState === 'stable') {
-                peerConnection.createOffer({
-                  offerToReceiveAudio: true,
-                  offerToReceiveVideo: true
-                }).then(offer => {
-                  return peerConnection.setLocalDescription(offer);
-                }).then(() => {
-                  console.log('[GroupVideoCall] Sending offer to user:', participant.userId);
-                  console.log('[GroupVideoCall] Offer details:', peerConnection.localDescription);
-                  
-                  // Send WebRTC offer through CallContext WebSocket
-                  const sendWebRTCOffer = () => {
-                    const websocket = (window as any).__callWebSocket;
-                    if (websocket?.readyState === WebSocket.OPEN) {
-                      const message = {
-                        type: 'group_webrtc_offer',
-                        payload: {
-                          callId: activeCall.callId,
-                          offer: peerConnection.localDescription,
-                          targetUserId: participant.userId,
-                          fromUserId: user.id
-                        }
-                      };
-                      console.log('[GroupVideoCall] ✅ Sending WebRTC offer to user', participant.userId, ':', message);
-                      websocket.send(JSON.stringify(message));
-                    } else {
-                      console.log('[GroupVideoCall] ⚠️ WebSocket not ready, state:', websocket?.readyState, 'retrying in 1s...');
-                      setTimeout(sendWebRTCOffer, 1000);
-                    }
-                  };
-                  
-                  sendWebRTCOffer();
-                }).catch(error => {
-                  console.error('[GroupVideoCall] Error creating offer for user', participant.userId, ':', error);
-                });
+            // Send WebRTC offer through CallContext WebSocket
+            const sendWebRTCOffer = () => {
+              const websocket = (window as any).__callWebSocket;
+              if (websocket?.readyState === WebSocket.OPEN) {
+                const message = {
+                  type: 'group_webrtc_offer',
+                  payload: {
+                    callId: activeCall.callId,
+                    offer: peerConnection.localDescription,
+                    targetUserId: participant.userId,
+                    fromUserId: user?.id
+                  }
+                };
+                console.log('[GroupVideoCall] ✅ Sending WebRTC offer to user', participant.userId, ':', message);
+                websocket.send(JSON.stringify(message));
               } else {
-                console.log('[GroupVideoCall] Skipping offer creation - signaling state not stable:', peerConnection.signalingState);
+                console.log('[GroupVideoCall] ⚠️ WebSocket not ready, state:', websocket?.readyState, 'retrying in 1s...');
+                setTimeout(sendWebRTCOffer, 1000);
               }
-            }, delay);
-          } else {
-            console.log('[GroupVideoCall] Waiting for offer from user', participant.userId, '(higher ID initiates)');
-          }
+            };
+            
+            sendWebRTCOffer();
+          }).catch(error => {
+            console.error('[GroupVideoCall] Error creating offer for user', participant.userId, ':', error);
+          });
         }
       });
 
@@ -465,7 +429,51 @@ export default function GroupVideoCall() {
     }
   }, [participants, localStream, activeCall?.callId, user?.id]);
 
-
+  // Auto-initiate WebRTC connections when participants change - Only if current user has lower ID to avoid conflicts
+  useEffect(() => {
+    if (participants.length > 0 && localStream && activeCall?.callId && user?.id) {
+      console.log('[GroupVideoCall] Auto-initiating WebRTC connections for all participants');
+      
+      participants.forEach(participant => {
+        // Only initiate if current user has lower ID to avoid simultaneous offers
+        if (user.id < participant.userId) {
+          const existingConnection = peerConnections.current[participant.userId];
+          if (existingConnection && existingConnection.signalingState === 'stable') {
+            console.log('[GroupVideoCall] Auto-creating offer for participant:', participant.userId);
+            
+            // Small delay to ensure proper timing
+            setTimeout(() => {
+              // Double check signaling state before creating offer
+              if (existingConnection.signalingState === 'stable') {
+                existingConnection.createOffer({
+                  offerToReceiveAudio: true,
+                  offerToReceiveVideo: true
+                }).then(offer => {
+                  return existingConnection.setLocalDescription(offer);
+                }).then(() => {
+                  console.log('[GroupVideoCall] Auto-sending offer to participant:', participant.userId);
+                  const ws = (window as any).__callWebSocket;
+                  if (ws?.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({
+                      type: 'group_webrtc_offer',
+                      payload: {
+                        callId: activeCall.callId,
+                        offer: existingConnection.localDescription,
+                        targetUserId: participant.userId,
+                        fromUserId: user?.id
+                      }
+                    }));
+                  }
+                }).catch(error => {
+                  console.error('[GroupVideoCall] Error auto-creating offer for participant:', participant.userId, error);
+                });
+              }
+            }, 500 + Math.random() * 1000); // Random delay to avoid conflicts
+          }
+        }
+      });
+    }
+  }, [participants.length, localStream, activeCall?.callId, user?.id]);
 
   // Attach remote streams to video elements when streams are available
   useEffect(() => {
@@ -541,30 +549,36 @@ export default function GroupVideoCall() {
             ended: videoElement.ended
           });
           
-          // Enhanced video playback with retry mechanism
-          const attemptPlay = async () => {
-            try {
-              videoElement.muted = true;
-              await videoElement.play();
-              console.log(`[GroupVideoCall] ✅ Video playback started for user ${userId}`);
-              
-              // Verify video is playing after a short delay
-              setTimeout(() => {
-                console.log(`[GroupVideoCall] Video verification for user ${userId}:`, {
-                  playing: !videoElement.paused && !videoElement.ended && videoElement.readyState > 2,
-                  videoWidth: videoElement.videoWidth,
-                  videoHeight: videoElement.videoHeight,
-                  currentTime: videoElement.currentTime
-                });
-              }, 1000);
-              
-            } catch (error) {
-              console.error(`[GroupVideoCall] ❌ Video playback failed for user ${userId}:`, error);
-            }
-          };
-          
-          // Start playback
-          attemptPlay();
+          // Try to play with enhanced fallback and monitoring
+          const playPromise = videoElement.play();
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                console.log(`[GroupVideoCall] ✅ Video playback started for user ${userId}`);
+                
+                // Monitor video after successful play
+                setTimeout(() => {
+                  console.log(`[GroupVideoCall] Post-play video state for user ${userId}:`, {
+                    videoWidth: videoElement.videoWidth,
+                    videoHeight: videoElement.videoHeight,
+                    currentTime: videoElement.currentTime,
+                    duration: videoElement.duration,
+                    buffered: videoElement.buffered.length
+                  });
+                }, 1000);
+              })
+              .catch((error: any) => {
+                console.warn(`[GroupVideoCall] ⚠️ Autoplay failed for user ${userId}, trying muted:`, error);
+                videoElement.muted = true;
+                return videoElement.play();
+              })
+              .then(() => {
+                console.log(`[GroupVideoCall] ✅ Muted video playback started for user ${userId}`);
+              })
+              .catch((muteErr: any) => {
+                console.error(`[GroupVideoCall] ❌ All playback attempts failed for user ${userId}:`, muteErr);
+              });
+          }
         }, 100);
       } else {
         console.log(`[GroupVideoCall] ❌ Cannot attach stream for user ${userId}:`, {

@@ -11,7 +11,8 @@ import Settings from "@/pages/Settings";
 import NotFound from "@/pages/not-found";
 import AudioCall from "@/components/AudioCall";
 import VideoCall from "@/components/VideoCall";
-import GroupVideoCallSimple from "@/components/GroupVideoCallSimple";
+import GroupCall from "@/components/GroupCall";
+import GroupVideoCall from "@/components/GroupVideoCall";
 import AudioTest from "@/components/AudioTest";
 import { CallProvider } from "@/context/CallContext";
 import { useServiceWorker } from "@/hooks/useServiceWorker";
@@ -83,10 +84,14 @@ function Router() {
       </Route>
       <Route path="/group-call">
         <AuthCheck>
-          <GroupVideoCallSimple />
+          <GroupCall groupId={0} groupName="" />
         </AuthCheck>
       </Route>
-
+      <Route path="/group-video-call">
+        <AuthCheck>
+          <GroupVideoCall />
+        </AuthCheck>
+      </Route>
       <Route path="/audio-test">
         <AuthCheck>
           <AudioTest />
