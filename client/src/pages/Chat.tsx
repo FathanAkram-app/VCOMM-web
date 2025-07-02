@@ -70,6 +70,24 @@ export default function Chat() {
     confirmPassword: ''
   });
   const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
+
+  // Load theme from localStorage on mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      setTheme(savedTheme);
+      if (savedTheme === 'high-contrast') {
+        document.documentElement.classList.add('high-contrast');
+      }
+    }
+  }, []);
+
+  // Update user status when user data changes
+  useEffect(() => {
+    if (user?.status) {
+      setUserStatus(user.status);
+    }
+  }, [user]);
   
   // Lapsit states
   const [showLapsitCategoryModal, setShowLapsitCategoryModal] = useState(false);
@@ -2258,6 +2276,72 @@ export default function Chat() {
           </div>
         </div>
       )}
+
+      {/* Change Password Dialog */}
+      <Dialog open={showChangePasswordDialog} onOpenChange={setShowChangePasswordDialog}>
+        <DialogContent className="bg-[#1a1a1a] text-white border-[#333]">
+          <DialogHeader>
+            <DialogTitle className="text-[#8d9c6b]">Ubah Kata Sandi</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 mt-4">
+            <div>
+              <label className="text-sm text-gray-400 block mb-1">Kata Sandi Saat Ini</label>
+              <Input
+                type="password"
+                className="bg-[#262626] border-[#333] text-gray-300"
+                value={passwordForm.currentPassword}
+                onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
+                placeholder="Masukkan kata sandi saat ini"
+              />
+            </div>
+            
+            <div>
+              <label className="text-sm text-gray-400 block mb-1">Kata Sandi Baru</label>
+              <Input
+                type="password"
+                className="bg-[#262626] border-[#333] text-gray-300"
+                value={passwordForm.newPassword}
+                onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                placeholder="Masukkan kata sandi baru (min. 6 karakter)"
+              />
+            </div>
+            
+            <div>
+              <label className="text-sm text-gray-400 block mb-1">Konfirmasi Kata Sandi Baru</label>
+              <Input
+                type="password"
+                className="bg-[#262626] border-[#333] text-gray-300"
+                value={passwordForm.confirmPassword}
+                onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                placeholder="Konfirmasi kata sandi baru"
+              />
+            </div>
+            
+            <div className="flex space-x-2 pt-4">
+              <Button
+                variant="outline"
+                className="flex-1 border-[#333] text-gray-300 hover:bg-[#262626]"
+                onClick={() => {
+                  setShowChangePasswordDialog(false);
+                  setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                }}
+                disabled={isUpdatingSettings}
+              >
+                Batal
+              </Button>
+              
+              <Button
+                className="flex-1 bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
+                onClick={handlePasswordChange}
+                disabled={isUpdatingSettings || !passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword}
+              >
+                {isUpdatingSettings ? 'Memperbarui...' : 'Ubah Kata Sandi'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

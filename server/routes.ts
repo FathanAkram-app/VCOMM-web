@@ -41,6 +41,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Auth routes are defined in auth.ts
   
+  // Update user status
+  app.post('/api/auth/update-status', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.session?.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+      
+      const { status } = req.body;
+      if (!status || !['online', 'busy', 'away', 'offline'].includes(status)) {
+        return res.status(400).json({ message: 'Invalid status' });
+      }
+      
+      await storage.updateUserStatus(userId, status);
+      res.json({ message: 'Status updated successfully', status });
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      res.status(500).json({ message: 'Failed to update status' });
+    }
+  });
+
+  // Change password
+  app.post('/api/auth/change-password', isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.session?.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+      
+      const { currentPassword, newPassword } = req.body;
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: 'Current password and new password are required' });
+      }
+      
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: 'New password must be at least 6 characters long' });
+      }
+      
+      const result = await storage.changeUserPassword(userId, currentPassword, newPassword);
+      if (!result.success) {
+        return res.status(400).json({ message: result.message });
+      }
+      
+      res.json({ message: 'Password changed successfully' });
+    } catch (error) {
+      console.error('Error changing password:', error);
+      res.status(500).json({ message: 'Failed to change password' });
+    }
+  });
+  
   // Serve static uploads
   app.use('/uploads', isAuthenticated, express.static(path.join(process.cwd(), 'uploads')));
   

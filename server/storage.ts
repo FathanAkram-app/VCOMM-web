@@ -68,6 +68,10 @@ export interface IStorage {
   deleteMessage(messageId: number): Promise<Message>;
   getMessage(messageId: number): Promise<Message | undefined>;
   forwardMessage(originalMessageId: number, newConversationId: number, senderId: number): Promise<Message>;
+  
+  // User settings operations
+  updateUserStatus(userId: number, status: string): Promise<void>;
+  changeUserPassword(userId: number, currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }>;
 }
 
 // Database storage implementation
@@ -899,6 +903,53 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error filtering messages for user:", error);
       return messages; // Return original messages if filtering fails
+    }
+  }
+
+  // Update user status
+  async updateUserStatus(userId: number, status: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ 
+        status,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId));
+  }
+
+  // Change user password
+  async changeUserPassword(userId: number, currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+    try {
+      // Get current user to verify password
+      const user = await this.getUser(userId);
+      if (!user) {
+        return { success: false, message: 'User not found' };
+      }
+
+      // Verify current password
+      const bcrypt = require('bcryptjs');
+      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+      if (!isCurrentPasswordValid) {
+        return { success: false, message: 'Current password is incorrect' };
+      }
+
+      // Hash new password
+      const saltRounds = 10;
+      const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+
+      // Update password in database
+      await db
+        .update(users)
+        .set({ 
+          password: hashedNewPassword,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId));
+
+      return { success: true, message: 'Password changed successfully' };
+    } catch (error) {
+      console.error('Error changing password:', error);
+      return { success: false, message: 'Failed to change password' };
     }
   }
 }
