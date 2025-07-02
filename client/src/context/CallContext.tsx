@@ -110,15 +110,9 @@ interface CallContextType {
 const CallContext = createContext<CallContextType | undefined>(undefined);
 
 export function CallProvider({ children }: { children: ReactNode }) {
-  // Get user data from useAuth hook, but handle cases where it's not available
-  let user = null;
-  try {
-    const authData = useAuth();
-    user = authData.user;
-  } catch (error) {
-    console.log('[CallProvider] Auth not available yet');
-  }
-  const [location, setLocation] = useLocation();
+  // Don't use any hooks initially - they will be used when Router is properly mounted
+  const [user, setUser] = useState<any>(null);
+  const [location, setLocation] = useState<string>('/');
   const [activeCall, setActiveCall] = useState<CallState | null>(null);
   const [incomingCall, setIncomingCall] = useState<CallState | null>(null);
   const [ws, setWs] = useState<WebSocket | null>(null);
@@ -126,6 +120,45 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const [waitingToneInterval, setWaitingToneInterval] = useState<NodeJS.Timeout | null>(null);
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const [remoteAudioStream, setRemoteAudioStream] = useState<MediaStream | null>(null);
+
+  // Try to get user data periodically until available
+  useEffect(() => {
+    const interval = setInterval(() => {
+      try {
+        // Try to fetch user data from API
+        fetch('/api/auth/user', { credentials: 'include' })
+          .then(response => {
+            if (response.ok) {
+              return response.json();
+            }
+            return null;
+          })
+          .then(userData => {
+            if (userData) {
+              setUser(userData);
+            }
+          })
+          .catch(() => {
+            // Ignore errors, keep trying
+          });
+      } catch (error) {
+        // Ignore errors, keep trying
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Monitor URL changes
+  useEffect(() => {
+    const updateLocation = () => {
+      setLocation(window.location.pathname);
+    };
+    
+    updateLocation();
+    window.addEventListener('popstate', updateLocation);
+    return () => window.removeEventListener('popstate', updateLocation);
+  }, []);
 
   // Restore group call state from localStorage when on group-call page
   useEffect(() => {
