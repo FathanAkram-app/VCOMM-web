@@ -378,26 +378,32 @@ export default function Chat() {
         await audioContext.resume();
       }
       
-      // Buat oscillator untuk tone notification
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
+      // Buat double beep notification yang lebih jelas
+      const playBeep = (frequency: number, startTime: number, duration: number, volume: number = 0.15) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Gunakan sine wave untuk suara yang lebih lembut
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(frequency, startTime);
+        
+        // Envelope untuk attack dan release yang smooth
+        gainNode.gain.setValueAtTime(0, startTime);
+        gainNode.gain.linearRampToValueAtTime(volume, startTime + 0.02);
+        gainNode.gain.linearRampToValueAtTime(volume, startTime + duration - 0.02);
+        gainNode.gain.linearRampToValueAtTime(0, startTime + duration);
+        
+        oscillator.start(startTime);
+        oscillator.stop(startTime + duration);
+      };
       
-      // Connect oscillator ke gain node ke destination
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      // Set frequency dan gain untuk notification sound
-      oscillator.frequency.setValueAtTime(800, audioContext.currentTime); // 800Hz tone
-      gainNode.gain.setValueAtTime(0, audioContext.currentTime); // Start silent
-      
-      // Buat fade in/out untuk notification
-      gainNode.gain.linearRampToValueAtTime(0.2, audioContext.currentTime + 0.05); // Fade in
-      gainNode.gain.linearRampToValueAtTime(0.2, audioContext.currentTime + 0.15); // Hold
-      gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.3); // Fade out
-      
-      // Play sound selama 300ms
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.3);
+      // Double beep pattern: tinggi-rendah untuk notifikasi yang mudah dikenali
+      const currentTime = audioContext.currentTime;
+      playBeep(880, currentTime, 0.12, 0.25);      // Beep pertama (A5 note)
+      playBeep(659, currentTime + 0.18, 0.12, 0.25); // Beep kedua (E5 note)
       
       console.log('[Chat] Notification sound played');
     } catch (error) {
@@ -406,10 +412,40 @@ export default function Chat() {
       // Fallback: try simple HTML5 audio beep
       try {
         const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUfCCyBzvLZiTYIG2m99+OZSA0PUKjk7bZiFgU2k9n0y3QtCCl+zO/eizEJHWq9+OOaRw0NUarg7rhpGAU9k9n01XMuCCl9y++YgGPiwKSdIbsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWg2K7D/igXC0NS6/iXENQloNiuw/4oFwtDUuv4lxDUJaDYrsP+KBcLQ1Lr+JcQ1CWG==='); 
-        audio.volume = 0.1;
-        audio.play().catch(() => console.log('[Chat] Fallback beep also failed'));
+        audio.volume = 0.3;
+        await audio.play();
+        console.log('[Chat] HTML5 Audio fallback played');
       } catch (fallbackError) {
-        console.log('[Chat] Fallback audio also failed:', fallbackError);
+        console.log('[Chat] HTML5 Audio also failed:', fallbackError);
+        
+        // Final fallback: Browser notification dengan vibration
+        try {
+          // Request notification permission jika belum ada
+          if ('Notification' in window) {
+            if (Notification.permission === 'default') {
+              const permission = await Notification.requestPermission();
+              console.log('[Chat] Notification permission:', permission);
+            }
+            
+            if (Notification.permission === 'granted') {
+              new Notification('💬 Pesan Baru', {
+                body: 'Anda mendapat pesan baru di VCommMessenger',
+                icon: '/favicon.ico',
+                tag: 'new-message',
+                silent: false
+              });
+              console.log('[Chat] Browser notification shown');
+            }
+          }
+          
+          // Vibration untuk mobile devices
+          if ('navigator' in window && 'vibrate' in navigator) {
+            navigator.vibrate([200, 100, 200]);
+            console.log('[Chat] Vibration notification activated');
+          }
+        } catch (notifError) {
+          console.log('[Chat] All notification methods failed:', notifError);
+        }
       }
     }
   };
