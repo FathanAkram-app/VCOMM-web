@@ -729,31 +729,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const message = await storage.createMessage(parseResult.data);
       console.log(`[API] Message created: ${message.id} in conversation ${message.conversationId}`);
       
-      // Broadcast to WebSocket clients with enhanced logging
+      // Broadcast to WebSocket clients
       console.log(`[BROADCAST] Sending notification for message ${message.id} to conversation ${message.conversationId}`);
       console.log(`[BROADCAST] Current WebSocket clients count: ${clients.size}`);
-      console.log(`[BROADCAST] WebSocket clients map keys:`, Array.from(clients.keys()));
       
-      const wsMessage = {
+      const wsMessage: WebSocketMessage = {
         type: 'new_message',
         payload: message
       };
       
-      // Also broadcast to all connected clients for debugging
-      console.log(`[BROADCAST] Broadcasting to all ${clients.size} clients for debugging`);
-      clients.forEach((client, userId) => {
-        if (client.readyState === WebSocket.OPEN) {
-          try {
-            client.send(JSON.stringify(wsMessage));
-            console.log(`[BROADCAST] Sent to user ${userId}`);
-          } catch (error) {
-            console.error(`[BROADCAST] Failed to send to user ${userId}:`, error);
-          }
-        } else {
-          console.log(`[BROADCAST] Client ${userId} not connected (readyState: ${client.readyState})`);
-        }
-      });
-      
+      // Broadcast only to conversation members (more efficient)
       await broadcastToConversation(message.conversationId, wsMessage);
       console.log(`[BROADCAST] Notification sent successfully`);
       
