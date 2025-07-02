@@ -12,7 +12,7 @@ import NotFound from "@/pages/not-found";
 import AudioCall from "@/components/AudioCall";
 import VideoCall from "@/components/VideoCall";
 import GroupCall from "@/components/GroupCall";
-import GroupVideoCall from "@/components/GroupVideoCall";
+import GroupVideoCallFixed from "@/components/GroupVideoCallFixed";
 import AudioTest from "@/components/AudioTest";
 import { CallProvider } from "@/context/CallContext";
 import { useServiceWorker } from "@/hooks/useServiceWorker";

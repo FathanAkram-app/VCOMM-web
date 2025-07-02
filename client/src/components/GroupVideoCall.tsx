@@ -541,53 +541,30 @@ export default function GroupVideoCall() {
             ended: videoElement.ended
           });
           
-          // Enhanced video playback with error handling and retries
-          let playAttempts = 0;
-          const maxPlayAttempts = 3;
+          // Enhanced video playback with retry mechanism
+          const attemptPlay = async () => {
+            try {
+              videoElement.muted = true;
+              await videoElement.play();
+              console.log(`[GroupVideoCall] ✅ Video playback started for user ${userId}`);
+              
+              // Verify video is playing after a short delay
+              setTimeout(() => {
+                console.log(`[GroupVideoCall] Video verification for user ${userId}:`, {
+                  playing: !videoElement.paused && !videoElement.ended && videoElement.readyState > 2,
+                  videoWidth: videoElement.videoWidth,
+                  videoHeight: videoElement.videoHeight,
+                  currentTime: videoElement.currentTime
+                });
+              }, 1000);
+              
+            } catch (error) {
+              console.error(`[GroupVideoCall] ❌ Video playback failed for user ${userId}:`, error);
+            }
+          };
           
-          const attemptPlay = () => {
-            playAttempts++;
-            console.log(`[GroupVideoCall] Attempt ${playAttempts}/${maxPlayAttempts} to play video for user ${userId}`);
-            
-            const playPromise = videoElement.play();
-            if (playPromise !== undefined) {
-              playPromise
-                .then(() => {
-                  console.log(`[GroupVideoCall] ✅ Video playback started for user ${userId} on attempt ${playAttempts}`);
-                  
-                  // Verify video is actually playing
-                  setTimeout(() => {
-                    console.log(`[GroupVideoCall] Video verification for user ${userId}:`, {
-                      playing: !videoElement.paused && !videoElement.ended && videoElement.readyState > 2,
-                      videoWidth: videoElement.videoWidth,
-                      videoHeight: videoElement.videoHeight,
-                      currentTime: videoElement.currentTime
-                    });
-                  }, 1000);
-                
-                // Monitor video after successful play
-                setTimeout(() => {
-                  console.log(`[GroupVideoCall] Post-play video state for user ${userId}:`, {
-                    videoWidth: videoElement.videoWidth,
-                    videoHeight: videoElement.videoHeight,
-                    currentTime: videoElement.currentTime,
-                    duration: videoElement.duration,
-                    buffered: videoElement.buffered.length
-                  });
-                }, 1000);
-              })
-              .catch((error: any) => {
-                console.warn(`[GroupVideoCall] ⚠️ Autoplay failed for user ${userId}, trying muted:`, error);
-                videoElement.muted = true;
-                return videoElement.play();
-              })
-              .then(() => {
-                console.log(`[GroupVideoCall] ✅ Muted video playback started for user ${userId}`);
-              })
-              .catch((muteErr: any) => {
-                console.error(`[GroupVideoCall] ❌ All playback attempts failed for user ${userId}:`, muteErr);
-              });
-          }
+          // Start playback
+          attemptPlay();
         }, 100);
       } else {
         console.log(`[GroupVideoCall] ❌ Cannot attach stream for user ${userId}:`, {
