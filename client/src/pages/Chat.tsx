@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { 
   MessageSquare, PhoneIcon, Settings, Plus, User, 
   ArrowLeft, PaperclipIcon, SendIcon, Users, Search, Info, FileText,
-  Upload, Camera, X
+  Upload, Camera, X, Eye, EyeOff
 } from 'lucide-react';
 import ChatList from '../components/ChatList';
 import chatIcon from '@assets/Icon Chat NXXZ.png';
@@ -68,6 +68,11 @@ export default function Chat() {
     confirmPassword: ''
   });
   const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
+  
+  // Password visibility states
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   // Lapsit states
   const [showLapsitCategoryModal, setShowLapsitCategoryModal] = useState(false);
@@ -2183,35 +2188,74 @@ export default function Chat() {
           <div className="space-y-4 mt-4">
             <div>
               <label className="text-sm text-gray-400 block mb-1">Kata Sandi Saat Ini</label>
-              <Input
-                type="password"
-                className="bg-[#262626] border-[#333] text-gray-300"
-                value={passwordForm.currentPassword}
-                onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
-                placeholder="Masukkan kata sandi saat ini"
-              />
+              <div className="relative">
+                <Input
+                  type={showCurrentPassword ? "text" : "password"}
+                  className="bg-[#262626] border-[#333] text-gray-300 pr-12"
+                  value={passwordForm.currentPassword}
+                  onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
+                  placeholder="Masukkan kata sandi saat ini"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
+                >
+                  {showCurrentPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
             </div>
             
             <div>
               <label className="text-sm text-gray-400 block mb-1">Kata Sandi Baru</label>
-              <Input
-                type="password"
-                className="bg-[#262626] border-[#333] text-gray-300"
-                value={passwordForm.newPassword}
-                onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
-                placeholder="Masukkan kata sandi baru (min. 6 karakter)"
-              />
+              <div className="relative">
+                <Input
+                  type={showNewPassword ? "text" : "password"}
+                  className="bg-[#262626] border-[#333] text-gray-300 pr-12"
+                  value={passwordForm.newPassword}
+                  onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                  placeholder="Masukkan kata sandi baru (min. 6 karakter)"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
+                >
+                  {showNewPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
             </div>
             
             <div>
               <label className="text-sm text-gray-400 block mb-1">Konfirmasi Kata Sandi Baru</label>
-              <Input
-                type="password"
-                className="bg-[#262626] border-[#333] text-gray-300"
-                value={passwordForm.confirmPassword}
-                onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                placeholder="Konfirmasi kata sandi baru"
-              />
+              <div className="relative">
+                <Input
+                  type={showConfirmPassword ? "text" : "password"}
+                  className="bg-[#262626] border-[#333] text-gray-300 pr-12"
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                  placeholder="Konfirmasi kata sandi baru"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
             </div>
             
             <div className="flex space-x-2 pt-4">
@@ -2221,6 +2265,10 @@ export default function Chat() {
                 onClick={() => {
                   setShowChangePasswordDialog(false);
                   setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                  // Reset password visibility states for security
+                  setShowCurrentPassword(false);
+                  setShowNewPassword(false);
+                  setShowConfirmPassword(false);
                 }}
                 disabled={isUpdatingSettings}
               >
