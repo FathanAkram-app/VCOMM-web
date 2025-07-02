@@ -67,9 +67,9 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/chat">
         <AuthCheck>
-          <CallProvider>
+          <SimpleCallProvider>
             <Chat />
-          </CallProvider>
+          </SimpleCallProvider>
         </AuthCheck>
       </Route>
       <Route path="/audio-call">
@@ -104,9 +104,9 @@ function Router() {
       </Route>
       <Route path="/">
         <AuthCheck>
-          <CallProvider>
+          <SimpleCallProvider>
             <Chat />
-          </CallProvider>
+          </SimpleCallProvider>
         </AuthCheck>
       </Route>
       <Route component={NotFound} />
