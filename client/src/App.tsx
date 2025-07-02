@@ -4,7 +4,7 @@ import { queryClient } from "@/lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import React, { useState, useEffect } from "react";
 
-import TestLogin from "@/pages/TestLogin";
+import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import Chat from "@/pages/Chat";
 import Settings from "@/pages/Settings";
@@ -34,6 +34,8 @@ function AuthCheck({ children }: { children: React.ReactNode }) {
           setIsLoggedIn(true);
         } else {
           setIsLoggedIn(false);
+          // Redirect to login if needed
+          window.location.href = '/login';
         }
       } catch (error) {
         console.error('Error checking login status:', error);
@@ -57,19 +59,17 @@ function AuthCheck({ children }: { children: React.ReactNode }) {
     );
   }
   
-  return isLoggedIn ? children : <TestLogin />;
+  return isLoggedIn ? children : null;
 }
 
 function Router() {
   return (
     <Switch>
-      <Route path="/login" component={TestLogin} />
+      <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/chat">
         <AuthCheck>
-          <CallProvider>
-            <Chat />
-          </CallProvider>
+          <Chat />
         </AuthCheck>
       </Route>
       <Route path="/audio-call">
@@ -102,7 +102,9 @@ function Router() {
           <Settings onBack={() => window.history.back()} />
         </AuthCheck>
       </Route>
-      <Route path="/" component={TestLogin} />
+      <Route path="/">
+        <Login />
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );
@@ -192,9 +194,11 @@ function BackgroundManager() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BackgroundManager />
-      <Toaster />
-      <Router />
+      <CallProvider>
+        <BackgroundManager />
+        <Toaster />
+        <Router />
+      </CallProvider>
     </QueryClientProvider>
   );
 }

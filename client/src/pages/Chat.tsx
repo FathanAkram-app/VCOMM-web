@@ -1419,13 +1419,13 @@ export default function Chat() {
                 </div>
               </div>
               
-              <div className="flex-1 overflow-y-auto p-4 pb-6">
+              <div className="flex-1 overflow-y-auto p-2">
                 {isLoadingPersonnel ? (
                   <div className="flex justify-center items-center h-full">
                     <p className="text-gray-400">Memuat daftar personel...</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 min-h-fit">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {allUsers
                       .filter(u => u.id !== user?.id) // Exclude current user
                       .filter(personnel => {
@@ -1440,13 +1440,13 @@ export default function Chat() {
                         );
                       })
                       .map(personnel => (
-                        <div key={personnel.id} className="bg-[#1a1a1a] rounded-lg p-4 border border-[#333] hover:border-[#8d9c6b] transition-colors mb-2">
+                        <div key={personnel.id} className="bg-[#1a1a1a] rounded-lg p-3 border border-[#333] hover:border-[#8d9c6b] transition-colors">
                           <div className="flex items-start space-x-3">
                             <Avatar className="h-12 w-12 bg-[#2d3328] text-[#8d9c6b]">
                               <AvatarFallback>{personnel.callsign ? personnel.callsign[0].toUpperCase() : (personnel.firstName ? personnel.firstName[0].toUpperCase() : 'U')}</AvatarFallback>
                             </Avatar>
                             <div className="flex-1">
-                              <div className="flex justify-between items-start mb-3">
+                              <div className="flex justify-between items-start">
                                 <div>
                                   <h3 className="font-semibold text-[#8d9c6b]">{personnel.callsign || "Unnamed"}</h3>
                                   <p className="text-xs text-gray-400">
@@ -1462,15 +1462,15 @@ export default function Chat() {
                                   {personnel.status || "Aktif"}
                                 </Badge>
                               </div>
-                              <div className="flex justify-end">
+                              <div className="flex justify-end mt-2">
                                 <Button 
                                   size="sm" 
-                                  className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
+                                  className="bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338] mt-2 self-end"
                                   onClick={() => handleStartDirectChat(personnel.id)}
                                   disabled={isCreatingChat}
                                 >
                                   <MessageSquare className="w-4 h-4 mr-1" />
-                                  Mulai Chat
+                                  Chat
                                 </Button>
                               </div>
                             </div>
@@ -1479,8 +1479,6 @@ export default function Chat() {
                       ))}
                   </div>
                 )}
-                {/* Extra spacing untuk memastikan scroll bisa sampai bawah */}
-                <div className="h-6"></div>
               </div>
             </div>
           )}
