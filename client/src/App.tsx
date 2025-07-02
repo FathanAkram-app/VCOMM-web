@@ -67,7 +67,9 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/chat">
         <AuthCheck>
-          <Chat />
+          <CallProvider>
+            <Chat />
+          </CallProvider>
         </AuthCheck>
       </Route>
       <Route path="/audio-call">
@@ -102,7 +104,9 @@ function Router() {
       </Route>
       <Route path="/">
         <AuthCheck>
-          <Chat />
+          <CallProvider>
+            <Chat />
+          </CallProvider>
         </AuthCheck>
       </Route>
       <Route component={NotFound} />
@@ -194,11 +198,9 @@ function BackgroundManager() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <CallProvider>
-        <BackgroundManager />
-        <Toaster />
-        <Router />
-      </CallProvider>
+      <BackgroundManager />
+      <Toaster />
+      <Router />
     </QueryClientProvider>
   );
 }
