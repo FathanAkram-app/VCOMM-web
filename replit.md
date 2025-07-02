@@ -135,6 +135,12 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - API endpoints for creating and retrieving lapsit reports
   - File upload support with multer for image attachments
   - Complete UI flow: category selection → sub-category → detailed form
+- January 2, 2025: Fixed WebSocket conflicts and improved UI:
+  - Resolved dual WebSocket connection issues by using single CallContext WebSocket
+  - Implemented event-driven messaging between CallContext and Chat components
+  - Added audio notification system for new messages (only from other users)
+  - Fixed personnel page scrolling issues - improved spacing and visibility of action buttons
+  - Removed test audio & video functionality from settings page per user request
 
 # User Preferences
 
