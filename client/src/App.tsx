@@ -4,7 +4,7 @@ import { queryClient } from "@/lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import React, { useState, useEffect } from "react";
 
-import Login from "@/pages/Login";
+import SimpleLogin from "@/pages/SimpleLogin";
 import Register from "@/pages/Register";
 import Chat from "@/pages/Chat";
 import Settings from "@/pages/Settings";
@@ -57,19 +57,19 @@ function AuthCheck({ children }: { children: React.ReactNode }) {
     );
   }
   
-  return isLoggedIn ? children : <Login />;
+  return isLoggedIn ? children : <SimpleLogin />;
 }
 
 function Router() {
   return (
     <Switch>
-      <Route path="/login" component={Login} />
+      <Route path="/login" component={SimpleLogin} />
       <Route path="/register" component={Register} />
       <Route path="/chat">
         <AuthCheck>
-          <SimpleCallProvider>
+          <CallProvider>
             <Chat />
-          </SimpleCallProvider>
+          </CallProvider>
         </AuthCheck>
       </Route>
       <Route path="/audio-call">
@@ -102,13 +102,7 @@ function Router() {
           <Settings onBack={() => window.history.back()} />
         </AuthCheck>
       </Route>
-      <Route path="/">
-        <AuthCheck>
-          <SimpleCallProvider>
-            <Chat />
-          </SimpleCallProvider>
-        </AuthCheck>
-      </Route>
+      <Route path="/" component={SimpleLogin} />
       <Route component={NotFound} />
     </Switch>
   );
