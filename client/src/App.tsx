@@ -89,7 +89,7 @@ function Router() {
       </Route>
       <Route path="/group-video-call">
         <AuthCheck>
-          <GroupVideoCall />
+          <GroupVideoCallFixed />
         </AuthCheck>
       </Route>
       <Route path="/audio-test">

@@ -59,12 +59,14 @@ const ParticipantVideo = memo(({
 
 export default function GroupVideoCallFixed() {
   const { user } = useAuth();
-  const { activeCall, hangUpCall, isVideoEnabled, isAudioEnabled, toggleVideo, toggleAudio } = useCall();
+  const { activeCall, endCall } = useCall();
   
   // State management
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStreams, setRemoteStreams] = useState<{ [userId: number]: MediaStream }>({});
   const [participants, setParticipants] = useState<GroupParticipant[]>([]);
+  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   
   // Refs
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -330,14 +332,14 @@ export default function GroupVideoCallFixed() {
       }
     };
 
-    window.addEventListener('group_webrtc_offer', handleOffer as EventListener);
-    window.addEventListener('group_webrtc_answer', handleAnswer as EventListener);
-    window.addEventListener('group_webrtc_ice_candidate', handleIceCandidate as EventListener);
+    window.addEventListener('group_webrtc_offer', handleOffer as any);
+    window.addEventListener('group_webrtc_answer', handleAnswer as any);
+    window.addEventListener('group_webrtc_ice_candidate', handleIceCandidate as any);
 
     return () => {
-      window.removeEventListener('group_webrtc_offer', handleOffer as EventListener);
-      window.removeEventListener('group_webrtc_answer', handleAnswer as EventListener);
-      window.removeEventListener('group_webrtc_ice_candidate', handleIceCandidate as EventListener);
+      window.removeEventListener('group_webrtc_offer', handleOffer as any);
+      window.removeEventListener('group_webrtc_answer', handleAnswer as any);
+      window.removeEventListener('group_webrtc_ice_candidate', handleIceCandidate as any);
     };
   }, [activeCall, localStream, user?.id]);
 
@@ -347,6 +349,50 @@ export default function GroupVideoCallFixed() {
     if (el && remoteStreams[userId]) {
       el.srcObject = remoteStreams[userId];
       el.play().catch(console.error);
+    }
+  };
+
+  // Control functions
+  const toggleAudio = () => {
+    if (localStream) {
+      const audioTrack = localStream.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        setIsAudioEnabled(audioTrack.enabled);
+      }
+    }
+  };
+
+  const toggleVideo = () => {
+    if (localStream) {
+      const videoTrack = localStream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = !videoTrack.enabled;
+        setIsVideoEnabled(videoTrack.enabled);
+      }
+    }
+  };
+
+  const hangUpCall = () => {
+    // Clean up all peer connections
+    Object.values(peerConnections.current).forEach(pc => pc.close());
+    peerConnections.current = {};
+    
+    // Stop local stream
+    if (localStream) {
+      localStream.getTracks().forEach(track => track.stop());
+      setLocalStream(null);
+    }
+    
+    // Clear remote streams
+    setRemoteStreams({});
+    
+    // End the call
+    if (endCall) {
+      endCall();
+    } else {
+      // Fallback: go back to previous page
+      window.history.back();
     }
   };
 
