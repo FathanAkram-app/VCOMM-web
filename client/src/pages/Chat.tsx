@@ -60,6 +60,17 @@ export default function Chat() {
   // State untuk loading status
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   
+  // Settings state
+  const [userStatus, setUserStatus] = useState(user?.status || 'online');
+  const [theme, setTheme] = useState('dark');
+  const [showChangePasswordDialog, setShowChangePasswordDialog] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
+  
   // Lapsit states
   const [showLapsitCategoryModal, setShowLapsitCategoryModal] = useState(false);
   const [showLapsitSubCategoryModal, setShowLapsitSubCategoryModal] = useState(false);
@@ -1094,6 +1105,119 @@ export default function Chat() {
       console.error('Error logging out:', error);
     }
   };
+
+  // Handle status update
+  const handleStatusUpdate = async (newStatus: string) => {
+    if (!user) return;
+    
+    setIsUpdatingSettings(true);
+    try {
+      const response = await fetch('/api/auth/update-status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      if (response.ok) {
+        setUserStatus(newStatus);
+        toast({
+          title: "Status diperbarui",
+          description: `Status Anda telah diubah ke ${newStatus}`,
+          className: "bg-[#1a1a1a] border-[#333] text-white",
+        });
+      } else {
+        throw new Error('Failed to update status');
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast({
+        title: "Error",
+        description: "Gagal memperbarui status",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingSettings(false);
+    }
+  };
+
+  // Handle theme change
+  const handleThemeChange = (newTheme: string) => {
+    setTheme(newTheme);
+    // Apply theme to document
+    if (newTheme === 'high-contrast') {
+      document.documentElement.classList.add('high-contrast');
+    } else {
+      document.documentElement.classList.remove('high-contrast');
+    }
+    
+    localStorage.setItem('theme', newTheme);
+    toast({
+      title: "Tema diperbarui", 
+      description: `Tema diubah ke ${newTheme === 'dark' ? 'Gelap' : 'Kontras Tinggi'}`,
+      className: "bg-[#1a1a1a] border-[#333] text-white",
+    });
+  };
+
+  // Handle password change
+  const handlePasswordChange = async () => {
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Konfirmasi kata sandi tidak cocok",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      toast({
+        title: "Error", 
+        description: "Kata sandi baru harus minimal 6 karakter",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUpdatingSettings(true);
+    try {
+      const response = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword
+        })
+      });
+
+      if (response.ok) {
+        setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        setShowChangePasswordDialog(false);
+        toast({
+          title: "Berhasil",
+          description: "Kata sandi berhasil diubah",
+          className: "bg-[#1a1a1a] border-[#333] text-white",
+        });
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to change password');
+      }
+    } catch (error) {
+      console.error('Error changing password:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Gagal mengubah kata sandi",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingSettings(false);
+    }
+  };
   
   return (
     <div className="flex flex-col h-screen bg-black text-gray-100">
@@ -1529,12 +1653,12 @@ export default function Chat() {
                   <div className="space-y-4">
                     <div>
                       <label className="text-sm text-gray-400 block mb-1">Status</label>
-                      <Select defaultValue="active">
+                      <Select value={userStatus} onValueChange={handleStatusUpdate} disabled={isUpdatingSettings}>
                         <SelectTrigger className="bg-[#262626] border-[#333] text-gray-300">
                           <SelectValue placeholder="Pilih status" />
                         </SelectTrigger>
                         <SelectContent className="bg-[#262626] border-[#333] text-gray-300">
-                          <SelectItem value="active">Aktif</SelectItem>
+                          <SelectItem value="online">Online</SelectItem>
                           <SelectItem value="busy">Sibuk</SelectItem>
                           <SelectItem value="away">Tidak di tempat</SelectItem>
                           <SelectItem value="offline">Offline</SelectItem>
@@ -1544,7 +1668,7 @@ export default function Chat() {
                     
                     <div>
                       <label className="text-sm text-gray-400 block mb-1">Tema</label>
-                      <Select defaultValue="dark">
+                      <Select value={theme} onValueChange={handleThemeChange}>
                         <SelectTrigger className="bg-[#262626] border-[#333] text-gray-300">
                           <SelectValue placeholder="Pilih tema" />
                         </SelectTrigger>
@@ -1560,7 +1684,10 @@ export default function Chat() {
 
                 <div className="bg-[#1a1a1a] rounded-lg p-4 mb-4">
                   <h3 className="text-lg font-medium text-[#8d9c6b] mb-2">Keamanan</h3>
-                  <Button className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]">
+                  <Button 
+                    className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]"
+                    onClick={() => setShowChangePasswordDialog(true)}
+                  >
                     Ubah Kata Sandi
                   </Button>
                 </div>
