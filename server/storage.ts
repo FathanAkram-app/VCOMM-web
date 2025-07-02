@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import {
   users,
   conversations,
@@ -927,7 +928,6 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Verify current password
-      const bcrypt = require('bcryptjs');
       const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
       if (!isCurrentPasswordValid) {
         return { success: false, message: 'Current password is incorrect' };

@@ -61,8 +61,6 @@ export default function Chat() {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   
   // Settings state
-  const [userStatus, setUserStatus] = useState(user?.status || 'online');
-  const [theme, setTheme] = useState('dark');
   const [showChangePasswordDialog, setShowChangePasswordDialog] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
@@ -70,24 +68,6 @@ export default function Chat() {
     confirmPassword: ''
   });
   const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
-
-  // Load theme from localStorage on mount
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-      setTheme(savedTheme);
-      if (savedTheme === 'high-contrast') {
-        document.documentElement.classList.add('high-contrast');
-      }
-    }
-  }, []);
-
-  // Update user status when user data changes
-  useEffect(() => {
-    if (user?.status) {
-      setUserStatus(user.status);
-    }
-  }, [user]);
   
   // Lapsit states
   const [showLapsitCategoryModal, setShowLapsitCategoryModal] = useState(false);
@@ -1124,60 +1104,7 @@ export default function Chat() {
     }
   };
 
-  // Handle status update
-  const handleStatusUpdate = async (newStatus: string) => {
-    if (!user) return;
-    
-    setIsUpdatingSettings(true);
-    try {
-      const response = await fetch('/api/auth/update-status', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ status: newStatus })
-      });
 
-      if (response.ok) {
-        setUserStatus(newStatus);
-        toast({
-          title: "Status diperbarui",
-          description: `Status Anda telah diubah ke ${newStatus}`,
-          className: "bg-[#1a1a1a] border-[#333] text-white",
-        });
-      } else {
-        throw new Error('Failed to update status');
-      }
-    } catch (error) {
-      console.error('Error updating status:', error);
-      toast({
-        title: "Error",
-        description: "Gagal memperbarui status",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUpdatingSettings(false);
-    }
-  };
-
-  // Handle theme change
-  const handleThemeChange = (newTheme: string) => {
-    setTheme(newTheme);
-    // Apply theme to document
-    if (newTheme === 'high-contrast') {
-      document.documentElement.classList.add('high-contrast');
-    } else {
-      document.documentElement.classList.remove('high-contrast');
-    }
-    
-    localStorage.setItem('theme', newTheme);
-    toast({
-      title: "Tema diperbarui", 
-      description: `Tema diubah ke ${newTheme === 'dark' ? 'Gelap' : 'Kontras Tinggi'}`,
-      className: "bg-[#1a1a1a] border-[#333] text-white",
-    });
-  };
 
   // Handle password change
   const handlePasswordChange = async () => {
@@ -1666,38 +1593,7 @@ export default function Chat() {
                   )}
                 </div>
                 
-                <div className="bg-[#1a1a1a] rounded-lg p-4 mb-4">
-                  <h3 className="text-lg font-medium text-[#8d9c6b] mb-2">Pengaturan Aplikasi</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm text-gray-400 block mb-1">Status</label>
-                      <Select value={userStatus} onValueChange={handleStatusUpdate} disabled={isUpdatingSettings}>
-                        <SelectTrigger className="bg-[#262626] border-[#333] text-gray-300">
-                          <SelectValue placeholder="Pilih status" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-[#262626] border-[#333] text-gray-300">
-                          <SelectItem value="online">Online</SelectItem>
-                          <SelectItem value="busy">Sibuk</SelectItem>
-                          <SelectItem value="away">Tidak di tempat</SelectItem>
-                          <SelectItem value="offline">Offline</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm text-gray-400 block mb-1">Tema</label>
-                      <Select value={theme} onValueChange={handleThemeChange}>
-                        <SelectTrigger className="bg-[#262626] border-[#333] text-gray-300">
-                          <SelectValue placeholder="Pilih tema" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-[#262626] border-[#333] text-gray-300">
-                          <SelectItem value="dark">Gelap (Default)</SelectItem>
-                          <SelectItem value="high-contrast">Kontras Tinggi</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
+
                 
 
                 <div className="bg-[#1a1a1a] rounded-lg p-4 mb-4">
