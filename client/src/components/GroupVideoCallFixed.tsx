@@ -387,13 +387,8 @@ export default function GroupVideoCallFixed() {
     // Clear remote streams
     setRemoteStreams({});
     
-    // End the call
-    if (endCall) {
-      endCall();
-    } else {
-      // Fallback: go back to previous page
-      window.history.back();
-    }
+    // Navigate to chat page instead of going back to prevent showing duplicate video call page
+    window.location.href = '/chat';
   };
 
   if (!activeCall) {
