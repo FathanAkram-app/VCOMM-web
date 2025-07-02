@@ -34,8 +34,6 @@ function AuthCheck({ children }: { children: React.ReactNode }) {
           setIsLoggedIn(true);
         } else {
           setIsLoggedIn(false);
-          // Redirect to login if needed
-          window.location.href = '/login';
         }
       } catch (error) {
         console.error('Error checking login status:', error);
@@ -59,7 +57,7 @@ function AuthCheck({ children }: { children: React.ReactNode }) {
     );
   }
   
-  return isLoggedIn ? children : null;
+  return isLoggedIn ? children : <Login />;
 }
 
 function Router() {
@@ -103,7 +101,9 @@ function Router() {
         </AuthCheck>
       </Route>
       <Route path="/">
-        <Login />
+        <AuthCheck>
+          <Chat />
+        </AuthCheck>
       </Route>
       <Route component={NotFound} />
     </Switch>
