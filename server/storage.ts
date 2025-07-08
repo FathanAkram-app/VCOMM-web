@@ -625,22 +625,6 @@ export class DatabaseStorage implements IStorage {
 
 
 
-  // Get single call by callId for status checking
-  async getCallByCallId(callId: string): Promise<any> {
-    try {
-      const [call] = await db
-        .select()
-        .from(callHistory)
-        .where(eq(callHistory.callId, callId))
-        .limit(1);
-      
-      return call || null;
-    } catch (error) {
-      console.error(`Error getting call by callId ${callId}:`, error);
-      throw error;
-    }
-  }
-
   // Call history using database storage
   async getCallHistory(userId: number): Promise<any[]> {
     try {
@@ -651,7 +635,7 @@ export class DatabaseStorage implements IStorage {
         .where(
           and(
             // User is in participants but not the initiator
-            sql`${callHistory.participants} @> ARRAY[${userId}]::integer[]`,
+            sql`${callHistory.participants} @> ARRAY[${userId.toString()}]::text[]`,
             ne(callHistory.initiatorId, userId)
             // Show all incoming calls regardless of status
           )

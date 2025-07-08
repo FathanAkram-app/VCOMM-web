@@ -40,42 +40,23 @@ const StableParticipantVideo = memo(({
     // Only clean up when component is truly destroyed
   }, [participant.userId, participantVideoRefs]);
   
-  // Attach stream directly when available - more reliable approach
-  useEffect(() => {
-    if (videoRef.current && stream) {
-      console.log(`[StableParticipantVideo] Attaching stream for user ${participant.userId}`);
-      videoRef.current.srcObject = stream;
-      
-      // Force play to ensure video starts
-      videoRef.current.play().catch(error => {
-        console.warn(`[StableParticipantVideo] Video play failed for user ${participant.userId}:`, error);
-      });
-    } else if (videoRef.current && !stream) {
-      console.log(`[StableParticipantVideo] Clearing stream for user ${participant.userId}`);
-      videoRef.current.srcObject = null;
-    }
-  }, [stream, participant.userId]);
+  // Stream attachment is handled by main GroupVideoCall component to prevent conflicts
+  // This component only registers the video ref
   
   return (
     <div className="relative bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700 aspect-[4/3] min-h-[120px] max-h-[160px]">
-      {/* Always render video element */}
+      {/* Always render video element to ensure ref registration */}
       <video
         ref={videoRef}
         autoPlay
         playsInline
         muted={false}
-        className="w-full h-full object-cover"
-        onLoadedMetadata={() => {
-          console.log(`[StableParticipantVideo] Video metadata loaded for user ${participant.userId}`);
-        }}
-        onCanPlay={() => {
-          console.log(`[StableParticipantVideo] Video can play for user ${participant.userId}`);
-        }}
+        className={`w-full h-full object-cover ${stream ? 'block' : 'hidden'}`}
       />
       
       {/* Show avatar when no stream */}
       {!stream && (
-        <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gray-800">
+        <div className="w-full h-full flex items-center justify-center">
           <Avatar className="h-20 w-20 bg-[#7d9f7d] border-3 border-[#a6c455] shadow-lg">
             <AvatarFallback className="bg-gradient-to-br from-[#7d9f7d] to-[#5d7f5d] text-white text-xl font-bold">
               {participant.userName.substring(0, 2).toUpperCase()}
@@ -299,9 +280,9 @@ export default function GroupVideoCall() {
 
           // Handle incoming remote stream with enhanced debugging
           peerConnection.ontrack = (event) => {
-            console.log('[GroupVideoCall] Received remote track from user:', participant.userId);
-            console.log('[GroupVideoCall] Track kind:', event.track.kind);
-            console.log('[GroupVideoCall] Event streams:', event.streams.length);
+            console.log('[GroupVideoCall] Received remote stream from user:', participant.userId);
+            console.log('[GroupVideoCall] Event streams:', event.streams);
+            console.log('[GroupVideoCall] Event track:', event.track);
             
             const [remoteStream] = event.streams;
             
@@ -314,29 +295,28 @@ export default function GroupVideoCall() {
                 audioTracks: remoteStream.getAudioTracks().length
               });
               
-              // Always update stream state and ensure immediate attachment
-              setRemoteStreams(prev => {
-                const updated = {
-                  ...prev,
-                  [participant.userId]: remoteStream
-                };
-                console.log('[GroupVideoCall] Updated remote streams state:', Object.keys(updated));
-                
-                // Force immediate video element update
-                setTimeout(() => {
-                  const videoElement = participantVideoRefs.current[participant.userId];
-                  if (videoElement && remoteStream) {
-                    console.log(`[GroupVideoCall] Force-attaching stream to element for user ${participant.userId}`);
-                    videoElement.srcObject = remoteStream;
-                    videoElement.play().catch(e => console.warn('Play failed:', e));
+              if (remoteStream.active) {
+                setRemoteStreams(prev => {
+                  // Check if stream is already set to avoid unnecessary updates
+                  if (prev[participant.userId] === remoteStream) {
+                    return prev;
                   }
-                }, 100);
+                  
+                  const updated = {
+                    ...prev,
+                    [participant.userId]: remoteStream
+                  };
+                  console.log('[GroupVideoCall] Updated remote streams state:', Object.keys(updated));
+                  return updated;
+                });
                 
-                return updated;
-              });
-              
-              // Stream attachment is handled by StableParticipantVideo component
-              console.log('[GroupVideoCall] Remote stream added to state for user:', participant.userId);
+                // Stream attachment is handled by the main stream attachment effect
+                // This prevents multiple attachment conflicts
+                
+                console.log('[GroupVideoCall] Remote stream added to state for user:', participant.userId);
+              } else {
+                console.warn('[GroupVideoCall] Remote stream is not active for user:', participant.userId);
+              }
             } else {
               console.error('[GroupVideoCall] No remote stream received for user:', participant.userId);
             }
@@ -495,14 +475,122 @@ export default function GroupVideoCall() {
     }
   }, [participants.length, localStream, activeCall?.callId, user?.id]);
 
-  // Stream attachment is now handled directly in StableParticipantVideo component
-  // This prevents attachment conflicts and race conditions
+  // Attach remote streams to video elements when streams are available
   useEffect(() => {
-    console.log('[GroupVideoCall] Stream state updated:', {
-      remoteStreams: Object.keys(remoteStreams),
-      participants: participants.map(p => p.userId)
+    console.log('[GroupVideoCall] Stream attachment effect triggered');
+    console.log('[GroupVideoCall] Available remote streams:', Object.keys(remoteStreams));
+    console.log('[GroupVideoCall] Available video refs:', Object.keys(participantVideoRefs.current));
+    
+    Object.keys(remoteStreams).forEach(userIdStr => {
+      const userId = parseInt(userIdStr);
+      const stream = remoteStreams[userId];
+      const videoElement = participantVideoRefs.current[userId];
+      
+      console.log(`[GroupVideoCall] Processing user ${userId}:`, {
+        hasStream: !!stream,
+        streamActive: stream?.active,
+        streamTracks: stream?.getTracks().length,
+        hasVideoElement: !!videoElement,
+        videoElementTagName: videoElement?.tagName,
+        isMaximized,
+        maximizedParticipant: maximizedParticipant?.userId
+      });
+      
+      if (stream && videoElement && stream.active) {
+        // Check if stream is already attached to prevent duplicate attachments
+        if (videoElement.srcObject === stream) {
+          console.log(`[GroupVideoCall] Stream already attached for user ${userId}`);
+          return;
+        }
+        
+        console.log(`[GroupVideoCall] ✅ Attaching stream to video element for user ${userId}`);
+        const videoTracks = stream.getVideoTracks();
+        const audioTracks = stream.getAudioTracks();
+        
+        console.log(`[GroupVideoCall] Stream details for user ${userId}:`, {
+          streamId: stream.id,
+          active: stream.active,
+          videoTracks: videoTracks.length,
+          audioTracks: audioTracks.length,
+          videoTrackDetails: videoTracks.map(t => ({
+            kind: t.kind,
+            enabled: t.enabled,
+            readyState: t.readyState,
+            muted: t.muted,
+            settings: t.getSettings?.()
+          }))
+        });
+        
+        // Set video element properties
+        videoElement.autoplay = true;
+        videoElement.playsInline = true;
+        videoElement.muted = true; // Start muted to avoid autoplay issues
+        videoElement.controls = false;
+        
+        setTimeout(() => {
+          videoElement.srcObject = stream;
+          videoElement.autoplay = true;
+          videoElement.playsInline = true;
+          videoElement.muted = false;
+          videoElement.controls = false;
+          
+          // Additional video element properties for better compatibility
+          videoElement.style.objectFit = 'cover';
+          videoElement.style.width = '100%';
+          videoElement.style.height = '100%';
+          
+          // Monitor video element state
+          console.log(`[GroupVideoCall] Video element state for user ${userId}:`, {
+            srcObject: !!videoElement.srcObject,
+            readyState: videoElement.readyState,
+            videoWidth: videoElement.videoWidth,
+            videoHeight: videoElement.videoHeight,
+            paused: videoElement.paused,
+            ended: videoElement.ended
+          });
+          
+          // Try to play with enhanced fallback and monitoring
+          const playPromise = videoElement.play();
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                console.log(`[GroupVideoCall] ✅ Video playback started for user ${userId}`);
+                
+                // Monitor video after successful play
+                setTimeout(() => {
+                  console.log(`[GroupVideoCall] Post-play video state for user ${userId}:`, {
+                    videoWidth: videoElement.videoWidth,
+                    videoHeight: videoElement.videoHeight,
+                    currentTime: videoElement.currentTime,
+                    duration: videoElement.duration,
+                    buffered: videoElement.buffered.length
+                  });
+                }, 1000);
+              })
+              .catch((error: any) => {
+                console.warn(`[GroupVideoCall] ⚠️ Autoplay failed for user ${userId}, trying muted:`, error);
+                videoElement.muted = true;
+                return videoElement.play();
+              })
+              .then(() => {
+                console.log(`[GroupVideoCall] ✅ Muted video playback started for user ${userId}`);
+              })
+              .catch((muteErr: any) => {
+                console.error(`[GroupVideoCall] ❌ All playback attempts failed for user ${userId}:`, muteErr);
+              });
+          }
+        }, 100);
+      } else {
+        console.log(`[GroupVideoCall] ❌ Cannot attach stream for user ${userId}:`, {
+          hasStream: !!stream,
+          hasVideoElement: !!videoElement,
+          streamActive: stream?.active,
+          streamId: stream?.id,
+          videoElementId: videoElement?.id
+        });
+      }
     });
-  }, [remoteStreams, participants]);
+  }, [remoteStreams, isMaximized, maximizedParticipant]);
 
   // Handle incoming WebRTC signals for group video call
   useEffect(() => {
@@ -969,26 +1057,15 @@ export default function GroupVideoCall() {
                 )}
 
                 {/* Current Page Participants - Using StableParticipantVideo */}
-                {currentPageParticipants.map(participant => {
-                  const participantStream = remoteStreams[participant.userId];
-                  console.log(`[GroupVideoCall] Rendering participant ${participant.userId}:`, {
-                    hasStream: !!participantStream,
-                    streamActive: participantStream?.active,
-                    streamId: participantStream?.id,
-                    videoTracks: participantStream?.getVideoTracks()?.length || 0,
-                    audioTracks: participantStream?.getAudioTracks()?.length || 0
-                  });
-                  
-                  return (
-                    <StableParticipantVideo
-                      key={participant.userId}
-                      participant={participant}
-                      stream={participantStream}
-                      onMaximize={handleMaximizeParticipant}
-                      participantVideoRefs={participantVideoRefs}
-                    />
-                  );
-                })}
+                {currentPageParticipants.map(participant => (
+                  <StableParticipantVideo
+                    key={participant.userId}
+                    participant={participant}
+                    stream={remoteStreams[participant.userId]}
+                    onMaximize={handleMaximizeParticipant}
+                    participantVideoRefs={participantVideoRefs}
+                  />
+                ))}
 
                 {/* Fill remaining slots for current page */}
                 {Array.from({ 
