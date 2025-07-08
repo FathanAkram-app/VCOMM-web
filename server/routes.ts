@@ -1088,6 +1088,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('Received message:', message.toString());
         const data = JSON.parse(message.toString()) as WebSocketMessage;
         
+        // Debug log specifically for group call messages
+        if (data.type === 'start_group_call') {
+          console.log('[DEBUG] ✅ START_GROUP_CALL message received:', JSON.stringify(data, null, 2));
+        }
+        
         // Handle authentication message
         if (data.type === 'auth') {
           const { userId } = data.payload;
