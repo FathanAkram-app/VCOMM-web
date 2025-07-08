@@ -149,8 +149,6 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - Fixed React Hook call errors and TypeScript issues in CallContext
   - Resolved desktop access issue: Application works in incognito mode (browser cache/extension conflict)
   - Restructured App.tsx to prevent Context Provider conflicts
-  - Fixed group member count display inconsistency by adding memberCount calculation in getUserConversations
-  - Changed message timestamp display to show only time (HH:MM) instead of relative time
 
 # User Preferences
 

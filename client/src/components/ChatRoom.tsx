@@ -7,7 +7,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCall } from '@/hooks/useCall';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
-
+import { formatDistanceToNow } from 'date-fns';
+import { id } from 'date-fns/locale';
 import { type Conversation, type Message } from '@shared/schema';
 import AttachmentUploader from './AttachmentUploader';
 import MessageAttachment from './MessageAttachment';
@@ -720,7 +721,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   const formatMessageTime = (timestamp: string) => {
     try {
       const date = new Date(timestamp);
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return formatDistanceToNow(date, { addSuffix: true, locale: id });
     } catch (e) {
       return '';
     }
