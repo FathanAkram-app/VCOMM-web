@@ -1197,7 +1197,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   };
 
   const handleIncomingGroupCall = (message: any) => {
-    console.log('[CallContext] Incoming group call received:', message);
+    console.log('[CallContext] 🔔 Incoming group call received:', message);
     const { callId, groupId, groupName, callType, fromUserId, fromUserName } = message.payload || message;
 
     console.log('[CallContext] Extracted call details:', { callId, groupId, groupName, callType });
@@ -1208,6 +1208,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
       console.log('[CallContext] User already in active call, ignoring incoming group call');
       return;
     }
+
+    // Play notification sound for incoming group call
+    console.log('[CallContext] 🔊 Playing notification sound for incoming group call');
+    playNotificationSound();
 
     // Show incoming group call modal instead of auto-joining
     const incomingGroupCall: CallState = {
@@ -1228,7 +1232,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
     };
 
     setIncomingCall(incomingGroupCall);
-    console.log('[CallContext] Set incoming group call modal for:', groupName);
+    console.log('[CallContext] 🎯 Set incoming group call modal for:', groupName);
+    
+    // Additional debugging - trigger custom event for testing
+    window.dispatchEvent(new CustomEvent('incoming-group-call-received', {
+      detail: { callId, groupName, fromUserName }
+    }));
   };
 
   const handleGroupCallEnded = (message: any) => {
