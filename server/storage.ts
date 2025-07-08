@@ -173,20 +173,25 @@ export class DatabaseStorage implements IStorage {
     
     console.log(`[Storage] Retrieved ${userConversations.length} conversations for user ${userId}`);
     
-    // Add unread count for each conversation
-    const conversationsWithUnread = await Promise.all(
+    // Add unread count and member count for each conversation
+    const conversationsWithUnreadAndMembers = await Promise.all(
       userConversations.map(async (conv) => {
         // Get unread message count for this user in this conversation
         const unreadCount = await this.getUnreadMessageCount(conv.id, userId);
         
+        // Get member count for this conversation
+        const members = await this.getConversationMembers(conv.id);
+        const memberCount = members.length;
+        
         return {
           ...conv,
-          unreadCount
+          unreadCount,
+          memberCount
         };
       })
     );
     
-    return conversationsWithUnread;
+    return conversationsWithUnreadAndMembers;
   }
 
   // Helper function to get unread message count for a user in a conversation
