@@ -1369,9 +1369,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     }
                   };
                   
+                  console.log(`[Group Call] 📤 Sending message to user ${member.userId}, WebSocket state: ${targetClient.readyState}`);
                   targetClient.send(JSON.stringify(inviteMessage));
                   invitationsSent++;
                   console.log(`[Group Call] ✅ Sent group call invitation to user ${member.userId}:`, inviteMessage);
+                  console.log(`[Group Call] 📡 Message sent successfully to user ${member.userId}`);
                 } else {
                   console.log(`[Group Call] ❌ Cannot send to user ${member.userId}: client=${!!targetClient}, readyState=${targetClient?.readyState || 'N/A'}`);
                 }

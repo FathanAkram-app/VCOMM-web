@@ -635,6 +635,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
         const message = JSON.parse(event.data);
         console.log('[CallContext] Received message:', message);
         
+        // Debug log specifically for incoming group call messages
+        if (message.type === 'incoming_group_call') {
+          console.log('[CallContext] 🚨 INCOMING GROUP CALL MESSAGE DETECTED - USER ID:', user?.id);
+          console.log('[CallContext] 🚨 MESSAGE PAYLOAD:', JSON.stringify(message, null, 2));
+        }
+        
         // Handle call-specific messages - server uses payload wrapper
         switch (message.type) {
           case 'incoming_call':
