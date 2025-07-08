@@ -645,6 +645,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
             }));
             break;
           case 'incoming_group_call':
+            console.log('[CallContext] Received incoming_group_call:', message.payload || message);
             handleIncomingGroupCall(message.payload || message);
             break;
           case 'call_accepted':

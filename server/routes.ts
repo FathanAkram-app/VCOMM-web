@@ -1343,11 +1343,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             // Send group call invitation to all members except the initiator
             let invitationsSent = 0;
+            console.log(`[Group Call] Checking ${members.length} members:`, members.map(m => ({ userId: m.userId, role: m.role })));
+            console.log(`[Group Call] Connected clients:`, Array.from(clients.keys()));
+            
             for (const member of members) {
               if (member.userId !== fromUserId) {
                 const targetClient = clients.get(member.userId);
+                console.log(`[Group Call] Checking member ${member.userId}: client=${!!targetClient}, readyState=${targetClient?.readyState}`);
+                
                 if (targetClient && targetClient.readyState === targetClient.OPEN) {
-                  targetClient.send(JSON.stringify({
+                  const inviteMessage = {
                     type: 'incoming_group_call',
                     payload: {
                       callId,
@@ -1357,10 +1362,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       fromUserId,
                       fromUserName
                     }
-                  }));
+                  };
+                  
+                  targetClient.send(JSON.stringify(inviteMessage));
                   invitationsSent++;
-                  console.log(`[Group Call] Sent group call invitation to user ${member.userId}`);
+                  console.log(`[Group Call] ✅ Sent group call invitation to user ${member.userId}:`, inviteMessage);
+                } else {
+                  console.log(`[Group Call] ❌ Cannot send to user ${member.userId}: client=${!!targetClient}, readyState=${targetClient?.readyState || 'N/A'}`);
                 }
+              } else {
+                console.log(`[Group Call] Skipping initiator ${member.userId}`);
               }
             }
             console.log(`[Group Call] Sent ${invitationsSent} group call invitations for call ${callId}`);
