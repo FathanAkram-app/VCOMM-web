@@ -141,12 +141,14 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - Added audio notification system for new messages (only from other users)
   - Fixed personnel page scrolling issues - improved spacing and visibility of action buttons
   - Removed test audio & video functionality from settings page per user request
-- January 8, 2025: Enhanced audio notification system:
+- January 8, 2025: Enhanced audio notification system and fixed desktop access:
   - Improved notification sound with double beep pattern (high-low frequency)
   - Added multiple fallback systems: WebAudio API → HTML5 Audio → Browser Notification → Vibration
   - Increased volume for better audibility on mobile devices
   - Added browser notification permission handling for backup alerts
-  - Network access issue identified: Mobile devices can access app but desktop computers cannot
+  - Fixed React Hook call errors and TypeScript issues in CallContext
+  - Resolved desktop access issue: Application works in incognito mode (browser cache/extension conflict)
+  - Restructured App.tsx to prevent Context Provider conflicts
 
 # User Preferences
 
