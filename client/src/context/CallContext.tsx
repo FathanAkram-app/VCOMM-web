@@ -469,13 +469,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
     // Clear ALL intervals and timeouts (extreme measure)
     try {
       console.log('[CallContext] 💥 NUCLEAR INTERVAL CLEANUP - Clearing ALL intervals');
-      const highestIntervalId = setInterval(() => {}, 9999);
+      const highestIntervalId = setInterval(() => {}, 9999) as unknown as number;
       for (let i = 1; i <= highestIntervalId; i++) {
         clearInterval(i);
       }
       clearInterval(highestIntervalId);
       
-      const highestTimeoutId = setTimeout(() => {}, 9999);
+      const highestTimeoutId = setTimeout(() => {}, 9999) as unknown as number;
       for (let i = 1; i <= highestTimeoutId; i++) {
         clearTimeout(i);
       }

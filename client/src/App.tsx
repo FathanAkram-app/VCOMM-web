@@ -69,32 +69,44 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/chat">
         <AuthCheck>
-          <Chat />
+          <CallProvider>
+            <Chat />
+          </CallProvider>
         </AuthCheck>
       </Route>
       <Route path="/audio-call">
         <AuthCheck>
-          <AudioCall />
+          <CallProvider>
+            <AudioCall />
+          </CallProvider>
         </AuthCheck>
       </Route>
       <Route path="/video-call">
         <AuthCheck>
-          <VideoCall />
+          <CallProvider>
+            <VideoCall />
+          </CallProvider>
         </AuthCheck>
       </Route>
       <Route path="/group-call">
         <AuthCheck>
-          <GroupCall groupId={0} groupName="" />
+          <CallProvider>
+            <GroupCall groupId={0} groupName="" />
+          </CallProvider>
         </AuthCheck>
       </Route>
       <Route path="/group-video-call">
         <AuthCheck>
-          <GroupVideoCall />
+          <CallProvider>
+            <GroupVideoCall />
+          </CallProvider>
         </AuthCheck>
       </Route>
       <Route path="/audio-test">
         <AuthCheck>
-          <AudioTest />
+          <CallProvider>
+            <AudioTest />
+          </CallProvider>
         </AuthCheck>
       </Route>
       <Route path="/settings">
@@ -194,11 +206,9 @@ function BackgroundManager() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <CallProvider>
-        <BackgroundManager />
-        <Toaster />
-        <Router />
-      </CallProvider>
+      <BackgroundManager />
+      <Toaster />
+      <Router />
     </QueryClientProvider>
   );
 }
