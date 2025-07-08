@@ -1088,6 +1088,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('Received message:', message.toString());
         const data = JSON.parse(message.toString()) as WebSocketMessage;
         
+        // Debug log specifically for group call messages
+        if (data.type === 'start_group_call') {
+          console.log('[DEBUG] ✅ START_GROUP_CALL message received:', JSON.stringify(data, null, 2));
+        }
+        
         // Handle authentication message
         if (data.type === 'auth') {
           const { userId } = data.payload;
@@ -1165,7 +1170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             setTimeout(async () => {
               try {
                 // Check if call is still in "incoming" status (not answered)
-                const existingCall = await storage.getCallHistory(callId);
+                const existingCall = await storage.getCallByCallId(callId);
                 if (existingCall && existingCall.status === 'incoming') {
                   // Update to missed call status
                   await storage.updateCallStatus(callId, 'missed');
@@ -1343,11 +1348,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             // Send group call invitation to all members except the initiator
             let invitationsSent = 0;
+            console.log(`[Group Call] Checking ${members.length} members:`, members.map(m => ({ userId: m.userId, role: m.role })));
+            console.log(`[Group Call] Connected clients:`, Array.from(clients.keys()));
+            
             for (const member of members) {
               if (member.userId !== fromUserId) {
                 const targetClient = clients.get(member.userId);
+                console.log(`[Group Call] Checking member ${member.userId}: client=${!!targetClient}, readyState=${targetClient?.readyState}`);
+                
                 if (targetClient && targetClient.readyState === targetClient.OPEN) {
-                  targetClient.send(JSON.stringify({
+                  const inviteMessage = {
                     type: 'incoming_group_call',
                     payload: {
                       callId,
@@ -1357,10 +1367,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       fromUserId,
                       fromUserName
                     }
-                  }));
+                  };
+                  
+                  console.log(`[Group Call] 📤 Sending message to user ${member.userId}, WebSocket state: ${targetClient.readyState}`);
+                  targetClient.send(JSON.stringify(inviteMessage));
                   invitationsSent++;
-                  console.log(`[Group Call] Sent group call invitation to user ${member.userId}`);
+                  console.log(`[Group Call] ✅ Sent group call invitation to user ${member.userId}:`, inviteMessage);
+                  console.log(`[Group Call] 📡 Message sent successfully to user ${member.userId}`);
+                } else {
+                  console.log(`[Group Call] ❌ Cannot send to user ${member.userId}: client=${!!targetClient}, readyState=${targetClient?.readyState || 'N/A'}`);
                 }
+              } else {
+                console.log(`[Group Call] Skipping initiator ${member.userId}`);
               }
             }
             console.log(`[Group Call] Sent ${invitationsSent} group call invitations for call ${callId}`);
