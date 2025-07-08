@@ -1165,7 +1165,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             setTimeout(async () => {
               try {
                 // Check if call is still in "incoming" status (not answered)
-                const existingCall = await storage.getCallHistory(callId);
+                const existingCall = await storage.getCallByCallId(callId);
                 if (existingCall && existingCall.status === 'incoming') {
                   // Update to missed call status
                   await storage.updateCallStatus(callId, 'missed');
