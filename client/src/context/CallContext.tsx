@@ -1254,6 +1254,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
       incomingCallRef: incomingCallRef.current 
     });
     
+    // Debug: Force re-render by triggering state change
+    console.log('[CallContext] 🔥 FORCE TRIGGERING RE-RENDER - Setting incomingCall again');
+    setTimeout(() => {
+      setIncomingCall({ ...incomingGroupCall });
+      console.log('[CallContext] 🔥 FORCE RE-RENDER COMPLETE');
+    }, 50);
+    
     // Additional debugging - trigger custom event for testing
     window.dispatchEvent(new CustomEvent('incoming-group-call-received', {
       detail: { callId, groupName, fromUserName }

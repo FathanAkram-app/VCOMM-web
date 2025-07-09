@@ -1793,7 +1793,11 @@ export default function Chat() {
       </Dialog>
 
       {/* Incoming Call Modal */}
-      <IncomingCallModal />
+      {(() => {
+        const { incomingCall } = useCall();
+        console.log("[Chat] 🔥 DEBUG: incomingCall in Chat.tsx:", incomingCall);
+        return <IncomingCallModal />;
+      })()}
       
       {/* Group Call Components - Dynamic routing based on call type */}
       {activeCall && activeCall.callType === 'audio' && activeCall.groupId && (
