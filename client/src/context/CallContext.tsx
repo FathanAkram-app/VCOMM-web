@@ -479,23 +479,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       for (let i = 1; i <= highestTimeoutId; i++) {
         clearTimeout(i);
       }
-      clearTimeout(highestTimeoutId);
-      
-      console.log('[CallContext] ✅ Nuclear interval cleanup completed');
-    } catch (e) {
-      console.log('[CallContext] Error in nuclear interval cleanup:', e);
-    }
-    
-    console.log('[CallContext] ✅ AGGRESSIVE AUDIO CLEANUP COMPLETED');
-  };
 
-  // Function to fetch participant names asynchronously
-  const fetchParticipantNames = async (participantIds: number[], currentCall: CallState) => {
-    try {
-      const updatedParticipants = await Promise.all(
-        participantIds.map(async (userId: number) => {
-          if (userId === user?.id) {
-            return {
               userId,
               userName: user?.callsign || user?.fullName || 'You',
               audioEnabled: true,
