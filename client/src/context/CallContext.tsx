@@ -1217,48 +1217,80 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     // Play notification sound for incoming group call
     console.log('[CallContext] 🔊 Playing notification sound for incoming group call');
-    playNotificationSound();
+    
+    try {
+      playNotificationSound();
+      console.log('[CallContext] ✅ Notification sound played successfully');
+    } catch (error) {
+      console.error('[CallContext] ❌ Error playing notification sound:', error);
+    }
 
-    // Create RTCPeerConnection for group call (same as handleIncomingCall)
-    const peerConnection = new RTCPeerConnection({
-      iceServers: [], // Empty array for local network only - no STUN/TURN servers
-      iceTransportPolicy: 'all', // Allow both UDP and TCP
-      bundlePolicy: 'max-bundle',
-      rtcpMuxPolicy: 'require'
-    });
+    console.log('[CallContext] 🔧 Creating RTCPeerConnection for group call');
+    
+    let peerConnection;
+    try {
+      // Create RTCPeerConnection for group call (same as handleIncomingCall)
+      peerConnection = new RTCPeerConnection({
+        iceServers: [], // Empty array for local network only - no STUN/TURN servers
+        iceTransportPolicy: 'all', // Allow both UDP and TCP
+        bundlePolicy: 'max-bundle',
+        rtcpMuxPolicy: 'require'
+      });
+      
+      console.log('[CallContext] ✅ RTCPeerConnection created successfully');
+    } catch (error) {
+      console.error('[CallContext] ❌ Error creating RTCPeerConnection:', error);
+      return; // Exit if can't create peer connection
+    }
 
-    // Setup ICE candidate handling for group call
-    peerConnection.onicecandidate = (event) => {
-      if (event.candidate && ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-          type: 'webrtc_ice_candidate',
-          callId: callId,
-          candidate: event.candidate
-        }));
-      }
-    };
+    try {
+      // Setup ICE candidate handling for group call
+      peerConnection.onicecandidate = (event) => {
+        if (event.candidate && ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: 'webrtc_ice_candidate',
+            callId: callId,
+            candidate: event.candidate
+          }));
+        }
+      };
+      
+      console.log('[CallContext] ✅ ICE candidate handler setup successfully');
+    } catch (error) {
+      console.error('[CallContext] ❌ Error setting up ICE candidate handler:', error);
+    }
 
     // Show incoming group call modal instead of auto-joining
     console.log('[CallContext] 🔥 BEFORE setIncomingCall - current state:', incomingCall);
     
-    // Create incoming call state exactly like handleIncomingCall does
-    setIncomingCall({
-      callId,
-      callType,
-      status: 'ringing',
-      isIncoming: true,
-      peerUserId: fromUserId,
-      peerName: fromUserName,
-      remoteStreams: new Map(),
-      peerConnection,
-      audioEnabled: true,
-      videoEnabled: callType === 'video',
-      isMuted: false,
-      isGroupCall: true,
-      groupId,
-      groupName,
-      participants: []
-    });
+    try {
+      // Create incoming call state exactly like handleIncomingCall does
+      const groupCallState = {
+        callId,
+        callType,
+        status: 'ringing',
+        isIncoming: true,
+        peerUserId: fromUserId,
+        peerName: fromUserName,
+        remoteStreams: new Map(),
+        peerConnection,
+        audioEnabled: true,
+        videoEnabled: callType === 'video',
+        isMuted: false,
+        isGroupCall: true,
+        groupId,
+        groupName,
+        participants: []
+      };
+      
+      console.log('[CallContext] 🔥 About to call setIncomingCall with:', groupCallState);
+      setIncomingCall(groupCallState);
+      console.log('[CallContext] 🔥 setIncomingCall called successfully');
+      
+    } catch (error) {
+      console.error('[CallContext] ❌ Error setting incoming call state:', error);
+      console.error('[CallContext] Error details:', error.message, error.stack);
+    }
     
     console.log('[CallContext] 🔥 AFTER setIncomingCall - created incoming group call');
     console.log('[CallContext] 🎯 Set incoming group call modal for:', groupName);
