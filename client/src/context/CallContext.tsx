@@ -1237,7 +1237,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
       participants: []
     };
 
+    console.log('[CallContext] 🔥 BEFORE setIncomingCall - current state:', incomingCall);
     setIncomingCall(incomingGroupCall);
+    console.log('[CallContext] 🔥 AFTER setIncomingCall - should be:', incomingGroupCall);
     console.log('[CallContext] 🎯 Set incoming group call modal for:', groupName);
     console.log('[CallContext] 🎯 IncomingCall state should now be set to:', incomingGroupCall);
     
@@ -2625,6 +2627,19 @@ export function CallProvider({ children }: { children: ReactNode }) {
       alert(getMobileErrorMessage(error).replace('Gagal memulai panggilan', 'Gagal bergabung ke panggilan grup'));
     }
   };
+
+  // Monitor state changes with useEffect
+  useEffect(() => {
+    console.log('[CallContext] 🔥 INCOMING CALL STATE CHANGED:', incomingCall);
+    if (incomingCall) {
+      console.log('[CallContext] 🔥 INCOMING CALL DETAILS:', {
+        callId: incomingCall.callId,
+        groupName: incomingCall.groupName,
+        callType: incomingCall.callType,
+        isGroupCall: incomingCall.isGroupCall
+      });
+    }
+  }, [incomingCall]);
 
   // Debug logging for Context Provider value
   console.log('[CallContext] 🔥 PROVIDER VALUE UPDATE:', {
