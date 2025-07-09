@@ -1242,6 +1242,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
     
     console.log('[CallContext] 🔥 AFTER setIncomingCall - created incoming group call');
     console.log('[CallContext] 🎯 Set incoming group call modal for:', groupName);
+    
+    // Debug: Check state immediately after setting
+    setTimeout(() => {
+      console.log('[CallContext] 🔍 DEBUG: incomingCall state after 100ms:', incomingCall);
+      console.log('[CallContext] 🔍 DEBUG: incomingCallRef after 100ms:', incomingCallRef.current);
+    }, 100);
   };
 
   const handleGroupCallEnded = (message: any) => {
