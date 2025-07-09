@@ -2626,6 +2626,14 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Debug logging for Context Provider value
+  console.log('[CallContext] 🔥 PROVIDER VALUE UPDATE:', {
+    incomingCall: incomingCall,
+    activeCall: activeCall,
+    hasIncomingCall: !!incomingCall,
+    incomingCallId: incomingCall?.callId
+  });
+
   return (
     <CallContext.Provider value={{
       activeCall,
