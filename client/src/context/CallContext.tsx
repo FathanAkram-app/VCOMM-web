@@ -1220,7 +1220,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
     playNotificationSound();
 
     // Show incoming group call modal instead of auto-joining
-    const incomingGroupCall: CallState = {
+    console.log('[CallContext] 🔥 BEFORE setIncomingCall - current state:', incomingCall);
+    
+    // Create incoming call state exactly like handleIncomingCall does
+    setIncomingCall({
       callId,
       callType,
       status: 'ringing',
@@ -1235,38 +1238,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
       groupId,
       groupName,
       participants: []
-    };
-
-    console.log('[CallContext] 🔥 BEFORE setIncomingCall - current state:', incomingCall);
-    setIncomingCall(incomingGroupCall);
-    console.log('[CallContext] 🔥 AFTER setIncomingCall - should be:', incomingGroupCall);
-    console.log('[CallContext] 🎯 Set incoming group call modal for:', groupName);
-    console.log('[CallContext] 🎯 IncomingCall state should now be set to:', incomingGroupCall);
-    
-    // Force check state after setting
-    setTimeout(() => {
-      console.log('[CallContext] 🔍 IncomingCall state check after 100ms:', incomingCall);
-      console.log('[CallContext] 🔍 IncomingCall ref check after 100ms:', incomingCallRef.current);
-    }, 100);
-    
-    // Force immediate state log
-    console.log('[CallContext] 🔍 Immediate state after setIncomingCall:', { 
-      incomingCall, 
-      activeCall,
-      incomingCallRef: incomingCallRef.current 
     });
     
-    // Debug: Force re-render by triggering state change
-    console.log('[CallContext] 🔥 FORCE TRIGGERING RE-RENDER - Setting incomingCall again');
-    setTimeout(() => {
-      setIncomingCall({ ...incomingGroupCall });
-      console.log('[CallContext] 🔥 FORCE RE-RENDER COMPLETE');
-    }, 50);
-    
-    // Additional debugging - trigger custom event for testing
-    window.dispatchEvent(new CustomEvent('incoming-group-call-received', {
-      detail: { callId, groupName, fromUserName }
-    }));
+    console.log('[CallContext] 🔥 AFTER setIncomingCall - created incoming group call');
+    console.log('[CallContext] 🎯 Set incoming group call modal for:', groupName);
   };
 
   const handleGroupCallEnded = (message: any) => {
