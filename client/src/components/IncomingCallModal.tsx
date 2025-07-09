@@ -1,11 +1,13 @@
 import { useCall } from "../hooks/useCall";
 
 export default function IncomingCallModal() {
+  console.log("[IncomingCallModal] 🔥 COMPONENT RENDERED - START");
+  
   const { incomingCall, acceptCall, rejectCall } = useCall();
   
-  console.log("[IncomingCallModal] Rendering with incomingCall:", incomingCall);
-  console.log("[IncomingCallModal] incomingCall type check:", typeof incomingCall);
-  console.log("[IncomingCallModal] incomingCall falsy check:", !incomingCall);
+  console.log("[IncomingCallModal] 🔥 After useCall hook - incomingCall:", incomingCall);
+  console.log("[IncomingCallModal] 🔥 incomingCall type check:", typeof incomingCall);
+  console.log("[IncomingCallModal] 🔥 incomingCall falsy check:", !incomingCall);
   
   if (!incomingCall) {
     console.log("[IncomingCallModal] No incoming call, returning null");
