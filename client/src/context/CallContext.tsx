@@ -1219,6 +1219,25 @@ export function CallProvider({ children }: { children: ReactNode }) {
     console.log('[CallContext] 🔊 Playing notification sound for incoming group call');
     playNotificationSound();
 
+    // Create RTCPeerConnection for group call (same as handleIncomingCall)
+    const peerConnection = new RTCPeerConnection({
+      iceServers: [], // Empty array for local network only - no STUN/TURN servers
+      iceTransportPolicy: 'all', // Allow both UDP and TCP
+      bundlePolicy: 'max-bundle',
+      rtcpMuxPolicy: 'require'
+    });
+
+    // Setup ICE candidate handling for group call
+    peerConnection.onicecandidate = (event) => {
+      if (event.candidate && ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'webrtc_ice_candidate',
+          callId: callId,
+          candidate: event.candidate
+        }));
+      }
+    };
+
     // Show incoming group call modal instead of auto-joining
     console.log('[CallContext] 🔥 BEFORE setIncomingCall - current state:', incomingCall);
     
@@ -1231,6 +1250,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       peerUserId: fromUserId,
       peerName: fromUserName,
       remoteStreams: new Map(),
+      peerConnection,
       audioEnabled: true,
       videoEnabled: callType === 'video',
       isMuted: false,
