@@ -508,25 +508,12 @@ export default function Chat() {
     }
   }, [activeView, user]);
 
-  // WebSocket listener for real-time chat updates
+  // Listen to CallContext WebSocket events (no duplicate WebSocket)
   useEffect(() => {
     if (!user) return;
 
-    // Find WebSocket connection from CallContext
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    
-    const ws = new WebSocket(wsUrl);
-    
-    ws.onopen = () => {
-      console.log('[Chat] WebSocket connected for real-time updates');
-      setWsConnected(true);
-      ws.send(JSON.stringify({
-        type: 'auth',
-        payload: { userId: user.id }
-      }));
-      console.log('[Chat] Sent auth message for user:', user.id);
-    };
+    console.log('[Chat] Using CallContext WebSocket for real-time updates');
+    setWsConnected(true); // Assume connection is ready from CallContext
 
     // Listen to new message events from CallContext instead of direct WebSocket
     const handleNewMessage = (event: CustomEvent) => {
@@ -608,30 +595,14 @@ export default function Chat() {
         }
     };
 
-    ws.onerror = (error) => {
-      console.error('[Chat] WebSocket error:', error);
-      setWsConnected(false);
-    };
-
-    ws.onclose = () => {
-      console.log('[Chat] WebSocket disconnected');
-      setWsConnected(false);
-    };
-
     // Register event listener for new messages from CallContext
     window.addEventListener('new-message', handleNewMessage as EventListener);
 
-    // Store WebSocket reference
-    setSocket(ws);
-
-    // Cleanup WebSocket on unmount
+    // Cleanup event listener on unmount
     return () => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.close();
-      }
       window.removeEventListener('new-message', handleNewMessage as EventListener);
     };
-  }, [user, activeChat]);
+  }, [user]);
 
   // Update chats state when React Query data changes
   useEffect(() => {
