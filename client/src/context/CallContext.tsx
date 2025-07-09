@@ -1268,9 +1268,19 @@ export function CallProvider({ children }: { children: ReactNode }) {
       setLocation('/chat');
     }
 
-    // Clean up incoming call if it matches
+    // Clean up incoming call if it matches, but only if call was in progress
+    // Don't clear incoming call modal if user hasn't responded yet
     if (incomingCall?.callId === message.payload.callId) {
-      setIncomingCall(null);
+      console.log('[CallContext] Group call ended - checking if should clear incoming call modal');
+      console.log('[CallContext] Incoming call status:', incomingCall.status);
+      
+      // Only clear if call was actually in progress (accepted), not just ringing
+      if (incomingCall.status !== 'ringing') {
+        console.log('[CallContext] Clearing incoming call modal because call was in progress');
+        setIncomingCall(null);
+      } else {
+        console.log('[CallContext] Keeping incoming call modal because call was only ringing (not accepted yet)');
+      }
     }
 
     // Clear localStorage when group call ends
