@@ -6,8 +6,15 @@ export default function IncomingCallModal() {
   const { incomingCall, acceptCall, rejectCall } = useCall();
   
   console.log("[IncomingCallModal] Rendering with incomingCall:", incomingCall);
+  console.log("[IncomingCallModal] incomingCall type check:", typeof incomingCall);
+  console.log("[IncomingCallModal] incomingCall falsy check:", !incomingCall);
   
-  if (!incomingCall) return null;
+  if (!incomingCall) {
+    console.log("[IncomingCallModal] No incoming call, returning null");
+    return null;
+  }
+  
+  console.log("[IncomingCallModal] ✅ SHOWING MODAL for call:", incomingCall.callId);
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">

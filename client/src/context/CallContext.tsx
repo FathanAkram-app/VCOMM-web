@@ -1239,6 +1239,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     setIncomingCall(incomingGroupCall);
     console.log('[CallContext] 🎯 Set incoming group call modal for:', groupName);
+    console.log('[CallContext] 🎯 IncomingCall state should now be set to:', incomingGroupCall);
+    
+    // Force check state after setting
+    setTimeout(() => {
+      console.log('[CallContext] 🔍 IncomingCall state check after 100ms:', incomingCall);
+    }, 100);
     
     // Additional debugging - trigger custom event for testing
     window.dispatchEvent(new CustomEvent('incoming-group-call-received', {
