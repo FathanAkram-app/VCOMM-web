@@ -1244,7 +1244,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
     // Force check state after setting
     setTimeout(() => {
       console.log('[CallContext] 🔍 IncomingCall state check after 100ms:', incomingCall);
+      console.log('[CallContext] 🔍 IncomingCall ref check after 100ms:', incomingCallRef.current);
     }, 100);
+    
+    // Force immediate state log
+    console.log('[CallContext] 🔍 Immediate state after setIncomingCall:', { 
+      incomingCall, 
+      activeCall,
+      incomingCallRef: incomingCallRef.current 
+    });
     
     // Additional debugging - trigger custom event for testing
     window.dispatchEvent(new CustomEvent('incoming-group-call-received', {
