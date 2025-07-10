@@ -286,17 +286,52 @@ export default function GroupVideoCall() {
         console.log(`[GroupVideoCall] Added activeCall local tracks to peer connection for user ${userId}`);
       }
       
-      // Handle incoming streams
+      // Handle incoming streams - Enhanced debugging and reliability
       pc.ontrack = (event) => {
-        console.log(`[GroupVideoCall] Received track from user ${userId}:`, event.track.kind);
-        const [remoteStream] = event.streams;
+        console.log(`[GroupVideoCall] 🎥 Received remote track from user: ${userId}`);
+        console.log(`[GroupVideoCall] Track details:`, {
+          kind: event.track.kind,
+          enabled: event.track.enabled,
+          id: event.track.id
+        });
+        console.log(`[GroupVideoCall] Event streams count:`, event.streams.length);
         
-        setRemoteStreams(prev => ({
-          ...prev,
-          [userId]: remoteStream
-        }));
-        
-        console.log(`[GroupVideoCall] Set remote stream for user ${userId}:`, remoteStream.id);
+        if (event.streams.length > 0) {
+          const [remoteStream] = event.streams;
+          console.log(`[GroupVideoCall] Remote stream details:`, {
+            id: remoteStream.id,
+            active: remoteStream.active,
+            tracks: remoteStream.getTracks().length,
+            videoTracks: remoteStream.getVideoTracks().length,
+            audioTracks: remoteStream.getAudioTracks().length
+          });
+          
+          // Force immediate state update
+          setRemoteStreams(prev => {
+            const updated = {
+              ...prev,
+              [userId]: remoteStream
+            };
+            console.log(`[GroupVideoCall] Remote stream added to state for user: ${userId}`);
+            console.log(`[GroupVideoCall] Updated remote streams state:`, Object.keys(updated));
+            return updated;
+          });
+          
+          // Also attach directly to video element if available
+          setTimeout(() => {
+            const videoElement = participantVideoRefs.current[userId];
+            if (videoElement) {
+              videoElement.srcObject = remoteStream;
+              videoElement.play().catch(e => 
+                console.warn(`[GroupVideoCall] Error playing remote video for user ${userId}:`, e)
+              );
+              console.log(`[GroupVideoCall] ✅ Direct attachment of remote stream for user ${userId}`);
+            }
+          }, 100);
+          
+        } else {
+          console.warn(`[GroupVideoCall] ⚠️ No streams in track event for user ${userId}`);
+        }
       };
       
       // Handle ICE candidates
