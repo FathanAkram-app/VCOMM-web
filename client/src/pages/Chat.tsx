@@ -43,23 +43,24 @@ const PWAInstallButton = () => {
     );
   }
 
-  // Always show install button, prioritize direct installation
+  // Handle button click with better error handling
+  const handleInstallClick = async () => {
+    try {
+      console.log('NXZZ-VComm: Install button clicked');
+      console.log('NXZZ-VComm: isInstallable:', isInstallable);
+      console.log('NXZZ-VComm: showManualPrompt:', showManualPrompt);
+      
+      await installPWA();
+    } catch (error) {
+      console.error('NXZZ-VComm: Install button error:', error);
+      alert('Terjadi kesalahan saat install aplikasi. Coba lagi nanti.');
+    }
+  };
+
+  // Always show install button
   return (
     <Button 
-      onClick={() => {
-        if (isInstallable) {
-          // Direct PWA installation
-          installPWA();
-        } else {
-          // Fallback: trigger browser's add to home screen
-          if ('BeforeInstallPromptEvent' in window) {
-            window.dispatchEvent(new Event('beforeinstallprompt'));
-          } else {
-            // For browsers that don't support beforeinstallprompt, show helpful message
-            alert('Untuk install aplikasi:\n\nAndroid: Menu browser → "Add to Home screen"\niOS: Share → "Add to Home Screen"');
-          }
-        }
-      }}
+      onClick={handleInstallClick}
       className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338] border border-[#8d9c6b]"
     >
       <Download className="w-4 h-4 mr-2" />

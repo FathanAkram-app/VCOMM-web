@@ -45,10 +45,12 @@ export function usePWA() {
 
     // Handle PWA install prompt (Android Chrome)
     const handleBeforeInstallPrompt = (e: Event) => {
+      console.log('NXZZ-VComm: beforeinstallprompt event fired', e);
       e.preventDefault();
       setDeferredPrompt(e);
       setIsInstallable(true);
-      setShowManualPrompt(false); // Hide manual prompt if native prompt available
+      setShowManualPrompt(true); // Keep manual prompt as backup
+      console.log('NXZZ-VComm: PWA install prompt ready');
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
