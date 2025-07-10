@@ -184,6 +184,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
       case 'group_call_participants_update':
         handleGroupCallParticipantsUpdate(message);
         break;
+      case 'initiate_group_webrtc':
+        handleInitiateGroupWebRTC(message);
+        break;
       case 'webrtc_ready':
         handleWebRTCReady(message);
         break;
@@ -1538,6 +1541,33 @@ export function CallProvider({ children }: { children: ReactNode }) {
       }));
       console.log('[CallContext] Stored pending participant update for later processing');
     }
+  };
+
+  const handleInitiateGroupWebRTC = (message: any) => {
+    console.log('[CallContext] 🚀 Group WebRTC initiation received:', message);
+    const { callId, allParticipants, yourUserId } = message.payload;
+    
+    // Get current active call
+    const currentActiveCall = activeCallRef.current || activeCall;
+    
+    if (!currentActiveCall || !currentActiveCall.isGroupCall) {
+      console.log('[CallContext] ❌ No active group call found for WebRTC initiation');
+      return;
+    }
+    
+    console.log('[CallContext] 🎯 Auto-triggering WebRTC setup for group call participants:', allParticipants);
+    
+    // Dispatch event to GroupVideoCall to auto-start WebRTC connections
+    window.dispatchEvent(new CustomEvent('auto-initiate-webrtc', {
+      detail: {
+        callId,
+        allParticipants,
+        yourUserId,
+        activeCall: currentActiveCall
+      }
+    }));
+    
+    console.log('[CallContext] ✅ WebRTC auto-initiation event dispatched');
   };
 
   const handleCallEnded = (message: any) => {

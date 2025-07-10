@@ -427,12 +427,34 @@ export default function GroupVideoCall() {
       }
     };
     
+    const handleAutoInitiateWebRTC = (event: CustomEvent) => {
+      console.log('[GroupVideoCall] 🚀 Auto WebRTC initiation received:', event.detail);
+      const { callId, allParticipants, yourUserId, activeCall: currentCall } = event.detail;
+      
+      if (!currentCall || !localStream) {
+        console.log('[GroupVideoCall] ❌ No activeCall or localStream for auto WebRTC initiation');
+        return;
+      }
+      
+      console.log('[GroupVideoCall] 🎯 Auto-starting WebRTC for participants:', allParticipants);
+      
+      // Start WebRTC connections for all other participants
+      allParticipants.forEach((participantId: number) => {
+        if (participantId !== yourUserId) {
+          console.log('[GroupVideoCall] 🚀 Auto-creating peer connection for user:', participantId);
+          createPeerConnection(participantId);
+        }
+      });
+    };
+    
     window.addEventListener('participants-updated', handleParticipantsUpdate as EventListener);
     window.addEventListener('force-webrtc-init', handleWebRTCInit as EventListener);
+    window.addEventListener('auto-initiate-webrtc', handleAutoInitiateWebRTC as EventListener);
     
     return () => {
       window.removeEventListener('participants-updated', handleParticipantsUpdate as EventListener);
       window.removeEventListener('force-webrtc-init', handleWebRTCInit as EventListener);
+      window.removeEventListener('auto-initiate-webrtc', handleAutoInitiateWebRTC as EventListener);
     };
   }, [user?.id, activeCall?.participants]);
 

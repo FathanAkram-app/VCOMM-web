@@ -1450,6 +1450,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 console.log(`[Group Call] ❌ Cannot send participants update to user ${member.userId}: client=${!!targetClient}, readyState=${targetClient?.readyState || 'N/A'}`);
               }
             }
+            
+            // 🔥 NEW: Auto-initiate WebRTC connections for group calls
+            // After broadcasting participants, automatically trigger WebRTC setup
+            console.log(`[Group Call] 🚀 Auto-initiating WebRTC for ${participants.length} participants`);
+            
+            // Send WebRTC initiation signals to all participants
+            for (const participantId of participants) {
+              const participantClient = clients.get(participantId);
+              if (participantClient && participantClient.readyState === participantClient.OPEN) {
+                const webrtcInitMessage = {
+                  type: 'initiate_group_webrtc',
+                  payload: {
+                    callId,
+                    allParticipants: participants,
+                    yourUserId: participantId
+                  }
+                };
+                
+                console.log(`[Group Call] 🎯 Sending WebRTC initiation to user ${participantId}`);
+                participantClient.send(JSON.stringify(webrtcInitMessage));
+              }
+            }
             console.log(`[Group Call] Broadcasted participant update for call ${callId}`);
           } catch (error) {
             console.error(`[Group Call] Error broadcasting participant update:`, error);
