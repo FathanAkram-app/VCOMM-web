@@ -4,35 +4,49 @@ export function usePWA() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [showManualPrompt, setShowManualPrompt] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
+    // Check if already installed as PWA
+    const checkStandalone = () => {
+      const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches ||
+                               (window.navigator as any).standalone ||
+                               document.referrer.includes('android-app://');
+      setIsStandalone(isStandaloneMode);
+      console.log('NXZZ-VComm: PWA standalone mode:', isStandaloneMode);
+    };
+
+    checkStandalone();
+
     // Register Service Worker
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then((registration) => {
-            console.log('NXZZ-VComm: Service Worker registered successfully:', registration);
-            // Show manual prompt after service worker is ready
-            setTimeout(() => {
-              // Only show manual prompt if beforeinstallprompt hasn't fired
-              if (!deferredPrompt) {
-                setShowManualPrompt(true);
-              }
-            }, 3000);
-          })
-          .catch((error) => {
-            console.log('NXZZ-VComm: Service Worker registration failed:', error);
-            // Even if SW fails, show manual prompt for iOS
-            setTimeout(() => {
+      navigator.serviceWorker.register('/sw.js')
+        .then((registration) => {
+          console.log('NXZZ-VComm: Service Worker registered successfully:', registration);
+          // Always show manual prompt for installation guidance
+          setTimeout(() => {
+            if (!isStandalone) {
               setShowManualPrompt(true);
-            }, 3000);
-          });
-      });
+              console.log('NXZZ-VComm: Showing PWA install options');
+            }
+          }, 1000);
+        })
+        .catch((error) => {
+          console.log('NXZZ-VComm: Service Worker registration failed:', error);
+          // Even if SW fails, show manual prompt for iOS/other browsers
+          setTimeout(() => {
+            if (!isStandalone) {
+              setShowManualPrompt(true);
+            }
+          }, 1000);
+        });
     } else {
-      // No service worker support, show manual prompt
+      // No service worker support, still show manual prompt
       setTimeout(() => {
-        setShowManualPrompt(true);
-      }, 3000);
+        if (!isStandalone) {
+          setShowManualPrompt(true);
+        }
+      }, 1000);
     }
 
     // Handle PWA install prompt (Android Chrome)
@@ -63,6 +77,7 @@ export function usePWA() {
   return {
     isInstallable,
     showManualPrompt,
+    isStandalone,
     installPWA
   };
 }

@@ -80,7 +80,7 @@ interface SettingsProps {
 
 export default function Settings({ onBack }: SettingsProps) {
   const { toast } = useToast();
-  const { isInstallable, showManualPrompt, installPWA } = usePWA();
+  const { isInstallable, showManualPrompt, isStandalone, installPWA } = usePWA();
 
   // Audio test states
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
@@ -872,7 +872,7 @@ export default function Settings({ onBack }: SettingsProps) {
                       <Monitor className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
                       <div className="flex-1">
                         <h4 className="text-white font-medium mb-2">Status PWA</h4>
-                        {window.matchMedia('(display-mode: standalone)').matches ? (
+                        {isStandalone ? (
                           <div className="flex items-center space-x-2 text-green-400">
                             <CheckCircle className="w-4 h-4" />
                             <span className="text-sm">Aplikasi sudah terinstall sebagai PWA</span>
@@ -896,7 +896,7 @@ export default function Settings({ onBack }: SettingsProps) {
                   </div>
 
                   {/* PWA Install Button */}
-                  {(isInstallable || showManualPrompt) && !window.matchMedia('(display-mode: standalone)').matches && (
+                  {(isInstallable || showManualPrompt) && !isStandalone && (
                     <div className="space-y-4">
                       <Separator className="bg-gray-700" />
                       
