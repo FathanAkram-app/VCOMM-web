@@ -1428,17 +1428,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const members = await storage.getConversationMembers(groupId);
             
             // Broadcast participant update to all group members
+            console.log(`[Group Call] Broadcasting participant update to ${members.length} members for call ${callId}`);
+            console.log(`[Group Call] Participants to broadcast:`, participants);
+            
             for (const member of members) {
               const targetClient = clients.get(member.userId);
               if (targetClient && targetClient.readyState === targetClient.OPEN) {
-                targetClient.send(JSON.stringify({
+                const updateMessage = {
                   type: 'group_call_participants_update',
                   payload: {
                     callId,
                     participants,
                     newParticipant: userId
                   }
-                }));
+                };
+                
+                console.log(`[Group Call] 📤 Sending participants update to user ${member.userId}:`, updateMessage);
+                targetClient.send(JSON.stringify(updateMessage));
+                console.log(`[Group Call] ✅ Participants update sent to user ${member.userId}`);
+              } else {
+                console.log(`[Group Call] ❌ Cannot send participants update to user ${member.userId}: client=${!!targetClient}, readyState=${targetClient?.readyState || 'N/A'}`);
               }
             }
             console.log(`[Group Call] Broadcasted participant update for call ${callId}`);
