@@ -46,13 +46,21 @@ const PWAInstallButton = () => {
   // Handle button click with better error handling
   const handleInstallClick = async () => {
     try {
-      console.log('NXZZ-VComm: Install button clicked');
+      console.log('==== NXZZ-VComm: PWA INSTALL BUTTON CLICKED ====');
       console.log('NXZZ-VComm: isInstallable:', isInstallable);
       console.log('NXZZ-VComm: showManualPrompt:', showManualPrompt);
+      console.log('NXZZ-VComm: isStandalone:', isStandalone);
+      console.log('NXZZ-VComm: Browser:', navigator.userAgent);
+      
+      // Test basic JavaScript functionality
+      console.log('NXZZ-VComm: JavaScript is working, about to call installPWA()');
       
       await installPWA();
+      
+      console.log('NXZZ-VComm: installPWA() completed successfully');
     } catch (error) {
       console.error('NXZZ-VComm: Install button error:', error);
+      console.error('NXZZ-VComm: Error stack:', error.stack);
       alert('Terjadi kesalahan saat install aplikasi. Coba lagi nanti.');
     }
   };

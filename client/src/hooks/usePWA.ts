@@ -7,6 +7,8 @@ export function usePWA() {
   const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
+    console.log('NXZZ-VComm: PWA hook initializing...');
+    
     // Check if already installed as PWA
     const checkStandalone = () => {
       const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches ||
@@ -14,6 +16,8 @@ export function usePWA() {
                                document.referrer.includes('android-app://');
       setIsStandalone(isStandaloneMode);
       console.log('NXZZ-VComm: PWA standalone mode:', isStandaloneMode);
+      console.log('NXZZ-VComm: User agent:', navigator.userAgent);
+      console.log('NXZZ-VComm: Service Worker support:', 'serviceWorker' in navigator);
     };
 
     checkStandalone();
@@ -23,6 +27,7 @@ export function usePWA() {
       navigator.serviceWorker.register('/sw.js')
         .then((registration) => {
           console.log('NXZZ-VComm: Service Worker registered successfully:', registration);
+          console.log('NXZZ-VComm: Service Worker state:', registration.installing, registration.waiting, registration.active);
           // Always enable manual prompt for installation guidance
           if (!isStandalone) {
             setShowManualPrompt(true);
@@ -30,7 +35,8 @@ export function usePWA() {
           }
         })
         .catch((error) => {
-          console.log('NXZZ-VComm: Service Worker registration failed:', error);
+          console.error('NXZZ-VComm: Service Worker registration failed:', error);
+          console.error('NXZZ-VComm: SW Error details:', error.message, error.stack);
           // Even if SW fails, enable install button
           if (!isStandalone) {
             setShowManualPrompt(true);
