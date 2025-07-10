@@ -36,43 +36,35 @@ const PWAInstallButton = () => {
   // Don't show anything if already installed as PWA
   if (isStandalone) {
     return (
-      <div className="flex items-center space-x-2 text-green-400">
+      <div className="flex items-center justify-center space-x-2 text-green-400 py-2">
         <Smartphone className="w-4 h-4" />
         <span className="text-sm">Aplikasi sudah terinstall</span>
       </div>
     );
   }
 
-  // Don't show if no install options available
-  if (!isInstallable && !showManualPrompt) {
-    return null;
-  }
-
+  // Always show install button, prioritize direct installation
   return (
-    <div className="space-y-2">
-      {isInstallable ? (
-        <Button 
-          onClick={installPWA}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-        >
-          <Download className="w-4 h-4 mr-2" />
-          Install Aplikasi
-        </Button>
-      ) : (
-        <div className="bg-[#2a2a2a] rounded-lg p-3 border border-[#444]">
-          <div className="flex items-start space-x-2">
-            <Smartphone className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-xs text-gray-300 mb-1">Install PWA:</p>
-              <div className="text-xs text-gray-400 space-y-1">
-                <p><strong>Android:</strong> Menu → Add to Home screen</p>
-                <p><strong>iOS:</strong> Share → Add to Home Screen</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    <Button 
+      onClick={() => {
+        if (isInstallable) {
+          // Direct PWA installation
+          installPWA();
+        } else {
+          // Fallback: trigger browser's add to home screen
+          if ('BeforeInstallPromptEvent' in window) {
+            window.dispatchEvent(new Event('beforeinstallprompt'));
+          } else {
+            // For browsers that don't support beforeinstallprompt, show helpful message
+            alert('Untuk install aplikasi:\n\nAndroid: Menu browser → "Add to Home screen"\niOS: Share → "Add to Home Screen"');
+          }
+        }
+      }}
+      className="w-full bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338] border border-[#8d9c6b]"
+    >
+      <Download className="w-4 h-4 mr-2" />
+      Install PWA
+    </Button>
   );
 };
 
