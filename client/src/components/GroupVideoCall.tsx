@@ -158,11 +158,41 @@ export default function GroupVideoCall() {
   console.log('[GroupVideoCall] isVideoEnabled:', isVideoEnabled);
   console.log('[GroupVideoCall] localStream:', localStream);
 
-  // Get user media when component mounts
+  // Get user media when component mounts - Use activeCall.localStream if available
   useEffect(() => {
     const getLocalMedia = async () => {
       try {
-        console.log('[GroupVideoCall] Getting local media stream...');
+        // First check if activeCall already has a local stream
+        if (activeCall?.localStream) {
+          console.log('[GroupVideoCall] Using existing local stream from activeCall');
+          const existingStream = activeCall.localStream;
+          
+          console.log('[GroupVideoCall] Existing stream details:', {
+            id: existingStream.id,
+            active: existingStream.active,
+            videoTracks: existingStream.getVideoTracks().length,
+            audioTracks: existingStream.getAudioTracks().length
+          });
+          
+          setLocalStream(existingStream);
+          
+          // Enable video by default for group calls
+          const videoTrack = existingStream.getVideoTracks()[0];
+          if (videoTrack) {
+            videoTrack.enabled = true;
+            console.log('[GroupVideoCall] Video track enabled by default for group calls');
+          }
+          
+          // Attach stream to video element
+          if (localVideoRef.current) {
+            localVideoRef.current.srcObject = existingStream;
+            console.log('[GroupVideoCall] Set local video source from existing stream');
+          }
+          return;
+        }
+        
+        // If no existing stream, get a new one
+        console.log('[GroupVideoCall] Getting new local media stream...');
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { width: 640, height: 480 },
           audio: true
