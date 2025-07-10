@@ -118,6 +118,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const [ringtoneAudio, setRingtoneAudio] = useState<HTMLAudioElement | null>(null);
   const [waitingToneInterval, setWaitingToneInterval] = useState<NodeJS.Timeout | null>(null);
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
+  
+  // Add ref for pending participant updates
+  const pendingParticipantUpdatesRef = useRef<Array<{type: string, payload: any}>>([]);
   const [remoteAudioStream, setRemoteAudioStream] = useState<MediaStream | null>(null);
 
   // Restore group call state from localStorage when on group-call page
@@ -2673,34 +2676,22 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
       // Process any pending participant updates that arrived before activeCall was created
       console.log('[CallContext] 📊 Processing pending participant updates after join...');
-      const pendingUpdates = pendingParticipantUpdatesRef.current;
-      if (pendingUpdates.length > 0) {
-        console.log(`[CallContext] 📊 Found ${pendingUpdates.length} pending participant updates`);
-        
-        for (const update of pendingUpdates) {
-          if (update.payload.callId === callId) {
-            console.log('[CallContext] 📊 Processing delayed participant update:', update);
-            
-            // Update activeCall with participants data immediately
-            groupCallState.participants = update.payload.participants;
-            setActiveCall({ ...groupCallState });
-            
-            console.log('[CallContext] 📊 Updated activeCall with participants:', update.payload.participants);
-            
-            // Remove from pending updates
-            const index = pendingParticipantUpdatesRef.current.indexOf(update);
-            if (index > -1) {
-              pendingParticipantUpdatesRef.current.splice(index, 1);
-            }
-            
-            break; // Process only the first matching update
+      setTimeout(() => {
+        // Force request participant update after joining
+        const requestParticipantsMessage = {
+          type: 'request_group_participants',
+          payload: {
+            callId,
+            groupId,
+            requestingUserId: user.id
           }
-        }
+        };
         
-        console.log('[CallContext] 📊 Remaining pending updates:', pendingParticipantUpdatesRef.current.length);
-      } else {
-        console.log('[CallContext] 📊 No pending participant updates found');
-      }
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify(requestParticipantsMessage));
+          console.log('[CallContext] 📊 Requested updated participant list:', requestParticipantsMessage);
+        }
+      }, 500); // Wait for join to complete
 
       // Store the call state in localStorage to persist through navigation
       localStorage.setItem('activeGroupCall', JSON.stringify({
@@ -2721,7 +2712,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     } catch (error: any) {
       console.error('[CallContext] Error joining group call:', error);
-      alert(getMobileErrorMessage(error).replace('Gagal memulai panggilan', 'Gagal bergabung ke panggilan grup'));
+      // Only show alert for critical errors, not connection issues
+      if (error.name === 'NotAllowedError' || error.name === 'NotFoundError' || error.name === 'NotSupportedError') {
+        alert(getMobileErrorMessage(error).replace('Gagal memulai panggilan', 'Gagal bergabung ke panggilan grup'));
+      } else {
+        console.log('[CallContext] Non-critical error, continuing with call setup');
+      }
     }
   };
 

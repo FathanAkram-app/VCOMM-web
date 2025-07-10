@@ -1456,6 +1456,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
+        // Handle request for group participants update
+        if (data.type === 'request_group_participants' && ws.userId) {
+          const { callId, groupId, requestingUserId } = data.payload;
+          console.log(`[Group Call] User ${requestingUserId} requesting participants for call ${callId}`);
+          
+          // Get current participants list
+          const participants = Array.from(activeGroupCalls.get(callId) || []);
+          console.log(`[Group Call] Current participants in ${callId}:`, participants);
+          
+          // Send participants update to requesting user
+          if (participants.length > 0) {
+            const updateMessage = {
+              type: 'group_call_participants_update',
+              payload: {
+                callId,
+                participants,
+                requestResponse: true
+              }
+            };
+            
+            ws.send(JSON.stringify(updateMessage));
+            console.log(`[Group Call] ✅ Sent participants update response to user ${requestingUserId}:`, updateMessage);
+          } else {
+            console.log(`[Group Call] ❌ No participants found for call ${callId}`);
+          }
+        }
+
         // Handle call end
         if (data.type === 'end_call' && ws.userId) {
           const { callId, toUserId } = data.payload;
