@@ -151,14 +151,21 @@ export default function GroupVideoCall() {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const participantVideoRefs = useRef<{ [userId: number]: HTMLVideoElement }>({});
   const peerConnections = useRef<{ [userId: number]: RTCPeerConnection }>({});
+  const pendingIceCandidates = useRef<{ [userId: number]: RTCIceCandidate[] }>({});
   const [remoteStreams, setRemoteStreams] = useState<{ [userId: number]: MediaStream }>({});
   
-  // WebRTC configuration
+  // WebRTC configuration - Enhanced for faster connection
   const rtcConfig = {
     iceServers: [
       { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' }
-    ]
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun3.l.google.com:19302' }
+    ],
+    iceCandidatePoolSize: 10,
+    bundlePolicy: 'max-bundle',
+    rtcpMuxPolicy: 'require',
+    iceTransportPolicy: 'all'
   };
   
   // Create peer connection for a specific user
@@ -616,10 +623,10 @@ export default function GroupVideoCall() {
             }
           };
 
-          // Handle ICE candidates
+          // Handle ICE candidates with priority handling
           peerConnection.onicecandidate = (event) => {
             if (event.candidate) {
-              console.log('[GroupVideoCall] Sending ICE candidate to user:', participant.userId);
+              console.log('[GroupVideoCall] Sending ICE candidate to user:', participant.userId, 'Type:', event.candidate.type || 'unknown');
               const websocket = (window as any).__callWebSocket;
               if (websocket?.readyState === WebSocket.OPEN) {
                 websocket.send(JSON.stringify({
@@ -631,22 +638,27 @@ export default function GroupVideoCall() {
                     fromUserId: user?.id
                   }
                 }));
+                console.log('[GroupVideoCall] ✅ ICE candidate sent to user:', participant.userId);
+              } else {
+                console.warn('[GroupVideoCall] ❌ WebSocket not ready for ICE candidate to user:', participant.userId);
               }
+            } else {
+              console.log('[GroupVideoCall] 🏁 ICE gathering complete for user:', participant.userId);
             }
           };
 
           // Handle connection state changes with delayed cleanup
           peerConnection.onconnectionstatechange = () => {
-            console.log('[GroupVideoCall] Connection state for user', participant.userId, ':', peerConnection.connectionState);
+            console.log('[GroupVideoCall] 🔄 Connection state for user', participant.userId, ':', peerConnection.connectionState);
             
             if (peerConnection.connectionState === 'failed') {
-              console.warn(`[GroupVideoCall] Connection failed for user ${participant.userId}, will retry in 5 seconds`);
+              console.warn(`[GroupVideoCall] ❌ Connection failed for user ${participant.userId}, will retry in 5 seconds`);
               
               // Delay cleanup to allow for potential recovery via answer processing
               setTimeout(() => {
                 // Only clean up if still failed and no successful connection established
                 if (peerConnection.connectionState === 'failed') {
-                  console.log(`[GroupVideoCall] Cleaning up persistently failed connection for user ${participant.userId}`);
+                  console.log(`[GroupVideoCall] 🧹 Cleaning up persistently failed connection for user ${participant.userId}`);
                   
                   // Clean up failed connection
                   delete peerConnections.current[participant.userId];
@@ -660,9 +672,28 @@ export default function GroupVideoCall() {
                 }
               }, 5000); // Give 5 seconds for potential recovery
             } else if (peerConnection.connectionState === 'connected') {
-              console.log(`[GroupVideoCall] ✅ Connection established with user ${participant.userId}`);
+              console.log(`[GroupVideoCall] 🎉 Connection established with user ${participant.userId}`);
             } else if (peerConnection.connectionState === 'connecting') {
-              console.log(`[GroupVideoCall] Connection in progress for user ${participant.userId}`);
+              console.log(`[GroupVideoCall] ⏳ Connection in progress for user ${participant.userId}`);
+              // Set timeout for connecting state
+              setTimeout(() => {
+                if (peerConnection.connectionState === 'connecting') {
+                  console.warn(`[GroupVideoCall] ⚠️ Connection timeout for user ${participant.userId}, restarting ICE`);
+                  peerConnection.restartIce();
+                }
+              }, 12000); // 12 second timeout
+            }
+          };
+          
+          // Enhanced ICE connection state monitoring
+          peerConnection.oniceconnectionstatechange = () => {
+            console.log('[GroupVideoCall] 🧊 ICE state for user', participant.userId, ':', peerConnection.iceConnectionState);
+            
+            if (peerConnection.iceConnectionState === 'failed') {
+              console.warn(`[GroupVideoCall] ❌ ICE failed for user ${participant.userId}, restarting`);
+              peerConnection.restartIce();
+            } else if (peerConnection.iceConnectionState === 'connected') {
+              console.log(`[GroupVideoCall] 🎉 ICE connected with user ${participant.userId}`);
             }
           };
 
@@ -896,10 +927,10 @@ export default function GroupVideoCall() {
           }
         };
 
-        // Handle ICE candidates
+        // Handle ICE candidates with immediate sending
         peerConnection.onicecandidate = (event) => {
           if (event.candidate) {
-            console.log('[GroupVideoCall] Sending ICE candidate to user:', fromUserId);
+            console.log('[GroupVideoCall] Sending ICE candidate to user:', fromUserId, event.candidate.type);
             const ws = (window as any).__callWebSocket;
             if (ws?.readyState === WebSocket.OPEN) {
               ws.send(JSON.stringify({
@@ -911,22 +942,52 @@ export default function GroupVideoCall() {
                   fromUserId: user?.id
                 }
               }));
+              console.log('[GroupVideoCall] ✅ ICE candidate sent successfully to user:', fromUserId);
+            } else {
+              console.warn('[GroupVideoCall] ❌ WebSocket not ready, cannot send ICE candidate');
             }
+          } else {
+            console.log('[GroupVideoCall] 🏁 ICE gathering completed for user:', fromUserId);
           }
         };
 
-        // Handle connection state changes with restart mechanism
+        // Handle connection state changes with restart mechanism and timeout
         peerConnection.onconnectionstatechange = () => {
-          console.log('[GroupVideoCall] Connection state for user', fromUserId, ':', peerConnection!.connectionState);
+          console.log('[GroupVideoCall] 🔄 Connection state for user', fromUserId, ':', peerConnection!.connectionState);
           
-          if (peerConnection!.connectionState === 'failed') {
-            console.warn(`[GroupVideoCall] Connection failed for user ${fromUserId}, attempting restart`);
+          if (peerConnection!.connectionState === 'connected') {
+            console.log('[GroupVideoCall] 🎉 Connection established successfully with user:', fromUserId);
+          } else if (peerConnection!.connectionState === 'failed') {
+            console.warn(`[GroupVideoCall] ❌ Connection failed for user ${fromUserId}, attempting restart`);
             setTimeout(() => {
               if (peerConnection!.connectionState === 'failed') {
-                console.log(`[GroupVideoCall] Restarting ICE for user ${fromUserId}`);
+                console.log(`[GroupVideoCall] 🔄 Restarting ICE for user ${fromUserId}`);
                 peerConnection!.restartIce();
               }
             }, 2000);
+          } else if (peerConnection!.connectionState === 'connecting') {
+            console.log(`[GroupVideoCall] ⏳ Connection in progress for user ${fromUserId}`);
+            // Set a timeout for connecting state to prevent indefinite waiting
+            setTimeout(() => {
+              if (peerConnection!.connectionState === 'connecting') {
+                console.warn(`[GroupVideoCall] ⚠️ Connection timeout for user ${fromUserId}, attempting ICE restart`);
+                peerConnection!.restartIce();
+              }
+            }, 15000); // 15 second timeout
+          }
+        };
+        
+        // Enhanced ICE connection state monitoring
+        peerConnection.oniceconnectionstatechange = () => {
+          console.log('[GroupVideoCall] 🧊 ICE connection state for user', fromUserId, ':', peerConnection!.iceConnectionState);
+          
+          if (peerConnection!.iceConnectionState === 'failed') {
+            console.warn(`[GroupVideoCall] ❌ ICE connection failed for user ${fromUserId}`);
+            peerConnection!.restartIce();
+          } else if (peerConnection!.iceConnectionState === 'connected') {
+            console.log(`[GroupVideoCall] 🎉 ICE connected successfully with user ${fromUserId}`);
+          } else if (peerConnection!.iceConnectionState === 'checking') {
+            console.log(`[GroupVideoCall] 🔍 ICE checking candidates for user ${fromUserId}`);
           }
         };
 
@@ -941,6 +1002,20 @@ export default function GroupVideoCall() {
       try {
         await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
         console.log('[GroupVideoCall] Set remote description from offer');
+        
+        // Process any pending ICE candidates now that remote description is set
+        if (pendingIceCandidates.current[fromUserId]) {
+          console.log('[GroupVideoCall] Processing', pendingIceCandidates.current[fromUserId].length, 'pending ICE candidates for user:', fromUserId);
+          for (const candidate of pendingIceCandidates.current[fromUserId]) {
+            try {
+              await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+              console.log('[GroupVideoCall] ✅ Added pending ICE candidate for user:', fromUserId);
+            } catch (error) {
+              console.error('[GroupVideoCall] ❌ Error adding pending ICE candidate:', error);
+            }
+          }
+          pendingIceCandidates.current[fromUserId] = [];
+        }
         
         // Create and send answer
         const answer = await peerConnection.createAnswer();
@@ -993,6 +1068,20 @@ export default function GroupVideoCall() {
         if (peerConnection.signalingState === 'have-local-offer') {
           await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
           console.log('[GroupVideoCall] Successfully set remote description from answer');
+          
+          // Process any pending ICE candidates now that remote description is set
+          if (pendingIceCandidates.current[fromUserId]) {
+            console.log('[GroupVideoCall] Processing', pendingIceCandidates.current[fromUserId].length, 'pending ICE candidates for user:', fromUserId);
+            for (const candidate of pendingIceCandidates.current[fromUserId]) {
+              try {
+                await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                console.log('[GroupVideoCall] ✅ Added pending ICE candidate for user:', fromUserId);
+              } catch (error) {
+                console.error('[GroupVideoCall] ❌ Error adding pending ICE candidate:', error);
+              }
+            }
+            pendingIceCandidates.current[fromUserId] = [];
+          }
         } else if (peerConnection.signalingState === 'stable') {
           console.warn('[GroupVideoCall] Peer connection already stable, ignoring duplicate answer');
           return; // Don't process duplicate answers
@@ -1060,7 +1149,7 @@ export default function GroupVideoCall() {
 
     const handleGroupWebRTCIceCandidate = async (event: CustomEvent) => {
       const { callId, candidate, fromUserId } = event.detail;
-      console.log('[GroupVideoCall] Received ICE candidate from user:', fromUserId);
+      console.log('[GroupVideoCall] 🧊 Received ICE candidate from user:', fromUserId, 'Type:', candidate?.type || 'unknown');
       
       if (activeCall?.callId !== callId) {
         console.log('[GroupVideoCall] Call ID mismatch, ignoring ICE candidate');
@@ -1069,15 +1158,30 @@ export default function GroupVideoCall() {
       
       const peerConnection = peerConnections.current[fromUserId];
       if (!peerConnection) {
-        console.log('[GroupVideoCall] No peer connection found for user:', fromUserId);
+        console.log('[GroupVideoCall] ❌ No peer connection found for user:', fromUserId);
         return;
       }
       
       try {
-        await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-        console.log('[GroupVideoCall] Added ICE candidate for user:', fromUserId);
+        // Check if we can add the candidate immediately
+        if (peerConnection.remoteDescription) {
+          await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+          console.log('[GroupVideoCall] ✅ Added ICE candidate immediately for user:', fromUserId);
+        } else {
+          console.log('[GroupVideoCall] ⏳ Remote description not set, queuing ICE candidate for user:', fromUserId);
+          // Store candidate for later when remote description is available
+          if (!pendingIceCandidates.current[fromUserId]) {
+            pendingIceCandidates.current[fromUserId] = [];
+          }
+          pendingIceCandidates.current[fromUserId].push(candidate);
+        }
       } catch (error) {
-        console.error('[GroupVideoCall] Error adding ICE candidate:', error);
+        console.error('[GroupVideoCall] ❌ Error adding ICE candidate for user:', fromUserId, error);
+        // Try to add it later if it failed
+        if (!pendingIceCandidates.current[fromUserId]) {
+          pendingIceCandidates.current[fromUserId] = [];
+        }
+        pendingIceCandidates.current[fromUserId].push(candidate);
       }
     };
 
