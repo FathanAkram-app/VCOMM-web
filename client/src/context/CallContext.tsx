@@ -2064,14 +2064,17 @@ export function CallProvider({ children }: { children: ReactNode }) {
       // If it's a group call, send join notification
       if (incomingCall.isGroupCall) {
         console.log('[CallContext] Joining group call:', incomingCall.callId);
-        ws.send(JSON.stringify({
-          type: 'join_group_call',
-          payload: {
-            callId: incomingCall.callId,
-            groupId: incomingCall.groupId,
-            userId: user.id
-          }
-        }));
+        setTimeout(() => {
+          ws.send(JSON.stringify({
+            type: 'join_group_call',
+            payload: {
+              callId: incomingCall.callId,
+              groupId: incomingCall.groupId,
+              fromUserId: user.id
+            }
+          }));
+          console.log('[CallContext] Sent join group call message for accepted call');
+        }, 200);
       }
 
       // Store callId and peerUserId before clearing incomingCall
@@ -2533,6 +2536,21 @@ export function CallProvider({ children }: { children: ReactNode }) {
       }));
 
       console.log('[CallContext] Group call invitation sent');
+      
+      // Auto-join the group call as the initiator
+      setTimeout(() => {
+        const joinMessage = {
+          type: 'join_group_call',
+          payload: {
+            callId,
+            groupId,
+            fromUserId: user.id
+          }
+        };
+        
+        ws.send(JSON.stringify(joinMessage));
+        console.log('[CallContext] Auto-joined group call as initiator:', joinMessage);
+      }, 500); // Small delay to ensure call is created first
 
       // Navigate to appropriate group call interface based on call type
       setTimeout(() => {
@@ -2636,17 +2654,19 @@ export function CallProvider({ children }: { children: ReactNode }) {
       }, 100);
 
       // Send join message to server
-      ws.send(JSON.stringify({
-        type: 'join_group_call',
-        payload: {
-          callId,
-          groupId,
-          groupName,
-          callType,
-          fromUserId: user.id,
-          fromUserName: user.callsign || user.fullName || 'Unknown'
-        }
-      }));
+      setTimeout(() => {
+        const joinMessage = {
+          type: 'join_group_call',
+          payload: {
+            callId,
+            groupId,
+            fromUserId: user.id
+          }
+        };
+        
+        ws.send(JSON.stringify(joinMessage));
+        console.log('[CallContext] Sent join group call message for recipient:', joinMessage);
+      }, 400); // Delay to ensure call state is set
 
       console.log('[CallContext] Joined group call successfully');
       console.log('[CallContext] Active call state after joining:', groupCallState);
