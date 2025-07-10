@@ -85,22 +85,39 @@ const StableParticipantVideo = memo(({
         playsInline
         muted={false}
         className="w-full h-full object-cover"
+        style={{ display: stream ? 'block' : 'none' }}
         onLoadedMetadata={() => {
           console.log(`[StableParticipantVideo] Video metadata loaded for user ${participant.userId}`);
         }}
         onCanPlay={() => {
           console.log(`[StableParticipantVideo] Video can play for user ${participant.userId}`);
         }}
+        onPlay={() => {
+          console.log(`[StableParticipantVideo] ✅ Video started playing for user ${participant.userId}`);
+        }}
+        onError={(e) => {
+          console.error(`[StableParticipantVideo] ❌ Video error for user ${participant.userId}:`, e);
+        }}
       />
       
-      {/* Show avatar when no stream */}
+      {/* Show avatar when no stream or video is disabled */}
       {!stream && (
-        <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gray-800">
-          <Avatar className="h-20 w-20 bg-[#7d9f7d] border-3 border-[#a6c455] shadow-lg">
-            <AvatarFallback className="bg-gradient-to-br from-[#7d9f7d] to-[#5d7f5d] text-white text-xl font-bold">
-              {participant.userName.substring(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+        <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-[#2d4a2d] to-[#1e3a1e]">
+          <div className="text-center">
+            <Avatar className="h-16 w-16 bg-[#4a7c59] border-2 border-[#a6c455] shadow-lg mx-auto mb-2">
+              <AvatarFallback className="bg-[#4a7c59] text-white text-lg font-bold">
+                {participant.userName.substring(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <p className="text-[#7d9f7d] text-xs">Connecting...</p>
+          </div>
+        </div>
+      )}
+      
+      {/* Stream status indicator */}
+      {stream && (
+        <div className="absolute top-1 left-1 bg-green-500/80 px-1.5 py-0.5 rounded text-xs text-white font-medium">
+          LIVE
         </div>
       )}
       
@@ -239,17 +256,39 @@ export default function GroupVideoCall() {
     };
   }, []);
 
-  // Update local video ref when stream changes
+  // Update local video ref when stream changes - with enhanced debugging
   useEffect(() => {
     if (localVideoRef.current && localStream) {
-      localVideoRef.current.srcObject = localStream;
       console.log('[GroupVideoCall] Local video stream attached to element');
+      console.log('[GroupVideoCall] Local stream details:', {
+        id: localStream.id,
+        active: localStream.active,
+        videoTracks: localStream.getVideoTracks().length,
+        audioTracks: localStream.getAudioTracks().length,
+        videoTrackEnabled: localStream.getVideoTracks()[0]?.enabled
+      });
+      
+      localVideoRef.current.srcObject = localStream;
       
       // Set initial video state based on track
       const videoTrack = localStream.getVideoTracks()[0];
       if (videoTrack) {
         setIsVideoEnabled(videoTrack.enabled);
         console.log('[GroupVideoCall] Initial video state:', videoTrack.enabled);
+      }
+      
+      // Force play local video
+      localVideoRef.current.play().then(() => {
+        console.log('[GroupVideoCall] ✅ Local video playing successfully');
+      }).catch(error => {
+        console.warn('[GroupVideoCall] ⚠️ Local video play failed:', error);
+      });
+    } else {
+      if (!localVideoRef.current) {
+        console.log('[GroupVideoCall] ⚠️ No local video ref available');
+      }
+      if (!localStream) {
+        console.log('[GroupVideoCall] ⚠️ No local stream available');
       }
     }
   }, [localStream]);
@@ -1054,6 +1093,18 @@ export default function GroupVideoCall() {
                       playsInline
                       className="w-full h-full object-cover"
                       style={{ display: isVideoEnabled ? 'block' : 'none' }}
+                      onLoadedMetadata={() => {
+                        console.log(`[GroupVideoCall] Local video metadata loaded`);
+                      }}
+                      onCanPlay={() => {
+                        console.log(`[GroupVideoCall] Local video can play`);
+                      }}
+                      onPlay={() => {
+                        console.log(`[GroupVideoCall] ✅ Local video started playing`);
+                      }}
+                      onError={(e) => {
+                        console.error(`[GroupVideoCall] ❌ Local video error:`, e);
+                      }}
                     />
                     {/* Avatar overlay when video is disabled */}
                     {!isVideoEnabled && (
