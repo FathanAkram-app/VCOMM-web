@@ -40,19 +40,39 @@ const StableParticipantVideo = memo(({
     // Only clean up when component is truly destroyed
   }, [participant.userId, participantVideoRefs]);
   
-  // Attach stream directly when available - more reliable approach
+  // Attach stream directly when available - with enhanced debugging
   useEffect(() => {
     if (videoRef.current && stream) {
-      console.log(`[StableParticipantVideo] Attaching stream for user ${participant.userId}`);
+      console.log(`[StableParticipantVideo] 🎬 Attaching stream for user ${participant.userId}`);
+      console.log(`[StableParticipantVideo] Stream details:`, {
+        id: stream.id,
+        active: stream.active,
+        videoTracks: stream.getVideoTracks().length,
+        audioTracks: stream.getAudioTracks().length,
+        videoTrackEnabled: stream.getVideoTracks()[0]?.enabled
+      });
+      
       videoRef.current.srcObject = stream;
       
-      // Force play to ensure video starts
-      videoRef.current.play().catch(error => {
-        console.warn(`[StableParticipantVideo] Video play failed for user ${participant.userId}:`, error);
+      // Force play to ensure video starts with error handling
+      videoRef.current.play().then(() => {
+        console.log(`[StableParticipantVideo] ✅ Video playing successfully for user ${participant.userId}`);
+      }).catch(error => {
+        console.warn(`[StableParticipantVideo] ⚠️ Video play failed for user ${participant.userId}:`, error);
+        // Retry play after short delay
+        setTimeout(() => {
+          if (videoRef.current) {
+            videoRef.current.play().catch(e => console.warn('Second play attempt failed:', e));
+          }
+        }, 1000);
       });
     } else if (videoRef.current && !stream) {
-      console.log(`[StableParticipantVideo] Clearing stream for user ${participant.userId}`);
+      console.log(`[StableParticipantVideo] 🧹 Clearing stream for user ${participant.userId}`);
       videoRef.current.srcObject = null;
+    } else if (!videoRef.current) {
+      console.log(`[StableParticipantVideo] ⚠️ No video ref available for user ${participant.userId}`);
+    } else if (!stream) {
+      console.log(`[StableParticipantVideo] ⚠️ No stream available for user ${participant.userId}`);
     }
   }, [stream, participant.userId]);
   
@@ -299,14 +319,14 @@ export default function GroupVideoCall() {
 
           // Handle incoming remote stream with enhanced debugging
           peerConnection.ontrack = (event) => {
-            console.log('[GroupVideoCall] Received remote track from user:', participant.userId);
+            console.log('[GroupVideoCall] 🎥 Received remote track from user:', participant.userId);
             console.log('[GroupVideoCall] Track kind:', event.track.kind);
             console.log('[GroupVideoCall] Event streams:', event.streams.length);
             
             const [remoteStream] = event.streams;
             
             if (remoteStream) {
-              console.log('[GroupVideoCall] Remote stream details:', {
+              console.log('[GroupVideoCall] 🎬 Remote stream details:', {
                 id: remoteStream.id,
                 active: remoteStream.active,
                 tracks: remoteStream.getTracks().length,
@@ -314,31 +334,54 @@ export default function GroupVideoCall() {
                 audioTracks: remoteStream.getAudioTracks().length
               });
               
-              // Always update stream state and ensure immediate attachment
+              // Update remote streams state immediately
               setRemoteStreams(prev => {
                 const updated = {
                   ...prev,
                   [participant.userId]: remoteStream
                 };
-                console.log('[GroupVideoCall] Updated remote streams state:', Object.keys(updated));
-                
-                // Force immediate video element update
-                setTimeout(() => {
-                  const videoElement = participantVideoRefs.current[participant.userId];
-                  if (videoElement && remoteStream) {
-                    console.log(`[GroupVideoCall] Force-attaching stream to element for user ${participant.userId}`);
-                    videoElement.srcObject = remoteStream;
-                    videoElement.play().catch(e => console.warn('Play failed:', e));
-                  }
-                }, 100);
-                
+                console.log('[GroupVideoCall] 📺 Updated remote streams state:', Object.keys(updated));
                 return updated;
               });
               
-              // Stream attachment is handled by StableParticipantVideo component
-              console.log('[GroupVideoCall] Remote stream added to state for user:', participant.userId);
+              // Also update participant list with stream
+              setParticipants(prevParticipants => {
+                return prevParticipants.map(p => {
+                  if (p.userId === participant.userId) {
+                    console.log(`[GroupVideoCall] 🔄 Updated participant ${p.userId} with new stream`);
+                    return { ...p, stream: remoteStream };
+                  }
+                  return p;
+                });
+              });
+              
+              // Force immediate video element attachment with multiple retries
+              const attachVideoStream = (retryCount = 0) => {
+                const videoElement = participantVideoRefs.current[participant.userId];
+                console.log(`[GroupVideoCall] 🎯 Attempt ${retryCount + 1}: Looking for video element for user ${participant.userId}:`, !!videoElement);
+                
+                if (videoElement && remoteStream) {
+                  console.log(`[GroupVideoCall] ✅ ATTACHING stream to video element for user ${participant.userId}`);
+                  videoElement.srcObject = remoteStream;
+                  videoElement.play().then(() => {
+                    console.log(`[GroupVideoCall] ✅ Video playing successfully for user ${participant.userId}`);
+                  }).catch(e => {
+                    console.warn(`[GroupVideoCall] ⚠️ Video play failed for user ${participant.userId}:`, e);
+                  });
+                } else if (retryCount < 5) {
+                  // Retry up to 5 times with increasing delays
+                  setTimeout(() => attachVideoStream(retryCount + 1), (retryCount + 1) * 200);
+                } else {
+                  console.error(`[GroupVideoCall] ❌ Failed to attach video after 5 retries for user ${participant.userId}`);
+                }
+              };
+              
+              // Start attachment attempts immediately and with retries
+              attachVideoStream();
+              
+              console.log('[GroupVideoCall] 🎊 Remote stream processing completed for user:', participant.userId);
             } else {
-              console.error('[GroupVideoCall] No remote stream received for user:', participant.userId);
+              console.error('[GroupVideoCall] ❌ No remote stream received for user:', participant.userId);
             }
           };
 
@@ -515,9 +558,15 @@ export default function GroupVideoCall() {
         return;
       }
       
+      // Ensure we have local stream before processing offer
+      if (!localStream) {
+        console.log('[GroupVideoCall] ❌ No local stream available, cannot process offer from user:', fromUserId);
+        return;
+      }
+
       let peerConnection = peerConnections.current[fromUserId];
-      if (!peerConnection && localStream) {
-        console.log('[GroupVideoCall] Creating peer connection for new participant:', fromUserId);
+      if (!peerConnection) {
+        console.log('[GroupVideoCall] 🔧 Creating peer connection for new participant:', fromUserId);
         
         // Create peer connection for this user
         peerConnection = new RTCPeerConnection({
@@ -531,17 +580,20 @@ export default function GroupVideoCall() {
           iceCandidatePoolSize: 10
         });
 
-        // Add local stream tracks
+        // Add local stream tracks with verification
+        console.log('[GroupVideoCall] 🎵 Adding local tracks to peer connection for user:', fromUserId);
+        console.log('[GroupVideoCall] Local stream tracks:', localStream.getTracks().map(t => ({ kind: t.kind, enabled: t.enabled })));
+        
         localStream.getTracks().forEach(track => {
-          console.log('[GroupVideoCall] Adding local track to new peer connection:', track.kind);
+          console.log('[GroupVideoCall] ➕ Adding local track to peer connection:', track.kind, 'enabled:', track.enabled);
           peerConnection!.addTrack(track, localStream);
         });
 
         // Handle incoming remote stream with enhanced debugging
         peerConnection.ontrack = (event) => {
-          console.log('[GroupVideoCall] Received remote stream from user:', fromUserId);
-          console.log('[GroupVideoCall] Event streams:', event.streams);
-          console.log('[GroupVideoCall] Event track:', event.track);
+          console.log('[GroupVideoCall] 🎥 Received remote track from user:', fromUserId);
+          console.log('[GroupVideoCall] Track details:', { kind: event.track.kind, enabled: event.track.enabled, id: event.track.id });
+          console.log('[GroupVideoCall] Event streams count:', event.streams.length);
           
           const [remoteStream] = event.streams;
           
@@ -983,7 +1035,7 @@ export default function GroupVideoCall() {
                     <StableParticipantVideo
                       key={participant.userId}
                       participant={participant}
-                      stream={participantStream}
+                      stream={participantStream || participant.stream}
                       onMaximize={handleMaximizeParticipant}
                       participantVideoRefs={participantVideoRefs}
                     />
