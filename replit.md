@@ -155,10 +155,14 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - RESOLVED: Group call IncomingCallModal now displays correctly for all group calls
   - RESOLVED: JavaScript execution halt in handleIncomingGroupCall function blocking setIncomingCall()
   - RESOLVED: Participant synchronization issue - group_call_participants_update messages now properly broadcast and received
+  - RESOLVED: WebRTC stream fallback mechanism - using activeCall.localStream when localStream unavailable
   - Added comprehensive error handling and debug logging throughout call context and server routes
   - Fixed participant video consistency - participants now appear reliably during group video calls
   - Enhanced WebRTC connection setup with proper peer connection management for group calls
   - Improved server-side participant tracking with detailed broadcast logging to all group members
+  - MAJOR PROGRESS: GROUP_CALL_PARTICIPANTS_UPDATE working with 2 participants [5, 2]
+  - Video streams successfully received from user 3 (test shows WebRTC working between some users)
+  - CURRENT ISSUE: Need all group members to stay online and accept incoming calls for full group video
 
 # User Preferences
 
