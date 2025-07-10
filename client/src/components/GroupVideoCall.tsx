@@ -611,11 +611,18 @@ export default function GroupVideoCall() {
         return;
       }
       
-      // Ensure we have local stream before processing offer
-      if (!localStream) {
-        console.log('[GroupVideoCall] ❌ No local stream available, cannot process offer from user:', fromUserId);
+      // Try to get local stream from multiple sources
+      const availableStream = localStream || activeCall?.localStream;
+      if (!availableStream) {
+        console.log('[GroupVideoCall] ❌ No local stream available from either localStream or activeCall, cannot process offer from user:', fromUserId);
         return;
       }
+      
+      console.log('[GroupVideoCall] ✅ Using stream for WebRTC offer processing:', {
+        fromLocalStream: !!localStream,
+        fromActiveCall: !!activeCall?.localStream,
+        streamId: availableStream.id
+      });
 
       let peerConnection = peerConnections.current[fromUserId];
       if (!peerConnection) {
@@ -635,11 +642,11 @@ export default function GroupVideoCall() {
 
         // Add local stream tracks with verification
         console.log('[GroupVideoCall] 🎵 Adding local tracks to peer connection for user:', fromUserId);
-        console.log('[GroupVideoCall] Local stream tracks:', localStream.getTracks().map(t => ({ kind: t.kind, enabled: t.enabled })));
+        console.log('[GroupVideoCall] Available stream tracks:', availableStream.getTracks().map(t => ({ kind: t.kind, enabled: t.enabled })));
         
-        localStream.getTracks().forEach(track => {
+        availableStream.getTracks().forEach(track => {
           console.log('[GroupVideoCall] ➕ Adding local track to peer connection:', track.kind, 'enabled:', track.enabled);
-          peerConnection!.addTrack(track, localStream);
+          peerConnection!.addTrack(track, availableStream);
         });
 
         // Handle incoming remote stream with enhanced debugging
