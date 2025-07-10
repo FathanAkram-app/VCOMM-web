@@ -154,13 +154,11 @@ export default function GroupVideoCall() {
   const pendingIceCandidates = useRef<{ [userId: number]: RTCIceCandidate[] }>({});
   const [remoteStreams, setRemoteStreams] = useState<{ [userId: number]: MediaStream }>({});
   
-  // WebRTC configuration - Enhanced for faster connection
+  // WebRTC configuration - OFFLINE INTRANET ONLY (no external STUN servers)
   const rtcConfig = {
     iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' },
-      { urls: 'stun:stun2.l.google.com:19302' },
-      { urls: 'stun:stun3.l.google.com:19302' }
+      // Empty for local intranet - no external STUN servers needed
+      // All communication happens within the same network
     ],
     iceCandidatePoolSize: 10,
     bundlePolicy: 'max-bundle',
@@ -539,9 +537,8 @@ export default function GroupVideoCall() {
           
           const peerConnection = new RTCPeerConnection({
             iceServers: [
-              { urls: 'stun:stun.l.google.com:19302' },
-              { urls: 'stun:stun1.l.google.com:19302' },
-              { urls: 'stun:stun2.l.google.com:19302' }
+              // Empty for local intranet - no external STUN servers needed
+              // All communication happens within the same network
             ],
             iceCandidatePoolSize: 10,
             bundlePolicy: 'max-bundle',
@@ -863,11 +860,8 @@ export default function GroupVideoCall() {
         // Create peer connection for this user
         peerConnection = new RTCPeerConnection({
           iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:stun2.l.google.com:19302' },
-            { urls: 'stun:stun3.l.google.com:19302' },
-            { urls: 'stun:stun4.l.google.com:19302' }
+            // Empty for local intranet - no external STUN servers needed
+            // All communication happens within the same network
           ],
           iceCandidatePoolSize: 10
         });
@@ -1123,9 +1117,8 @@ export default function GroupVideoCall() {
                 
                 const peerConnection = new RTCPeerConnection({
                   iceServers: [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun2.l.google.com:19302' }
+                    // Empty for local intranet - no external STUN servers needed
+                    // All communication happens within the same network
                   ],
                   iceCandidatePoolSize: 10,
                   bundlePolicy: 'max-bundle',
