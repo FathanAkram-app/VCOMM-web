@@ -40,7 +40,7 @@ const StableParticipantVideo = memo(({
     // Only clean up when component is truly destroyed
   }, [participant.userId, participantVideoRefs]);
   
-  // Attach stream directly when available - with enhanced debugging
+  // Attach stream directly when available - with enhanced debugging and autoplay fix
   useEffect(() => {
     if (videoRef.current && stream) {
       console.log(`[StableParticipantVideo] 🎬 Attaching stream for user ${participant.userId}`);
@@ -52,20 +52,75 @@ const StableParticipantVideo = memo(({
         videoTrackEnabled: stream.getVideoTracks()[0]?.enabled
       });
       
-      videoRef.current.srcObject = stream;
+      const videoElement = videoRef.current;
+      videoElement.srcObject = stream;
       
-      // Force play to ensure video starts with error handling
-      videoRef.current.play().then(() => {
-        console.log(`[StableParticipantVideo] ✅ Video playing successfully for user ${participant.userId}`);
-      }).catch(error => {
-        console.warn(`[StableParticipantVideo] ⚠️ Video play failed for user ${participant.userId}:`, error);
-        // Retry play after short delay
-        setTimeout(() => {
-          if (videoRef.current) {
-            videoRef.current.play().catch(e => console.warn('Second play attempt failed:', e));
+      // Enhanced autoplay setup for better compatibility
+      videoElement.muted = true; // Required for autoplay in most browsers
+      videoElement.playsInline = true; // Required for mobile
+      videoElement.autoplay = true;
+      
+      // Force play with multiple attempts
+      const attemptPlay = async () => {
+        try {
+          await videoElement.play();
+          console.log(`[StableParticipantVideo] ✅ Video playing successfully for user ${participant.userId}`);
+          
+          // Try to unmute after play starts (for remote video this should work)
+          setTimeout(() => {
+            if (videoElement) {
+              videoElement.muted = false;
+            }
+          }, 500);
+          
+        } catch (error) {
+          console.warn(`[StableParticipantVideo] ⚠️ Video play failed for user ${participant.userId}:`, error);
+          
+          // Retry with delay
+          setTimeout(() => {
+            if (videoElement && videoElement.srcObject) {
+              videoElement.play().catch(retryError => {
+                console.warn(`[StableParticipantVideo] Retry play failed for user ${participant.userId}:`, retryError);
+              });
+            }
+          }, 1000);
+        }
+      };
+      
+      // Multiple strategies to ensure video plays
+      const strategies = [
+        // Strategy 1: If metadata already loaded
+        () => {
+          if (videoElement.readyState >= 1) {
+            return attemptPlay();
           }
-        }, 1000);
+          return Promise.reject("Metadata not ready");
+        },
+        
+        // Strategy 2: Wait for metadata
+        () => new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => reject("Metadata load timeout"), 3000);
+          videoElement.addEventListener('loadedmetadata', () => {
+            clearTimeout(timeout);
+            resolve(attemptPlay());
+          }, { once: true });
+        }),
+        
+        // Strategy 3: Force immediate play attempt
+        () => {
+          setTimeout(() => attemptPlay(), 100);
+          return Promise.resolve();
+        }
+      ];
+      
+      // Try each strategy in sequence
+      strategies.reduce((promise, strategy) => 
+        promise.catch(() => strategy()), 
+        Promise.reject()
+      ).catch(() => {
+        console.warn(`[StableParticipantVideo] All play strategies failed for user ${participant.userId}`);
       });
+      
     } else if (videoRef.current && !stream) {
       console.log(`[StableParticipantVideo] 🧹 Clearing stream for user ${participant.userId}`);
       videoRef.current.srcObject = null;
@@ -78,12 +133,14 @@ const StableParticipantVideo = memo(({
   
   return (
     <div className="relative bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700 aspect-[4/3] min-h-[120px] max-h-[160px]">
-      {/* Always render video element */}
+      {/* Always render video element with enhanced autoplay support */}
       <video
         ref={videoRef}
         autoPlay
         playsInline
-        muted={false}
+        muted={true}
+        controls={false}
+        preload="auto"
         className="w-full h-full object-cover"
         style={{ display: stream ? 'block' : 'none' }}
         onLoadedMetadata={() => {
@@ -94,9 +151,51 @@ const StableParticipantVideo = memo(({
         }}
         onPlay={() => {
           console.log(`[StableParticipantVideo] ✅ Video started playing for user ${participant.userId}`);
+          
+          // Visual verification - check if video is actually displaying content
+          if (videoRef.current) {
+            setTimeout(() => {
+              const video = videoRef.current!;
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              canvas.width = video.videoWidth || 320;
+              canvas.height = video.videoHeight || 240;
+              
+              try {
+                ctx?.drawImage(video, 0, 0);
+                const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
+                const hasContent = imageData?.data.some((pixel, index) => 
+                  index % 4 !== 3 && pixel > 0 // Check RGB channels (not alpha)
+                );
+                
+                console.log(`[StableParticipantVideo] 📺 Visual verification for user ${participant.userId}:`, {
+                  videoWidth: video.videoWidth,
+                  videoHeight: video.videoHeight,
+                  hasVisualContent: hasContent,
+                  readyState: video.readyState,
+                  currentTime: video.currentTime
+                });
+              } catch (error) {
+                console.warn(`[StableParticipantVideo] ⚠️ Visual verification failed for user ${participant.userId}:`, error);
+              }
+            }, 1000);
+          }
         }}
         onError={(e) => {
           console.error(`[StableParticipantVideo] ❌ Video error for user ${participant.userId}:`, e);
+        }}
+        onWaiting={() => {
+          console.log(`[StableParticipantVideo] ⏳ Video waiting for user ${participant.userId}`);
+        }}
+        onStalled={() => {
+          console.log(`[StableParticipantVideo] ⚠️ Video stalled for user ${participant.userId}`);
+        }}
+        onTimeUpdate={() => {
+          // Periodic check to ensure video is progressing
+          if (videoRef.current && videoRef.current.currentTime > 0) {
+            const video = videoRef.current;
+            console.log(`[StableParticipantVideo] 🔄 Video progressing for user ${participant.userId}: ${video.currentTime.toFixed(1)}s`);
+          }
         }}
       />
       
