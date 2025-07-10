@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { usePWA } from '@/hooks/usePWA';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -33,7 +34,10 @@ import {
   Smartphone,
   Play,
   Square,
-  Info
+  Info,
+  Download,
+  Monitor,
+  CheckCircle
 } from 'lucide-react';
 
 interface UserSettings {
@@ -76,6 +80,7 @@ interface SettingsProps {
 
 export default function Settings({ onBack }: SettingsProps) {
   const { toast } = useToast();
+  const { isInstallable, showManualPrompt, installPWA } = usePWA();
 
   // Audio test states
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
@@ -477,7 +482,7 @@ export default function Settings({ onBack }: SettingsProps) {
       <div className="flex-1 overflow-hidden">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
           {/* Tab Navigation */}
-          <TabsList className="grid w-full grid-cols-6 bg-gray-800 border-b border-gray-700">
+          <TabsList className="grid w-full grid-cols-7 bg-gray-800 border-b border-gray-700">
             <TabsTrigger value="profile" className="data-[state=active]:bg-green-600">
               <User className="w-4 h-4" />
             </TabsTrigger>
@@ -492,6 +497,9 @@ export default function Settings({ onBack }: SettingsProps) {
             </TabsTrigger>
             <TabsTrigger value="security" className="data-[state=active]:bg-green-600">
               <Lock className="w-4 h-4" />
+            </TabsTrigger>
+            <TabsTrigger value="app" className="data-[state=active]:bg-green-600">
+              <Smartphone className="w-4 h-4" />
             </TabsTrigger>
             <TabsTrigger value="audio" className="data-[state=active]:bg-green-600">
               <Volume2 className="w-4 h-4" />
@@ -841,6 +849,169 @@ export default function Settings({ onBack }: SettingsProps) {
                     <LogOut className="w-4 h-4 mr-2" />
                     Keluar dari Akun
                   </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* App Tab - PWA Installation */}
+            <TabsContent value="app" className="space-y-6">
+              <Card className="bg-gray-800 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="flex items-center text-white">
+                    <Smartphone className="w-5 h-5 mr-2 text-green-500" />
+                    Instalasi Aplikasi (PWA)
+                  </CardTitle>
+                  <CardDescription>
+                    Install aplikasi NXZZ-VComm ke homescreen HP untuk pengalaman seperti aplikasi native
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* PWA Status */}
+                  <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-600">
+                    <div className="flex items-start space-x-3">
+                      <Monitor className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <h4 className="text-white font-medium mb-2">Status PWA</h4>
+                        {window.matchMedia('(display-mode: standalone)').matches ? (
+                          <div className="flex items-center space-x-2 text-green-400">
+                            <CheckCircle className="w-4 h-4" />
+                            <span className="text-sm">Aplikasi sudah terinstall sebagai PWA</span>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <p className="text-sm text-gray-300">
+                              Aplikasi berjalan di browser. Install sebagai PWA untuk:
+                            </p>
+                            <ul className="text-sm text-gray-400 space-y-1 ml-4">
+                              <li>• Akses cepat dari homescreen</li>
+                              <li>• Mode fullscreen tanpa address bar</li>
+                              <li>• Notifikasi push untuk panggilan</li>
+                              <li>• Offline functionality</li>
+                              <li>• Background sync</li>
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* PWA Install Button */}
+                  {(isInstallable || showManualPrompt) && !window.matchMedia('(display-mode: standalone)').matches && (
+                    <div className="space-y-4">
+                      <Separator className="bg-gray-700" />
+                      
+                      {isInstallable && (
+                        <div className="space-y-3">
+                          <h4 className="font-medium text-white">Install Otomatis</h4>
+                          <Button 
+                            onClick={() => {
+                              installPWA();
+                              toast({
+                                title: "Installing PWA",
+                                description: "Memproses instalasi aplikasi...",
+                              });
+                            }}
+                            className="w-full bg-green-600 hover:bg-green-700"
+                          >
+                            <Download className="w-4 h-4 mr-2" />
+                            Install NXZZ-VComm ke Homescreen
+                          </Button>
+                          <p className="text-xs text-gray-400">
+                            Klik tombol di atas untuk install langsung ke homescreen HP
+                          </p>
+                        </div>
+                      )}
+
+                      {showManualPrompt && !isInstallable && (
+                        <div className="space-y-3">
+                          <h4 className="font-medium text-white">Install Manual</h4>
+                          <div className="bg-blue-900/20 border border-blue-600 rounded-lg p-4">
+                            <div className="space-y-3">
+                              <p className="text-sm text-blue-200 font-medium">
+                                Cara install ke homescreen:
+                              </p>
+                              
+                              {/* Android Instructions */}
+                              <div className="space-y-2">
+                                <p className="text-xs text-blue-300 font-medium">📱 Android (Chrome/Edge):</p>
+                                <ol className="text-xs text-blue-200 space-y-1 ml-4">
+                                  <li>1. Tap menu (⋮) di sudut kanan atas browser</li>
+                                  <li>2. Pilih "Add to Home screen" atau "Install app"</li>
+                                  <li>3. Konfirmasi dengan tap "Install" atau "Add"</li>
+                                  <li>4. Icon NXZZ-VComm akan muncul di homescreen</li>
+                                </ol>
+                              </div>
+                              
+                              {/* iOS Instructions */}
+                              <div className="space-y-2">
+                                <p className="text-xs text-blue-300 font-medium">📱 iOS (Safari):</p>
+                                <ol className="text-xs text-blue-200 space-y-1 ml-4">
+                                  <li>1. Tap Share button (□↗) di bottom bar</li>
+                                  <li>2. Scroll ke bawah dan pilih "Add to Home Screen"</li>
+                                  <li>3. Edit nama jika perlu, tap "Add"</li>
+                                  <li>4. App akan muncul seperti aplikasi native</li>
+                                </ol>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <Button 
+                            variant="outline" 
+                            className="w-full"
+                            onClick={() => {
+                              toast({
+                                title: "PWA Installation",
+                                description: "Ikuti langkah manual di atas untuk install aplikasi",
+                                duration: 5000,
+                              });
+                            }}
+                          >
+                            <Info className="w-4 h-4 mr-2" />
+                            Tampilkan Panduan Install
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* PWA Features Info */}
+                  <div className="space-y-3">
+                    <Separator className="bg-gray-700" />
+                    <h4 className="font-medium text-white">Fitur PWA</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-gray-900/50 rounded p-3 border border-gray-600">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <CheckCircle className="w-4 h-4 text-green-400" />
+                          <span className="text-sm font-medium text-white">Offline Mode</span>
+                        </div>
+                        <p className="text-xs text-gray-400">Bekerja tanpa internet</p>
+                      </div>
+                      
+                      <div className="bg-gray-900/50 rounded p-3 border border-gray-600">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <CheckCircle className="w-4 h-4 text-green-400" />
+                          <span className="text-sm font-medium text-white">Push Notifications</span>
+                        </div>
+                        <p className="text-xs text-gray-400">Alert panggilan masuk</p>
+                      </div>
+                      
+                      <div className="bg-gray-900/50 rounded p-3 border border-gray-600">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <CheckCircle className="w-4 h-4 text-green-400" />
+                          <span className="text-sm font-medium text-white">Background Sync</span>
+                        </div>
+                        <p className="text-xs text-gray-400">Sync otomatis pesan</p>
+                      </div>
+                      
+                      <div className="bg-gray-900/50 rounded p-3 border border-gray-600">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <CheckCircle className="w-4 h-4 text-green-400" />
+                          <span className="text-sm font-medium text-white">Native Feel</span>
+                        </div>
+                        <p className="text-xs text-gray-400">Seperti app bawaan</p>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

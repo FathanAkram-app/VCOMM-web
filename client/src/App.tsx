@@ -16,7 +16,7 @@ import GroupVideoCall from "@/components/GroupVideoCall";
 import AudioTest from "@/components/AudioTest";
 import { CallProvider } from "@/context/CallContext";
 import { useServiceWorker } from "@/hooks/useServiceWorker";
-// import { usePWA } from "@/hooks/usePWA"; // Removed PWA install prompts
+import { usePWA } from "@/hooks/usePWA";
 
 // Komponen sederhana untuk mengecek login
 function AuthCheck({ children }: { children: React.ReactNode }) {
