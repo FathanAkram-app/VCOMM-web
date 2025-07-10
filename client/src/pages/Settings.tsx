@@ -37,7 +37,8 @@ import {
   Info,
   Download,
   Monitor,
-  CheckCircle
+  CheckCircle,
+  Key
 } from 'lucide-react';
 
 interface UserSettings {
@@ -843,6 +844,52 @@ export default function Settings({ onBack }: SettingsProps) {
                   </div>
 
                   <Separator className="bg-gray-700" />
+
+                  {/* PWA Install Section */}
+                  {(isInstallable || showManualPrompt) && !isStandalone && (
+                    <div className="space-y-4">
+                      <h4 className="font-semibold text-white">Instalasi Aplikasi</h4>
+                      <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-600">
+                        <div className="flex items-start space-x-3">
+                          <Smartphone className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                          <div className="flex-1">
+                            <h4 className="text-white font-medium mb-2">Install PWA</h4>
+                            <p className="text-sm text-gray-400 mb-3">
+                              Install aplikasi NXZZ-VComm ke homescreen untuk pengalaman seperti aplikasi native
+                            </p>
+                            
+                            {isInstallable ? (
+                              <Button 
+                                onClick={installPWA}
+                                className="w-full bg-green-600 hover:bg-green-700"
+                              >
+                                <Download className="w-4 h-4 mr-2" />
+                                Install Aplikasi
+                              </Button>
+                            ) : (
+                              <div className="space-y-2">
+                                <div className="text-xs text-gray-500 space-y-1">
+                                  <p><strong>Android:</strong> Menu browser → "Add to Home screen"</p>
+                                  <p><strong>iOS:</strong> Share → "Add to Home Screen"</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <Separator className="bg-gray-700" />
+                    </div>
+                  )}
+
+                  {/* Change Password */}
+                  <Button 
+                    variant="outline" 
+                    className="w-full mb-4 bg-gray-700 hover:bg-gray-600 border-gray-600"
+                  >
+                    <Key className="w-4 h-4 mr-2" />
+                    Ubah Kata Sandi
+                  </Button>
 
                   {/* Logout */}
                   <Button variant="destructive" className="w-full">
