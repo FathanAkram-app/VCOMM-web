@@ -674,6 +674,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
             handleGroupCallUserLeft(message);
             break;
           case 'group_call_participants_update':
+            console.log('[CallContext] 🔥 GROUP_CALL_PARTICIPANTS_UPDATE received:', message);
             handleGroupCallParticipantsUpdate(message);
             break;
           case 'group_update':
@@ -1219,10 +1220,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
     console.log('[CallContext] 🔊 Playing notification sound for incoming group call');
     
     try {
-      playNotificationSound();
+      // Fix: Use correct function name
+      playIncomingCallSound();
       console.log('[CallContext] ✅ Notification sound played successfully');
     } catch (error) {
       console.error('[CallContext] ❌ Error playing notification sound:', error);
+      // Continue even if sound fails
     }
 
     console.log('[CallContext] 🔧 Creating RTCPeerConnection for group call');
