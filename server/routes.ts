@@ -1383,6 +1383,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             console.log(`[Group Call] Sent ${invitationsSent} group call invitations for call ${callId}`);
             
+            // If no invitations were sent, notify the initiator
+            if (invitationsSent === 0) {
+              const initiatorClient = clients.get(fromUserId);
+              if (initiatorClient && initiatorClient.readyState === initiatorClient.OPEN) {
+                initiatorClient.send(JSON.stringify({
+                  type: 'group_call_no_participants',
+                  payload: {
+                    callId,
+                    message: 'No group members are currently online to receive the call invitation. Please try again when other members are active.'
+                  }
+                }));
+                console.log(`[Group Call] ⚠️ Notified initiator ${fromUserId} that no members are online`);
+              }
+            }
+            
             // Log group call initiation to call history
             await storage.addCallHistory({
               callId,

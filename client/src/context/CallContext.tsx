@@ -187,6 +187,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
       case 'initiate_group_webrtc':
         handleInitiateGroupWebRTC(message);
         break;
+      case 'group_call_no_participants':
+        handleGroupCallNoParticipants(message);
+        break;
       case 'webrtc_ready':
         handleWebRTCReady(message);
         break;
@@ -1568,6 +1571,33 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }));
     
     console.log('[CallContext] ✅ WebRTC auto-initiation event dispatched');
+  };
+
+  const handleGroupCallNoParticipants = (message: any) => {
+    console.log('[CallContext] ⚠️ No participants available for group call:', message);
+    const { callId, message: warningMessage } = message.payload;
+    
+    // Show warning to user that no group members are online
+    if (warningMessage) {
+      // Create a toast notification or alert
+      if (typeof window !== 'undefined' && window.dispatchEvent) {
+        window.dispatchEvent(new CustomEvent('show-toast', {
+          detail: {
+            title: 'Group Call Notice',
+            description: warningMessage,
+            variant: 'warning'
+          }
+        }));
+      }
+    }
+    
+    // End the current call since no one is available
+    setTimeout(() => {
+      if (activeCallRef.current && activeCallRef.current.callId === callId) {
+        console.log('[CallContext] Auto-ending group call due to no participants');
+        hangupCall();
+      }
+    }, 3000); // Wait 3 seconds to show the message
   };
 
   const handleCallEnded = (message: any) => {
