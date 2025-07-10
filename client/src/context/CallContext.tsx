@@ -2671,6 +2671,37 @@ export function CallProvider({ children }: { children: ReactNode }) {
       console.log('[CallContext] Joined group call successfully');
       console.log('[CallContext] Active call state after joining:', groupCallState);
 
+      // Process any pending participant updates that arrived before activeCall was created
+      console.log('[CallContext] 📊 Processing pending participant updates after join...');
+      const pendingUpdates = pendingParticipantUpdatesRef.current;
+      if (pendingUpdates.length > 0) {
+        console.log(`[CallContext] 📊 Found ${pendingUpdates.length} pending participant updates`);
+        
+        for (const update of pendingUpdates) {
+          if (update.payload.callId === callId) {
+            console.log('[CallContext] 📊 Processing delayed participant update:', update);
+            
+            // Update activeCall with participants data immediately
+            groupCallState.participants = update.payload.participants;
+            setActiveCall({ ...groupCallState });
+            
+            console.log('[CallContext] 📊 Updated activeCall with participants:', update.payload.participants);
+            
+            // Remove from pending updates
+            const index = pendingParticipantUpdatesRef.current.indexOf(update);
+            if (index > -1) {
+              pendingParticipantUpdatesRef.current.splice(index, 1);
+            }
+            
+            break; // Process only the first matching update
+          }
+        }
+        
+        console.log('[CallContext] 📊 Remaining pending updates:', pendingParticipantUpdatesRef.current.length);
+      } else {
+        console.log('[CallContext] 📊 No pending participant updates found');
+      }
+
       // Store the call state in localStorage to persist through navigation
       localStorage.setItem('activeGroupCall', JSON.stringify({
         callId: groupCallState.callId,
