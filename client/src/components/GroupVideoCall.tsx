@@ -152,6 +152,103 @@ export default function GroupVideoCall() {
   const participantVideoRefs = useRef<{ [userId: number]: HTMLVideoElement }>({});
   const peerConnections = useRef<{ [userId: number]: RTCPeerConnection }>({});
   const [remoteStreams, setRemoteStreams] = useState<{ [userId: number]: MediaStream }>({});
+  
+  // WebRTC configuration
+  const rtcConfig = {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' }
+    ]
+  };
+  
+  // Create peer connection for a specific user
+  const createPeerConnection = async (userId: number) => {
+    console.log(`[GroupVideoCall] Creating peer connection for user ${userId}`);
+    
+    try {
+      const pc = new RTCPeerConnection(rtcConfig);
+      peerConnections.current[userId] = pc;
+      
+      // Add local stream tracks to peer connection
+      if (localStream) {
+        localStream.getTracks().forEach(track => {
+          pc.addTrack(track, localStream);
+        });
+        console.log(`[GroupVideoCall] Added local tracks to peer connection for user ${userId}`);
+      } else if (activeCall?.localStream) {
+        activeCall.localStream.getTracks().forEach(track => {
+          pc.addTrack(track, activeCall.localStream!);
+        });
+        console.log(`[GroupVideoCall] Added activeCall local tracks to peer connection for user ${userId}`);
+      }
+      
+      // Handle incoming streams
+      pc.ontrack = (event) => {
+        console.log(`[GroupVideoCall] Received track from user ${userId}:`, event.track.kind);
+        const [remoteStream] = event.streams;
+        
+        setRemoteStreams(prev => ({
+          ...prev,
+          [userId]: remoteStream
+        }));
+        
+        console.log(`[GroupVideoCall] Set remote stream for user ${userId}:`, remoteStream.id);
+      };
+      
+      // Handle ICE candidates
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          console.log(`[GroupVideoCall] Sending ICE candidate to user ${userId}`);
+          // Send ICE candidate via WebSocket
+          const message = {
+            type: 'group_webrtc_ice_candidate',
+            payload: {
+              callId: activeCall?.callId,
+              candidate: event.candidate,
+              targetUserId: userId,
+              fromUserId: user?.id
+            }
+          };
+          
+          // Send via custom event to CallContext WebSocket
+          window.dispatchEvent(new CustomEvent('send-websocket-message', {
+            detail: message
+          }));
+        }
+      };
+      
+      // Handle connection state changes
+      pc.onconnectionstatechange = () => {
+        console.log(`[GroupVideoCall] Connection state with user ${userId}: ${pc.connectionState}`);
+      };
+      
+      // Create and send offer
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      
+      console.log(`[GroupVideoCall] Created offer for user ${userId}`);
+      
+      // Send offer via WebSocket
+      const offerMessage = {
+        type: 'group_webrtc_offer',
+        payload: {
+          callId: activeCall?.callId,
+          offer: offer,
+          targetUserId: userId,
+          fromUserId: user?.id
+        }
+      };
+      
+      window.dispatchEvent(new CustomEvent('send-websocket-message', {
+        detail: offerMessage
+      }));
+      
+      console.log(`[GroupVideoCall] Sent offer to user ${userId}`);
+      
+    } catch (error) {
+      console.error(`[GroupVideoCall] Error creating peer connection for user ${userId}:`, error);
+    }
+  };
 
   // Extract group info
   const groupName = activeCall?.groupName || 'Unknown Group';
@@ -296,6 +393,49 @@ export default function GroupVideoCall() {
   // Update participants from activeCall with stable references  
   const participantsRef = useRef<string>('');
   
+  // Listen for participants update events from CallContext
+  useEffect(() => {
+    const handleParticipantsUpdate = (event: CustomEvent) => {
+      console.log('[GroupVideoCall] 🔥 Participants update event received:', event.detail);
+      const { participants: updatedParticipants, userMap } = event.detail;
+      
+      if (updatedParticipants && updatedParticipants.length > 0) {
+        const otherParticipants = updatedParticipants.filter((p: any) => p.userId !== user?.id);
+        console.log('[GroupVideoCall] 🔥 Setting other participants:', otherParticipants);
+        setParticipants(otherParticipants);
+        
+        // Start WebRTC connections for each participant
+        otherParticipants.forEach((participant: any) => {
+          console.log('[GroupVideoCall] 🔥 Starting WebRTC for participant:', participant.userId);
+          createPeerConnection(participant.userId);
+        });
+      }
+    };
+    
+    const handleWebRTCInit = (event: CustomEvent) => {
+      console.log('[GroupVideoCall] 🚀 Force WebRTC init event received:', event.detail);
+      const { currentUserId, userMap } = event.detail;
+      
+      // Force immediate WebRTC setup for all other users in the group
+      if (activeCall?.participants) {
+        const otherParticipants = activeCall.participants.filter(p => p.userId !== currentUserId);
+        console.log('[GroupVideoCall] 🚀 Force creating peer connections for:', otherParticipants);
+        
+        otherParticipants.forEach((participant) => {
+          createPeerConnection(participant.userId);
+        });
+      }
+    };
+    
+    window.addEventListener('participants-updated', handleParticipantsUpdate as EventListener);
+    window.addEventListener('force-webrtc-init', handleWebRTCInit as EventListener);
+    
+    return () => {
+      window.removeEventListener('participants-updated', handleParticipantsUpdate as EventListener);
+      window.removeEventListener('force-webrtc-init', handleWebRTCInit as EventListener);
+    };
+  }, [user?.id, activeCall?.participants]);
+
   useEffect(() => {
     console.log('[GroupVideoCall] 📊 Participants effect triggered');
     console.log('[GroupVideoCall] 📊 activeCall:', activeCall);

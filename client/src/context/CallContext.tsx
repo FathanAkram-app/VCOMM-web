@@ -609,6 +609,16 @@ export function CallProvider({ children }: { children: ReactNode }) {
       // Set global WebSocket reference for GroupVideoCall
       (window as any).__callWebSocket = websocket;
       
+      // Listen for WebSocket message requests from GroupVideoCall
+      const handleSendWebSocketMessage = (event: CustomEvent) => {
+        if (websocket && websocket.readyState === WebSocket.OPEN) {
+          websocket.send(JSON.stringify(event.detail));
+          console.log('[CallContext] Sent WebSocket message:', event.detail.type);
+        }
+      };
+      
+      window.addEventListener('send-websocket-message', handleSendWebSocketMessage as EventListener);
+      
       // Authenticate user with WebSocket
       if (user?.id) {
         websocket.send(JSON.stringify({
@@ -1458,23 +1468,60 @@ export function CallProvider({ children }: { children: ReactNode }) {
         const uniqueParticipants = Array.from(new Set(participants));
         console.log('[CallContext] Unique participants after deduplication:', uniqueParticipants);
         
-        // Convert participant IDs to participant objects
-        const participantObjects = uniqueParticipants.map((participantId: any) => ({
-          userId: Number(participantId),
-          userName: `User ${participantId}`, // Will be updated with real names from server
-          audioEnabled: true,
-          videoEnabled: groupCallToUpdate.callType === 'video',
-          stream: null
-        }));
-        
-        const updatedCall = {
-          ...groupCallToUpdate,
-          participants: participantObjects,
-          callId: callId // Update to the server's active callId
-        };
-        
-        setActiveCall(updatedCall);
-        console.log('[CallContext] Updated participants in active call:', uniqueParticipants);
+        // Fetch user names for participants
+        fetch('/api/all-users').then(response => response.json()).then(allUsers => {
+          const userMap = new Map();
+          allUsers.forEach((user: any) => {
+            userMap.set(user.id, user.callsign || user.fullName || `User ${user.id}`);
+          });
+          
+          // Convert participant IDs to participant objects with real names
+          const participantObjects = uniqueParticipants.map((participantId: any) => ({
+            userId: Number(participantId),
+            userName: userMap.get(Number(participantId)) || `User ${participantId}`,
+            audioEnabled: true,
+            videoEnabled: groupCallToUpdate.callType === 'video',
+            stream: null
+          }));
+          
+          const updatedCall = {
+            ...groupCallToUpdate,
+            participants: participantObjects,
+            callId: callId // Update to the server's active callId
+          };
+          
+          setActiveCall(updatedCall);
+          console.log('[CallContext] ✅ Updated participants with names:', participantObjects);
+          
+          // Trigger WebRTC setup in GroupVideoCall component
+          window.dispatchEvent(new CustomEvent('participants-updated', {
+            detail: {
+              callId: callId,
+              participants: participantObjects,
+              userMap
+            }
+          }));
+        }).catch(error => {
+          console.error('[CallContext] Error fetching user names:', error);
+          
+          // Fallback without names
+          const participantObjects = uniqueParticipants.map((participantId: any) => ({
+            userId: Number(participantId),
+            userName: `User ${participantId}`,
+            audioEnabled: true,
+            videoEnabled: groupCallToUpdate.callType === 'video',
+            stream: null
+          }));
+          
+          const updatedCall = {
+            ...groupCallToUpdate,
+            participants: participantObjects,
+            callId: callId
+          };
+          
+          setActiveCall(updatedCall);
+          console.log('[CallContext] Updated participants without names:', uniqueParticipants);
+        });
         
         // Clear any pending updates since we processed this one
         localStorage.removeItem('pendingParticipantUpdate');
@@ -2692,6 +2739,35 @@ export function CallProvider({ children }: { children: ReactNode }) {
           console.log('[CallContext] 📊 Requested updated participant list:', requestParticipantsMessage);
         }
       }, 500); // Wait for join to complete
+      
+      // Also immediately trigger WebRTC setup for current participants
+      setTimeout(async () => {
+        try {
+          // Get updated participant names from server
+          const response = await fetch('/api/all-users');
+          const allUsers = await response.json();
+          
+          // Create user map for name lookups
+          const userMap = new Map();
+          allUsers.forEach((user: any) => {
+            userMap.set(user.id, user.callsign || user.fullName || `User ${user.id}`);
+          });
+          
+          // Dispatch event to GroupVideoCall to start WebRTC connections
+          window.dispatchEvent(new CustomEvent('force-webrtc-init', {
+            detail: {
+              callId: groupCallState.callId,
+              groupId: groupCallState.groupId,
+              currentUserId: user.id,
+              userMap
+            }
+          }));
+          
+          console.log('[CallContext] 🚀 Triggered WebRTC initialization for group call');
+        } catch (error) {
+          console.error('[CallContext] Error triggering WebRTC init:', error);
+        }
+      }, 1000);
 
       // Store the call state in localStorage to persist through navigation
       localStorage.setItem('activeGroupCall', JSON.stringify({
