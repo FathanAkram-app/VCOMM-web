@@ -2,8 +2,9 @@
   "name": "NXZZ-VComm",
   "short_name": "NXZZ",
   "description": "Secure military communication platform for tactical operations",
-  "start_url": "/",
+  "start_url": "/?utm_source=pwa",
   "display": "standalone",
+  "id": "/",
   "background_color": "#0a0a0a",
   "theme_color": "#8d9c6b",
   "orientation": "portrait",
@@ -16,13 +17,25 @@
       "src": "/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/icon-512x512.png", 
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512x512.png", 
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "shortcuts": [

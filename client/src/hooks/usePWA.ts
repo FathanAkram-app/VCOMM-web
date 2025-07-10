@@ -8,6 +8,9 @@ export function usePWA() {
 
   useEffect(() => {
     console.log('NXZZ-VComm: PWA hook initializing...');
+    console.log('NXZZ-VComm: Protocol:', window.location.protocol);
+    console.log('NXZZ-VComm: Host:', window.location.host);
+    console.log('NXZZ-VComm: Is HTTPS or localhost:', window.location.protocol === 'https:' || window.location.hostname === 'localhost');
     
     // Check if already installed as PWA
     const checkStandalone = () => {
@@ -18,6 +21,7 @@ export function usePWA() {
       console.log('NXZZ-VComm: PWA standalone mode:', isStandaloneMode);
       console.log('NXZZ-VComm: User agent:', navigator.userAgent);
       console.log('NXZZ-VComm: Service Worker support:', 'serviceWorker' in navigator);
+      console.log('NXZZ-VComm: beforeinstallprompt support:', 'BeforeInstallPromptEvent' in window);
     };
 
     checkStandalone();
@@ -51,12 +55,14 @@ export function usePWA() {
 
     // Handle PWA install prompt (Android Chrome)
     const handleBeforeInstallPrompt = (e: Event) => {
-      console.log('NXZZ-VComm: beforeinstallprompt event fired', e);
+      console.log('NXZZ-VComm: beforeinstallprompt event fired!', e);
+      console.log('NXZZ-VComm: Event type:', e.type);
+      console.log('NXZZ-VComm: Event details:', JSON.stringify(e));
       e.preventDefault();
       setDeferredPrompt(e);
       setIsInstallable(true);
       setShowManualPrompt(true); // Keep manual prompt as backup
-      console.log('NXZZ-VComm: PWA install prompt ready');
+      console.log('NXZZ-VComm: PWA install prompt ready - deferredPrompt saved');
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -89,17 +95,32 @@ export function usePWA() {
         setDeferredPrompt(null);
         setIsInstallable(false);
       } else {
+        // Check if PWA requirements are met
+        const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
+        const hasServiceWorker = 'serviceWorker' in navigator;
+        const hasManifest = document.querySelector('link[rel="manifest"]');
+        
+        console.log('NXZZ-VComm: PWA Requirements Check:');
+        console.log('NXZZ-VComm: - Secure context (HTTPS/localhost):', isSecure);
+        console.log('NXZZ-VComm: - Service Worker support:', hasServiceWorker);
+        console.log('NXZZ-VComm: - Manifest present:', !!hasManifest);
+        
+        if (!isSecure) {
+          alert('PWA membutuhkan HTTPS atau localhost untuk instalasi otomatis.\n\nSaat ini menggunakan: ' + window.location.protocol + '\n\nUntuk install manual, lihat menu browser.');
+          return;
+        }
+        
         // Manual installation guide for browsers that don't support beforeinstallprompt
         console.log('NXZZ-VComm: No install prompt available, showing manual guide');
         const userAgent = navigator.userAgent.toLowerCase();
         
         let instructions = '';
         if (userAgent.includes('android')) {
-          instructions = 'Install aplikasi:\n\n1. Tekan menu browser (⋮)\n2. Pilih "Add to Home screen"\n3. Konfirmasi instalasi';
+          instructions = 'Install aplikasi:\n\n1. Refresh halaman ini\n2. Tekan menu browser (⋮)\n3. Pilih "Add to Home screen"\n4. Konfirmasi instalasi';
         } else if (userAgent.includes('iphone') || userAgent.includes('ipad')) {
-          instructions = 'Install aplikasi:\n\n1. Tekan tombol Share (□↗)\n2. Pilih "Add to Home Screen"\n3. Konfirmasi instalasi';
+          instructions = 'Install aplikasi:\n\n1. Refresh halaman ini\n2. Tekan tombol Share (□↗)\n3. Pilih "Add to Home Screen"\n4. Konfirmasi instalasi';
         } else {
-          instructions = 'Install aplikasi:\n\nCari opsi "Install" atau "Add to Home screen" di menu browser Anda.';
+          instructions = 'Install aplikasi:\n\n1. Refresh halaman ini\n2. Cari opsi "Install" atau "Add to Home screen" di menu browser\n3. Konfirmasi instalasi';
         }
         
         alert(instructions);

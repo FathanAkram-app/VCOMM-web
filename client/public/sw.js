@@ -1,10 +1,11 @@
 // Service Worker for NXZZ-VComm - Background Operations
-const CACHE_NAME = 'nxzz-vcomm-v1';
+const CACHE_NAME = 'nxzz-vcomm-v2';
 const urlsToCache = [
   '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
-  '/manifest.json'
+  '/manifest.json',
+  '/icon-192x192.png',
+  '/icon-512x512.png',
+  '/apple-touch-icon.png'
 ];
 
 // Install Service Worker
