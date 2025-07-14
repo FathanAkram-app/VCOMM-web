@@ -777,8 +777,10 @@ export default function AdminComplete() {
 function AddRankForm({ onSubmit }: { onSubmit: (data: any) => void }) {
   const [formData, setFormData] = useState({
     rankName: '',
+    rankCode: '',
     level: 1,
     branch: '',
+    isOfficer: false,
     description: ''
   });
 
@@ -800,10 +802,23 @@ function AddRankForm({ onSubmit }: { onSubmit: (data: any) => void }) {
         />
       </div>
       <div>
-        <Label htmlFor="level" className="text-white">Level</Label>
+        <Label htmlFor="rankCode" className="text-white">Rank Code</Label>
+        <Input
+          id="rankCode"
+          value={formData.rankCode}
+          onChange={(e) => setFormData({...formData, rankCode: e.target.value})}
+          className="bg-[#2a2a2a] border-gray-600 text-white"
+          placeholder="e.g., LETDA, SERDA, KOPDA"
+          required
+        />
+      </div>
+      <div>
+        <Label htmlFor="level" className="text-white">Level (1-20)</Label>
         <Input
           id="level"
           type="number"
+          min="1"
+          max="20"
           value={formData.level}
           onChange={(e) => setFormData({...formData, level: parseInt(e.target.value)})}
           className="bg-[#2a2a2a] border-gray-600 text-white"
@@ -811,13 +826,25 @@ function AddRankForm({ onSubmit }: { onSubmit: (data: any) => void }) {
         />
       </div>
       <div>
-        <Label htmlFor="branch" className="text-white">Branch (Optional)</Label>
+        <Label htmlFor="branch" className="text-white">Branch</Label>
         <Input
           id="branch"
           value={formData.branch}
           onChange={(e) => setFormData({...formData, branch: e.target.value})}
           className="bg-[#2a2a2a] border-gray-600 text-white"
+          placeholder="e.g., TNI AD, TNI AL, TNI AU, POLRI"
+          required
         />
+      </div>
+      <div className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          id="isOfficer"
+          checked={formData.isOfficer}
+          onChange={(e) => setFormData({...formData, isOfficer: e.target.checked})}
+          className="rounded"
+        />
+        <Label htmlFor="isOfficer" className="text-white">Is Officer</Label>
       </div>
       <div>
         <Label htmlFor="description" className="text-white">Description</Label>
@@ -840,6 +867,7 @@ function AddBranchForm({ onSubmit }: { onSubmit: (data: any) => void }) {
   const [formData, setFormData] = useState({
     branchName: '',
     branchCode: '',
+    branchFullName: '',
     description: ''
   });
 
@@ -867,6 +895,18 @@ function AddBranchForm({ onSubmit }: { onSubmit: (data: any) => void }) {
           value={formData.branchCode}
           onChange={(e) => setFormData({...formData, branchCode: e.target.value})}
           className="bg-[#2a2a2a] border-gray-600 text-white"
+          placeholder="e.g., AD, AL, AU"
+          required
+        />
+      </div>
+      <div>
+        <Label htmlFor="branchFullName" className="text-white">Branch Full Name</Label>
+        <Input
+          id="branchFullName"
+          value={formData.branchFullName}
+          onChange={(e) => setFormData({...formData, branchFullName: e.target.value})}
+          className="bg-[#2a2a2a] border-gray-600 text-white"
+          placeholder="e.g., Tentara Nasional Indonesia Angkatan Darat"
           required
         />
       </div>
