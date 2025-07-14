@@ -1353,7 +1353,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     console.log('[CallContext] Call rejected');
   };
 
-  const handleIncomingGroupCall = (message: any) => {
+  const handleIncomingGroupCall = async (message: any) => {
     console.log('[CallContext] 🔔 Incoming group call received:', message);
     const { callId, groupId, groupName, callType, fromUserId, fromUserName } = message.payload || message;
 
@@ -1413,6 +1413,44 @@ export function CallProvider({ children }: { children: ReactNode }) {
       console.error('[CallContext] ❌ Error setting up ICE candidate handler:', error);
     }
 
+    // Pre-create local stream with video enabled for incoming group calls
+    console.log('[CallContext] 🎥 Pre-creating local stream for incoming group call...');
+    let localStream: MediaStream | undefined;
+    
+    try {
+      // Create stream with video enabled for video calls
+      if (callType === 'video') {
+        const constraints = {
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            sampleRate: 48000,
+            channelCount: 1
+          },
+          video: {
+            width: { ideal: 640, max: 1280 },
+            height: { ideal: 480, max: 720 },
+            frameRate: { ideal: 24, max: 30 },
+            facingMode: 'user'
+          }
+        };
+        
+        localStream = await navigator.mediaDevices.getUserMedia(constraints);
+        console.log('[CallContext] ✅ Pre-created video+audio stream for incoming group call');
+        
+        // Ensure video track is enabled
+        const videoTrack = localStream.getVideoTracks()[0];
+        if (videoTrack) {
+          videoTrack.enabled = true;
+          console.log('[CallContext] ✅ Video track enabled in pre-created stream');
+        }
+      }
+    } catch (error) {
+      console.error('[CallContext] ⚠️ Failed to pre-create stream, will create on accept:', error);
+      // Continue without localStream, will be created on accept
+    }
+
     // Show incoming group call modal instead of auto-joining
     console.log('[CallContext] 🔥 BEFORE setIncomingCall - current state:', incomingCall);
     
@@ -1427,6 +1465,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         peerName: fromUserName,
         remoteStreams: new Map(),
         peerConnection,
+        localStream, // Include pre-created stream if available
         audioEnabled: true,
         videoEnabled: callType === 'video',
         isMuted: false,
@@ -3224,26 +3263,41 @@ export function CallProvider({ children }: { children: ReactNode }) {
         throw new Error('User not authenticated or WebSocket not connected');
       }
 
-      // Full audio and video enabled from start for joining group calls
-      const constraints = {
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: 48000,
-          channelCount: 1
-        },
-        video: {
-          width: { ideal: 640, max: 1280 },
-          height: { ideal: 480, max: 720 },
-          frameRate: { ideal: 24, max: 30 },
-          facingMode: 'user' // Front camera for group calls
+      // Try to reuse existing stream from incoming call if available, otherwise create new one
+      let localStream: MediaStream;
+      
+      if (incomingCall?.localStream) {
+        console.log('[CallContext] Reusing existing stream from incoming call - preserving video state');
+        localStream = incomingCall.localStream;
+        
+        // Ensure video track is enabled if it exists
+        const videoTrack = localStream.getVideoTracks()[0];
+        if (videoTrack) {
+          videoTrack.enabled = true;
+          console.log('[CallContext] ✅ Video track enabled from existing stream for group call');
         }
-      };
+      } else {
+        // Create new stream with full media enabled
+        const constraints = {
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            sampleRate: 48000,
+            channelCount: 1
+          },
+          video: {
+            width: { ideal: 640, max: 1280 },
+            height: { ideal: 480, max: 720 },
+            frameRate: { ideal: 24, max: 30 },
+            facingMode: 'user' // Front camera for group calls
+          }
+        };
 
-      console.log('[CallContext] Requesting full media permissions for joining group call (audio + video enabled)...');
-      const localStream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log('[CallContext] Got audio and video stream for joining group call - full media enabled from start');
+        console.log('[CallContext] Creating new stream for joining group call (audio + video enabled)...');
+        localStream = await navigator.mediaDevices.getUserMedia(constraints);
+        console.log('[CallContext] Got new audio and video stream for joining group call - full media enabled from start');
+      }
 
       // Enhanced RTCPeerConnection for joining group calls
       const peerConnection = new RTCPeerConnection({
