@@ -62,11 +62,40 @@ export default function MessageAttachment({
           <div className="mb-1">
             <video 
               controls 
-              className="max-h-56 max-w-full rounded-md" 
+              className="max-h-56 max-w-full rounded-md bg-black border border-gray-600 object-cover" 
               preload="metadata"
+              playsInline
+              muted={false}
+              style={{
+                minHeight: '200px',
+                backgroundColor: '#000000',
+                display: 'block'
+              }}
+              onError={(e) => {
+                console.error('❌ Video playback error:', e);
+                console.error('❌ Video URL:', attachmentUrl);
+              }}
+              onLoadStart={() => {
+                console.log('📹 Video loading started:', attachmentUrl);
+              }}
+              onCanPlay={() => {
+                console.log('✅ Video can play:', attachmentUrl);
+              }}
+              onLoadedMetadata={() => {
+                console.log('📊 Video metadata loaded:', attachmentUrl);
+              }}
+              onLoadedData={() => {
+                console.log('💾 Video data loaded:', attachmentUrl);
+              }}
             >
-              <source src={attachmentUrl} />
-              Browser Anda tidak mendukung tag video.
+              <source src={attachmentUrl} type="video/mp4" />
+              <source src={attachmentUrl} type="video/webm" />
+              <source src={attachmentUrl} type="video/ogg" />
+              <source src={attachmentUrl} type="video/avi" />
+              Browser Anda tidak mendukung tag video. 
+              <a href={attachmentUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">
+                Klik untuk mendownload video
+              </a>
             </video>
           </div>
         );
