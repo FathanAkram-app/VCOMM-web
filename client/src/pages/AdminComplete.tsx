@@ -1040,21 +1040,24 @@ export default function AdminComplete() {
 
           {/* Image Zoom Modal */}
           {showImageModal && selectedImage && (
-            <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[60] p-4">
-              <div className="relative max-w-[95vw] max-h-[95vh]">
+            <div 
+              className="fixed inset-0 bg-black flex items-center justify-center z-[60]"
+              onClick={() => setShowImageModal(false)}
+            >
+              <div className="relative w-full h-full flex items-center justify-center">
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="lg"
                   onClick={() => setShowImageModal(false)}
-                  className="absolute -top-12 right-0 text-white hover:text-gray-300 bg-black bg-opacity-50 hover:bg-opacity-70"
+                  className="absolute top-4 right-4 text-white hover:text-gray-300 bg-black bg-opacity-50 hover:bg-opacity-70 z-10"
                 >
-                  <X className="w-6 h-6" />
+                  <X className="w-8 h-8" />
                 </Button>
                 <img 
                   src={selectedImage}
                   alt="Lapsit attachment enlarged"
-                  className="max-w-full max-h-full object-contain rounded-lg"
-                  onClick={() => setShowImageModal(false)}
+                  className="max-w-full max-h-full object-contain"
+                  onClick={(e) => e.stopPropagation()}
                 />
               </div>
             </div>
