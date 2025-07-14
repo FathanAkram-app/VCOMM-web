@@ -1418,7 +1418,9 @@ export default function Chat() {
           
           {/* Call View */}
           {activeView === 'calls' && (
-            <CallHistory onBack={() => setActiveView('chats')} />
+            <div className="h-full">
+              <CallHistory onBack={() => setActiveView('chats')} />
+            </div>
           )}
           
           {/* Lapsit View */}

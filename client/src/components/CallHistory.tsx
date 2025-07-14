@@ -312,14 +312,14 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
       </div>
 
       {/* Call History List */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto min-h-0">
         {filteredHistory.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-gray-500">
             <PhoneCall className="w-12 h-12 mb-4 opacity-50" />
             <p>Tidak ada riwayat panggilan</p>
           </div>
         ) : (
-          <div className="divide-y divide-[#333]">
+          <div className="divide-y divide-[#333] pb-20">
             {filteredHistory.map((call: CallHistoryItem) => (
               <div key={call.id} className="p-4 hover:bg-[#1a1a1a] transition-colors">
                 <div className="flex items-start justify-between">
