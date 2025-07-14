@@ -1212,6 +1212,74 @@ export class DatabaseStorage implements IStorage {
       return { success: false, message: 'Failed to change password' };
     }
   }
+
+  // Get groups that a user is a member of
+  async getUserGroups(userId: number): Promise<any[]> {
+    try {
+      console.log(`[Storage] Getting groups for user ${userId}`);
+      
+      const userGroups = await db
+        .select({
+          groupId: conversationMembers.conversationId,
+          groupName: conversations.name,
+          isRoom: conversations.isRoom
+        })
+        .from(conversationMembers)
+        .innerJoin(conversations, eq(conversationMembers.conversationId, conversations.id))
+        .where(
+          and(
+            eq(conversationMembers.userId, userId),
+            eq(conversations.isRoom, true) // Only get group rooms
+          )
+        );
+
+      console.log(`[Storage] Found ${userGroups.length} groups for user ${userId}:`, userGroups);
+      return userGroups;
+    } catch (error) {
+      console.error('Error getting user groups:', error);
+      return [];
+    }
+  }
+
+  // Get group members (for group calls)
+  async getGroupMembers(groupId: number): Promise<number[]> {
+    try {
+      console.log(`[Storage] Getting members for group ${groupId}`);
+      
+      const members = await db
+        .select({ userId: conversationMembers.userId })
+        .from(conversationMembers)
+        .where(eq(conversationMembers.conversationId, groupId));
+
+      const memberIds = members.map(m => m.userId);
+      console.log(`[Storage] Found ${memberIds.length} members for group ${groupId}:`, memberIds);
+      return memberIds;
+    } catch (error) {
+      console.error('Error getting group members:', error);
+      return [];
+    }
+  }
+
+  // Get online users from a list of user IDs
+  async getOnlineUsers(userIds: number[]): Promise<number[]> {
+    try {
+      // For now, just return all users as online since we don't have real-time status tracking
+      // In a real system, you'd check WebSocket connections or last_seen timestamps
+      console.log(`[Storage] Checking online status for users:`, userIds);
+      
+      const onlineUsers = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(inArray(users.id, userIds));
+
+      const onlineIds = onlineUsers.map(u => u.id);
+      console.log(`[Storage] Online users:`, onlineIds);
+      return onlineIds;
+    } catch (error) {
+      console.error('Error getting online users:', error);
+      return [];
+    }
+  }
 }
 
 // Export DatabaseStorage instance to be used in the application

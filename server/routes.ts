@@ -2111,26 +2111,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // If no participants found in active call, find all online group members
           if (participants.length === 0) {
             console.log(`[Group Call] No active participants, finding all online group members for group ${groupId}`);
-            const onlineParticipants = [];
             
-            // Get all online users who are members of this group
-            for (const [userId, client] of clients.entries()) {
-              if (client && client.readyState === client.OPEN) {
-                try {
-                  // Check if user is member of this group
-                  const userGroups = await storage.getUserGroups(userId);
-                  const isMember = userGroups.some(group => group.id === groupId);
-                  if (isMember) {
-                    onlineParticipants.push(userId);
-                  }
-                } catch (error) {
-                  console.error(`[Group Call] Error checking group membership for user ${userId}:`, error);
-                }
-              }
+            try {
+              // Get all group members from database first
+              const allGroupMembers = await storage.getGroupMembers(groupId);
+              console.log(`[Group Call] All group members for group ${groupId}:`, allGroupMembers);
+              
+              // Filter to only online members
+              const onlineParticipants = allGroupMembers.filter(userId => {
+                const client = clients.get(userId);
+                return client && client.readyState === client.OPEN;
+              });
+              
+              participants = onlineParticipants;
+              console.log(`[Group Call] Found ${participants.length} online group members:`, participants);
+            } catch (error) {
+              console.error(`[Group Call] Error getting group members:`, error);
+              participants = [];
             }
-            
-            participants = onlineParticipants;
-            console.log(`[Group Call] Found ${participants.length} online group members:`, participants);
           }
           
           // Send participants update to requesting user
