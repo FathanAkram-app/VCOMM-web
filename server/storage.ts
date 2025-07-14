@@ -651,7 +651,7 @@ export class DatabaseStorage implements IStorage {
         .where(
           and(
             // User is in participants but not the initiator
-            sql`${callHistory.participants} @> ARRAY[${userId}]::integer[]`,
+            sql`${callHistory.participants} @> ARRAY[${userId.toString()}]::text[]`,
             ne(callHistory.initiatorId, userId)
             // Show all incoming calls regardless of status
           )
