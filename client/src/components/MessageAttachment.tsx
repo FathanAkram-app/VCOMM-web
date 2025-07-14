@@ -127,10 +127,10 @@ export default function MessageAttachment({
               }}
             />
             
-            {/* Download button positioned below image */}
-            <div className="flex items-center justify-between p-2 bg-[#1a1a1a] rounded-b-md mt-1">
-              <div className="flex items-center gap-2">
-                <Image className="h-4 w-4 text-green-500" />
+            {/* File info and download button positioned below image */}
+            <div className="p-2 bg-[#1a1a1a] rounded-b-md mt-1">
+              <div className="flex items-center gap-2 mb-2">
+                <Image className="h-4 w-4 text-green-500 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-white truncate" title={attachmentName}>
                     {attachmentName}
@@ -142,20 +142,25 @@ export default function MessageAttachment({
                   )}
                 </div>
               </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-8 w-8 p-0 text-[#8ba742] hover:bg-[#333333] flex-shrink-0"
-                onClick={() => {
-                  const link = document.createElement('a');
-                  link.href = attachmentUrl;
-                  link.download = attachmentName;
-                  link.click();
-                }}
-                title="Download gambar"
-              >
-                <Download className="h-4 w-4" />
-              </Button>
+              
+              {/* Download button below filename and size */}
+              <div className="flex justify-center">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="flex items-center gap-2 px-3 py-1 text-[#8ba742] hover:bg-[#333333] bg-[#2a2a2a] rounded-md"
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = attachmentUrl;
+                    link.download = attachmentName;
+                    link.click();
+                  }}
+                  title="Download gambar"
+                >
+                  <Download className="h-4 w-4" />
+                  <span className="text-sm">Download</span>
+                </Button>
+              </div>
             </div>
           </div>
         );
