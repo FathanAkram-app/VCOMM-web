@@ -674,10 +674,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
       console.log('[CallContext] WebSocket connected successfully for calls');
       setWs(websocket);
       
-      // Set global WebSocket reference for GroupVideoCall
+      // Set global WebSocket reference for GroupVideoCallSimple
       (window as any).__callWebSocket = websocket;
       
-      // Listen for WebSocket message requests from GroupVideoCall
+      // Listen for WebSocket message requests from GroupVideoCallSimple
       const handleSendWebSocketMessage = (event: CustomEvent) => {
         if (websocket && websocket.readyState === WebSocket.OPEN) {
           websocket.send(JSON.stringify(event.detail));
@@ -781,10 +781,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         
         // Handle call-specific messages - server uses payload wrapper
         switch (message.type) {
-          case 'new_message':
-            console.log('[CallContext] 🔥 Processing new_message in switch statement');
-            // This is already handled above, but keeping for fallback
-            break;
+
           case 'incoming_call':
             handleIncomingCall(message.payload || message);
             // Trigger call history update
@@ -837,21 +834,21 @@ export function CallProvider({ children }: { children: ReactNode }) {
             handleWebRTCIceCandidate(message.payload || message);
             break;
           case 'group_webrtc_offer':
-            // Forward group WebRTC offer to GroupVideoCall component
+            // Forward group WebRTC offer to GroupVideoCallSimple component
             console.log('[CallContext] Forwarding group WebRTC offer:', message.payload || message);
             window.dispatchEvent(new CustomEvent('group-webrtc-offer', {
               detail: message.payload || message
             }));
             break;
           case 'group_webrtc_answer':
-            // Forward group WebRTC answer to GroupVideoCall component
+            // Forward group WebRTC answer to GroupVideoCallSimple component
             console.log('[CallContext] Forwarding group WebRTC answer:', message.payload || message);
             window.dispatchEvent(new CustomEvent('group-webrtc-answer', {
               detail: message.payload || message
             }));
             break;
           case 'group_webrtc_ice_candidate':
-            // Forward group WebRTC ICE candidate to GroupVideoCall component
+            // Forward group WebRTC ICE candidate to GroupVideoCallSimple component
             console.log('[CallContext] Forwarding group WebRTC ICE candidate:', message.payload || message);
             window.dispatchEvent(new CustomEvent('group-webrtc-ice-candidate', {
               detail: message.payload || message

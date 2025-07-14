@@ -15,7 +15,7 @@ import { useToast } from '../hooks/use-toast';
 import ChatRoom from '../components/ChatRoom';
 import IncomingCallModal from '../components/IncomingCallModal';
 import GroupCall from '../components/GroupCall';
-import GroupVideoCall from '../components/GroupVideoCall';
+import GroupVideoCallSimple from '../components/GroupVideoCallSimple';
 import CallHistory from '../components/CallHistory';
 import { useCall } from '../hooks/useCall';
 import { Separator } from "@/components/ui/separator";

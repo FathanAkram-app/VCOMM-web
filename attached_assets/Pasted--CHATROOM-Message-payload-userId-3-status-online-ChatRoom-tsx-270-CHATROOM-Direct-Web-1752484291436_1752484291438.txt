@@ -1,0 +1,301 @@
+🔥 CHATROOM: Message payload: {userId: 3, status: 'online'}
+ChatRoom.tsx:270 🔥 CHATROOM: Direct WebSocket message (fallback): {type: 'user_status', payload: {…}}
+ChatRoom.tsx:1051 Starting group video call for group: Ampera Grup
+CallContext.tsx:3063 [CallContext] Starting group call: {groupId: 38, groupName: 'Ampera Grup', callType: 'video'}
+CallContext.tsx:11 [CallContext] Mobile compatibility check: {isMobile: false, isHTTPS: true, userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWeb…KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36', hasMediaDevices: ƒ}
+CallContext.tsx:3074 [CallContext] Mobile compatibility check for group call: {isMobile: false, isHTTPS: true, hasMediaDevices: ƒ}
+CallContext.tsx:3097 [CallContext] Requesting full media permissions for group call (audio + video enabled)...
+CallContext.tsx:3099 [CallContext] Got audio and video stream for group call - full media enabled from start
+CallContext.tsx:3197 [CallContext] Added local track to group call: audio
+CallContext.tsx:3197 [CallContext] Added local track to group call: video
+CallContext.tsx:3234 [CallContext] Group call invitation sent
+CallContext.tsx:3498 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+ChatRoom.tsx:828 Processing message data for grouping: (12) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:829 Total messages to process: 12
+ChatRoom.tsx:834 Messages with replies: [{…}]
+ChatRoom.tsx:901 Grouped messages: (2) [{…}, {…}]
+ChatRoom.tsx:902 Total date groups: 2
+ChatRoom.tsx:904 Total messages in first group: 8
+ChatRoom.tsx:1253 [Message Debug] Message ID: 197, replyToId: null, content: cek
+ChatRoom.tsx:1253 [Message Debug] Message ID: 198, replyToId: null, content: gmn
+ChatRoom.tsx:1253 [Message Debug] Message ID: 199, replyToId: null, content: coba
+ChatRoom.tsx:1253 [Message Debug] Message ID: 200, replyToId: null, content: kok
+ChatRoom.tsx:1253 [Message Debug] Message ID: 214, replyToId: null, content: Cek
+ChatRoom.tsx:1253 [Message Debug] Message ID: 215, replyToId: null, content: [User Deleted]
+ChatRoom.tsx:1253 [Message Debug] Message ID: 216, replyToId: null, content: [User Deleted]
+ChatRoom.tsx:1253 [Message Debug] Message ID: 217, replyToId: 216, content: cakep
+ChatRoom.tsx:1294 [Reply Debug] Message 217 has replyToId: 216
+ChatRoom.tsx:1295 [Reply Debug] All messages: (12) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:1298 [Reply Debug] Found replied message: {id: 216, senderId: 1, senderName: 'test123', content: '[User Deleted]', timestamp: '2025-06-05T12:27:36.691Z', …}
+ChatRoom.tsx:1253 [Message Debug] Message ID: 310, replyToId: null, content: [Diteruskan] Tess
+ChatRoom.tsx:1253 [Message Debug] Message ID: 311, replyToId: null, content: [File: 17521563299775275155729307715143.jpg]
+ChatRoom.tsx:1253 [Message Debug] Message ID: 312, replyToId: null, content: [File: 17521563531216073247134206960683.jpg]
+ChatRoom.tsx:1253 [Message Debug] Message ID: 315, replyToId: null, content: [Diteruskan] [Diteruskan] [File: 17521563531216073247134206960683.jpg]
+IncomingCallModal.tsx:4 [IncomingCallModal] 🔥 COMPONENT RENDERED - START
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+IncomingCallModal.tsx:8 [IncomingCallModal] 🔥 After useCall hook - incomingCall: null
+IncomingCallModal.tsx:9 [IncomingCallModal] 🔥 incomingCall type check: object
+IncomingCallModal.tsx:10 [IncomingCallModal] 🔥 incomingCall falsy check: true
+IncomingCallModal.tsx:13 [IncomingCallModal] No incoming call, returning null
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCall.tsx:412 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1752484276302_38_3', callType: 'video', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:413 [GroupVideoCall] user?.id: 3
+GroupVideoCall.tsx:414 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:415 [GroupVideoCall] localStream: null
+GroupVideoCall.tsx:423 [GroupVideoCall] Using existing local stream from activeCall
+GroupVideoCall.tsx:426 [GroupVideoCall] Existing stream details: {id: '9e6dacb3-c354-4eae-85a1-eae408eec7ee', active: true, videoTracks: 1, audioTracks: 1}
+GroupVideoCall.tsx:441 [GroupVideoCall] Video track enabled from start for group calls
+GroupVideoCall.tsx:451 [GroupVideoCall] Set local video source from existing stream
+GroupVideoCall.tsx:529 [GroupVideoCall] ✅ Auto-recovered local stream from activeCall
+GroupVideoCall.tsx:701 [GroupVideoCall] 📊 Participants effect triggered
+GroupVideoCall.tsx:702 [GroupVideoCall] 📊 activeCall: {callId: 'group_call_1752484276302_38_3', callType: 'video', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:703 [GroupVideoCall] 📊 activeCall?.participants: []
+GroupVideoCall.tsx:704 [GroupVideoCall] 📊 user?.id: 3
+GroupVideoCall.tsx:710 [GroupVideoCall] 📊 Current participants string: 
+GroupVideoCall.tsx:711 [GroupVideoCall] 📊 New participants string: []
+GroupVideoCall.tsx:720 [GroupVideoCall] 📊 Processing participants from activeCall: []
+GroupVideoCall.tsx:731 [GroupVideoCall] 📊 Other participants after filtering: []
+GroupVideoCall.tsx:1048 [GroupVideoCall] ⏳ Auto-initiation not ready: {participantsCount: 0, hasLocalStream: false, hasActiveCall: true, hasUser: true}
+GroupVideoCall.tsx:1057 [GroupVideoCall] 🚀 Force-initiating WebRTC for group call initiator
+GroupVideoCall.tsx:1119 [GroupVideoCall] Stream state updated: {remoteStreams: Array(0), participants: Array(0)}
+CallContext.tsx:3498 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+ChatRoom.tsx:828 Processing message data for grouping: (12) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:829 Total messages to process: 12
+ChatRoom.tsx:834 Messages with replies: [{…}]
+ChatRoom.tsx:901 Grouped messages: (2) [{…}, {…}]
+ChatRoom.tsx:902 Total date groups: 2
+ChatRoom.tsx:904 Total messages in first group: 8
+ChatRoom.tsx:1253 [Message Debug] Message ID: 197, replyToId: null, content: cek
+ChatRoom.tsx:1253 [Message Debug] Message ID: 198, replyToId: null, content: gmn
+ChatRoom.tsx:1253 [Message Debug] Message ID: 199, replyToId: null, content: coba
+ChatRoom.tsx:1253 [Message Debug] Message ID: 200, replyToId: null, content: kok
+ChatRoom.tsx:1253 [Message Debug] Message ID: 214, replyToId: null, content: Cek
+ChatRoom.tsx:1253 [Message Debug] Message ID: 215, replyToId: null, content: [User Deleted]
+ChatRoom.tsx:1253 [Message Debug] Message ID: 216, replyToId: null, content: [User Deleted]
+ChatRoom.tsx:1253 [Message Debug] Message ID: 217, replyToId: 216, content: cakep
+ChatRoom.tsx:1294 [Reply Debug] Message 217 has replyToId: 216
+ChatRoom.tsx:1295 [Reply Debug] All messages: (12) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:1298 [Reply Debug] Found replied message: {id: 216, senderId: 1, senderName: 'test123', content: '[User Deleted]', timestamp: '2025-06-05T12:27:36.691Z', …}
+ChatRoom.tsx:1253 [Message Debug] Message ID: 310, replyToId: null, content: [Diteruskan] Tess
+ChatRoom.tsx:1253 [Message Debug] Message ID: 311, replyToId: null, content: [File: 17521563299775275155729307715143.jpg]
+ChatRoom.tsx:1253 [Message Debug] Message ID: 312, replyToId: null, content: [File: 17521563531216073247134206960683.jpg]
+ChatRoom.tsx:1253 [Message Debug] Message ID: 315, replyToId: null, content: [Diteruskan] [Diteruskan] [File: 17521563531216073247134206960683.jpg]
+IncomingCallModal.tsx:4 [IncomingCallModal] 🔥 COMPONENT RENDERED - START
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+IncomingCallModal.tsx:8 [IncomingCallModal] 🔥 After useCall hook - incomingCall: null
+IncomingCallModal.tsx:9 [IncomingCallModal] 🔥 incomingCall type check: object
+IncomingCallModal.tsx:10 [IncomingCallModal] 🔥 incomingCall falsy check: true
+IncomingCallModal.tsx:13 [IncomingCallModal] No incoming call, returning null
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCall.tsx:412 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1752484276302_38_3', callType: 'video', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:413 [GroupVideoCall] user?.id: 3
+GroupVideoCall.tsx:414 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:415 [GroupVideoCall] localStream: null
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCall.tsx:752 [GroupVideoCall] 📊 Updated participants list: []
+GroupVideoCall.tsx:412 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1752484276302_38_3', callType: 'video', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:413 [GroupVideoCall] user?.id: 3
+GroupVideoCall.tsx:414 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:415 [GroupVideoCall] localStream: MediaStream {id: '9e6dacb3-c354-4eae-85a1-eae408eec7ee', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:534 [GroupVideoCall] Local video stream attached to element
+GroupVideoCall.tsx:535 [GroupVideoCall] Local stream details: {id: '9e6dacb3-c354-4eae-85a1-eae408eec7ee', active: true, videoTracks: 1, audioTracks: 1, videoTrackEnabled: true}
+GroupVideoCall.tsx:550 [GroupVideoCall] Video track enabled from start for group calls
+GroupVideoCall.tsx:1048 [GroupVideoCall] ⏳ Auto-initiation not ready: {participantsCount: 0, hasLocalStream: true, hasActiveCall: true, hasUser: true}
+GroupVideoCall.tsx:1057 [GroupVideoCall] 🚀 Force-initiating WebRTC for group call initiator
+GroupVideoCall.tsx:1119 [GroupVideoCall] Stream state updated: {remoteStreams: Array(0), participants: Array(0)}
+GroupVideoCall.tsx:1946 [GroupVideoCall] ✅ Local video started playing
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCall.tsx:412 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1752484276302_38_3', callType: 'video', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:413 [GroupVideoCall] user?.id: 3
+GroupVideoCall.tsx:414 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:415 [GroupVideoCall] localStream: MediaStream {id: '9e6dacb3-c354-4eae-85a1-eae408eec7ee', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+CallContext.tsx:3498 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+ChatRoom.tsx:285 🔥 CHATROOM: Removing all event listeners
+GroupVideoCall.tsx:500 [GroupVideoCall] Effect cleanup - preserving streams for active call
+GroupVideoCall.tsx:504 [GroupVideoCall] Restoring localStream during cleanup
+GroupVideoCall.tsx:519 [GroupVideoCall] Component re-rendering - preserving active call streams
+GroupVideoCallSimple.tsx:38 [GroupVideoCallSimple] Initializing media with video enabled from start...
+GroupVideoCallSimple.tsx:110 [GroupVideoCallSimple] Updating participants: []
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCall.tsx:560 [GroupVideoCall] ⚠️ Local video play failed: AbortError: The play() request was interrupted because the media was removed from the document. https://goo.gl/LdLk22
+(anonymous) @ GroupVideoCall.tsx:560
+Promise.catch
+(anonymous) @ GroupVideoCall.tsx:559
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=01fe63e0:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=01fe63e0:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=01fe63e0:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=01fe63e0:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=01fe63e0:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=01fe63e0:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=01fe63e0:19447
+(anonymous) @ chunk-RPCDYKBN.js?v=01fe63e0:19328
+workLoop @ chunk-RPCDYKBN.js?v=01fe63e0:197
+flushWork @ chunk-RPCDYKBN.js?v=01fe63e0:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=01fe63e0:384Understand this warning
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_call_initiated', payload: {…}}
+CallContext.tsx:861 [CallContext] Group call initiated confirmation: {callId: 'group_call_1752484276302_38_3', groupId: 38, totalMembers: 4, onlineMembers: 3, invitationsSent: 2, …}
+CallContext.tsx:3248 [CallContext] Auto-joined group call as initiator: {type: 'join_group_call', payload: {…}}
+CallContext.tsx:3498 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:667 [CallContext] Creating stable WebSocket for calls...
+2GroupVideoCall.tsx:1060 [GroupVideoCall] 🔥 Triggering participant detection for initiator
+GroupVideoCallSimple.tsx:58 [GroupVideoCallSimple] ✅ Got media stream: {id: '45a255b2-7279-4f81-909d-fbb5f27aaaf4', active: true, videoTracks: 1, audioTracks: 1}
+GroupVideoCallSimple.tsx:72 [GroupVideoCallSimple] ✅ Video enabled from start
+GroupVideoCallSimple.tsx:79 [GroupVideoCallSimple] ✅ Local video attached and playing
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+AbortError: The play() request was interrupted by a new load request. https://goo.gl/LdLk22
+Promise.catch
+initializeMedia @ GroupVideoCallSimple.tsx:78
+await in initializeMedia
+(anonymous) @ GroupVideoCallSimple.tsx:88
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=01fe63e0:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=01fe63e0:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=01fe63e0:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=01fe63e0:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=01fe63e0:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=01fe63e0:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=01fe63e0:19447
+commitRootImpl @ chunk-RPCDYKBN.js?v=01fe63e0:19416
+commitRoot @ chunk-RPCDYKBN.js?v=01fe63e0:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=01fe63e0:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=01fe63e0:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=01fe63e0:18627
+setTimeout
+startGroupCall @ CallContext.tsx:3255
+await in startGroupCall
+onClick @ ChatRoom.tsx:1052
+callCallback2 @ chunk-RPCDYKBN.js?v=01fe63e0:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=01fe63e0:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=01fe63e0:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=01fe63e0:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=01fe63e0:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=01fe63e0:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=01fe63e0:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=01fe63e0:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=01fe63e0:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=01fe63e0:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=01fe63e0:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=01fe63e0:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=01fe63e0:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=01fe63e0:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=01fe63e0:5449Understand this warning
+CallContext.tsx:882 [CallContext] WebSocket disconnected
+CallContext.tsx:3498 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+2GroupVideoCall.tsx:1080 [GroupVideoCall] 🔥 Secondary participant detection trigger
+CallContext.tsx:674 [CallContext] WebSocket connected successfully for calls
+CallContext.tsx:698 [CallContext] Authenticated user 3 with WebSocket
+CallContext.tsx:3498 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:717 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:776 [CallContext] Received user status update: {userId: 3, status: 'online'}
+CallContext.tsx:717 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:776 [CallContext] Received user status update: {userId: 2, status: 'online'}
+2GroupVideoCall.tsx:1098 [GroupVideoCall] 🔥 Final aggressive participant detection trigger
+CallContext.tsx:717 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:776 [CallContext] Received user status update: {userId: 4, status: 'offline'}
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:819 [CallContext] 🔥 GROUP_CALL_PARTICIPANTS_UPDATE received: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1604 [CallContext] Group call participants update: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1609 [CallContext] Comparing callIds - message: group_call_1752484276302_38_3 activeCall: group_call_1752484276302_38_3
+CallContext.tsx:1610 [CallContext] ActiveCall groupId: 38
+CallContext.tsx:1649 [CallContext] Extracted groupIds - message: 38 active: 38
+CallContext.tsx:1650 [CallContext] CallId parts: (5) ['group', 'call', '1752484276302', '38', '3']
+CallContext.tsx:1653 [CallContext] Group IDs match, updating participants: (2) [3, 4]
+CallContext.tsx:1664 [CallContext] Unique participants after deduplication: (2) [3, 4]
+CallContext.tsx:1667 [CallContext] 🔍 Fetching user names for participants: (2) [3, 4]
+CallContext.tsx:717 [CallContext] Received message: {type: 'initiate_group_webrtc', payload: {…}}
+CallContext.tsx:1669 [CallContext] 📊 Got all users data: 7
+CallContext.tsx:1684 [CallContext] 📋 Created participant objects: (2) [{…}, {…}]
+CallContext.tsx:1693 [CallContext] ✅ Updated participants with names: (2) [{…}, {…}]
+CallContext.tsx:1705 [CallContext] 🚀 Dispatching group-participants-update event: (2) [{…}, {…}]
+CallContext.tsx:1706 [CallContext] 🚀 Event details: {callId: 'group_call_1752484276302_38_3', groupId: 38}
+CallContext.tsx:3498 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:110 [GroupVideoCallSimple] Updating participants: (2) [{…}, {…}]
+chunk-RPCDYKBN.js?v=01fe63e0:16670 Uncaught ReferenceError: React is not defined
+    at GroupVideoCallSimple.tsx:118:21
+    at Array.map (<anonymous>)
+    at GroupVideoCallSimple.tsx:114:10
+    at commitHookEffectListMount (chunk-RPCDYKBN.js?v=01fe63e0:16915:34)
+    at commitPassiveMountOnFiber (chunk-RPCDYKBN.js?v=01fe63e0:18156:19)
+    at commitPassiveMountEffects_complete (chunk-RPCDYKBN.js?v=01fe63e0:18129:17)
+    at commitPassiveMountEffects_begin (chunk-RPCDYKBN.js?v=01fe63e0:18119:15)
+    at commitPassiveMountEffects (chunk-RPCDYKBN.js?v=01fe63e0:18109:11)
+    at flushPassiveEffectsImpl (chunk-RPCDYKBN.js?v=01fe63e0:19490:11)
+    at flushPassiveEffects (chunk-RPCDYKBN.js?v=01fe63e0:19447:22)
+(anonymous) @ GroupVideoCallSimple.tsx:118
+(anonymous) @ GroupVideoCallSimple.tsx:114
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=01fe63e0:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=01fe63e0:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=01fe63e0:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=01fe63e0:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=01fe63e0:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=01fe63e0:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=01fe63e0:19447
+(anonymous) @ chunk-RPCDYKBN.js?v=01fe63e0:19328
+workLoop @ chunk-RPCDYKBN.js?v=01fe63e0:197
+flushWork @ chunk-RPCDYKBN.js?v=01fe63e0:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=01fe63e0:384Understand this error
+chunk-RPCDYKBN.js?v=01fe63e0:14032 The above error occurred in the <GroupVideoCallSimple> component:
+
+    at GroupVideoCallSimple (https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/src/components/GroupVideoCallSimple.tsx:25:90)
+    at CallProvider (https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/src/context/CallContext.tsx:67:32)
+    at AuthCheck (https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/src/App.tsx?v=KzF8YrjFxpBylBCdMgHah:37:22)
+    at Route (https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=01fe63e0:323:16)
+    at Switch (https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=01fe63e0:379:17)
+    at Router
+    at QueryClientProvider (https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=01fe63e0:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ chunk-RPCDYKBN.js?v=01fe63e0:14032
+update.callback @ chunk-RPCDYKBN.js?v=01fe63e0:14052
+callCallback @ chunk-RPCDYKBN.js?v=01fe63e0:11248
+commitUpdateQueue @ chunk-RPCDYKBN.js?v=01fe63e0:11265
+commitLayoutEffectOnFiber @ chunk-RPCDYKBN.js?v=01fe63e0:17093
+commitLayoutMountEffects_complete @ chunk-RPCDYKBN.js?v=01fe63e0:17980
+commitLayoutEffects_begin @ chunk-RPCDYKBN.js?v=01fe63e0:17969
+commitLayoutEffects @ chunk-RPCDYKBN.js?v=01fe63e0:17920
+commitRootImpl @ chunk-RPCDYKBN.js?v=01fe63e0:19353
+commitRoot @ chunk-RPCDYKBN.js?v=01fe63e0:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=01fe63e0:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=01fe63e0:9119
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=01fe63e0:19506
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=01fe63e0:19447
+(anonymous) @ chunk-RPCDYKBN.js?v=01fe63e0:19328
+workLoop @ chunk-RPCDYKBN.js?v=01fe63e0:197
+flushWork @ chunk-RPCDYKBN.js?v=01fe63e0:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=01fe63e0:384Understand this error
+chunk-RPCDYKBN.js?v=01fe63e0:9129 Uncaught ReferenceError: React is not defined
+    at GroupVideoCallSimple.tsx:118:21
+    at Array.map (<anonymous>)
+    at GroupVideoCallSimple.tsx:114:10
+    at commitHookEffectListMount (chunk-RPCDYKBN.js?v=01fe63e0:16915:34)
+    at commitPassiveMountOnFiber (chunk-RPCDYKBN.js?v=01fe63e0:18156:19)
+    at commitPassiveMountEffects_complete (chunk-RPCDYKBN.js?v=01fe63e0:18129:17)
+    at commitPassiveMountEffects_begin (chunk-RPCDYKBN.js?v=01fe63e0:18119:15)
+    at commitPassiveMountEffects (chunk-RPCDYKBN.js?v=01fe63e0:18109:11)
+    at flushPassiveEffectsImpl (chunk-RPCDYKBN.js?v=01fe63e0:19490:11)
+    at flushPassiveEffects (chunk-RPCDYKBN.js?v=01fe63e0:19447:22)
+(anonymous) @ GroupVideoCallSimple.tsx:118
+(anonymous) @ GroupVideoCallSimple.tsx:114
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=01fe63e0:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=01fe63e0:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=01fe63e0:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=01fe63e0:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=01fe63e0:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=01fe63e0:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=01fe63e0:19447
+(anonymous) @ chunk-RPCDYKBN.js?v=01fe63e0:19328
+workLoop @ chunk-RPCDYKBN.js?v=01fe63e0:197
+flushWork @ chunk-RPCDYKBN.js?v=01fe63e0:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=01fe63e0:384Understand this error
+CallContext.tsx:1718 [CallContext] ✅ group-participants-update event dispatched successfully
+CallContext.tsx:882 [CallContext] WebSocket disconnected
