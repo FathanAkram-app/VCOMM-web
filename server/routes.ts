@@ -737,6 +737,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Broadcast to WebSocket clients
       console.log(`[BROADCAST] Sending notification for message ${message.id} to conversation ${message.conversationId}`);
       console.log(`[BROADCAST] Current WebSocket clients count: ${clients.size}`);
+      console.log(`[BROADCAST] Message sender: ${userId}`);
+      
+      // Log all connected clients
+      const connectedClientIds = Array.from(clients.keys());
+      console.log(`[BROADCAST] Connected client IDs: [${connectedClientIds.join(', ')}]`);
       
       const wsMessage: WebSocketMessage = {
         type: 'new_message',
@@ -1144,8 +1149,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const { userId } = data.payload;
           if (userId) {
             console.log(`User ${userId} authenticated via WebSocket`);
+            console.log(`[WebSocket] Current clients before adding: [${Array.from(clients.keys()).join(', ')}]`);
+            
             ws.userId = userId;
             clients.set(userId, ws);
+            
+            console.log(`[WebSocket] Current clients after adding: [${Array.from(clients.keys()).join(', ')}]`);
+            console.log(`[WebSocket] User ${userId} WebSocket readyState: ${ws.readyState}`);
             
             // Update user status to online
             await storage.updateUserStatus(userId, 'online');
@@ -1752,7 +1762,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ws.on('close', async () => {
       if (ws.userId) {
         const userId = ws.userId;
+        console.log(`[WebSocket] User ${userId} disconnected`);
+        console.log(`[WebSocket] Current clients before removing: [${Array.from(clients.keys()).join(', ')}]`);
+        
         clients.delete(userId);
+        
+        console.log(`[WebSocket] Current clients after removing: [${Array.from(clients.keys()).join(', ')}]`);
         
         // Update user status to offline
         await storage.updateUserStatus(userId, 'offline');
@@ -1783,6 +1798,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const members = await storage.getConversationMembers(conversationId);
       console.log(`[BROADCAST] Found ${members.length} members in conversation ${conversationId}`);
+      console.log(`[BROADCAST] Member list: [${members.map(m => m.userId).join(', ')}]`);
       console.log(`[BROADCAST] Active WebSocket clients: ${clients.size}`);
       
       let sentCount = 0;
@@ -1791,9 +1807,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[BROADCAST] Member ${member.userId}: client exists=${!!client}, connected=${client?.readyState === WebSocket.OPEN}`);
         
         if (client && client.readyState === WebSocket.OPEN) {
+          console.log(`[BROADCAST] Sending message to user ${member.userId}: ${JSON.stringify(message).substring(0, 100)}...`);
           client.send(JSON.stringify(message));
           sentCount++;
-          console.log(`[BROADCAST] Message sent to user ${member.userId}`);
+          console.log(`[BROADCAST] ✅ Message sent to user ${member.userId}`);
+        } else {
+          console.log(`[BROADCAST] ❌ Cannot send to user ${member.userId} - client not available or not connected`);
         }
       });
       
