@@ -293,14 +293,10 @@ export default function VideoCall() {
             size="icon" 
             className="w-12 h-12 rounded-full text-[#a6c455] border-[#a6c455] hover:bg-[#333333]"
             onClick={() => {
-              console.log('[VideoCall] 🔥 SWITCH CAMERA BUTTON CLICKED!');
-              console.log('[VideoCall] Current activeCall state:', activeCall);
-              
-              // Always show alert first for debugging
-              alert(`🔥 Tombol switch camera diklik!\n\nVideo enabled: ${activeCall.videoEnabled}\nCall type: ${activeCall.callType}\nHas localStream: ${!!activeCall.localStream}`);
+              console.log('[VideoCall] Switch camera button clicked');
               
               if (!activeCall.videoEnabled) {
-                alert('❌ Video tidak aktif!\nNyalakan video dulu sebelum ganti kamera.');
+                console.log('[VideoCall] Video not enabled, cannot switch camera');
                 return;
               }
               
