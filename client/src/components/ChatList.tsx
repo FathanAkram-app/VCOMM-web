@@ -101,11 +101,37 @@ export default function ChatList({
         console.log('📋 CHATLIST: Received WebSocket message:', message);
         
         if (message.type === 'new_message') {
-          console.log('📋 CHATLIST: New message received, updating conversation list');
+          console.log('📋 CHATLIST: New message received, updating conversation list and sorting');
           
           // Force refresh conversation list to show new message and update unread count
           queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
           refetchConversations();
+          
+          // Also trigger immediate sort for current chatItems if available
+          setChatItems(prevItems => {
+            if (!prevItems.length) return prevItems;
+            
+            const updatedItems = [...prevItems];
+            const messageConversationId = message.payload?.conversationId;
+            
+            // Find and update the chat item if it exists
+            const chatIndex = updatedItems.findIndex(chat => chat.id === messageConversationId);
+            if (chatIndex >= 0) {
+              // Move this chat to the top and update last message info
+              const updatedChat = {
+                ...updatedItems[chatIndex],
+                lastMessage: message.payload?.content || 'New message',
+                lastMessageTime: message.payload?.timestamp || new Date().toISOString(),
+                unread: (updatedItems[chatIndex].unread || 0) + 1
+              };
+              
+              // Remove from current position and add to top
+              updatedItems.splice(chatIndex, 1);
+              updatedItems.unshift(updatedChat);
+            }
+            
+            return updatedItems;
+          });
         }
       } catch (error) {
         console.error('📋 CHATLIST: Error processing WebSocket message:', error);
@@ -171,7 +197,20 @@ export default function ChatList({
         });
       }
       
-      setChatItems(formattedChats);
+      // Sort chat berdasarkan waktu pesan terakhir (terbaru di atas)
+      const sortedChats = formattedChats.sort((a, b) => {
+        // Chat dengan pesan yang tidak ada diberi prioritas rendah
+        if (!a.lastMessageTime && !b.lastMessageTime) return 0;
+        if (!a.lastMessageTime) return 1;
+        if (!b.lastMessageTime) return -1;
+        
+        // Sort berdasarkan timestamp terbaru
+        const dateA = new Date(a.lastMessageTime);
+        const dateB = new Date(b.lastMessageTime);
+        return dateB.getTime() - dateA.getTime();
+      });
+      
+      setChatItems(sortedChats);
     } else {
       setChatItems([]);
     }

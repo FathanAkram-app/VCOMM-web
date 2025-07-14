@@ -305,6 +305,13 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - ✅ ADDED: Proper cleanup of sessions on WebSocket disconnection
   - ✅ LOCALIZED: Alert message in Indonesian "Sesi Anda telah dihentikan karena Anda login dari perangkat lain"
   - When user logs in from new device, previous session automatically terminated
+- July 14, 2025: ChatList Real-time Sorting Implementation:
+  - ✅ IMPLEMENTED: Real-time chat sorting based on latest message timestamp
+  - ✅ ENHANCED: Chat with new incoming message automatically moves to top of list
+  - ✅ ADDED: Immediate local state update for instant UI response before API refresh
+  - ✅ IMPROVED: Sort algorithm handles chats without messages properly
+  - ✅ OPTIMIZED: Newest conversations appear first, maintaining chronological order
+  - ChatList now properly reflects message activity order in real-time
 
 # User Preferences
 
