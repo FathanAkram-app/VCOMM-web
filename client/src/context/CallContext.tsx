@@ -2699,13 +2699,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
       const videoDevices = devices.filter(device => device.kind === 'videoinput');
       console.log('[CallContext] Available video devices:', videoDevices.length);
       
-      // Mobile debugging - show camera info only if no cameras found
-      if (isMobileDevice && videoDevices.length <= 1) {
+      // Mobile debugging - show camera info for all cases
+      if (isMobileDevice) {
         const cameraInfo = videoDevices.map((device, index) => 
-          `Camera ${index + 1}: ${device.label || 'Unknown'}`
-        ).join('\n');
-        // Show debug info only for problematic cases
-        alert(`📱 Debug Info untuk troubleshoot:\nDevice: Mobile\nKamera ditemukan: ${videoDevices.length}\n${cameraInfo}`);
+          `Camera ${index + 1}: ${device.label || 'Unknown'}\nDevice ID: ${device.deviceId?.slice(0, 8) || 'N/A'}`
+        ).join('\n\n');
+        alert(`📱 Mobile Camera Detection:\nTotal kamera: ${videoDevices.length}\n\n${cameraInfo}`);
       }
       
       videoDevices.forEach((device, index) => {
@@ -2716,19 +2715,24 @@ export function CallProvider({ children }: { children: ReactNode }) {
         });
       });
 
-      // Use the mobile detection from above
-      
+      // Check camera count for switching strategy
       if (videoDevices.length <= 1) {
         console.log('[CallContext] Only one camera detected');
         
         if (isMobileDevice) {
-          console.log('[CallContext] Mobile device detected - attempting force switch anyway');
+          console.log('[CallContext] Mobile device detected - akan coba force switch');
+          alert(`📱 Hanya ${videoDevices.length} kamera terdeteksi, tapi akan coba force switch untuk HP...`);
           // On mobile, try to switch even with 1 detected camera
           // Some mobile browsers don't properly enumerate all cameras
         } else {
           console.log('[CallContext] Desktop device - cannot switch with only 1 camera');
           alert('Hanya satu kamera yang tersedia pada perangkat ini.');
           return;
+        }
+      } else {
+        console.log(`[CallContext] ${videoDevices.length} cameras detected - normal switch`);
+        if (isMobileDevice) {
+          alert(`📱 ${videoDevices.length} kamera terdeteksi - akan switch normal...`);
         }
       }
 
@@ -2814,20 +2818,22 @@ export function CallProvider({ children }: { children: ReactNode }) {
         try {
           console.log(`[CallContext] Trying camera switch strategy ${index + 1}:`, strategy);
           
-          // Show strategy attempt only for rear camera and only once
-          if (isMobileDevice && isMobileRearCamera && index === 0) {
-            alert(`🔄 Mencoba akses kamera belakang...\nMohon tunggu...`);
+          // Show strategy attempt progress for mobile debugging
+          if (isMobileDevice && index === 0) {
+            alert(`🔄 Strategi ${index + 1}: Mencoba akses kamera ${isMobileRearCamera ? 'belakang' : 'depan'}...\nMohon tunggu...`);
           }
           
           newVideoStream = await navigator.mediaDevices.getUserMedia(strategy);
           newVideoTrack = newVideoStream.getVideoTracks()[0];
           console.log(`[CallContext] Strategy ${index + 1} SUCCESS! Got video track:`, newVideoTrack.id);
           
-          // Show success for mobile users - only for rear camera switch
-          if (isMobileDevice && isMobileRearCamera) {
+          // Show success for mobile users
+          if (isMobileDevice) {
             const newSettings = newVideoTrack.getSettings();
-            const cameraType = newSettings.facingMode === 'environment' ? 'Kamera Belakang' : 'Kamera Depan';
-            alert(`✅ Berhasil ganti ke: ${cameraType}!`);
+            const cameraType = newSettings.facingMode === 'environment' ? 'Kamera Belakang' : 
+                              newSettings.facingMode === 'user' ? 'Kamera Depan' : 'Unknown';
+            const resolution = `${newSettings.width || 'Unknown'}x${newSettings.height || 'Unknown'}`;
+            alert(`✅ Berhasil switch kamera!\n\nTipe: ${cameraType}\nResolusi: ${resolution}\nDevice ID: ${newSettings.deviceId?.slice(0, 8) || 'N/A'}`);
           }
           
           strategySucceeded = true;
@@ -2836,7 +2842,11 @@ export function CallProvider({ children }: { children: ReactNode }) {
           console.log(`[CallContext] Strategy ${index + 1} failed:`, err);
           lastError = err as Error;
           
-          // Show failure only at the end, not for each strategy
+          // Debug: show which strategy failed for mobile users
+          if (isMobileDevice && isMobileRearCamera) {
+            const errorName = (err as Error).name || 'Unknown';
+            console.log(`[CallContext] Mobile strategy ${index + 1} error: ${errorName}`);
+          }
         }
       }
 
@@ -2847,8 +2857,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
             'Kamera belakang tidak ditemukan di HP ini.' :
             lastError?.name === 'NotAllowedError' ?
             'Izin kamera ditolak. Buka Pengaturan browser → Izin situs.' :
+            lastError?.name === 'OverconstrainedError' ?
+            'Kamera belakang tidak mendukung resolusi yang diminta.' :
+            lastError?.name === 'NotReadableError' ?
+            'Kamera sedang digunakan aplikasi lain.' :
             `Error: ${lastError?.message || 'Tidak diketahui'}`;
-          alert(`❌ Gagal mengganti kamera\n\n${errorMsg}\n\nHP ini mungkin hanya memiliki kamera depan.`);
+          
+          alert(`❌ SEMUA STRATEGI GAGAL!\n\n${errorMsg}\n\nError type: ${lastError?.name || 'Unknown'}\n\nHP ini mungkin hanya memiliki kamera depan atau ada masalah hardware.`);
         }
         throw lastError || new Error('Semua strategi camera switch gagal');
       }
