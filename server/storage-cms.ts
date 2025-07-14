@@ -248,6 +248,25 @@ export class CMSStorage {
     return user;
   }
 
+  async updateUserStatus(userId: number, status: string): Promise<any> {
+    const [user] = await db
+      .update(users)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  async deleteUser(userId: number): Promise<boolean> {
+    try {
+      await db.delete(users).where(eq(users.id, userId));
+      return true;
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      throw error;
+    }
+  }
+
   async disableUser(userId: number): Promise<any> {
     const [user] = await db
       .update(users)

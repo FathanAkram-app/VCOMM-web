@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import Admin from "./Admin";
+import AdminComplete from "./AdminComplete";
 
 export default function SuperAdmin() {
   const { user, isLoading } = useAuth();
@@ -29,5 +29,5 @@ export default function SuperAdmin() {
   }
 
   // Show full admin interface for super admin
-  return <Admin />;
+  return <AdminComplete />;
 }

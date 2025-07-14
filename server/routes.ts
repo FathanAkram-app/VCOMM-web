@@ -1111,6 +1111,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/admin/ranks/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const user = req.user?.claims || req.session?.user;
+      const rank = await cmsStorage.updateRank(parseInt(id), req.body);
+      
+      await cmsStorage.logAdminActivity({
+        adminId: user.id || user.sub,
+        action: 'UPDATE_RANK',
+        targetTable: 'military_ranks',
+        targetId: id,
+        newData: req.body,
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+      
+      res.json(rank);
+    } catch (error) {
+      console.error("Error updating rank:", error);
+      res.status(500).json({ message: "Failed to update rank" });
+    }
+  });
+
+  app.delete("/api/admin/ranks/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const user = req.user?.claims || req.session?.user;
+      
+      await cmsStorage.deleteRank(parseInt(id));
+      
+      await cmsStorage.logAdminActivity({
+        adminId: user.id || user.sub,
+        action: 'DELETE_RANK',
+        targetTable: 'military_ranks',
+        targetId: id,
+        newData: {},
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting rank:", error);
+      res.status(500).json({ message: "Failed to delete rank" });
+    }
+  });
+
   // Military Branches routes
   app.get("/api/admin/branches", isAuthenticated, isAdmin, async (req, res) => {
     try {
@@ -1144,6 +1191,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/admin/branches/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const user = req.user?.claims || req.session?.user;
+      const branch = await cmsStorage.updateBranch(parseInt(id), req.body);
+      
+      await cmsStorage.logAdminActivity({
+        adminId: user.id || user.sub,
+        action: 'UPDATE_BRANCH',
+        targetTable: 'military_branches',
+        targetId: id,
+        newData: req.body,
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+      
+      res.json(branch);
+    } catch (error) {
+      console.error("Error updating branch:", error);
+      res.status(500).json({ message: "Failed to update branch" });
+    }
+  });
+
+  app.delete("/api/admin/branches/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const user = req.user?.claims || req.session?.user;
+      
+      await cmsStorage.deleteBranch(parseInt(id));
+      
+      await cmsStorage.logAdminActivity({
+        adminId: user.id || user.sub,
+        action: 'DELETE_BRANCH',
+        targetTable: 'military_branches',
+        targetId: id,
+        newData: {},
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting branch:", error);
+      res.status(500).json({ message: "Failed to delete branch" });
+    }
+  });
+
+  // User Management Routes
+  app.get("/api/admin/users", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const users = await cmsStorage.getAllUsersForAdmin();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.put("/api/admin/users/:id/role", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { role } = req.body;
+      const user = req.user?.claims || req.session?.user;
+      
+      const updatedUser = await cmsStorage.updateUserRole(parseInt(id), role);
+      
+      // Log admin activity
+      await cmsStorage.logAdminActivity({
+        adminId: user.id || user.sub,
+        action: 'UPDATE_USER_ROLE',
+        targetTable: 'users',
+        targetId: id,
+        newData: { role },
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user role:", error);
+      res.status(500).json({ message: "Failed to update user role" });
+    }
+  });
+
+  app.put("/api/admin/users/:id/status", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      const user = req.user?.claims || req.session?.user;
+      
+      const updatedUser = await cmsStorage.updateUserStatus(parseInt(id), status);
+      
+      // Log admin activity
+      await cmsStorage.logAdminActivity({
+        adminId: user.id || user.sub,
+        action: 'UPDATE_USER_STATUS',
+        targetTable: 'users',
+        targetId: id,
+        newData: { status },
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user status:", error);
+      res.status(500).json({ message: "Failed to update user status" });
+    }
+  });
+
+  app.delete("/api/admin/users/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const user = req.user?.claims || req.session?.user;
+      
+      await cmsStorage.deleteUser(parseInt(id));
+      
+      // Log admin activity
+      await cmsStorage.logAdminActivity({
+        adminId: user.id || user.sub,
+        action: 'DELETE_USER',
+        targetTable: 'users',
+        targetId: id,
+        newData: {},
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
   // Dashboard Statistics
   app.get("/api/admin/dashboard/stats", isAuthenticated, isAdmin, async (req, res) => {
     try {
@@ -1174,6 +1356,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching security events:", error);
       res.status(500).json({ message: "Failed to fetch security events" });
+    }
+  });
+
+  // Admin Activity Logs
+  app.get("/api/admin/logs", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const logs = await cmsStorage.getAdminLogs(100);
+      res.json(logs);
+    } catch (error) {
+      console.error("Error fetching admin logs:", error);
+      res.status(500).json({ message: "Failed to fetch admin logs" });
     }
   });
 
