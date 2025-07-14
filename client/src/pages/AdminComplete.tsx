@@ -13,7 +13,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { queryClient } from '@/lib/queryClient';
 import {
   Users, UserCheck, MessageSquare, Phone, Server, Database, Shield, Settings, Trash2, Plus, Edit, Eye,
-  BarChart3, Activity, AlertTriangle, Clock
+  BarChart3, Activity, AlertTriangle, Clock, LogOut
 } from 'lucide-react';
 
 export default function AdminComplete() {
@@ -225,13 +225,28 @@ export default function AdminComplete() {
   const stats = statsQuery.data;
   const health = healthQuery.data;
 
+  // Logout function
+  const handleLogout = () => {
+    window.location.href = '/api/auth/logout';
+  };
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#8d9c6b] mb-2">Admin Dashboard</h1>
-          <p className="text-gray-400">NXZZ-VComm System Management</p>
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-[#8d9c6b] mb-2">Admin Dashboard</h1>
+            <p className="text-gray-400">NXZZ-VComm System Management</p>
+          </div>
+          <Button 
+            onClick={handleLogout}
+            variant="outline"
+            className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Logout
+          </Button>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
