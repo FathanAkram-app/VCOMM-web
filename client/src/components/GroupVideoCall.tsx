@@ -1461,14 +1461,19 @@ export default function GroupVideoCall() {
       console.log('[GroupVideoCall] Got new video track:', newVideoTrack.id);
 
       // Replace video track in all peer connections
-      if (peerConnections.current) {
-        for (const [peerId, pc] of peerConnections.current) {
-          const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
-          if (sender) {
-            await sender.replaceTrack(newVideoTrack);
-            console.log(`[GroupVideoCall] Replaced video track for peer ${peerId}`);
+      console.log('[GroupVideoCall] Current peer connections:', Object.keys(peerConnections.current || {}));
+      if (peerConnections.current && Object.keys(peerConnections.current).length > 0) {
+        for (const [peerId, pc] of Object.entries(peerConnections.current)) {
+          if (pc && typeof pc.getSenders === 'function') {
+            const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
+            if (sender) {
+              await sender.replaceTrack(newVideoTrack);
+              console.log(`[GroupVideoCall] Replaced video track for peer ${peerId}`);
+            }
           }
         }
+      } else {
+        console.log('[GroupVideoCall] No peer connections available for track replacement');
       }
 
       // Replace track in local stream

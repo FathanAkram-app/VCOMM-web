@@ -38,8 +38,10 @@ import {
   Download,
   Monitor,
   CheckCircle,
-  Key
+  Key,
+  Camera
 } from 'lucide-react';
+import CameraTest from '@/components/CameraTest';
 
 interface UserSettings {
   id: number;
@@ -92,6 +94,7 @@ export default function Settings({ onBack }: SettingsProps) {
   const [isMicTesting, setIsMicTesting] = useState(false);
   const [micStream, setMicStream] = useState<MediaStream | null>(null);
   const [micLevel, setMicLevel] = useState(0);
+  const [showCameraTest, setShowCameraTest] = useState(false);
 
   // Get user from auth
   const { data: user } = useQuery({
@@ -483,7 +486,7 @@ export default function Settings({ onBack }: SettingsProps) {
       <div className="flex-1 overflow-hidden">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
           {/* Tab Navigation */}
-          <TabsList className="grid w-full grid-cols-7 bg-gray-800 border-b border-gray-700">
+          <TabsList className="grid w-full grid-cols-8 bg-gray-800 border-b border-gray-700">
             <TabsTrigger value="profile" className="data-[state=active]:bg-green-600">
               <User className="w-4 h-4" />
             </TabsTrigger>
@@ -504,6 +507,9 @@ export default function Settings({ onBack }: SettingsProps) {
             </TabsTrigger>
             <TabsTrigger value="audio" className="data-[state=active]:bg-green-600">
               <Volume2 className="w-4 h-4" />
+            </TabsTrigger>
+            <TabsTrigger value="camera" className="data-[state=active]:bg-green-600">
+              <Camera className="w-4 h-4" />
             </TabsTrigger>
           </TabsList>
 
@@ -1291,9 +1297,73 @@ export default function Settings({ onBack }: SettingsProps) {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            {/* Camera Test Tab */}
+            <TabsContent value="camera" className="space-y-6">
+              <div className="bg-blue-900/20 border border-blue-600 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <Info className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="text-blue-300 font-medium mb-2">Test Kamera HP</h4>
+                    <p className="text-sm text-blue-200 mb-2">
+                      Test ini membantu mengidentifikasi apakah HP Anda memiliki kamera belakang yang dapat diakses oleh browser.
+                    </p>
+                    <p className="text-sm text-blue-200">
+                      <strong>Perhatian:</strong> Beberapa HP mungkin hanya memiliki satu kamera atau kamera belakang tidak dapat diakses melalui browser web.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <Card className="bg-gray-800 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="flex items-center text-white">
+                    <Camera className="w-5 h-5 mr-2 text-green-500" />
+                    Test Kamera
+                  </CardTitle>
+                  <CardDescription>
+                    Tes akses kamera depan dan belakang pada perangkat mobile
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex justify-center">
+                    <Button
+                      onClick={() => setShowCameraTest(true)}
+                      className="bg-green-600 hover:bg-green-700 w-full"
+                    >
+                      <Camera className="w-4 h-4 mr-2" />
+                      Mulai Test Kamera
+                    </Button>
+                  </div>
+                  
+                  <div className="text-sm text-gray-300 space-y-2">
+                    <p><strong>Cara menggunakan test:</strong></p>
+                    <ul className="list-disc list-inside space-y-1 ml-4">
+                      <li>Klik "Kamera Depan" untuk test kamera selfie</li>
+                      <li>Klik "Kamera Belakang" untuk test kamera utama</li>
+                      <li>Jika ada error, pesan detail akan muncul</li>
+                      <li>Jika berhasil, video akan tampil di layar</li>
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
           </div>
         </Tabs>
       </div>
+
+      {/* Camera Test Modal */}
+      {showCameraTest && (
+        <div className="fixed inset-0 z-50">
+          <CameraTest />
+          <Button
+            onClick={() => setShowCameraTest(false)}
+            className="absolute top-4 right-4 z-50 bg-red-600 hover:bg-red-700"
+          >
+            Tutup Test
+          </Button>
+        </div>
+      )}
 
       {/* Save Button */}
       <div className="p-4 border-t border-gray-700 bg-gray-800">

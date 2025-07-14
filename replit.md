@@ -325,6 +325,11 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - ✅ ENHANCED: Mobile-specific camera detection and permission handling
   - ✅ IMPLEMENTED: Multi-fallback approach for camera constraints (deviceId → facingMode → minimal)
   - ✅ IMPROVED: Better error messages for mobile users with specific troubleshooting steps
+  - ✅ FIXED: "peerconnection is not defined" error in GroupVideoCall component
+  - ✅ ADDED: Camera test feature in Settings with diagnostic capabilities
+  - ✅ CREATED: Standalone CameraTest component for mobile camera troubleshooting
+  - ✅ IMPLEMENTED: Comprehensive camera device detection and constraint testing
+  - Multi-tier fallback system ensures maximum camera compatibility on mobile devices
 - July 14, 2025: Comprehensive CMS Dashboard Implementation:
   - ✅ IMPLEMENTED: Complete admin dashboard with 6 main sections (Dashboard, Users, Config, Ranks, Branches, Security)
   - ✅ ADDED: Real-time statistics display (online users, messages today, calls today, total conversations)
