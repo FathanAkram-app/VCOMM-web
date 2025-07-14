@@ -33,6 +33,7 @@ export const users = pgTable("users", {
   fullName: varchar("full_name"),           // Nama lengkap
   rank: varchar("rank"),                    // Pangkat
   branch: varchar("branch"),                // Cabang/Unit
+  role: varchar("role").default("user"),    // user, admin, super_admin
   status: varchar("status").default("offline"),
   profileImageUrl: varchar("profile_image_url"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -163,6 +164,87 @@ export type LapsitSubCategory = typeof lapsitSubCategories.$inferSelect;
 export type InsertLapsitSubCategory = typeof lapsitSubCategories.$inferInsert;
 export type LapsitReport = typeof lapsitReports.$inferSelect;
 export type InsertLapsitReport = typeof lapsitReports.$inferInsert;
+
+// CMS Reference Tables for Military Administration
+
+// Military Ranks Reference Table
+export const militaryRanks = pgTable("military_ranks", {
+  id: serial("id").primaryKey(),
+  rankCode: varchar("rank_code", { length: 10 }).notNull().unique(),
+  rankName: varchar("rank_name", { length: 100 }).notNull(),
+  branch: varchar("branch", { length: 50 }).notNull(), // TNI AD, TNI AU, TNI AL, POLRI
+  level: integer("level").notNull(), // 1-20 for hierarchy
+  isOfficer: boolean("is_officer").default(false),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Military Branches Reference Table
+export const militaryBranches = pgTable("military_branches", {
+  id: serial("id").primaryKey(),
+  branchCode: varchar("branch_code", { length: 10 }).notNull().unique(),
+  branchName: varchar("branch_name", { length: 100 }).notNull(),
+  branchFullName: varchar("branch_full_name", { length: 200 }).notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Military Units Reference Table
+export const militaryUnits = pgTable("military_units", {
+  id: serial("id").primaryKey(),
+  unitCode: varchar("unit_code", { length: 20 }).notNull().unique(),
+  unitName: varchar("unit_name", { length: 200 }).notNull(),
+  branchId: integer("branch_id").references(() => militaryBranches.id),
+  parentUnitId: integer("parent_unit_id").references(() => militaryUnits.id),
+  unitType: varchar("unit_type", { length: 50 }), // Kodam, Korem, Kodim, Koramil, dll
+  location: varchar("location", { length: 200 }),
+  commanderNrp: varchar("commander_nrp", { length: 20 }),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// System Configuration Table for Menu and App Settings
+export const systemConfig = pgTable("system_config", {
+  id: serial("id").primaryKey(),
+  configKey: varchar("config_key", { length: 100 }).notNull().unique(),
+  configValue: text("config_value").notNull(),
+  configDescription: text("config_description"),
+  configType: varchar("config_type", { length: 20 }).default("string"), // string, number, boolean, json
+  category: varchar("category", { length: 50 }).default("general"), // menu, security, feature, etc
+  isEditable: boolean("is_editable").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Admin Activity Logs
+export const adminLogs = pgTable("admin_logs", {
+  id: serial("id").primaryKey(),
+  adminId: varchar("admin_id").notNull(),
+  action: varchar("action", { length: 100 }).notNull(),
+  targetTable: varchar("target_table", { length: 50 }),
+  targetId: varchar("target_id", { length: 50 }),
+  oldData: jsonb("old_data"),
+  newData: jsonb("new_data"),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Type exports for CMS tables
+export type MilitaryRank = typeof militaryRanks.$inferSelect;
+export type InsertMilitaryRank = typeof militaryRanks.$inferInsert;
+export type MilitaryBranch = typeof militaryBranches.$inferSelect;
+export type InsertMilitaryBranch = typeof militaryBranches.$inferInsert;
+export type MilitaryUnit = typeof militaryUnits.$inferSelect;
+export type InsertMilitaryUnit = typeof militaryUnits.$inferInsert;
+export type SystemConfig = typeof systemConfig.$inferSelect;
+export type InsertSystemConfig = typeof systemConfig.$inferInsert;
+export type AdminLog = typeof adminLogs.$inferSelect;
+export type InsertAdminLog = typeof adminLogs.$inferInsert;
 
 // Create schema for user registration
 export const registerUserSchema = createInsertSchema(users).pick({

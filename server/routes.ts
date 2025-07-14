@@ -2,6 +2,7 @@ import express, { type Express, Request, Response, NextFunction } from "express"
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
+import { cmsStorage } from "./storage-cms";
 import { setupAuth, isAuthenticated } from "./auth";
 import { 
   WebSocketMessage, 
@@ -1019,6 +1020,145 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to update status" });
     }
   });
+
+  // CMS Admin routes (protected)
+  const isAdmin = (req: any, res: any, next: any) => {
+    const user = req.user?.claims || req.session?.user;
+    if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+    next();
+  };
+
+  // System Configuration routes
+  app.get("/api/admin/config", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const configs = await cmsStorage.getAllConfigs();
+      res.json(configs);
+    } catch (error) {
+      console.error("Error fetching configs:", error);
+      res.status(500).json({ message: "Failed to fetch configurations" });
+    }
+  });
+
+  app.put("/api/admin/config/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { configValue } = req.body;
+      const user = req.user?.claims || req.session?.user;
+      const config = await cmsStorage.updateConfig(parseInt(id), { configValue });
+      
+      // Log admin activity
+      await cmsStorage.logAdminActivity({
+        adminId: user.id || user.sub,
+        action: 'UPDATE_CONFIG',
+        targetTable: 'system_config',
+        targetId: id,
+        newData: { configValue },
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+      
+      res.json(config);
+    } catch (error) {
+      console.error("Error updating config:", error);
+      res.status(500).json({ message: "Failed to update configuration" });
+    }
+  });
+
+  // Military Ranks routes
+  app.get("/api/admin/ranks", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const ranks = await cmsStorage.getAllRanks();
+      res.json(ranks);
+    } catch (error) {
+      console.error("Error fetching ranks:", error);
+      res.status(500).json({ message: "Failed to fetch ranks" });
+    }
+  });
+
+  app.post("/api/admin/ranks", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const rank = await cmsStorage.createRank(req.body);
+      const user = req.user?.claims || req.session?.user;
+      
+      await cmsStorage.logAdminActivity({
+        adminId: user.id || user.sub,
+        action: 'CREATE_RANK',
+        targetTable: 'military_ranks',
+        targetId: rank.id.toString(),
+        newData: req.body,
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+      
+      res.json(rank);
+    } catch (error) {
+      console.error("Error creating rank:", error);
+      res.status(500).json({ message: "Failed to create rank" });
+    }
+  });
+
+  // Military Branches routes
+  app.get("/api/admin/branches", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const branches = await cmsStorage.getAllBranches();
+      res.json(branches);
+    } catch (error) {
+      console.error("Error fetching branches:", error);
+      res.status(500).json({ message: "Failed to fetch branches" });
+    }
+  });
+
+  app.post("/api/admin/branches", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const branch = await cmsStorage.createBranch(req.body);
+      const user = req.user?.claims || req.session?.user;
+      
+      await cmsStorage.logAdminActivity({
+        adminId: user.id || user.sub,
+        action: 'CREATE_BRANCH',
+        targetTable: 'military_branches',
+        targetId: branch.id.toString(),
+        newData: req.body,
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+      
+      res.json(branch);
+    } catch (error) {
+      console.error("Error creating branch:", error);
+      res.status(500).json({ message: "Failed to create branch" });
+    }
+  });
+
+  // Public config endpoint for menu visibility
+  app.get("/api/config/menu", async (req, res) => {
+    try {
+      const menuConfigs = await cmsStorage.getAllConfigs();
+      const menuSettings = menuConfigs
+        .filter(config => config.category === 'menu')
+        .reduce((acc, config) => {
+          acc[config.configKey] = config.configValue === 'true';
+          return acc;
+        }, {} as Record<string, boolean>);
+      
+      res.json(menuSettings);
+    } catch (error) {
+      console.error("Error fetching menu config:", error);
+      res.status(500).json({ message: "Failed to fetch menu configuration" });
+    }
+  });
+
+  // Initialize default configs on server start
+  (async () => {
+    try {
+      await cmsStorage.initializeDefaultConfigs();
+      console.log('Default system configurations initialized');
+    } catch (error) {
+      console.error('Failed to initialize default configs:', error);
+    }
+  })();
 
   // Lapsit routes
   app.get('/api/lapsit/categories', isAuthenticated, async (req: AuthRequest, res) => {

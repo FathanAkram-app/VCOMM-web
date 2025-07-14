@@ -8,6 +8,7 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import Chat from "@/pages/Chat";
 import Settings from "@/pages/Settings";
+import Admin from "@/pages/Admin";
 import NotFound from "@/pages/not-found";
 import AudioCall from "@/components/AudioCall";
 import VideoCall from "@/components/VideoCall";
@@ -112,6 +113,11 @@ function Router() {
       <Route path="/settings">
         <AuthCheck>
           <Settings onBack={() => window.history.back()} />
+        </AuthCheck>
+      </Route>
+      <Route path="/admin">
+        <AuthCheck>
+          <Admin />
         </AuthCheck>
       </Route>
       <Route path="/">

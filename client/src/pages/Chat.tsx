@@ -28,6 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useQuery } from '@tanstack/react-query';
 import { usePWA } from '../hooks/usePWA';
 import { Download, Smartphone } from 'lucide-react';
+import { useMenuConfig } from '../hooks/useMenuConfig';
 
 // PWA Install Button Component
 const PWAInstallButton = () => {
@@ -82,6 +83,7 @@ export default function Chat() {
   const [, navigate] = useLocation();
   const { activeCall } = useCall();
   const { toast } = useToast();
+  const { menuConfig } = useMenuConfig();
   const [activeChat, setActiveChat] = useState<{ id: number; isGroup: boolean } | null>(null);
   const [chats, setChats] = useState<any[]>([]);
   
@@ -1290,40 +1292,61 @@ export default function Chat() {
         
         {/* Mobile Bottom Navigation */}
         <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#1a1a1a] border-t border-[#333] flex justify-around p-2 z-10">
-          <button 
-            className={`p-3 rounded-lg ${activeView === 'chats' ? 'text-[#8d9c6b]' : 'text-gray-500'}`}
-            onClick={handleShowChats}
-          >
-            <MessageSquare className="h-6 w-6" />
-          </button>
+          {menuConfig.menu_chat_enabled && (
+            <button 
+              className={`p-3 rounded-lg ${activeView === 'chats' ? 'text-[#8d9c6b]' : 'text-gray-500'}`}
+              onClick={handleShowChats}
+            >
+              <MessageSquare className="h-6 w-6" />
+            </button>
+          )}
           
-          <button 
-            className={`p-3 rounded-lg ${activeView === 'personnel' ? 'text-[#8d9c6b]' : 'text-gray-500'}`}
-            onClick={handleShowPersonnel}
-          >
-            <User className="h-6 w-6" />
-          </button>
+          {menuConfig.menu_personnel_enabled && (
+            <button 
+              className={`p-3 rounded-lg ${activeView === 'personnel' ? 'text-[#8d9c6b]' : 'text-gray-500'}`}
+              onClick={handleShowPersonnel}
+            >
+              <User className="h-6 w-6" />
+            </button>
+          )}
           
-          <button 
-            className={`p-3 rounded-lg ${activeView === 'calls' ? 'text-[#8d9c6b]' : 'text-gray-500'}`}
-            onClick={handleShowCalls}
-          >
-            <PhoneIcon className="h-6 w-6" />
-          </button>
+          {menuConfig.menu_calls_enabled && (
+            <button 
+              className={`p-3 rounded-lg ${activeView === 'calls' ? 'text-[#8d9c6b]' : 'text-gray-500'}`}
+              onClick={handleShowCalls}
+            >
+              <PhoneIcon className="h-6 w-6" />
+            </button>
+          )}
           
-          {/* <button 
-            className={`p-3 rounded-lg ${activeView === 'lapsit' ? 'text-[#8d9c6b]' : 'text-gray-500'}`}
-            onClick={handleShowLapsit}
-          >
-            <FileText className="h-6 w-6" />
-          </button> */}
+          {menuConfig.menu_lapsit_enabled && (
+            <button 
+              className={`p-3 rounded-lg ${activeView === 'lapsit' ? 'text-[#8d9c6b]' : 'text-gray-500'}`}
+              onClick={handleShowLapsit}
+            >
+              <FileText className="h-6 w-6" />
+            </button>
+          )}
           
-          <button 
-            className={`p-3 rounded-lg ${activeView === 'config' ? 'text-[#8d9c6b]' : 'text-gray-500'}`}
-            onClick={handleShowConfig}
-          >
-            <Settings className="h-6 w-6" />
-          </button>
+          {menuConfig.menu_settings_enabled && (
+            <button 
+              className={`p-3 rounded-lg ${activeView === 'config' ? 'text-[#8d9c6b]' : 'text-gray-500'}`}
+              onClick={handleShowConfig}
+            >
+              <Settings className="h-6 w-6" />
+            </button>
+          )}
+
+          {/* Admin Menu - Show only for admin/super_admin */}
+          {user && (user.role === 'admin' || user.role === 'super_admin') && (
+            <button 
+              className={`p-3 rounded-lg text-orange-400 hover:text-orange-300`}
+              onClick={() => window.location.href = '/admin'}
+              title="Admin Dashboard"
+            >
+              <Settings className="h-6 w-6" />
+            </button>
+          )}
         </div>
         
         {/* Main View Area */}
