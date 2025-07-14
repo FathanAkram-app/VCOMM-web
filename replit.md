@@ -270,7 +270,15 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - ✅ IMPROVED: Flex layout with proper shrink controls and gap spacing
   - ✅ ADDED: Tooltip on filename hover for better UX with truncated text
   - ✅ OPTIMIZED: Consistent download button placement across all file types
+  - ✅ REDESIGNED: Image download button moved below filename/size with centered layout
   - Chat now fully responsive on mobile with proper media constraints and visible download buttons
+- July 14, 2025: Real-time Chat Message Display Fix:
+  - ✅ ENHANCED: WebSocket message handling with immediate refetch for current conversation
+  - ✅ IMPROVED: Query invalidation with force refetch when receiving new messages
+  - ✅ OPTIMIZED: Message query caching with staleTime: 0 for fresh data
+  - ✅ ADDED: Automatic scroll to bottom when new messages are loaded
+  - ✅ FIXED: Real-time message display without requiring navigation away from chatroom
+  - Real-time messaging now works instantly without needing to leave and return to chat
 
 # User Preferences
 

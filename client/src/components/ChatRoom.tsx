@@ -99,21 +99,24 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     enabled: !!chatId && !!user && !isGroup,
   });
   
-  // Fetch messages - remove polling, rely on WebSocket only
+  // Fetch messages - with aggressive caching and WebSocket updates
   const { data: messages = [], refetch: refetchMessages } = useQuery({
     queryKey: [`/api/conversations/${chatId}/messages`],
     enabled: !!chatId && !!user,
-    // Remove automatic polling - use WebSocket for real-time updates
-    retry: 3, // Coba lagi jika gagal
-    staleTime: 5 * 60 * 1000, // Data dianggap stale setelah 5 menit
+    // Remove stale time to always get fresh data
+    staleTime: 0,
+    // Add caching time to prevent excessive requests
+    cacheTime: 30 * 1000, // 30 seconds
+    retry: 3,
+    // Refetch on window focus to ensure fresh data
+    refetchOnWindowFocus: true,
     // Tambahkan console log untuk membantu debugging
     onSuccess: (data) => {
-      console.log("Messages loaded:", data);
-      // Cek apakah ada pesan dengan replyToId
-      const repliedMessages = data.filter((m: any) => m.replyToId);
-      if (repliedMessages.length > 0) {
-        console.log("Messages with replies:", repliedMessages);
-      }
+      console.log("📨 Messages loaded for chat", chatId, ":", data?.length || 0, "messages");
+      // Scroll to bottom when new messages are loaded
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
     }
   });
   
@@ -171,11 +174,12 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
         
         // Handle new messages - real-time notification
         if (message.type === 'new_message') {
-          console.log('🔥 NOTIFICATION: New message received!');
+          console.log('🔥 REAL-TIME: New message received!');
           console.log('🔥 Message payload:', message.payload);
           console.log('🔥 Current chatId:', chatId, 'Message conversationId:', message.payload?.conversationId);
           console.log('🔥 WebSocket readyState:', ws?.readyState);
           console.log('🔥 Browser location:', window.location.href);
+          console.log('🔥 Are we in the right conversation?', message.payload?.conversationId === chatId);
           
           // Check if this is a delete action
           if (message.payload?.action === 'delete_for_everyone') {
@@ -186,6 +190,12 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
             if (message.payload?.conversationId) {
               queryClient.invalidateQueries({ queryKey: [`/api/conversations/${message.payload.conversationId}/messages`] });
               console.log('🗑️ Invalidated queries for real-time delete in conversation:', message.payload.conversationId);
+              
+              // Force immediate refresh if this is the current conversation
+              if (message.payload.conversationId === chatId) {
+                console.log('🗑️ Force refetching current conversation for delete');
+                refetchMessages();
+              }
             }
             
             // Also refresh conversations list to update last message if needed
@@ -206,8 +216,17 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
           
           // Refresh messages for any conversation to see immediate updates
           if (message.payload?.conversationId) {
+            console.log('🔥 Invalidating queries for conversation:', message.payload.conversationId);
+            console.log('🔥 Current chatId:', chatId);
+            
+            // Force immediate refresh for the current conversation
             queryClient.invalidateQueries({ queryKey: [`/api/conversations/${message.payload.conversationId}/messages`] });
-            console.log('🔥 Invalidated queries for conversation:', message.payload.conversationId);
+            
+            // If this is the current conversation, also force refetch
+            if (message.payload.conversationId === chatId) {
+              console.log('🔥 Force refetching current conversation messages');
+              refetchMessages();
+            }
           }
           
           // Also refresh conversations list to update unread counts
