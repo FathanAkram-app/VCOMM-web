@@ -121,6 +121,19 @@ NXZZ-VComm is a military communications platform designed for intranet environme
 - Port configuration for different deployment targets
 
 # Changelog
+- July 14, 2025: CRITICAL WebRTC Peer Connection Persistence Fix:
+  - ✅ FIXED: Major WebRTC issue where peer connections were lost during component re-mounting
+  - ✅ CONVERTED: All WebRTC handlers from useState to useRef for persistent data storage
+  - ✅ UPDATED: handleIncomingICECandidate to use peerConnectionsRef instead of state
+  - ✅ FIXED: handleAnswer function to access peer connections via ref-based storage
+  - ✅ ENHANCED: processPendingICECandidates with ref-based candidate management
+  - ✅ IMPROVED: cleanup functions to properly clear both ref and state data
+  - ✅ RESOLVED: Stream timing issues in handleIncomingWebRTCOffer with better stream management
+  - ✅ ENHANCED: initializeMediaStream to return stream directly for immediate use
+  - ✅ OPTIMIZED: Local stream fallback system using returned stream when state hasn't updated yet
+  - Remote video streams should now persist correctly during component lifecycle
+  - WebRTC connections maintain stability across React component re-renders
+  - Foundation established for reliable multi-participant video conferencing
 - July 14, 2025: MAJOR REFACTOR - Rebuilt Group Video Call System from Scratch:
   - ✅ CREATED: Brand new GroupVideoCallSimple component with clean architecture
   - ✅ SIMPLIFIED: Video and audio enabled from start - no more audio-first complexity

@@ -236,21 +236,28 @@ export default function GroupVideoCallSimple() {
     }
 
     // Wait for local stream if not ready yet
-    if (!localStream) {
+    let streamToUse = localStream;
+    if (!streamToUse) {
       console.log('[GroupVideoCallSimple] ⚠️ Local stream not ready, initializing...');
       try {
-        await initializeMediaStream();
-        // Give a moment for the stream to be set
-        await new Promise(resolve => setTimeout(resolve, 500));
+        streamToUse = await initializeMediaStream();
+        // Give a moment for the stream to be set in state
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Use the returned stream directly if state hasn't updated yet
+        if (!localStream && streamToUse) {
+          console.log('[GroupVideoCallSimple] 📦 Using newly initialized stream directly');
+        }
       } catch (error) {
         console.error('[GroupVideoCallSimple] ❌ Failed to initialize media for incoming offer:', error);
         return;
       }
     }
 
-    // Double-check localStream is now available
-    if (!localStream) {
-      console.log('[GroupVideoCallSimple] ❌ Still no local stream available after initialization');
+    // Final check - use either localStream or the newly created one
+    const finalStream = localStream || streamToUse;
+    if (!finalStream) {
+      console.log('[GroupVideoCallSimple] ❌ Still no stream available after initialization');
       return;
     }
 
@@ -259,14 +266,14 @@ export default function GroupVideoCallSimple() {
       const pc = getOrCreatePeerConnection(offerData.fromUserId);
       
       // Ensure local tracks are added before setting remote description
-      if (localStream) {
+      if (finalStream) {
         const senders = pc.getSenders();
         console.log(`[GroupVideoCallSimple] 📊 Current senders before answer for user ${offerData.fromUserId}:`, senders.length);
         
         // Only add tracks if they haven't been added yet
         if (senders.length === 0) {
-          localStream.getTracks().forEach(track => {
-            const sender = pc.addTrack(track, localStream);
+          finalStream.getTracks().forEach(track => {
+            const sender = pc.addTrack(track, finalStream);
             console.log(`[GroupVideoCallSimple] ✅ Added local track for answer to user ${offerData.fromUserId}:`, {
               trackKind: track.kind,
               trackEnabled: track.enabled,
@@ -277,7 +284,7 @@ export default function GroupVideoCallSimple() {
           console.log(`[GroupVideoCallSimple] ℹ️ Tracks already added for answer to user ${offerData.fromUserId}`);
         }
       } else {
-        console.log(`[GroupVideoCallSimple] ⚠️ No local stream when creating answer for user ${offerData.fromUserId}`);
+        console.log(`[GroupVideoCallSimple] ⚠️ No stream available when creating answer for user ${offerData.fromUserId}`);
       }
       
       console.log('[GroupVideoCallSimple] 🔗 Peer connection state before setting remote description:', {
