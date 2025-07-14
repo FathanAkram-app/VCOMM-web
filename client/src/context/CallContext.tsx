@@ -1342,7 +1342,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }
     
     setActiveCall(null);
-    alert('Panggilan ditolak');
+    console.log('[CallContext] Call rejected');
   };
 
   const handleIncomingGroupCall = (message: any) => {
@@ -1948,14 +1948,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const startCall = async (peerUserId: number, peerName: string, callType: 'audio' | 'video') => {
     if (!user) {
       console.error('[CallContext] User not available');
-      alert('User tidak tersedia. Silakan login ulang.');
       return;
     }
 
     // Enhanced WebSocket check with simple retry
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       console.log('[CallContext] WebSocket not connected, please refresh page');
-      alert('Koneksi terputus. Refresh halaman (F5) dan coba lagi.');
       return;
     }
 
@@ -1965,7 +1963,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     const { isMobile, isHTTPS, hasMediaDevices } = checkMobileCompatibility();
     
     if (!hasMediaDevices) {
-      alert('Browser Anda tidak mendukung akses media. Gunakan Chrome atau Safari terbaru.');
+      console.error('[CallContext] Media devices not supported');
       return;
     }
 
@@ -2018,7 +2016,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
               
               // Final fallback - audio only for video calls
               console.log('[CallContext] 📱 Mobile video fallback 3: audio only');
-              alert('Camera tidak tersedia. Video call akan menggunakan audio saja.');
               return await navigator.mediaDevices.getUserMedia({ audio: true });
             }
           }
@@ -2164,7 +2161,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     } catch (error: any) {
       console.error('[CallContext] Error starting call:', error);
-      alert(getMobileErrorMessage(error));
     }
   };
 
@@ -2341,7 +2337,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     } catch (error: any) {
       console.error('[CallContext] Error accepting call:', error);
-      alert(getMobileErrorMessage(error).replace('Gagal memulai panggilan', 'Gagal menerima panggilan'));
     }
   };
 
@@ -2651,12 +2646,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
     console.log('[CallContext] Has localStream:', !!activeCall?.localStream);
     console.log('[CallContext] Call type:', activeCall?.callType);
     
-    // Always show function called alert for debugging
-    alert(`📞 switchCallCamera dipanggil!\n\nActiveCall: ${!!activeCall}\nHas localStream: ${!!activeCall?.localStream}\nCall type: ${activeCall?.callType}`);
-    
     if (!activeCall?.localStream || activeCall.callType !== 'video') {
       console.log('[CallContext] No active video call or stream available');
-      alert('❌ Tidak ada panggilan video aktif untuk mengganti kamera.');
       return;
     }
 
@@ -2674,7 +2665,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
           const permissions = await navigator.permissions.query({ name: 'camera' as PermissionName });
           console.log('[CallContext] Camera permission state:', permissions.state);
           if (permissions.state === 'denied') {
-            alert('Izin kamera diperlukan. Buka Pengaturan browser → Izin situs → Kamera → Izinkan.');
+            console.log('[CallContext] Camera permission denied');
             return;
           }
         } catch (permError) {
