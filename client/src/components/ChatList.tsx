@@ -241,10 +241,10 @@ export default function ChatList({
             </div>
             
             {/* Chat details */}
-            <div className="ml-3 flex-1 min-w-0 pr-2">
-              <div className="flex justify-between items-center gap-2">
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-white font-medium truncate">
+            <div className="ml-3 flex-1 min-w-0 max-w-[calc(100%-120px)]">
+              <div className="flex justify-between items-center mb-1">
+                <div className="flex-1 min-w-0 max-w-[calc(100%-60px)]">
+                  <h3 className="text-white font-medium truncate overflow-hidden whitespace-nowrap text-ellipsis">
                     {chat.name}
                     {chat.isGroup && 
                       <span className="ml-2 text-xs font-normal text-gray-400">
@@ -253,16 +253,16 @@ export default function ChatList({
                     }
                   </h3>
                 </div>
-                <span className="text-xs text-gray-400 flex-shrink-0">
+                <span className="text-xs text-gray-400 flex-shrink-0 ml-2 w-12 text-right">
                   {chat.lastMessageTime ? formatLastMessageTime(chat.lastMessageTime) : ""}
                 </span>
               </div>
               
-              <div className="flex justify-between items-center mt-1 gap-2">
-                <div className="flex-1 min-w-0">
-                  <p className="text-gray-400 text-sm truncate">
+              <div className="flex justify-between items-center">
+                <div className="flex-1 min-w-0 max-w-[calc(100%-40px)]">
+                  <p className="text-gray-400 text-sm truncate overflow-hidden whitespace-nowrap text-ellipsis">
                     {chat.lastMessage && chat.lastMessage.includes("Pesan Suara") ? (
-                      <span className="flex items-center">
+                      <span className="inline-flex items-center">
                         <span className="text-green-500 mr-1">🔊</span>
                         <span className="text-gray-300">Pesan Suara</span>
                       </span>
@@ -273,7 +273,7 @@ export default function ChatList({
                 </div>
                 
                 {chat.unread && chat.unread > 0 ? (
-                  <span className="bg-[#4d5d30] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">
+                  <span className="bg-[#4d5d30] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 ml-2">
                     {chat.unread}
                   </span>
                 ) : null}
@@ -281,7 +281,7 @@ export default function ChatList({
             </div>
             
             {/* Actions dropdown */}
-            <div onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
+            <div onClick={(e) => e.stopPropagation()} className="flex-shrink-0 w-8 ml-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-[#8d9c6b] hover:text-white">
