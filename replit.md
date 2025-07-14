@@ -335,13 +335,14 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - Registration now follows proper military hierarchy with branch-specific rank selection
 - July 14, 2025: User Search and Filter System in CMS Dashboard:
   - ✅ IMPLEMENTED: Comprehensive user search functionality in admin dashboard
-  - ✅ ADDED: Real-time search by callsign, NRP, full name, and rank
+  - ✅ ADDED: Real-time search by callsign, NRP, full name, rank, and branch
   - ✅ CREATED: Status filter dropdown (All, Online, Offline, Disabled)
   - ✅ BUILT: Role filter dropdown (All, User, Admin, Super Admin)
-  - ✅ ENHANCED: Dynamic user counter showing filtered vs total users
+  - ✅ ENHANCED: Branch filter dropdown with dynamic branch data from database
+  - ✅ IMPROVED: Dynamic user counter showing filtered vs total users
   - ✅ ADDED: Clear filters button when any filter is active
-  - ✅ IMPROVED: Search UI with icons and responsive design
-  - Admins can now easily find and manage specific users with advanced filtering
+  - ✅ OPTIMIZED: Search UI with icons and responsive design
+  - Admins can now easily find and manage specific users with advanced filtering including military branch filtering
 - July 14, 2025: Super Admin Implementation:
   - ✅ CREATED: Super admin user (callsign: 'superadmin', password: 'admin123!!')
   - ✅ IMPLEMENTED: Auto-redirect system - super admin bypasses chat and goes directly to /superadmin

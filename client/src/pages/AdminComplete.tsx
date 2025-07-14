@@ -26,6 +26,7 @@ export default function AdminComplete() {
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [userStatusFilter, setUserStatusFilter] = useState('all');
   const [userRoleFilter, setUserRoleFilter] = useState('all');
+  const [userBranchFilter, setUserBranchFilter] = useState('all');
 
   // Queries
   const statsQuery = useQuery({
@@ -142,12 +143,14 @@ export default function AdminComplete() {
       user.callsign?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
       user.nrp?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
       user.fullName?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-      user.rank?.toLowerCase().includes(userSearchTerm.toLowerCase());
+      user.rank?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+      user.branch?.toLowerCase().includes(userSearchTerm.toLowerCase());
     
     const matchesStatus = userStatusFilter === 'all' || user.status === userStatusFilter;
     const matchesRole = userRoleFilter === 'all' || user.role === userRoleFilter;
+    const matchesBranch = userBranchFilter === 'all' || user.branch === userBranchFilter;
     
-    return matchesSearch && matchesStatus && matchesRole;
+    return matchesSearch && matchesStatus && matchesRole && matchesBranch;
   }) || [];
 
   // Clear all filters
@@ -155,6 +158,7 @@ export default function AdminComplete() {
     setUserSearchTerm('');
     setUserStatusFilter('all');
     setUserRoleFilter('all');
+    setUserBranchFilter('all');
   };
 
   // Config Management Mutations
@@ -446,13 +450,15 @@ export default function AdminComplete() {
                     <div className="flex-1 relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                       <Input
-                        placeholder="Search callsign, NRP, name, or rank..."
+                        placeholder="Search callsign, NRP, name, rank, or branch..."
                         value={userSearchTerm}
                         onChange={(e) => setUserSearchTerm(e.target.value)}
                         className="pl-10 bg-[#2a2a2a] border-gray-600 text-white"
                       />
                     </div>
-                    
+                  </div>
+                  
+                  <div className="flex flex-col md:flex-row gap-4">
                     {/* Status Filter */}
                     <Select value={userStatusFilter} onValueChange={setUserStatusFilter}>
                       <SelectTrigger className="w-[180px] bg-[#2a2a2a] border-gray-600 text-white">
@@ -480,9 +486,29 @@ export default function AdminComplete() {
                         <SelectItem value="super_admin" className="text-white focus:bg-[#8d9c6b] focus:text-black">Super Admin</SelectItem>
                       </SelectContent>
                     </Select>
+
+                    {/* Branch Filter */}
+                    <Select value={userBranchFilter} onValueChange={setUserBranchFilter}>
+                      <SelectTrigger className="w-[180px] bg-[#2a2a2a] border-gray-600 text-white">
+                        <Filter className="w-4 h-4 mr-2" />
+                        <SelectValue placeholder="Filter Branch" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#2a2a2a] border-gray-600">
+                        <SelectItem value="all" className="text-white focus:bg-[#8d9c6b] focus:text-black">All Branches</SelectItem>
+                        {branchesQuery.data?.map((branch: any) => (
+                          <SelectItem 
+                            key={branch.id} 
+                            value={branch.branchName} 
+                            className="text-white focus:bg-[#8d9c6b] focus:text-black"
+                          >
+                            {branch.branchName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     
                     {/* Clear Filters Button */}
-                    {(userSearchTerm || userStatusFilter !== 'all' || userRoleFilter !== 'all') && (
+                    {(userSearchTerm || userStatusFilter !== 'all' || userRoleFilter !== 'all' || userBranchFilter !== 'all') && (
                       <Button
                         variant="outline"
                         onClick={clearFilters}
