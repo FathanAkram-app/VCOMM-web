@@ -1149,7 +1149,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
       </Dialog>
       
       {/* Messages container with space for input at bottom */}
-      <div className="flex-1 overflow-y-auto p-4 pb-32 space-y-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 pb-32 space-y-6 w-full">
         {messageGroups.map(group => {
           // Buat array semua pesan untuk mencari referenced messages
           const allMessages = messageGroups.flatMap(g => g.messages);
@@ -1181,14 +1181,15 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
               return (
                 <div 
                   key={msg.id} 
-                  className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group`}
+                  className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group w-full`}
                 >
                   <div 
-                    className={`relative max-w-[70%] rounded-lg px-4 py-2 ${
+                    className={`relative max-w-[85%] sm:max-w-[70%] rounded-lg px-4 py-2 overflow-hidden ${
                       isOwnMessage 
                         ? 'bg-[#4d5d30] text-white rounded-br-none' 
                         : 'bg-[#333333] text-white rounded-bl-none'
                     }`}
+                    style={{ wordBreak: 'break-word' }}
                   >
                     {!isOwnMessage && (
                       <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
@@ -1237,13 +1238,15 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                             audioUrl={msg.attachmentUrl ? msg.attachmentUrl : `/uploads/voice_note_${msg.id}.webm`}
                           />
                         ) : (
-                          <MessageAttachment 
-                            attachmentType={msg.attachmentType || 'document'} 
-                            attachmentUrl={msg.attachmentUrl} 
-                            attachmentName={msg.attachmentName || 'file'} 
-                            attachmentSize={msg.attachmentSize}
-                            onImageClick={setSelectedImageModal}
-                          />
+                          <div className="w-full max-w-full overflow-hidden">
+                            <MessageAttachment 
+                              attachmentType={msg.attachmentType || 'document'} 
+                              attachmentUrl={msg.attachmentUrl} 
+                              attachmentName={msg.attachmentName || 'file'} 
+                              attachmentSize={msg.attachmentSize}
+                              onImageClick={setSelectedImageModal}
+                            />
+                          </div>
                         )}
                       </>
                     )}

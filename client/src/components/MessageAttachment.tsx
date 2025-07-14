@@ -101,11 +101,17 @@ export default function MessageAttachment({
     switch (attachmentType) {
       case 'image':
         return (
-          <div className="mb-1">
+          <div className="mb-1 w-full max-w-full overflow-hidden">
             <img 
               src={attachmentUrl} 
               alt={attachmentName} 
-              className="max-h-56 max-w-full rounded-md object-contain cursor-pointer hover:opacity-80 transition-opacity"
+              className="max-h-56 w-full max-w-full rounded-md object-contain cursor-pointer hover:opacity-80 transition-opacity"
+              style={{
+                maxWidth: '100%',
+                width: 'auto',
+                height: 'auto',
+                display: 'block'
+              }}
               onClick={() => onImageClick?.(attachmentUrl)} 
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = '/broken-image.svg';
@@ -116,17 +122,21 @@ export default function MessageAttachment({
         );
       case 'video':
         return (
-          <div className="mb-1 relative">
-            <div className="relative">
+          <div className="mb-1 relative w-full max-w-full overflow-hidden">
+            <div className="relative w-full">
               <video 
                 ref={videoRef}
                 controls 
-                className="max-h-56 max-w-full rounded-md bg-black border border-gray-600 object-cover" 
+                className="w-full max-w-full rounded-md bg-black border border-gray-600 object-contain" 
                 preload="metadata"
                 playsInline
                 muted={false}
                 style={{
-                  minHeight: '200px',
+                  maxWidth: '100%',
+                  width: '100%',
+                  height: 'auto',
+                  maxHeight: '240px',
+                  minHeight: '180px',
                   backgroundColor: '#000000',
                   display: 'block'
                 }}
