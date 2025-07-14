@@ -2726,52 +2726,76 @@ export function CallProvider({ children }: { children: ReactNode }) {
         }
       };
 
-      // Get new video stream with fallback approaches
+      // Get new video stream with 4-tier fallback system (like CameraTestSimple)
       let newVideoStream: MediaStream;
       let newVideoTrack: MediaStreamTrack;
       
-      try {
-        // First attempt: use exact deviceId with constraints
-        newVideoStream = await navigator.mediaDevices.getUserMedia(constraints);
-        newVideoTrack = newVideoStream.getVideoTracks()[0];
-        console.log('[CallContext] Got new video track (attempt 1):', newVideoTrack.id);
-      } catch (error) {
-        console.log('[CallContext] First attempt failed, trying facingMode only:', error);
+      const strategies = [
+        // Strategy 1: Exact facingMode with high quality
+        {
+          video: {
+            facingMode: { exact: nextFacingMode },
+            width: { ideal: 720 },
+            height: { ideal: 1280 }
+          }
+        },
+        // Strategy 2: Preferred facingMode with medium quality
+        {
+          video: {
+            facingMode: nextFacingMode,
+            width: { ideal: 640 },
+            height: { ideal: 480 }
+          }
+        },
+        // Strategy 3: Just facingMode
+        {
+          video: {
+            facingMode: nextFacingMode
+          }
+        },
+        // Strategy 4: Any video (last resort)
+        {
+          video: true
+        }
+      ];
+
+      let lastError: Error | null = null;
+      let strategySucceeded = false;
+
+      for (const [index, strategy] of strategies.entries()) {
         try {
-          // Second attempt: use only facingMode without deviceId
-          const fallbackConstraints = {
-            audio: false,
-            video: {
-              facingMode: nextFacingMode,
-              width: { ideal: 720 },
-              height: { ideal: 1280 }
-            }
-          };
-          newVideoStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+          console.log(`[CallContext] Trying camera switch strategy ${index + 1}:`, strategy);
+          newVideoStream = await navigator.mediaDevices.getUserMedia(strategy);
           newVideoTrack = newVideoStream.getVideoTracks()[0];
-          console.log('[CallContext] Got new video track (attempt 2):', newVideoTrack.id);
-        } catch (error2) {
-          console.log('[CallContext] Second attempt failed, trying minimal constraints:', error2);
-          // Third attempt: minimal constraints
-          const minimalConstraints = {
-            audio: false,
-            video: { facingMode: nextFacingMode }
-          };
-          newVideoStream = await navigator.mediaDevices.getUserMedia(minimalConstraints);
-          newVideoTrack = newVideoStream.getVideoTracks()[0];
-          console.log('[CallContext] Got new video track (attempt 3):', newVideoTrack.id);
+          console.log(`[CallContext] Strategy ${index + 1} SUCCESS! Got video track:`, newVideoTrack.id);
+          strategySucceeded = true;
+          break;
+        } catch (err) {
+          console.log(`[CallContext] Strategy ${index + 1} failed:`, err);
+          lastError = err as Error;
         }
       }
 
-      // Replace video track in all peer connections first
-      if (peerConnections.current) {
-        for (const [peerId, pc] of peerConnections.current) {
-          const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
-          if (sender) {
-            await sender.replaceTrack(newVideoTrack);
-            console.log(`[CallContext] Replaced video track for peer ${peerId}`);
+      if (!strategySucceeded || !newVideoStream) {
+        throw lastError || new Error('Semua strategi camera switch gagal');
+      }
+
+      // Replace video track in peer connection with safety checks
+      if (activeCall.peerConnection && typeof activeCall.peerConnection.getSenders === 'function') {
+        try {
+          const senders = activeCall.peerConnection.getSenders();
+          const videoSender = senders.find(s => s.track && s.track.kind === 'video');
+          if (videoSender && typeof videoSender.replaceTrack === 'function') {
+            await videoSender.replaceTrack(newVideoTrack);
+            console.log('[CallContext] Video track replaced in peer connection');
+          } else {
+            console.log('[CallContext] No video sender found in peer connection');
           }
+        } catch (error) {
+          console.error('[CallContext] Error replacing track in peer connection:', error);
         }
+      } else {
+        console.log('[CallContext] No valid peer connection available for track replacement');
       }
 
       // Remove old track from local stream and add new one
@@ -2792,16 +2816,21 @@ export function CallProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('[CallContext] Error switching camera:', error);
       
-      // Show user-friendly error message
-      const errorMessage = error instanceof Error && error.name === 'NotAllowedError' 
-        ? 'Izin kamera diperlukan. Buka Pengaturan browser → Izin situs → Kamera → Izinkan.'
-        : error instanceof Error && error.name === 'NotFoundError'
-        ? 'Kamera belakang tidak tersedia. Perangkat ini mungkin hanya memiliki kamera depan.'
-        : error instanceof Error && error.name === 'NotReadableError'
-        ? 'Kamera sedang digunakan aplikasi lain. Tutup aplikasi kamera lain dan coba lagi.'
-        : error instanceof Error && error.name === 'OverconstrainedError'
-        ? 'Kamera belakang tidak mendukung resolusi yang diminta. Akan menggunakan pengaturan default.'
-        : `Gagal mengganti kamera: ${error instanceof Error ? error.message : 'Error tidak diketahui'}`;
+      // Show user-friendly error message with mobile-specific tips
+      let errorMessage = 'Gagal mengganti kamera: ';
+      if (error instanceof Error && error.name === 'NotAllowedError') {
+        errorMessage += 'Izin kamera diperlukan. Buka Pengaturan browser → Izin situs → Kamera → Izinkan.';
+      } else if (error instanceof Error && error.name === 'NotFoundError') {
+        errorMessage += nextFacingMode === 'environment' 
+          ? 'Kamera belakang tidak ditemukan. HP ini mungkin hanya memiliki kamera depan.'
+          : 'Kamera depan tidak ditemukan.';
+      } else if (error instanceof Error && error.name === 'NotReadableError') {
+        errorMessage += 'Kamera sedang digunakan aplikasi lain. Tutup aplikasi kamera lain dan coba lagi.';
+      } else if (error instanceof Error && error.name === 'OverconstrainedError') {
+        errorMessage += 'Kamera tidak mendukung resolusi yang diminta. Coba restart browser.';
+      } else {
+        errorMessage += error instanceof Error ? error.message : 'Error tidak diketahui. Coba restart browser atau HP.';
+      }
       
       console.log('[CallContext] Camera switch error details:', error);
       alert(errorMessage);
