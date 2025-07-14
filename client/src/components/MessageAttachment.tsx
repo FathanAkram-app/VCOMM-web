@@ -175,24 +175,39 @@ export default function MessageAttachment({
             
             {/* Fullscreen Close Button Overlay */}
             {isFullscreen && (
-              <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center">
+              <div 
+                className="fixed inset-0 bg-black/95 flex items-center justify-center"
+                style={{ zIndex: 9999 }}
+              >
+                {/* Close Button - Fixed positioning with high z-index */}
                 <Button
                   size="lg"
                   variant="ghost"
-                  className="absolute top-4 right-4 bg-black/70 hover:bg-black/90 text-white border border-gray-500 backdrop-blur-sm z-60"
+                  className="fixed top-4 right-4 bg-red-600/80 hover:bg-red-700/90 text-white border-2 border-white/50 backdrop-blur-sm shadow-2xl"
+                  style={{ 
+                    zIndex: 10000,
+                    width: '60px',
+                    height: '60px',
+                    borderRadius: '50%',
+                    fontSize: '24px',
+                    fontWeight: 'bold'
+                  }}
                   onClick={handleFullscreenToggle}
                   title="Close Fullscreen"
                 >
-                  <X className="h-6 w-6" />
+                  <X className="h-8 w-8" />
                 </Button>
+                
+                {/* Video Container */}
                 <div className="w-full h-full flex items-center justify-center p-4">
                   <video 
                     controls 
-                    className="max-w-full max-h-full object-contain bg-black" 
+                    className="max-w-full max-h-full object-contain bg-black rounded-lg" 
                     preload="metadata"
                     playsInline
                     autoPlay
                     src={attachmentUrl}
+                    style={{ zIndex: 9998 }}
                   >
                     <source src={attachmentUrl} type="video/mp4" />
                     <source src={attachmentUrl} type="video/webm" />
@@ -201,6 +216,18 @@ export default function MessageAttachment({
                     Browser Anda tidak mendukung tag video.
                   </video>
                 </div>
+                
+                {/* Alternative close area - tap anywhere outside video */}
+                <div 
+                  className="absolute inset-0 cursor-pointer"
+                  style={{ zIndex: 9997 }}
+                  onClick={(e) => {
+                    // Only close if clicking outside the video
+                    if (e.target === e.currentTarget) {
+                      handleFullscreenToggle();
+                    }
+                  }}
+                />
               </div>
             )}
           </div>
