@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -23,13 +23,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, Settings, Users, Building, Award } from "lucide-react";
+import { 
+  Plus, Edit, Trash2, Settings, Users, Building, Award, 
+  BarChart3, Shield, Activity, Database, Server, MessageSquare,
+  Phone, UserCheck, AlertTriangle
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 export default function Admin() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("config");
+  const [activeTab, setActiveTab] = useState("dashboard");
 
   // Check if user is admin
   if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
@@ -61,24 +66,40 @@ export default function Admin() {
       {/* Main Content */}
       <div className="p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 bg-[#2d3328]">
+          <TabsList className="grid w-full grid-cols-6 bg-[#2d3328]">
+            <TabsTrigger value="dashboard" className="data-[state=active]:bg-[#8d9c6b]">
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="users" className="data-[state=active]:bg-[#8d9c6b]">
+              <Users className="w-4 h-4 mr-2" />
+              Users
+            </TabsTrigger>
             <TabsTrigger value="config" className="data-[state=active]:bg-[#8d9c6b]">
               <Settings className="w-4 h-4 mr-2" />
-              System Config
+              Config
             </TabsTrigger>
             <TabsTrigger value="ranks" className="data-[state=active]:bg-[#8d9c6b]">
               <Award className="w-4 h-4 mr-2" />
-              Military Ranks
+              Ranks
             </TabsTrigger>
             <TabsTrigger value="branches" className="data-[state=active]:bg-[#8d9c6b]">
               <Building className="w-4 h-4 mr-2" />
               Branches
             </TabsTrigger>
-            <TabsTrigger value="units" className="data-[state=active]:bg-[#8d9c6b]">
-              <Users className="w-4 h-4 mr-2" />
-              Units
+            <TabsTrigger value="security" className="data-[state=active]:bg-[#8d9c6b]">
+              <Shield className="w-4 h-4 mr-2" />
+              Security
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="dashboard" className="mt-6">
+            <DashboardOverviewTab />
+          </TabsContent>
+
+          <TabsContent value="users" className="mt-6">
+            <UserManagementTab />
+          </TabsContent>
 
           <TabsContent value="config" className="mt-6">
             <SystemConfigTab />
@@ -92,8 +113,8 @@ export default function Admin() {
             <MilitaryBranchesTab />
           </TabsContent>
 
-          <TabsContent value="units" className="mt-6">
-            <MilitaryUnitsTab />
+          <TabsContent value="security" className="mt-6">
+            <SecurityMonitoringTab />
           </TabsContent>
         </Tabs>
       </div>
@@ -427,6 +448,256 @@ function AddRankForm({ onSuccess }: { onSuccess: () => void }) {
         Create Rank
       </Button>
     </form>
+  );
+}
+
+// Dashboard Overview Tab Component
+function DashboardOverviewTab() {
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ['/api/admin/dashboard/stats'],
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+
+  const { data: health, isLoading: healthLoading } = useQuery({
+    queryKey: ['/api/admin/dashboard/health'],
+    refetchInterval: 60000, // Refresh every minute
+  });
+
+  if (statsLoading || healthLoading) return <div>Loading dashboard...</div>;
+
+  return (
+    <div className="space-y-6">
+      {/* Real-time Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-[#1a1a1a] border-[#333]">
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <UserCheck className="h-8 w-8 text-[#8d9c6b]" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-400">Users Online</p>
+                <p className="text-2xl font-bold text-white">{stats?.users?.online || 0}</p>
+                <p className="text-xs text-gray-500">Total: {stats?.users?.total || 0}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-[#1a1a1a] border-[#333]">
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <MessageSquare className="h-8 w-8 text-blue-400" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-400">Messages Today</p>
+                <p className="text-2xl font-bold text-white">{stats?.messages?.today || 0}</p>
+                <p className="text-xs text-gray-500">Total: {stats?.messages?.total || 0}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-[#1a1a1a] border-[#333]">
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Phone className="h-8 w-8 text-green-400" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-400">Calls Today</p>
+                <p className="text-2xl font-bold text-white">{stats?.calls?.today || 0}</p>
+                <p className="text-xs text-gray-500">Total: {stats?.calls?.total || 0}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-[#1a1a1a] border-[#333]">
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Users className="h-8 w-8 text-purple-400" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-400">Conversations</p>
+                <p className="text-2xl font-bold text-white">{stats?.conversations?.total || 0}</p>
+                <p className="text-xs text-gray-500">Active channels</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* System Health */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className="bg-[#1a1a1a] border-[#333]">
+          <CardHeader>
+            <CardTitle className="text-[#8d9c6b] flex items-center">
+              <Database className="w-5 h-5 mr-2" />
+              Database Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-300">Status</span>
+                <Badge variant={health?.database?.status === 'healthy' ? 'default' : 'destructive'}>
+                  {health?.database?.status || 'Unknown'}
+                </Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-300">Size</span>
+                <span className="text-white">{health?.database?.size || 'Unknown'}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-[#1a1a1a] border-[#333]">
+          <CardHeader>
+            <CardTitle className="text-[#8d9c6b] flex items-center">
+              <Server className="w-5 h-5 mr-2" />
+              Server Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-300">Status</span>
+                <Badge variant="default">Running</Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-300">Uptime</span>
+                <span className="text-white">
+                  {Math.floor((health?.server?.uptime || 0) / 3600)}h {Math.floor(((health?.server?.uptime || 0) % 3600) / 60)}m
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-300">Memory</span>
+                <span className="text-white">
+                  {Math.round((health?.server?.memory?.rss || 0) / 1024 / 1024)}MB
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// User Management Tab Component
+function UserManagementTab() {
+  const { data: users, isLoading } = useQuery({
+    queryKey: ['/api/admin/users'],
+  });
+
+  const updateRoleMutation = useMutation({
+    mutationFn: async ({ userId, role }: { userId: number; role: string }) => {
+      return apiRequest(`/api/admin/users/${userId}/role`, {
+        method: 'PUT',
+        body: { role }
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+    },
+  });
+
+  if (isLoading) return <div>Loading users...</div>;
+
+  return (
+    <Card className="bg-[#1a1a1a] border-[#333]">
+      <CardHeader>
+        <CardTitle className="text-[#8d9c6b]">User Management</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow className="border-[#333]">
+              <TableHead className="text-gray-300">Callsign</TableHead>
+              <TableHead className="text-gray-300">Full Name</TableHead>
+              <TableHead className="text-gray-300">Rank</TableHead>
+              <TableHead className="text-gray-300">Branch</TableHead>
+              <TableHead className="text-gray-300">Role</TableHead>
+              <TableHead className="text-gray-300">Status</TableHead>
+              <TableHead className="text-gray-300">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {users?.map((user: any) => (
+              <TableRow key={user.id} className="border-[#333]">
+                <TableCell className="text-white">{user.callsign}</TableCell>
+                <TableCell className="text-white">{user.fullName || '-'}</TableCell>
+                <TableCell className="text-white">{user.rank || '-'}</TableCell>
+                <TableCell className="text-white">{user.branch || '-'}</TableCell>
+                <TableCell>
+                  <select
+                    value={user.role}
+                    onChange={(e) => updateRoleMutation.mutate({ userId: user.id, role: e.target.value })}
+                    className="bg-[#333] text-white border border-[#555] rounded px-2 py-1"
+                  >
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                    <option value="super_admin">Super Admin</option>
+                  </select>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={user.status === 'online' ? 'default' : 'secondary'}>
+                    {user.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Button size="sm" variant="outline" className="text-white border-[#555]">
+                    <Edit className="w-3 h-3" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Security Monitoring Tab Component
+function SecurityMonitoringTab() {
+  const { data: securityEvents, isLoading } = useQuery({
+    queryKey: ['/api/admin/dashboard/security'],
+  });
+
+  if (isLoading) return <div>Loading security events...</div>;
+
+  return (
+    <Card className="bg-[#1a1a1a] border-[#333]">
+      <CardHeader>
+        <CardTitle className="text-[#8d9c6b] flex items-center">
+          <AlertTriangle className="w-5 h-5 mr-2" />
+          Security Monitoring
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow className="border-[#333]">
+              <TableHead className="text-gray-300">Time</TableHead>
+              <TableHead className="text-gray-300">Admin</TableHead>
+              <TableHead className="text-gray-300">Action</TableHead>
+              <TableHead className="text-gray-300">Target</TableHead>
+              <TableHead className="text-gray-300">IP Address</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {securityEvents?.map((event: any) => (
+              <TableRow key={event.id} className="border-[#333]">
+                <TableCell className="text-white">
+                  {new Date(event.createdAt).toLocaleString()}
+                </TableCell>
+                <TableCell className="text-white">{event.adminId}</TableCell>
+                <TableCell className="text-white">{event.action}</TableCell>
+                <TableCell className="text-white">{event.targetTable || '-'}</TableCell>
+                <TableCell className="text-white">{event.ipAddress || '-'}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }
 

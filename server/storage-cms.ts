@@ -1,4 +1,4 @@
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import { db } from "./db";
 import { 
   militaryRanks, 
@@ -6,6 +6,10 @@ import {
   militaryUnits, 
   systemConfig,
   adminLogs,
+  users,
+  messages,
+  conversations,
+  callHistory,
   type MilitaryRank,
   type InsertMilitaryRank,
   type MilitaryBranch,
@@ -131,6 +135,126 @@ export class CMSStorage {
 
   async getAdminLogs(limit: number = 100): Promise<any[]> {
     return await db.select().from(adminLogs).orderBy(desc(adminLogs.createdAt)).limit(limit);
+  }
+
+  // Dashboard Statistics
+  async getDashboardStats(): Promise<any> {
+    const [
+      totalUsers,
+      onlineUsers,
+      totalMessages,
+      todayMessages,
+      totalCalls,
+      todayCallsResult,
+      totalConversations
+    ] = await Promise.all([
+      db.selectDistinct({ count: sql`count(*)` }).from(users),
+      db.selectDistinct({ count: sql`count(*)` }).from(users).where(eq(users.status, 'online')),
+      db.selectDistinct({ count: sql`count(*)` }).from(messages),
+      db.selectDistinct({ count: sql`count(*)` }).from(messages).where(sql`DATE(${messages.createdAt}) = CURRENT_DATE`),
+      db.selectDistinct({ count: sql`count(*)` }).from(callHistory),
+      db.selectDistinct({ count: sql`count(*)` }).from(callHistory).where(sql`DATE(${callHistory.createdAt}) = CURRENT_DATE`),
+      db.selectDistinct({ count: sql`count(*)` }).from(conversations)
+    ]);
+
+    return {
+      users: {
+        total: parseInt(totalUsers[0].count),
+        online: parseInt(onlineUsers[0].count),
+        offline: parseInt(totalUsers[0].count) - parseInt(onlineUsers[0].count)
+      },
+      messages: {
+        total: parseInt(totalMessages[0].count),
+        today: parseInt(todayMessages[0].count)
+      },
+      calls: {
+        total: parseInt(totalCalls[0].count),
+        today: parseInt(todayCallsResult[0].count)
+      },
+      conversations: {
+        total: parseInt(totalConversations[0].count)
+      }
+    };
+  }
+
+  // System Health Check
+  async getSystemHealth(): Promise<any> {
+    try {
+      // Test database connection
+      await db.selectDistinct({ test: sql`1` });
+      
+      // Get database size (PostgreSQL specific)
+      const dbSizeResult = await db.selectDistinct({ 
+        size: sql`pg_size_pretty(pg_database_size(current_database()))` 
+      });
+      
+      return {
+        database: {
+          status: 'healthy',
+          size: dbSizeResult[0]?.size || 'Unknown'
+        },
+        server: {
+          status: 'running',
+          uptime: process.uptime(),
+          memory: process.memoryUsage()
+        }
+      };
+    } catch (error) {
+      return {
+        database: {
+          status: 'error',
+          error: error.message
+        },
+        server: {
+          status: 'running',
+          uptime: process.uptime(),
+          memory: process.memoryUsage()
+        }
+      };
+    }
+  }
+
+  // Security Monitoring - Get recent failed login attempts
+  async getSecurityEvents(): Promise<any[]> {
+    return await db.select()
+      .from(adminLogs)
+      .where(sql`${adminLogs.action} LIKE '%LOGIN%' OR ${adminLogs.action} LIKE '%FAILED%'`)
+      .orderBy(desc(adminLogs.createdAt))
+      .limit(50);
+  }
+
+  // User Management Functions
+  async getAllUsersForAdmin(): Promise<any[]> {
+    return await db.select({
+      id: users.id,
+      callsign: users.callsign,
+      nrp: users.nrp,
+      fullName: users.fullName,
+      rank: users.rank,
+      branch: users.branch,
+      role: users.role,
+      status: users.status,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt
+    }).from(users).orderBy(users.createdAt);
+  }
+
+  async updateUserRole(userId: number, role: string): Promise<any> {
+    const [user] = await db
+      .update(users)
+      .set({ role, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  async disableUser(userId: number): Promise<any> {
+    const [user] = await db
+      .update(users)
+      .set({ status: 'disabled', updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
   }
 
   // Initialize default system configurations

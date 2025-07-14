@@ -1132,6 +1132,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Dashboard Statistics
+  app.get("/api/admin/dashboard/stats", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const stats = await cmsStorage.getDashboardStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+      res.status(500).json({ message: "Failed to fetch dashboard statistics" });
+    }
+  });
+
+  // System Health
+  app.get("/api/admin/dashboard/health", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const health = await cmsStorage.getSystemHealth();
+      res.json(health);
+    } catch (error) {
+      console.error("Error fetching system health:", error);
+      res.status(500).json({ message: "Failed to fetch system health" });
+    }
+  });
+
+  // Security Events
+  app.get("/api/admin/dashboard/security", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const events = await cmsStorage.getSecurityEvents();
+      res.json(events);
+    } catch (error) {
+      console.error("Error fetching security events:", error);
+      res.status(500).json({ message: "Failed to fetch security events" });
+    }
+  });
+
+  // User Management
+  app.get("/api/admin/users", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const users = await cmsStorage.getAllUsersForAdmin();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.put("/api/admin/users/:id/role", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { role } = req.body;
+      const user = req.user?.claims || req.session?.user;
+      
+      const updatedUser = await cmsStorage.updateUserRole(parseInt(id), role);
+      
+      await cmsStorage.logAdminActivity({
+        adminId: user.id || user.sub,
+        action: 'UPDATE_USER_ROLE',
+        targetTable: 'users',
+        targetId: id,
+        newData: { role },
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user role:", error);
+      res.status(500).json({ message: "Failed to update user role" });
+    }
+  });
+
   // Public config endpoint for menu visibility
   app.get("/api/config/menu", async (req, res) => {
     try {
