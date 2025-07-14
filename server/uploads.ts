@@ -316,23 +316,24 @@ export const compressVideoServer = async (
         const ffmpegCommand = ffmpeg(inputPath)
           .videoCodec('libx264')
           .audioCodec('aac')
-          .videoBitrate('800k')
+          .videoBitrate('1000k') // Increased bitrate for better quality
           .audioBitrate('128k')
-          .size(`${targetWidth}x${targetHeight}`)
-          .fps(30)
           .format('mp4')
           .outputOptions([
             '-preset fast',
-            '-crf 28',
+            '-crf 26', // Better quality (lower CRF)
             '-movflags +faststart',
             '-metadata:s:v rotate=0', // Reset rotation metadata
-            '-avoid_negative_ts make_zero'
+            '-avoid_negative_ts make_zero',
+            '-vf', `scale=${targetWidth}:${targetHeight}:force_original_aspect_ratio=decrease,pad=${targetWidth}:${targetHeight}:(ow-iw)/2:(oh-ih)/2:black` // Preserve aspect ratio with padding
           ]);
         
-        // Apply video filter if needed
-        if (videoFilter) {
-          console.log(`[COMPRESSION] Applying video filter: ${videoFilter}`);
-          ffmpegCommand.videoFilters(videoFilter);
+        // Apply rotation filter if needed (but aspect ratio preservation is already in outputOptions)
+        if (videoFilter && !videoFilter.includes('scale')) {
+          console.log(`[COMPRESSION] Applying rotation filter: ${videoFilter}`);
+          // Combine rotation with aspect ratio preservation
+          const combinedFilter = `${videoFilter},scale=${targetWidth}:${targetHeight}:force_original_aspect_ratio=decrease,pad=${targetWidth}:${targetHeight}:(ow-iw)/2:(oh-ih)/2:black`;
+          ffmpegCommand.outputOptions(['-vf', combinedFilter]);
         }
         
         ffmpegCommand
@@ -384,7 +385,7 @@ export const shouldCompressVideoServer = async (filePath: string): Promise<boole
   try {
     const stats = fs.statSync(filePath);
     const fileSizeMB = stats.size / (1024 * 1024);
-    return fileSizeMB > 20; // Compress if larger than 20MB
+    return fileSizeMB > 10; // Compress if larger than 10MB (lowered threshold)
   } catch (error) {
     return false;
   }
@@ -436,7 +437,7 @@ export const compressUploadedMedia = async (req: any, res: any, next: any) => {
     // Handle video compression
     else if (req.file.mimetype.startsWith('video/')) {
       const shouldCompress = await shouldCompressVideoServer(filePath);
-      console.log(`[COMPRESSION] Video should compress: ${shouldCompress} (size: ${fileSizeMB.toFixed(2)}MB, threshold: 20MB)`);
+      console.log(`[COMPRESSION] Video should compress: ${shouldCompress} (size: ${fileSizeMB.toFixed(2)}MB, threshold: 10MB)`);
       
       if (shouldCompress) {
         console.log('[COMPRESSION] Starting video compression...');
