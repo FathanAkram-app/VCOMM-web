@@ -52,6 +52,9 @@ const StableParticipantVideo = memo(({
         videoTrackEnabled: stream.getVideoTracks()[0]?.enabled
       });
       
+      console.log(`[StableParticipantVideo] 🔍 Video element ready state:`, videoRef.current.readyState);
+      console.log(`[StableParticipantVideo] 🔍 Current srcObject:`, videoRef.current.srcObject);
+      
       const videoElement = videoRef.current;
       videoElement.srcObject = stream;
       
@@ -65,13 +68,12 @@ const StableParticipantVideo = memo(({
         try {
           await videoElement.play();
           console.log(`[StableParticipantVideo] ✅ Video playing successfully for user ${participant.userId}`);
-          
-          // Try to unmute after play starts (for remote video this should work)
-          setTimeout(() => {
-            if (videoElement) {
-              videoElement.muted = false;
-            }
-          }, 500);
+          console.log(`[StableParticipantVideo] 📹 Video dimensions:`, {
+            videoWidth: videoElement.videoWidth,
+            videoHeight: videoElement.videoHeight,
+            clientWidth: videoElement.clientWidth,
+            clientHeight: videoElement.clientHeight
+          });
           
         } catch (error) {
           console.warn(`[StableParticipantVideo] ⚠️ Video play failed for user ${participant.userId}:`, error);
@@ -594,11 +596,18 @@ export default function GroupVideoCall() {
     
     // Add the critical group-participants-update listener
     const handleGroupParticipantsUpdate = (event: CustomEvent) => {
-      const { callId, participants: newParticipants, triggerWebRTC } = event.detail;
-      console.log('[GroupVideoCall] 📊 Group participants update received:', { callId, participants: newParticipants, triggerWebRTC });
+      const { callId, participants: newParticipants, triggerWebRTC, groupId } = event.detail;
+      console.log('[GroupVideoCall] 🎯 Group participants update received:', { 
+        callId, 
+        participants: newParticipants, 
+        triggerWebRTC, 
+        groupId,
+        activeCallId: activeCall?.callId,
+        activeGroupId: activeCall?.groupId
+      });
       
-      if (activeCall?.callId === callId || (activeCall && callId.includes(`_${activeCall.groupId}_`))) {
-        console.log('[GroupVideoCall] 📊 Processing group participants update for matching call');
+      if (activeCall?.callId === callId || (activeCall && callId.includes(`_${activeCall.groupId}_`)) || (activeCall && groupId === activeCall.groupId)) {
+        console.log('[GroupVideoCall] ✅ Processing group participants update for matching call');
         
         // Ensure participants are in the correct format
         const formattedParticipants = (newParticipants || []).map((p: any) => {
@@ -1905,7 +1914,10 @@ export default function GroupVideoCall() {
                   return (
                     <StableParticipantVideo
                       key={participant.userId}
-                      participant={participant}
+                      participant={{
+                        ...participant,
+                        stream: participantStream || participant.stream
+                      }}
                       stream={participantStream || participant.stream}
                       onMaximize={handleMaximizeParticipant}
                       participantVideoRefs={participantVideoRefs}

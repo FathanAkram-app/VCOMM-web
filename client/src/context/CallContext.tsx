@@ -1613,7 +1613,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
         console.log('[CallContext] Unique participants after deduplication:', uniqueParticipants);
         
         // Fetch user names for participants
+        console.log('[CallContext] 🔍 Fetching user names for participants:', uniqueParticipants);
         fetch('/api/all-users').then(response => response.json()).then(allUsers => {
+          console.log('[CallContext] 📊 Got all users data:', allUsers.length);
           const userMap = new Map();
           allUsers.forEach((user: any) => {
             userMap.set(user.id, user.callsign || user.fullName || `User ${user.id}`);
@@ -1627,6 +1629,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
             videoEnabled: groupCallToUpdate.callType === 'video',
             stream: null
           }));
+          
+          console.log('[CallContext] 📋 Created participant objects:', participantObjects);
           
           const updatedCall = {
             ...groupCallToUpdate,
@@ -1648,14 +1652,20 @@ export function CallProvider({ children }: { children: ReactNode }) {
           
           // Enhanced trigger for WebRTC initiation with immediate dispatch
           console.log('[CallContext] 🚀 Dispatching group-participants-update event:', participantObjects);
-          window.dispatchEvent(new CustomEvent('group-participants-update', {
-            detail: { 
-              callId: callId,
-              participants: participantObjects,
-              triggerWebRTC: true,
-              groupId: groupCallToUpdate.groupId
-            }
-          }));
+          console.log('[CallContext] 🚀 Event details:', { callId, groupId: groupCallToUpdate.groupId });
+          
+          // Use setTimeout to ensure event is dispatched after component is ready
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('group-participants-update', {
+              detail: { 
+                callId: callId,
+                participants: participantObjects,
+                triggerWebRTC: true,
+                groupId: groupCallToUpdate.groupId
+              }
+            }));
+            console.log('[CallContext] ✅ group-participants-update event dispatched successfully');
+          }, 100);
           
           // Direct WebRTC initiation trigger
           setTimeout(() => {
