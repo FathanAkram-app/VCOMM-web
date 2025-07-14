@@ -471,7 +471,11 @@ export default function AdminComplete() {
                             <td className="p-3">
                               <Select 
                                 value={user.status} 
-                                onValueChange={(value) => updateUserStatus.mutate({id: user.id, status: value})}
+                                onValueChange={(status) => {
+                                  console.log('Updating user status:', {userId: user.id, oldStatus: user.status, newStatus: status});
+                                  updateUserStatus.mutate({id: user.id, status});
+                                }}
+                                disabled={updateUserStatus.isPending}
                               >
                                 <SelectTrigger className="w-24 bg-[#2a2a2a] border-gray-600">
                                   <SelectValue />
@@ -482,6 +486,9 @@ export default function AdminComplete() {
                                   <SelectItem value="disabled">Disabled</SelectItem>
                                 </SelectContent>
                               </Select>
+                              {updateUserStatus.isPending && (
+                                <div className="text-xs text-gray-400 mt-1">Updating...</div>
+                              )}
                             </td>
                             <td className="p-3">
                               <Button 
@@ -490,11 +497,17 @@ export default function AdminComplete() {
                                 className="text-red-400 border-red-400 hover:bg-red-900"
                                 onClick={() => {
                                   if(confirm('Yakin ingin menghapus pengguna ini?')) {
+                                    console.log('Deleting user:', user.id);
                                     deleteUser.mutate(user.id);
                                   }
                                 }}
+                                disabled={deleteUser.isPending}
                               >
-                                <Trash2 className="w-3 h-3" />
+                                {deleteUser.isPending ? (
+                                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-400"></div>
+                                ) : (
+                                  <Trash2 className="w-3 h-3" />
+                                )}
                               </Button>
                             </td>
                           </tr>

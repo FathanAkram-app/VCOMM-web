@@ -1,0 +1,67 @@
+[SW] Client registered for call notifications
+manifest.json:1 Manifest: Enctype should be set to either application/x-www-form-urlencoded or multipart/form-data. It currently defaults to application/x-www-form-urlencodedUnderstand this warning
+AdminComplete.tsx:106 Error updating user status: TypeError: Failed to execute 'fetch' on 'Window': '/api/admin/users/4/status' is not a valid HTTP method.
+    at apiRequest (queryClient.ts:15:21)
+    at Object.mutationFn (AdminComplete.tsx:92:14)
+    at Object.fn (@tanstack_react-query.js?v=01fe63e0:1189:29)
+    at run (@tanstack_react-query.js?v=01fe63e0:494:49)
+    at Object.start (@tanstack_react-query.js?v=01fe63e0:536:9)
+    at _a6.execute (@tanstack_react-query.js?v=01fe63e0:1225:56)
+onError @ AdminComplete.tsx:106
+execute @ @tanstack_react-query.js?v=01fe63e0:1254
+await in execute
+mutate @ @tanstack_react-query.js?v=01fe63e0:2630
+(anonymous) @ @tanstack_react-query.js?v=01fe63e0:3295
+onValueChange @ AdminComplete.tsx:474
+(anonymous) @ chunk-5AJU3CG7.js?v=01fe63e0:99
+(anonymous) @ chunk-B5ZPYGAZ.js?v=01fe63e0:28
+handleSelect @ @radix-ui_react-select.js?v=01fe63e0:866
+(anonymous) @ @radix-ui_react-select.js?v=01fe63e0:912
+handleEvent @ chunk-5Q5YC75F.js?v=01fe63e0:6
+callCallback2 @ chunk-RPCDYKBN.js?v=01fe63e0:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=01fe63e0:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=01fe63e0:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=01fe63e0:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=01fe63e0:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=01fe63e0:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=01fe63e0:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=01fe63e0:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=01fe63e0:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=01fe63e0:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=01fe63e0:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=01fe63e0:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=01fe63e0:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=01fe63e0:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=01fe63e0:5449Understand this error
+AdminComplete.tsx:130 Error deleting user: TypeError: Failed to execute 'fetch' on 'Window': '/api/admin/users/6' is not a valid HTTP method.
+    at apiRequest (queryClient.ts:15:21)
+    at Object.mutationFn (AdminComplete.tsx:117:14)
+    at Object.fn (@tanstack_react-query.js?v=01fe63e0:1189:29)
+    at run (@tanstack_react-query.js?v=01fe63e0:494:49)
+    at Object.start (@tanstack_react-query.js?v=01fe63e0:536:9)
+    at _a6.execute (@tanstack_react-query.js?v=01fe63e0:1225:56)
+onError @ AdminComplete.tsx:130
+execute @ @tanstack_react-query.js?v=01fe63e0:1254
+await in execute
+mutate @ @tanstack_react-query.js?v=01fe63e0:2630
+(anonymous) @ @tanstack_react-query.js?v=01fe63e0:3295
+onClick @ AdminComplete.tsx:493
+callCallback2 @ chunk-RPCDYKBN.js?v=01fe63e0:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=01fe63e0:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=01fe63e0:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=01fe63e0:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=01fe63e0:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=01fe63e0:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=01fe63e0:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=01fe63e0:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=01fe63e0:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=01fe63e0:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=01fe63e0:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=01fe63e0:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=01fe63e0:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=01fe63e0:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=01fe63e0:5449Understand this error
+sw.js:194 [SW] Message received: {type: 'KEEP_ALIVE'}
+sw.js:201 Uncaught TypeError: Cannot read properties of undefined (reading 'postMessage')
+    at sw.js:201:22
+(anonymous) @ sw.js:201Understand this error
