@@ -1358,8 +1358,10 @@ export default function GroupVideoCall() {
   const switchCamera = async () => {
     console.log('[GroupVideoCall] Switch camera function called');
     
-    if (!localStream) {
+    const streamToUse = localStream || activeCall?.localStream;
+    if (!streamToUse) {
       console.log('[GroupVideoCall] No local stream available');
+      alert('Tidak ada stream video aktif untuk mengganti kamera.');
       return;
     }
 
@@ -1375,7 +1377,7 @@ export default function GroupVideoCall() {
         return;
       }
       
-      const currentVideoTrack = localStream.getVideoTracks()[0];
+      const currentVideoTrack = streamToUse.getVideoTracks()[0];
       if (!currentVideoTrack) {
         console.log('[GroupVideoCall] No video track found');
         return;
@@ -1447,13 +1449,22 @@ export default function GroupVideoCall() {
           });
         } catch (error2) {
           console.log('[GroupVideoCall] Second attempt failed, trying basic constraints:', error2);
-          // Third attempt: minimal constraints
-          newStream = await navigator.mediaDevices.getUserMedia({
-            video: {
-              facingMode: nextFacingMode
-            },
-            audio: false
-          });
+          // Third attempt: minimal constraints with fallback
+          try {
+            newStream = await navigator.mediaDevices.getUserMedia({
+              video: {
+                facingMode: nextFacingMode
+              },
+              audio: false
+            });
+          } catch (error3) {
+            console.log('[GroupVideoCall] Third attempt failed, trying any camera:', error3);
+            // Fourth attempt: any camera
+            newStream = await navigator.mediaDevices.getUserMedia({
+              video: true,
+              audio: false
+            });
+          }
         }
       }
       
@@ -1476,21 +1487,23 @@ export default function GroupVideoCall() {
         console.log('[GroupVideoCall] No peer connections available for track replacement');
       }
 
-      // Replace track in local stream
-      localStream.removeTrack(currentVideoTrack);
-      localStream.addTrack(newVideoTrack);
+      // Replace track in the stream we're using
+      streamToUse.removeTrack(currentVideoTrack);
+      streamToUse.addTrack(newVideoTrack);
       
-      // Stop old track
-      currentVideoTrack.stop();
-
-      // Update local video element
+      // Update local video element with the updated stream
       if (localVideoRef.current) {
-        localVideoRef.current.srcObject = localStream;
+        localVideoRef.current.srcObject = streamToUse;
         console.log('[GroupVideoCall] Updated local video element with new stream');
       }
 
-      // Force update local stream state
-      setLocalStream(localStream);
+      // Update both state references to maintain consistency
+      if (localStream === streamToUse) {
+        setLocalStream(streamToUse);
+      }
+      
+      // Stop old track after replacement
+      currentVideoTrack.stop();
       
       console.log('[GroupVideoCall] Camera switched successfully to', isFrontCamera ? 'front' : 'back', 'camera');
       

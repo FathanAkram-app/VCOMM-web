@@ -41,7 +41,7 @@ import {
   Key,
   Camera
 } from 'lucide-react';
-import CameraTest from '@/components/CameraTest';
+import CameraTestSimple from '@/components/CameraTestSimple';
 
 interface UserSettings {
   id: number;
@@ -1354,15 +1354,7 @@ export default function Settings({ onBack }: SettingsProps) {
 
       {/* Camera Test Modal */}
       {showCameraTest && (
-        <div className="fixed inset-0 z-50">
-          <CameraTest />
-          <Button
-            onClick={() => setShowCameraTest(false)}
-            className="absolute top-4 right-4 z-50 bg-red-600 hover:bg-red-700"
-          >
-            Tutup Test
-          </Button>
-        </div>
+        <CameraTestSimple onClose={() => setShowCameraTest(false)} />
       )}
 
       {/* Save Button */}
