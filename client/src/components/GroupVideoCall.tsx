@@ -1389,28 +1389,73 @@ export default function GroupVideoCall() {
       const nextIndex = (currentIndex + 1) % videoDevices.length;
       const nextDevice = videoDevices[nextIndex];
       
-      // Determine facing mode based on device label or index
-      const isFrontCamera = nextDevice.label.toLowerCase().includes('front') || 
-                           nextDevice.label.toLowerCase().includes('user') ||
-                           nextIndex === 0;
-      const nextFacingMode = isFrontCamera ? 'user' : 'environment';
+      // Determine facing mode based on device label more accurately
+      let isFrontCamera: boolean;
+      let nextFacingMode: string;
       
-      console.log('[GroupVideoCall] Switching from camera', currentIndex, 'to camera', nextIndex, 'facingMode:', nextFacingMode);
+      if (nextDevice.label.toLowerCase().includes('back') || 
+          nextDevice.label.toLowerCase().includes('rear') || 
+          nextDevice.label.toLowerCase().includes('environment')) {
+        isFrontCamera = false;
+        nextFacingMode = 'environment';
+      } else if (nextDevice.label.toLowerCase().includes('front') || 
+                 nextDevice.label.toLowerCase().includes('user')) {
+        isFrontCamera = true;
+        nextFacingMode = 'user';
+      } else {
+        // Fallback: assume first device is front, others are back
+        isFrontCamera = nextIndex === 0;
+        nextFacingMode = isFrontCamera ? 'user' : 'environment';
+      }
       
-      // Create new video constraints
-      const videoConstraints = {
-        deviceId: { exact: nextDevice.deviceId },
-        facingMode: nextFacingMode,
+      console.log('[GroupVideoCall] Switching from camera', currentIndex, 'to camera', nextIndex);
+      console.log('[GroupVideoCall] Device label:', nextDevice.label, 'facingMode:', nextFacingMode);
+      
+      // Create new video constraints with fallback options
+      const videoConstraints: MediaTrackConstraints = {
         width: { ideal: 720 },
         height: { ideal: 1280 },
         aspectRatio: { ideal: 9/16 }
       };
+      
+      // Try deviceId first, then facingMode as fallback
+      if (nextDevice.deviceId) {
+        videoConstraints.deviceId = { exact: nextDevice.deviceId };
+      } else {
+        videoConstraints.facingMode = nextFacingMode;
+      }
 
-      // Get new stream with next camera
-      const newStream = await navigator.mediaDevices.getUserMedia({
-        video: videoConstraints,
-        audio: false // Don't replace audio, just video
-      });
+      // Get new stream with next camera - try multiple approaches if needed
+      let newStream: MediaStream;
+      try {
+        // First attempt: use exact deviceId
+        newStream = await navigator.mediaDevices.getUserMedia({
+          video: videoConstraints,
+          audio: false
+        });
+      } catch (error) {
+        console.log('[GroupVideoCall] First attempt failed, trying facingMode only:', error);
+        // Second attempt: use only facingMode without deviceId
+        try {
+          newStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: nextFacingMode,
+              width: { ideal: 720 },
+              height: { ideal: 1280 }
+            },
+            audio: false
+          });
+        } catch (error2) {
+          console.log('[GroupVideoCall] Second attempt failed, trying basic constraints:', error2);
+          // Third attempt: minimal constraints
+          newStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: nextFacingMode
+            },
+            audio: false
+          });
+        }
+      }
       
       const newVideoTrack = newStream.getVideoTracks()[0];
       console.log('[GroupVideoCall] Got new video track:', newVideoTrack.id);
@@ -1447,15 +1492,18 @@ export default function GroupVideoCall() {
     } catch (error) {
       console.error('[GroupVideoCall] Error switching camera:', error);
       
-      // User-friendly error messages
+      // User-friendly error messages with more specific details
       const errorMessage = error instanceof Error && error.name === 'NotAllowedError' 
-        ? 'Izin kamera diperlukan. Periksa pengaturan browser dan izinkan akses kamera.'
+        ? 'Izin kamera diperlukan. Buka Pengaturan browser → Izin situs → Kamera → Izinkan.'
         : error instanceof Error && error.name === 'NotFoundError'
-        ? 'Kamera yang diminta tidak ditemukan. Pastikan semua kamera terhubung dengan benar.'
+        ? 'Kamera belakang tidak tersedia pada perangkat ini. Perangkat mungkin hanya memiliki kamera depan.'
         : error instanceof Error && error.name === 'NotReadableError'
-        ? 'Kamera sedang digunakan aplikasi lain. Tutup aplikasi tersebut dan coba lagi.'
-        : 'Gagal mengganti kamera. Pastikan kamera tersedia dan tidak digunakan aplikasi lain.';
+        ? 'Kamera sedang digunakan aplikasi lain. Tutup aplikasi kamera lain dan coba lagi.'
+        : error instanceof Error && error.name === 'OverconstrainedError'
+        ? 'Kamera belakang tidak mendukung resolusi yang diminta. Menggunakan pengaturan default.'
+        : `Gagal mengganti kamera: ${error instanceof Error ? error.message : 'Error tidak diketahui'}`;
       
+      console.log('[GroupVideoCall] Camera switch error details:', error);
       alert(errorMessage);
     }
   };

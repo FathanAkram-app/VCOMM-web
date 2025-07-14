@@ -2654,6 +2654,22 @@ export function CallProvider({ children }: { children: ReactNode }) {
     try {
       console.log('[CallContext] Starting camera switch...');
       
+      // Request permissions first on mobile
+      const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      if (isMobile) {
+        console.log('[CallContext] Mobile device detected, checking permissions...');
+        try {
+          const permissions = await navigator.permissions.query({ name: 'camera' as PermissionName });
+          console.log('[CallContext] Camera permission state:', permissions.state);
+          if (permissions.state === 'denied') {
+            alert('Izin kamera diperlukan. Buka Pengaturan browser → Izin situs → Kamera → Izinkan.');
+            return;
+          }
+        } catch (permError) {
+          console.log('[CallContext] Permission check not supported, continuing...');
+        }
+      }
+      
       // Get current video track
       const currentVideoTrack = activeCall.localStream.getVideoTracks()[0];
       if (!currentVideoTrack) {
@@ -2669,21 +2685,40 @@ export function CallProvider({ children }: { children: ReactNode }) {
       // Enumerate available video devices
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = devices.filter(device => device.kind === 'videoinput');
-      console.log('[CallContext] Available video devices:', videoDevices.length);
+      console.log('[CallContext] Available video devices:', videoDevices.length, videoDevices);
 
       if (videoDevices.length <= 1) {
         console.log('[CallContext] Only one camera available, cannot switch');
+        alert('Hanya satu kamera yang tersedia pada perangkat ini.');
         return;
       }
 
-      // Determine next camera facingMode
-      const nextFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
-      console.log('[CallContext] Switching to facingMode:', nextFacingMode);
+      // Find current device ID and determine next camera
+      const currentDeviceId = currentSettings.deviceId;
+      const currentIndex = videoDevices.findIndex(device => device.deviceId === currentDeviceId);
+      
+      // Get next camera in rotation
+      const nextIndex = (currentIndex + 1) % videoDevices.length;
+      const nextDevice = videoDevices[nextIndex];
+      
+      // Determine facing mode - try device ID first, then facingMode as fallback
+      let nextFacingMode: string;
+      if (nextDevice.label.toLowerCase().includes('back') || nextDevice.label.toLowerCase().includes('rear') || nextDevice.label.toLowerCase().includes('environment')) {
+        nextFacingMode = 'environment';
+      } else if (nextDevice.label.toLowerCase().includes('front') || nextDevice.label.toLowerCase().includes('user')) {
+        nextFacingMode = 'user';
+      } else {
+        // Fallback to opposite of current
+        nextFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+      }
+      
+      console.log('[CallContext] Switching from device:', currentDeviceId, 'to device:', nextDevice.deviceId, 'facingMode:', nextFacingMode);
 
-      // Create constraints for new camera
+      // Create constraints for new camera with both deviceId and facingMode
       const constraints = {
         audio: false,
         video: {
+          deviceId: nextDevice.deviceId ? { exact: nextDevice.deviceId } : undefined,
           facingMode: nextFacingMode,
           width: { ideal: 720 },
           height: { ideal: 1280 },
@@ -2691,10 +2726,42 @@ export function CallProvider({ children }: { children: ReactNode }) {
         }
       };
 
-      // Get new video stream
-      const newVideoStream = await navigator.mediaDevices.getUserMedia(constraints);
-      const newVideoTrack = newVideoStream.getVideoTracks()[0];
-      console.log('[CallContext] Got new video track:', newVideoTrack.id);
+      // Get new video stream with fallback approaches
+      let newVideoStream: MediaStream;
+      let newVideoTrack: MediaStreamTrack;
+      
+      try {
+        // First attempt: use exact deviceId with constraints
+        newVideoStream = await navigator.mediaDevices.getUserMedia(constraints);
+        newVideoTrack = newVideoStream.getVideoTracks()[0];
+        console.log('[CallContext] Got new video track (attempt 1):', newVideoTrack.id);
+      } catch (error) {
+        console.log('[CallContext] First attempt failed, trying facingMode only:', error);
+        try {
+          // Second attempt: use only facingMode without deviceId
+          const fallbackConstraints = {
+            audio: false,
+            video: {
+              facingMode: nextFacingMode,
+              width: { ideal: 720 },
+              height: { ideal: 1280 }
+            }
+          };
+          newVideoStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+          newVideoTrack = newVideoStream.getVideoTracks()[0];
+          console.log('[CallContext] Got new video track (attempt 2):', newVideoTrack.id);
+        } catch (error2) {
+          console.log('[CallContext] Second attempt failed, trying minimal constraints:', error2);
+          // Third attempt: minimal constraints
+          const minimalConstraints = {
+            audio: false,
+            video: { facingMode: nextFacingMode }
+          };
+          newVideoStream = await navigator.mediaDevices.getUserMedia(minimalConstraints);
+          newVideoTrack = newVideoStream.getVideoTracks()[0];
+          console.log('[CallContext] Got new video track (attempt 3):', newVideoTrack.id);
+        }
+      }
 
       // Replace video track in all peer connections first
       if (peerConnections.current) {
@@ -2727,11 +2794,16 @@ export function CallProvider({ children }: { children: ReactNode }) {
       
       // Show user-friendly error message
       const errorMessage = error instanceof Error && error.name === 'NotAllowedError' 
-        ? 'Izin kamera diperlukan untuk mengganti kamera. Periksa pengaturan browser.'
+        ? 'Izin kamera diperlukan. Buka Pengaturan browser → Izin situs → Kamera → Izinkan.'
         : error instanceof Error && error.name === 'NotFoundError'
-        ? 'Kamera belakang tidak ditemukan pada perangkat ini.'
-        : 'Gagal mengganti kamera. Pastikan kamera tersedia dan tidak digunakan aplikasi lain.';
+        ? 'Kamera belakang tidak tersedia. Perangkat ini mungkin hanya memiliki kamera depan.'
+        : error instanceof Error && error.name === 'NotReadableError'
+        ? 'Kamera sedang digunakan aplikasi lain. Tutup aplikasi kamera lain dan coba lagi.'
+        : error instanceof Error && error.name === 'OverconstrainedError'
+        ? 'Kamera belakang tidak mendukung resolusi yang diminta. Akan menggunakan pengaturan default.'
+        : `Gagal mengganti kamera: ${error instanceof Error ? error.message : 'Error tidak diketahui'}`;
       
+      console.log('[CallContext] Camera switch error details:', error);
       alert(errorMessage);
     }
   };
