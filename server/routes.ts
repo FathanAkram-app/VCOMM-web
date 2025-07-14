@@ -1103,6 +1103,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Store active connections
   const clients = new Map<number, AuthenticatedWebSocket>();
   
+  // Track active sessions per user for single session enforcement
+  const activeSessions = new Map<number, { sessionId: string, timestamp: number, ws?: AuthenticatedWebSocket }>();
+  
   // Store active group calls and their participants
   const activeGroupCalls = new Map<string, Set<number>>();
   
@@ -1151,14 +1154,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (data.type === 'auth') {
           const { userId } = data.payload;
           if (userId) {
-            console.log(`User ${userId} authenticated via WebSocket`);
+            // Check for existing session - implement single session login
+            const existingSession = activeSessions.get(userId);
+            if (existingSession) {
+              console.log(`[SINGLE SESSION] User ${userId} already has active session, terminating previous connection`);
+              
+              // Close existing WebSocket connection
+              if (existingSession.ws && existingSession.ws.readyState === WebSocket.OPEN) {
+                existingSession.ws.send(JSON.stringify({
+                  type: 'session_terminated',
+                  payload: {
+                    reason: 'login_elsewhere',
+                    message: 'Your session has been terminated because you logged in from another device'
+                  }
+                }));
+                existingSession.ws.close();
+                console.log(`[SINGLE SESSION] Closed previous WebSocket connection for user ${userId}`);
+              }
+              
+              // Remove from clients map
+              clients.delete(userId);
+              console.log(`[SINGLE SESSION] Removed previous client for user ${userId}`);
+            }
+            
+            // Generate new session ID
+            const sessionId = `session_${userId}_${Date.now()}`;
+            
+            console.log(`User ${userId} authenticated via WebSocket with session ${sessionId}`);
             console.log(`[WebSocket] Current clients before adding: [${Array.from(clients.keys()).join(', ')}]`);
             
             ws.userId = userId;
             clients.set(userId, ws);
+            activeSessions.set(userId, {
+              sessionId,
+              timestamp: Date.now(),
+              ws
+            });
             
             console.log(`[WebSocket] Current clients after adding: [${Array.from(clients.keys()).join(', ')}]`);
             console.log(`[WebSocket] User ${userId} WebSocket readyState: ${ws.readyState}`);
+            console.log(`[SINGLE SESSION] Created new session ${sessionId} for user ${userId}`);
             
             // Update user status to online
             await storage.updateUserStatus(userId, 'online');
@@ -1769,6 +1804,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[WebSocket] Current clients before removing: [${Array.from(clients.keys()).join(', ')}]`);
         
         clients.delete(userId);
+        
+        // Clean up active session if this was the active WebSocket
+        const activeSession = activeSessions.get(userId);
+        if (activeSession && activeSession.ws === ws) {
+          activeSessions.delete(userId);
+          console.log(`[SINGLE SESSION] Removed active session for user ${userId}`);
+        }
         
         console.log(`[WebSocket] Current clients after removing: [${Array.from(clients.keys()).join(', ')}]`);
         

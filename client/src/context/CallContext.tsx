@@ -722,6 +722,16 @@ export function CallProvider({ children }: { children: ReactNode }) {
           console.log('[CallContext] 🚨 MESSAGE PAYLOAD:', JSON.stringify(message, null, 2));
         }
         
+        // Handle session termination (single session enforcement)
+        if (message.type === 'session_terminated') {
+          console.log('[CallContext] Session terminated:', message.payload);
+          alert(message.payload.message || 'Your session has been terminated because you logged in from another device');
+          
+          // Redirect to login page
+          window.location.href = '/api/login';
+          return;
+        }
+        
         // Handle real-time chat messages (for ChatRoom component) - CRITICAL SECTION
         if (message.type === 'new_message') {
           console.log('[CallContext] 🔥 REAL-TIME MESSAGE RECEIVED:', message.payload);
@@ -759,6 +769,14 @@ export function CallProvider({ children }: { children: ReactNode }) {
           }, 100);
           
           console.log('[CallContext] 🔥 Multiple custom events dispatched successfully');
+        }
+        
+        // Handle user status updates
+        if (message.type === 'user_status') {
+          console.log('[CallContext] Received user status update:', message.payload);
+          window.dispatchEvent(new CustomEvent('websocket-message', {
+            detail: message
+          }));
         }
         
         // Handle call-specific messages - server uses payload wrapper

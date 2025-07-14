@@ -296,6 +296,14 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - ✅ IMPROVED: Audio notification plays high-low double beep pattern
   - ✅ ADDED: Vibration API fallback for mobile devices
   - Real-time updates now work for both ChatRoom and ChatList simultaneously
+- July 14, 2025: Single Session Login Implementation:
+  - ✅ IMPLEMENTED: Single session enforcement - prevents multiple device logins
+  - ✅ ADDED: activeSessions tracking with sessionId and WebSocket reference
+  - ✅ ENHANCED: WebSocket authentication to terminate existing sessions
+  - ✅ ADDED: 'session_terminated' message type for notifying displaced users
+  - ✅ IMPLEMENTED: Client-side session termination handler with alert and redirect
+  - ✅ ADDED: Proper cleanup of sessions on WebSocket disconnection
+  - When user logs in from new device, previous session automatically terminated
 
 # User Preferences
 
