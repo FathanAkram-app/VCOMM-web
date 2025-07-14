@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { File, FileText, Image, Music, Video, Download, Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import { File, FileText, Image, Music, Video, Download, Play, Pause, Volume2, VolumeX, X, Maximize, Minimize } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AudioPlayer from '@/components/AudioPlayer';
 
@@ -18,12 +18,69 @@ export default function MessageAttachment({
   attachmentSize,
   onImageClick
 }: MessageAttachmentProps) {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  
   const formatFileSize = (bytes?: number): string => {
     if (!bytes) return '';
     if (bytes < 1024) return bytes + ' B';
     else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
     else return (bytes / 1048576).toFixed(1) + ' MB';
   };
+
+  const handleFullscreenToggle = () => {
+    if (!videoRef.current) return;
+    
+    if (!isFullscreen) {
+      // Enter fullscreen
+      if (videoRef.current.requestFullscreen) {
+        videoRef.current.requestFullscreen();
+      } else if ((videoRef.current as any).webkitRequestFullscreen) {
+        (videoRef.current as any).webkitRequestFullscreen();
+      } else if ((videoRef.current as any).mozRequestFullScreen) {
+        (videoRef.current as any).mozRequestFullScreen();
+      } else if ((videoRef.current as any).msRequestFullscreen) {
+        (videoRef.current as any).msRequestFullscreen();
+      }
+      setIsFullscreen(true);
+    } else {
+      // Exit fullscreen
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if ((document as any).webkitExitFullscreen) {
+        (document as any).webkitExitFullscreen();
+      } else if ((document as any).mozCancelFullScreen) {
+        (document as any).mozCancelFullScreen();
+      } else if ((document as any).msExitFullscreen) {
+        (document as any).msExitFullscreen();
+      }
+      setIsFullscreen(false);
+    }
+  };
+
+  const handleFullscreenChange = () => {
+    const isCurrentlyFullscreen = !!(
+      document.fullscreenElement ||
+      (document as any).webkitFullscreenElement ||
+      (document as any).mozFullScreenElement ||
+      (document as any).msFullscreenElement
+    );
+    setIsFullscreen(isCurrentlyFullscreen);
+  };
+
+  useEffect(() => {
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, []);
 
   const getFileIcon = () => {
     switch (attachmentType) {
@@ -59,44 +116,93 @@ export default function MessageAttachment({
         );
       case 'video':
         return (
-          <div className="mb-1">
-            <video 
-              controls 
-              className="max-h-56 max-w-full rounded-md bg-black border border-gray-600 object-cover" 
-              preload="metadata"
-              playsInline
-              muted={false}
-              style={{
-                minHeight: '200px',
-                backgroundColor: '#000000',
-                display: 'block'
-              }}
-              onError={(e) => {
-                console.error('❌ Video playback error:', e);
-                console.error('❌ Video URL:', attachmentUrl);
-              }}
-              onLoadStart={() => {
-                console.log('📹 Video loading started:', attachmentUrl);
-              }}
-              onCanPlay={() => {
-                console.log('✅ Video can play:', attachmentUrl);
-              }}
-              onLoadedMetadata={() => {
-                console.log('📊 Video metadata loaded:', attachmentUrl);
-              }}
-              onLoadedData={() => {
-                console.log('💾 Video data loaded:', attachmentUrl);
-              }}
-            >
-              <source src={attachmentUrl} type="video/mp4" />
-              <source src={attachmentUrl} type="video/webm" />
-              <source src={attachmentUrl} type="video/ogg" />
-              <source src={attachmentUrl} type="video/avi" />
-              Browser Anda tidak mendukung tag video. 
-              <a href={attachmentUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">
-                Klik untuk mendownload video
-              </a>
-            </video>
+          <div className="mb-1 relative">
+            <div className="relative">
+              <video 
+                ref={videoRef}
+                controls 
+                className="max-h-56 max-w-full rounded-md bg-black border border-gray-600 object-cover" 
+                preload="metadata"
+                playsInline
+                muted={false}
+                style={{
+                  minHeight: '200px',
+                  backgroundColor: '#000000',
+                  display: 'block'
+                }}
+                onError={(e) => {
+                  console.error('❌ Video playback error:', e);
+                  console.error('❌ Video URL:', attachmentUrl);
+                }}
+                onLoadStart={() => {
+                  console.log('📹 Video loading started:', attachmentUrl);
+                }}
+                onCanPlay={() => {
+                  console.log('✅ Video can play:', attachmentUrl);
+                }}
+                onLoadedMetadata={() => {
+                  console.log('📊 Video metadata loaded:', attachmentUrl);
+                }}
+                onLoadedData={() => {
+                  console.log('💾 Video data loaded:', attachmentUrl);
+                }}
+              >
+                <source src={attachmentUrl} type="video/mp4" />
+                <source src={attachmentUrl} type="video/webm" />
+                <source src={attachmentUrl} type="video/ogg" />
+                <source src={attachmentUrl} type="video/avi" />
+                Browser Anda tidak mendukung tag video. 
+                <a href={attachmentUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">
+                  Klik untuk mendownload video
+                </a>
+              </video>
+              
+              {/* Fullscreen Toggle Button */}
+              <Button
+                size="sm"
+                variant="ghost"
+                className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white border-none backdrop-blur-sm"
+                onClick={handleFullscreenToggle}
+                title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+              >
+                {isFullscreen ? (
+                  <Minimize className="h-4 w-4" />
+                ) : (
+                  <Maximize className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            
+            {/* Fullscreen Close Button Overlay */}
+            {isFullscreen && (
+              <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center">
+                <Button
+                  size="lg"
+                  variant="ghost"
+                  className="absolute top-4 right-4 bg-black/70 hover:bg-black/90 text-white border border-gray-500 backdrop-blur-sm z-60"
+                  onClick={handleFullscreenToggle}
+                  title="Close Fullscreen"
+                >
+                  <X className="h-6 w-6" />
+                </Button>
+                <div className="w-full h-full flex items-center justify-center p-4">
+                  <video 
+                    controls 
+                    className="max-w-full max-h-full object-contain bg-black" 
+                    preload="metadata"
+                    playsInline
+                    autoPlay
+                    src={attachmentUrl}
+                  >
+                    <source src={attachmentUrl} type="video/mp4" />
+                    <source src={attachmentUrl} type="video/webm" />
+                    <source src={attachmentUrl} type="video/ogg" />
+                    <source src={attachmentUrl} type="video/avi" />
+                    Browser Anda tidak mendukung tag video.
+                  </video>
+                </div>
+              </div>
+            )}
           </div>
         );
       case 'audio':
