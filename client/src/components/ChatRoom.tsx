@@ -241,9 +241,25 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
       }
     };
 
-    // Listen for custom WebSocket messages
-    console.log('🔥 CHATROOM: Adding websocket-message event listener');
+    // Listen for multiple custom WebSocket events for maximum reliability
+    console.log('🔥 CHATROOM: Adding multiple WebSocket message event listeners');
+    
+    // Primary event listener
     window.addEventListener('websocket-message', handleWebSocketMessage as EventListener);
+    
+    // Secondary event listener (fallback)
+    window.addEventListener('new-message-realtime', handleWebSocketMessage as EventListener);
+    
+    // Force refresh listener
+    const handleForceRefresh = (event: CustomEvent) => {
+      const message = event.detail;
+      if (message.type === 'new_message' && message.payload?.conversationId === chatId) {
+        console.log('🔥 CHATROOM: Force refresh triggered for current conversation');
+        queryClient.invalidateQueries({ queryKey: [`/api/conversations/${chatId}/messages`] });
+        refetchMessages();
+      }
+    };
+    window.addEventListener('force-message-refresh', handleForceRefresh as EventListener);
     
     // Also keep the old WebSocket listener as fallback
     if (ws) {
@@ -266,15 +282,19 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
       ws.addEventListener('message', handleDirectMessage);
       
       return () => {
-        console.log('🔥 CHATROOM: Removing event listeners');
+        console.log('🔥 CHATROOM: Removing all event listeners');
         window.removeEventListener('websocket-message', handleWebSocketMessage as EventListener);
+        window.removeEventListener('new-message-realtime', handleWebSocketMessage as EventListener);
+        window.removeEventListener('force-message-refresh', handleForceRefresh as EventListener);
         ws.removeEventListener('message', handleDirectMessage);
       };
     }
     
     return () => {
-      console.log('🔥 CHATROOM: Removing websocket-message event listener');
+      console.log('🔥 CHATROOM: Removing WebSocket message event listeners');
       window.removeEventListener('websocket-message', handleWebSocketMessage as EventListener);
+      window.removeEventListener('new-message-realtime', handleWebSocketMessage as EventListener);
+      window.removeEventListener('force-message-refresh', handleForceRefresh as EventListener);
     };
   }, [ws, chatId, queryClient, refetchMessages]);
   

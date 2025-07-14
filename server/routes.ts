@@ -1805,21 +1805,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[BROADCAST] Active WebSocket clients: ${clients.size}`);
       
       let sentCount = 0;
-      members.forEach((member) => {
+      const maxRetries = 3;
+      
+      for (const member of members) {
         const client = clients.get(member.userId);
         console.log(`[BROADCAST] Member ${member.userId}: client exists=${!!client}, connected=${client?.readyState === WebSocket.OPEN}`);
         
         if (client && client.readyState === WebSocket.OPEN) {
-          console.log(`[BROADCAST] Sending message to user ${member.userId}: ${JSON.stringify(message).substring(0, 100)}...`);
-          client.send(JSON.stringify(message));
-          sentCount++;
-          console.log(`[BROADCAST] ✅ Message sent to user ${member.userId}`);
+          let retryCount = 0;
+          let messageSent = false;
+          
+          while (retryCount < maxRetries && !messageSent) {
+            try {
+              console.log(`[BROADCAST] Sending message to user ${member.userId} (attempt ${retryCount + 1}): ${JSON.stringify(message).substring(0, 100)}...`);
+              client.send(JSON.stringify(message));
+              sentCount++;
+              messageSent = true;
+              console.log(`[BROADCAST] ✅ Message sent to user ${member.userId}`);
+            } catch (error) {
+              retryCount++;
+              console.log(`[BROADCAST] ⚠️ Send failed for user ${member.userId}, retry ${retryCount}/${maxRetries}`);
+              
+              if (retryCount < maxRetries) {
+                // Wait 50ms before retry
+                await new Promise(resolve => setTimeout(resolve, 50));
+              }
+            }
+          }
+          
+          if (!messageSent) {
+            console.log(`[BROADCAST] ❌ Failed to send to user ${member.userId} after ${maxRetries} attempts`);
+          }
         } else {
           console.log(`[BROADCAST] ❌ Cannot send to user ${member.userId} - client not available or not connected`);
         }
-      });
+      }
       
       console.log(`[BROADCAST] Successfully sent message to ${sentCount}/${members.length} members`);
+      
+      // Additional verification - check if all expected clients received the message
+      if (sentCount < members.length) {
+        console.log(`[BROADCAST] ⚠️ Not all members received message. Expected: ${members.length}, Sent: ${sentCount}`);
+      }
     } catch (error) {
       console.error('Error broadcasting to conversation:', error);
     }

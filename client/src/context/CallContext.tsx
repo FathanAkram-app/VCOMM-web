@@ -660,23 +660,40 @@ export function CallProvider({ children }: { children: ReactNode }) {
           console.log('[CallContext] 🚨 MESSAGE PAYLOAD:', JSON.stringify(message, null, 2));
         }
         
-        // Handle real-time chat messages (for ChatRoom component)
+        // Handle real-time chat messages (for ChatRoom component) - CRITICAL SECTION
         if (message.type === 'new_message') {
           console.log('[CallContext] 🔥 REAL-TIME MESSAGE RECEIVED:', message.payload);
           console.log('[CallContext] 🔥 Message sender:', message.payload?.senderId);
           console.log('[CallContext] 🔥 Current user:', user?.id);
+          console.log('[CallContext] 🔥 Message conversation ID:', message.payload?.conversationId);
           console.log('[CallContext] 🔥 Broadcasting to ChatRoom via custom event');
           
-          // Dispatch custom event for ChatRoom to handle
+          // Dispatch multiple events for maximum reliability
           window.dispatchEvent(new CustomEvent('websocket-message', {
             detail: message
           }));
           
-          console.log('[CallContext] 🔥 Custom event dispatched successfully');
+          // Also dispatch with different event name for fallback
+          window.dispatchEvent(new CustomEvent('new-message-realtime', {
+            detail: message
+          }));
+          
+          // Force immediate DOM update dispatch
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('force-message-refresh', {
+              detail: message
+            }));
+          }, 100);
+          
+          console.log('[CallContext] 🔥 Multiple custom events dispatched successfully');
         }
         
         // Handle call-specific messages - server uses payload wrapper
         switch (message.type) {
+          case 'new_message':
+            console.log('[CallContext] 🔥 Processing new_message in switch statement');
+            // This is already handled above, but keeping for fallback
+            break;
           case 'incoming_call':
             handleIncomingCall(message.payload || message);
             // Trigger call history update
