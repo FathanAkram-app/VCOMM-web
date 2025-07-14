@@ -241,35 +241,39 @@ export default function ChatList({
             </div>
             
             {/* Chat details */}
-            <div className="ml-3 flex-1 overflow-hidden">
-              <div className="flex justify-between items-center">
-                <h3 className="text-white font-medium truncate">
-                  {chat.name}
-                  {chat.isGroup && 
-                    <span className="ml-2 text-xs font-normal text-gray-400">
-                      ({chat.members} anggota)
-                    </span>
-                  }
-                </h3>
-                <span className="text-xs text-gray-400">
+            <div className="ml-3 flex-1 min-w-0 pr-2">
+              <div className="flex justify-between items-center gap-2">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-white font-medium truncate">
+                    {chat.name}
+                    {chat.isGroup && 
+                      <span className="ml-2 text-xs font-normal text-gray-400">
+                        ({chat.members} anggota)
+                      </span>
+                    }
+                  </h3>
+                </div>
+                <span className="text-xs text-gray-400 flex-shrink-0">
                   {chat.lastMessageTime ? formatLastMessageTime(chat.lastMessageTime) : ""}
                 </span>
               </div>
               
-              <div className="flex justify-between items-center mt-1">
-                <p className="text-gray-400 text-sm truncate">
-                  {chat.lastMessage && chat.lastMessage.includes("Pesan Suara") ? (
-                    <span className="flex items-center">
-                      <span className="text-green-500 mr-1">🔊</span>
-                      <span className="text-gray-300">Pesan Suara</span>
-                    </span>
-                  ) : (
-                    chat.lastMessage || "Belum ada pesan"
-                  )}
-                </p>
+              <div className="flex justify-between items-center mt-1 gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-gray-400 text-sm truncate">
+                    {chat.lastMessage && chat.lastMessage.includes("Pesan Suara") ? (
+                      <span className="flex items-center">
+                        <span className="text-green-500 mr-1">🔊</span>
+                        <span className="text-gray-300">Pesan Suara</span>
+                      </span>
+                    ) : (
+                      chat.lastMessage || "Belum ada pesan"
+                    )}
+                  </p>
+                </div>
                 
                 {chat.unread && chat.unread > 0 ? (
-                  <span className="ml-2 bg-[#4d5d30] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  <span className="bg-[#4d5d30] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">
                     {chat.unread}
                   </span>
                 ) : null}
@@ -277,7 +281,7 @@ export default function ChatList({
             </div>
             
             {/* Actions dropdown */}
-            <div onClick={(e) => e.stopPropagation()} className="ml-2">
+            <div onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-[#8d9c6b] hover:text-white">
