@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Lock, AlertTriangle, Loader2 } from "lucide-react";
+import { Shield, Lock, AlertTriangle, Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import iconPath from "@assets/Icon Chat NXXZ.png";
@@ -31,6 +31,8 @@ type RegisterValues = z.infer<typeof registerSchema>;
 export default function Register() {
   const [, setLocation] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<RegisterValues>({
@@ -254,12 +256,25 @@ export default function Register() {
                 <FormItem>
                   <FormLabel className="text-gray-400 uppercase text-sm font-medium">SECURITY CODE / PASSWORD</FormLabel>
                   <FormControl>
-                    <Input 
-                      type="password" 
-                      placeholder="ENTER SECURITY CODE" 
-                      className="w-full bg-[#222222] border border-[#444444] p-3 text-white placeholder:text-[#555555]" 
-                      {...field} 
-                    />
+                    <div className="relative">
+                      <Input 
+                        type={showPassword ? "text" : "password"} 
+                        placeholder="ENTER SECURITY CODE" 
+                        className="w-full bg-[#222222] border border-[#444444] p-3 pr-14 text-white placeholder:text-[#555555]" 
+                        {...field} 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-1 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="w-6 h-6" />
+                        ) : (
+                          <Eye className="w-6 h-6" />
+                        )}
+                      </button>
+                    </div>
                   </FormControl>
                   <FormMessage className="text-red-500 text-xs" />
                 </FormItem>
@@ -273,12 +288,25 @@ export default function Register() {
                 <FormItem>
                   <FormLabel className="text-gray-400 uppercase text-sm font-medium">CONFIRM SECURITY CODE</FormLabel>
                   <FormControl>
-                    <Input 
-                      type="password" 
-                      placeholder="CONFIRM SECURITY CODE" 
-                      className="w-full bg-[#222222] border border-[#444444] p-3 text-white placeholder:text-[#555555]" 
-                      {...field} 
-                    />
+                    <div className="relative">
+                      <Input 
+                        type={showConfirmPassword ? "text" : "password"} 
+                        placeholder="CONFIRM SECURITY CODE" 
+                        className="w-full bg-[#222222] border border-[#444444] p-3 pr-14 text-white placeholder:text-[#555555]" 
+                        {...field} 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-1 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="w-6 h-6" />
+                        ) : (
+                          <Eye className="w-6 h-6" />
+                        )}
+                      </button>
+                    </div>
                   </FormControl>
                   <FormMessage className="text-red-500 text-xs" />
                 </FormItem>
