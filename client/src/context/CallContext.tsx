@@ -2660,9 +2660,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
     try {
       console.log('[CallContext] Starting camera switch...');
       
-      // Request permissions first on mobile
+      // Mobile device detection and debugging
       const isMobileDevice = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      console.log('[CallContext] Device detection - isMobile:', isMobileDevice, 'userAgent:', navigator.userAgent.slice(0, 50));
+      const debugInfo = `Device: ${isMobileDevice ? 'Mobile' : 'Desktop'}\nUser Agent: ${navigator.userAgent.slice(0, 80)}...`;
+      console.log('[CallContext] Device detection:', debugInfo);
       
       if (isMobileDevice) {
         console.log('[CallContext] Mobile device detected, checking permissions...');
@@ -2690,10 +2691,20 @@ export function CallProvider({ children }: { children: ReactNode }) {
       const currentFacingMode = currentSettings.facingMode;
       console.log('[CallContext] Current camera facingMode:', currentFacingMode);
 
-      // Enumerate available video devices
+      // Enumerate available video devices with mobile debugging
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = devices.filter(device => device.kind === 'videoinput');
       console.log('[CallContext] Available video devices:', videoDevices.length);
+      
+      // Mobile debugging - show camera info only if no cameras found
+      if (isMobileDevice && videoDevices.length <= 1) {
+        const cameraInfo = videoDevices.map((device, index) => 
+          `Camera ${index + 1}: ${device.label || 'Unknown'}`
+        ).join('\n');
+        // Show debug info only for problematic cases
+        alert(`📱 Debug Info untuk troubleshoot:\nDevice: Mobile\nKamera ditemukan: ${videoDevices.length}\n${cameraInfo}`);
+      }
+      
       videoDevices.forEach((device, index) => {
         console.log(`[CallContext] Camera ${index + 1}:`, {
           label: device.label,
@@ -2799,18 +2810,43 @@ export function CallProvider({ children }: { children: ReactNode }) {
       for (const [index, strategy] of strategies.entries()) {
         try {
           console.log(`[CallContext] Trying camera switch strategy ${index + 1}:`, strategy);
+          
+          // Show strategy attempt only for rear camera and only once
+          if (isMobileDevice && isMobileRearCamera && index === 0) {
+            alert(`🔄 Mencoba akses kamera belakang...\nMohon tunggu...`);
+          }
+          
           newVideoStream = await navigator.mediaDevices.getUserMedia(strategy);
           newVideoTrack = newVideoStream.getVideoTracks()[0];
           console.log(`[CallContext] Strategy ${index + 1} SUCCESS! Got video track:`, newVideoTrack.id);
+          
+          // Show success for mobile users - only for rear camera switch
+          if (isMobileDevice && isMobileRearCamera) {
+            const newSettings = newVideoTrack.getSettings();
+            const cameraType = newSettings.facingMode === 'environment' ? 'Kamera Belakang' : 'Kamera Depan';
+            alert(`✅ Berhasil ganti ke: ${cameraType}!`);
+          }
+          
           strategySucceeded = true;
           break;
         } catch (err) {
           console.log(`[CallContext] Strategy ${index + 1} failed:`, err);
           lastError = err as Error;
+          
+          // Show failure only at the end, not for each strategy
         }
       }
 
       if (!strategySucceeded || !newVideoStream) {
+        // Show comprehensive failure message for mobile users
+        if (isMobileDevice) {
+          const errorMsg = lastError?.name === 'NotFoundError' ? 
+            'Kamera belakang tidak ditemukan di HP ini.' :
+            lastError?.name === 'NotAllowedError' ?
+            'Izin kamera ditolak. Buka Pengaturan browser → Izin situs.' :
+            `Error: ${lastError?.message || 'Tidak diketahui'}`;
+          alert(`❌ Gagal mengganti kamera\n\n${errorMsg}\n\nHP ini mungkin hanya memiliki kamera depan.`);
+        }
         throw lastError || new Error('Semua strategi camera switch gagal');
       }
 
