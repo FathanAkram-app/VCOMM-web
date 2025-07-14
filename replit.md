@@ -226,6 +226,15 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - ✅ HIDDEN: Laporan Situasi (Lapsit) menu from navigation - commented out for future use
   - Database shows 116+ call history entries working perfectly with filtering and timestamps
   - Navigation now cleaner with 4 main sections: Chat, Calls, Personnel, Settings
+- July 14, 2025: Chat Layout and Real-time Delete Enhancement:
+  - ✅ SWAPPED: Menu positions between Personnel and Call History for better logical flow
+  - ✅ FIXED: Mobile chat layout issues where long text cut off timestamps and dropdown menus
+  - ✅ IMPLEMENTED: 20-character text truncation with "..." for all chat names and messages
+  - ✅ ENHANCED: Real-time delete message functionality with proper WebSocket handling
+  - ✅ IMPROVED: delete_for_everyone action now properly broadcasts and refreshes UI instantly
+  - ✅ OPTIMIZED: Chat list layout with flex-shrink-0 for timestamps and dropdown menus
+  - Mobile layout now consistently shows menu dropdown and timestamps regardless of text length
+  - Real-time message deletion working for both "delete for me" and "delete for everyone" options
 
 # User Preferences
 

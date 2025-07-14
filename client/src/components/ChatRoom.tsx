@@ -177,8 +177,27 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
           console.log('🔥 WebSocket readyState:', ws?.readyState);
           console.log('🔥 Browser location:', window.location.href);
           
-          // Show browser notification if supported
-          if (Notification.permission === 'granted' && message.payload?.content) {
+          // Check if this is a delete action
+          if (message.payload?.action === 'delete_for_everyone') {
+            console.log('🗑️ REAL-TIME DELETE: Message deleted for everyone!');
+            console.log('🗑️ Deleted message ID:', message.payload?.id);
+            
+            // Refresh messages immediately to show deleted message
+            if (message.payload?.conversationId) {
+              queryClient.invalidateQueries({ queryKey: [`/api/conversations/${message.payload.conversationId}/messages`] });
+              console.log('🗑️ Invalidated queries for real-time delete in conversation:', message.payload.conversationId);
+            }
+            
+            // Also refresh conversations list to update last message if needed
+            queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/direct-chats'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/rooms'] });
+            
+            return; // Skip notification for deleted messages
+          }
+          
+          // Show browser notification if supported (only for new messages, not deletes)
+          if (Notification.permission === 'granted' && message.payload?.content && !message.payload?.action) {
             new Notification(`New message from ${message.payload.senderName || 'Unknown'}`, {
               body: message.payload.content.substring(0, 100),
               icon: '/icon-192x192.png'
