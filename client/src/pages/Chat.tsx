@@ -1912,7 +1912,7 @@ export default function Chat() {
       )}
       
       {activeCall && activeCall.callType === 'video' && activeCall.groupId && (
-        <GroupVideoCall />
+        <GroupVideoCallSimple />
       )}
 
       {/* Lapsit Category Selection Modal */}
