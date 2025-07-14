@@ -1626,11 +1626,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('[DEBUG] ✅ START_GROUP_CALL message received:', JSON.stringify(data, null, 2));
         }
         
-        if (data.type === 'request_group_participants') {
-          console.log('[DEBUG] 🔥 REQUEST_GROUP_PARTICIPANTS message received:', JSON.stringify(data, null, 2));
-          console.log('[DEBUG] 🔥 WebSocket userId:', ws.userId);
-          console.log('[DEBUG] 🔥 WebSocket authenticated:', !!ws.userId);
-        }
+
         
         // Handle authentication message
         if (data.type === 'auth') {
@@ -2105,98 +2101,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
-        // Handle request for group participants update
-        if (data.type === 'request_group_participants' && ws.userId) {
-          const { callId, groupId, userId: requestingUserId } = data.payload;
-          console.log(`[Group Call] User ${requestingUserId || ws.userId} requesting participants for call ${callId}`);
-          
-          // Get current participants list from active calls
-          let participants = Array.from(activeGroupCalls.get(callId)?.participants || []);
-          console.log(`[Group Call] Current participants in ${callId}:`, participants);
-          
-          // If no participants found in active call, find all online group members
-          if (participants.length === 0) {
-            console.log(`[Group Call] No active participants, finding all online group members for group ${groupId}`);
-            
-            try {
-              // Get all conversation members from database
-              const conversationMembers = await storage.getConversationMembers(groupId);
-              console.log(`[Group Call] 🔥 All conversation members for group ${groupId}:`, conversationMembers.map(m => ({ userId: m.userId, role: m.role })));
-              
-              // Filter to only online members (excluding the requesting user)
-              const onlineParticipants = [];
-              for (const member of conversationMembers) {
-                if (member.userId !== requestingUserId && member.userId !== ws.userId) {
-                  const client = clients.get(member.userId);
-                  if (client && client.readyState === WebSocket.OPEN) {
-                    // Get user info for participant
-                    const userInfo = await storage.getUser(member.userId.toString());
-                    onlineParticipants.push({
-                      userId: member.userId,
-                      userName: userInfo?.callsign || userInfo?.fullName || `User ${member.userId}`,
-                      audioEnabled: true,
-                      videoEnabled: true
-                    });
-                  }
-                }
-              }
-              
-              participants = onlineParticipants;
-              console.log(`[Group Call] 🔥 Found ${participants.length} online participants:`, participants);
-            } catch (error) {
-              console.error(`[Group Call] ❌ Error getting conversation members:`, error);
-              participants = [];
-            }
-          }
-          
-          // Send participants update to requesting user
-          if (participants.length > 0) {
-            console.log(`[Group Call] 🎯 Preparing to send participants update for ${participants.length} participants`);
-            
-            const updateMessage = {
-              type: 'group_call_participants_update',
-              payload: {
-                callId,
-                participants: participants.map(id => ({ userId: id, userName: '', audioEnabled: true, videoEnabled: true })),
-                groupId,
-                requestResponse: true,
-                triggerWebRTC: true // Flag to trigger WebRTC setup
-              }
-            };
-            
-            console.log(`[Group Call] 📤 Sending participants update message:`, updateMessage);
-            ws.send(JSON.stringify(updateMessage));
-            console.log(`[Group Call] ✅ Sent participants update response to user ${requestingUserId || ws.userId}:`, participants);
-            
-            // Also broadcast to all participants to sync everyone
-            participants.forEach(participantId => {
-              const participantClient = clients.get(participantId);
-              if (participantClient && participantClient.readyState === participantClient.OPEN && participantId !== ws.userId) {
-                console.log(`[Group Call] 📤 Broadcasting to user ${participantId}`);
-                participantClient.send(JSON.stringify(updateMessage));
-                console.log(`[Group Call] 🔄 Synced participants to user ${participantId}`);
-              } else {
-                console.log(`[Group Call] ❌ Cannot broadcast to user ${participantId}: client=${!!participantClient}, readyState=${participantClient?.readyState || 'N/A'}`);
-              }
-            });
-          } else {
-            console.log(`[Group Call] ❌ No participants found for call ${callId} - but still sending empty update`);
-            // Send empty participants update to inform client no one is available
-            const emptyUpdateMessage = {
-              type: 'group_call_participants_update',
-              payload: {
-                callId,
-                participants: [],
-                groupId,
-                requestResponse: true,
-                triggerWebRTC: false
-              }
-            };
-            
-            ws.send(JSON.stringify(emptyUpdateMessage));
-            console.log(`[Group Call] 📤 Sent empty participants update to user ${requestingUserId || ws.userId}`);
-          }
-        }
+        // Note: request_group_participants handler removed - participant detection now works 
+        // automatically through group_call_participants_update system
 
         // Handle call end
         if (data.type === 'end_call' && ws.userId) {
