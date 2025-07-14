@@ -1626,6 +1626,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('[DEBUG] ✅ START_GROUP_CALL message received:', JSON.stringify(data, null, 2));
         }
         
+        if (data.type === 'request_group_participants') {
+          console.log('[DEBUG] 🔥 REQUEST_GROUP_PARTICIPANTS message received:', JSON.stringify(data, null, 2));
+          console.log('[DEBUG] 🔥 WebSocket userId:', ws.userId);
+          console.log('[DEBUG] 🔥 WebSocket authenticated:', !!ws.userId);
+        }
+        
         // Handle authentication message
         if (data.type === 'auth') {
           const { userId } = data.payload;
