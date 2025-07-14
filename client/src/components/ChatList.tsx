@@ -300,8 +300,8 @@ export default function ChatList({
                     className="hover:bg-[#3d5040] cursor-pointer focus:bg-[#3d5040] focus:text-white"
                     onClick={(e) => {
                       e.stopPropagation();
-                      // Feature: Bersihkan riwayat chat
-                      if (confirm(`Apakah Anda yakin ingin membersihkan riwayat chat dengan ${chat.name}? Semua pesan akan dihapus.`)) {
+                      // Feature: Bersihkan riwayat chat (hanya untuk user ini)
+                      if (confirm(`Apakah Anda yakin ingin membersihkan chat dengan ${chat.name}? Chat akan kosong untuk Anda, tetapi ${chat.name} masih bisa melihat history chat mereka.`)) {
                         if (onClearChatHistory) {
                           onClearChatHistory(chat.id, chat.isGroup);
                         }
@@ -309,7 +309,7 @@ export default function ChatList({
                     }}
                   >
                     <MessageSquare className="mr-2 h-4 w-4" />
-                    Bersihkan Chat
+                    Bersihkan Chat Saya
                   </DropdownMenuItem>
                   
                   <DropdownMenuItem 

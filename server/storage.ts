@@ -56,6 +56,7 @@ export interface IStorage {
   hideConversationForUser(userId: number, conversationId: number): Promise<void>;
   unhideConversationForUser(userId: number, conversationId: number): Promise<void>;
   findHiddenDirectChatBetweenUsers(userId: number, otherUserId: number): Promise<Conversation | undefined>;
+  clearChatHistoryForUser(userId: number, conversationId: number): Promise<void>;
   
   // Message operations
   createMessage(data: InsertMessage): Promise<Message>;
@@ -688,6 +689,28 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error(`Error finding hidden direct chat between users ${userId} and ${otherUserId}:`, error);
       return undefined;
+    }
+  }
+
+  async clearChatHistoryForUser(userId: number, conversationId: number): Promise<void> {
+    try {
+      // Tandai semua pesan dalam conversation ini sebagai "deleted for this user"
+      const conversationMessages = await db
+        .select({ id: messages.id })
+        .from(messages)
+        .where(eq(messages.conversationId, conversationId));
+
+      console.log(`[Storage] Found ${conversationMessages.length} messages to clear for user ${userId} in conversation ${conversationId}`);
+
+      // Untuk setiap pesan, tandai sebagai deleted untuk user ini
+      for (const message of conversationMessages) {
+        await this.markMessageAsDeletedForUser(message.id, userId);
+      }
+
+      console.log(`[Storage] Cleared chat history for user ${userId} in conversation ${conversationId}`);
+    } catch (error) {
+      console.error(`Error clearing chat history for user ${userId} in conversation ${conversationId}:`, error);
+      throw new Error("Failed to clear chat history for user");
     }
   }
 

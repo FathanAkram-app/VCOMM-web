@@ -244,6 +244,14 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - ✅ MODIFIED: Chat deletion UI text to clearly indicate hiding behavior vs permanent deletion
   - Chat history remains intact in database and can be accessed again via Personnel page
   - Users can chat with someone from Personnel page to restore hidden conversation to their list
+- July 14, 2025: Personal Chat History Clear System Implementation:
+  - ✅ IMPLEMENTED: clearChatHistoryForUser function for personal chat clearing (per-user basis)
+  - ✅ ENHANCED: markMessageAsDeletedForUser system to handle individual message deletion per user
+  - ✅ MODIFIED: /api/conversations/:id/clear endpoint to only clear history for requesting user
+  - ✅ UPDATED: "Bersihkan Chat" UI to "Bersihkan Chat Saya" with clearer explanation
+  - ✅ ADDED: Personal clearing system where each user can clear their own view without affecting others
+  - When user A clears chat → Only user A sees empty chat, user B still sees full history
+  - When user B sends new message → User A sees new message but no previous history
 
 # User Preferences
 

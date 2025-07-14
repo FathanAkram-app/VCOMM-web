@@ -844,7 +844,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Clear chat history endpoint
+  // Clear chat history endpoint - only clear for the requesting user
   app.post('/api/conversations/:id/clear', isAuthenticated, async (req: AuthRequest, res) => {
     console.log('[DEBUG] CLEAR endpoint reached');
     
@@ -857,7 +857,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Authentication required" });
       }
       
-      console.log(`[API] User ${userId} attempting to clear conversation ${conversationId}`);
+      console.log(`[API] User ${userId} attempting to clear conversation ${conversationId} for themselves only`);
       
       if (isNaN(conversationId)) {
         return res.status(400).json({ message: "Invalid conversation ID" });
@@ -875,10 +875,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Not authorized - not a member of this conversation" });
       }
       
-      // Clear messages
-      await storage.clearConversationMessages(conversationId);
+      // Clear chat history only for this user (personal clear)
+      await storage.clearChatHistoryForUser(userId, conversationId);
       
-      res.json({ message: "Chat history cleared successfully" });
+      res.json({ message: "Chat history cleared for you only. Other participants still have their chat history." });
     } catch (error) {
       console.error("Error clearing chat history:", error);
       res.status(500).json({ message: "Failed to clear chat history" });
