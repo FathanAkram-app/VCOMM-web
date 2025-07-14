@@ -257,6 +257,28 @@ export default function GroupVideoCallSimple() {
       // Get or create dedicated peer connection untuk user ini
       const pc = getOrCreatePeerConnection(offerData.fromUserId);
       
+      // Ensure local tracks are added before setting remote description
+      if (localStream) {
+        const senders = pc.getSenders();
+        console.log(`[GroupVideoCallSimple] 📊 Current senders before answer for user ${offerData.fromUserId}:`, senders.length);
+        
+        // Only add tracks if they haven't been added yet
+        if (senders.length === 0) {
+          localStream.getTracks().forEach(track => {
+            const sender = pc.addTrack(track, localStream);
+            console.log(`[GroupVideoCallSimple] ✅ Added local track for answer to user ${offerData.fromUserId}:`, {
+              trackKind: track.kind,
+              trackEnabled: track.enabled,
+              senderId: sender ? 'created' : 'failed'
+            });
+          });
+        } else {
+          console.log(`[GroupVideoCallSimple] ℹ️ Tracks already added for answer to user ${offerData.fromUserId}`);
+        }
+      } else {
+        console.log(`[GroupVideoCallSimple] ⚠️ No local stream when creating answer for user ${offerData.fromUserId}`);
+      }
+      
       console.log('[GroupVideoCallSimple] 🔗 Peer connection state before setting remote description:', {
         connectionState: pc.connectionState,
         iceConnectionState: pc.iceConnectionState,
@@ -414,7 +436,9 @@ export default function GroupVideoCallSimple() {
       console.log('[GroupVideoCallSimple] Creating new peer connection for user:', userId);
       
       pc = new RTCPeerConnection({
-        iceServers: [] // Offline mode - no external STUN servers
+        iceServers: [], // Offline mode - no external STUN servers
+        iceCandidatePoolSize: 10,
+        iceGatheringTimeout: 5000
       });
       
       // Setup ontrack event untuk menerima remote stream
@@ -512,35 +536,72 @@ export default function GroupVideoCallSimple() {
   };
 
   const initiateWebRTCConnections = async (data: any) => {
-    console.log('[GroupVideoCallSimple] Initiating WebRTC connections with participants:', data.participants);
+    console.log('[GroupVideoCallSimple] 🚀 Initiating WebRTC connections with participants:', data.participants);
     
     if (!currentUser) {
-      console.log('[GroupVideoCallSimple] Missing current user for WebRTC initiation');
+      console.log('[GroupVideoCallSimple] ❌ Missing current user for WebRTC initiation');
       return;
     }
 
     // Ensure we have local stream before creating connections
     if (!localStream) {
-      console.log('[GroupVideoCallSimple] No local stream for WebRTC initiation, waiting...');
+      console.log('[GroupVideoCallSimple] ⚠️ No local stream for WebRTC initiation, waiting...');
       try {
         await initializeMediaStream();
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 500));
       } catch (error) {
-        console.error('[GroupVideoCallSimple] Failed to get local stream for WebRTC initiation:', error);
+        console.error('[GroupVideoCallSimple] ❌ Failed to get local stream for WebRTC initiation:', error);
         return;
       }
     }
+
+    // Double check local stream is available
+    if (!localStream) {
+      console.log('[GroupVideoCallSimple] ❌ Still no local stream after initialization');
+      return;
+    }
+
+    console.log('[GroupVideoCallSimple] 📊 Local stream ready for offers:', {
+      streamId: localStream.id,
+      active: localStream.active,
+      videoTracks: localStream.getVideoTracks().length,
+      audioTracks: localStream.getAudioTracks().length,
+      videoEnabled: localStream.getVideoTracks()[0]?.enabled,
+      audioEnabled: localStream.getAudioTracks()[0]?.enabled
+    });
 
     try {
       // Create peer connection dan offer untuk setiap participant
       for (const participant of data.participants) {
         if (participant.userId !== currentUser.id) {
+          console.log(`[GroupVideoCallSimple] 🔗 Creating offer for participant: ${participant.userName} (${participant.userId})`);
+          
           const pc = getOrCreatePeerConnection(participant.userId);
+          
+          // Ensure local tracks are added before creating offer
+          if (localStream) {
+            const senders = pc.getSenders();
+            console.log(`[GroupVideoCallSimple] 📊 Current senders for user ${participant.userId}:`, senders.length);
+            
+            // Only add tracks if they haven't been added yet
+            if (senders.length === 0) {
+              localStream.getTracks().forEach(track => {
+                const sender = pc.addTrack(track, localStream);
+                console.log(`[GroupVideoCallSimple] ✅ Re-added local track for offer to user ${participant.userId}:`, {
+                  trackKind: track.kind,
+                  trackEnabled: track.enabled,
+                  senderId: sender ? 'created' : 'failed'
+                });
+              });
+            } else {
+              console.log(`[GroupVideoCallSimple] ℹ️ Tracks already added for user ${participant.userId}`);
+            }
+          }
           
           // Create offer
           const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
-          console.log('[GroupVideoCallSimple] Created and set local offer for user:', participant.userId);
+          console.log('[GroupVideoCallSimple] ✅ Created and set local offer for user:', participant.userId);
 
           // Send offer via WebSocket
           if (ws && ws.readyState === WebSocket.OPEN) {
