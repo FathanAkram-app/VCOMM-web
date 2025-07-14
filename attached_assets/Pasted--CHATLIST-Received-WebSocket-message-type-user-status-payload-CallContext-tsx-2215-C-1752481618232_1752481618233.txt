@@ -1,0 +1,251 @@
+📋 CHATLIST: Received WebSocket message: {type: 'user_status', payload: {…}}
+CallContext.tsx:2215 [CallContext] acceptCall function called
+CallContext.tsx:2216 [CallContext] incomingCall: {callId: 'group_call_1752481598589_38_2', callType: 'video', status: 'ringing', isIncoming: true, peerUserId: 2, …}
+CallContext.tsx:2217 [CallContext] ws connected: true
+CallContext.tsx:2218 [CallContext] user: {id: 3, callsign: 'aji', nrp: '123123', fullName: 'aji a', rank: 'SPC', …}
+CallContext.tsx:2227 [CallContext] Accepting group call - redirecting to joinGroupCall
+CallContext.tsx:3218 [CallContext] Joining existing group call: {callId: 'group_call_1752481598589_38_2', groupId: 38, groupName: 'Ampera Grup', callType: 'video'}
+CallContext.tsx:3241 [CallContext] Requesting media permissions for joining group call...
+CallContext.tsx:3429 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: null, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: null, hasIncomingCall: false}
+IncomingCallModal.tsx:4 [IncomingCallModal] 🔥 COMPONENT RENDERED - START
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: null, hasIncomingCall: false}
+IncomingCallModal.tsx:8 [IncomingCallModal] 🔥 After useCall hook - incomingCall: null
+IncomingCallModal.tsx:9 [IncomingCallModal] 🔥 incomingCall type check: object
+IncomingCallModal.tsx:10 [IncomingCallModal] 🔥 incomingCall falsy check: true
+IncomingCallModal.tsx:13 [IncomingCallModal] No incoming call, returning null
+CallContext.tsx:3417 [CallContext] 🔥 INCOMING CALL STATE CHANGED: null
+CallContext.tsx:3243 [CallContext] Got local media stream for joining group call
+CallContext.tsx:3275 [CallContext] Added local track for joining group call: audio
+CallContext.tsx:3275 [CallContext] Added local track for joining group call: video
+CallContext.tsx:3299 [CallContext] Active call state set for group: 38 callId: group_call_1752481598589_38_2
+CallContext.tsx:3336 [CallContext] Joined group call successfully
+CallContext.tsx:3337 [CallContext] Active call state after joining: {callId: 'group_call_1752481598589_38_2', callType: 'video', status: 'connected', isIncoming: false, localStream: MediaStream, …}
+CallContext.tsx:3340 [CallContext] 📊 Processing pending participant updates after join...
+CallContext.tsx:3429 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+IncomingCallModal.tsx:4 [IncomingCallModal] 🔥 COMPONENT RENDERED - START
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+IncomingCallModal.tsx:8 [IncomingCallModal] 🔥 After useCall hook - incomingCall: null
+IncomingCallModal.tsx:9 [IncomingCallModal] 🔥 incomingCall type check: object
+IncomingCallModal.tsx:10 [IncomingCallModal] 🔥 incomingCall falsy check: true
+IncomingCallModal.tsx:13 [IncomingCallModal] No incoming call, returning null
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCall.tsx:412 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1752481598589_38_2', callType: 'video', status: 'connected', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:413 [GroupVideoCall] user?.id: 3
+GroupVideoCall.tsx:414 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:415 [GroupVideoCall] localStream: null
+GroupVideoCall.tsx:423 [GroupVideoCall] Using existing local stream from activeCall
+GroupVideoCall.tsx:426 [GroupVideoCall] Existing stream details: {id: 'a76a90c0-12a2-474f-beca-bc027107d613', active: true, videoTracks: 1, audioTracks: 1}
+GroupVideoCall.tsx:440 [GroupVideoCall] Video track forcibly enabled for group calls
+GroupVideoCall.tsx:446 [GroupVideoCall] Set local video source from existing stream
+GroupVideoCall.tsx:550 [GroupVideoCall] ⚠️ No local stream available
+GroupVideoCall.tsx:555 [GroupVideoCall] ✅ Recovered local stream from activeCall
+GroupVideoCall.tsx:684 [GroupVideoCall] 📊 Participants effect triggered
+GroupVideoCall.tsx:685 [GroupVideoCall] 📊 activeCall: {callId: 'group_call_1752481598589_38_2', callType: 'video', status: 'connected', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:686 [GroupVideoCall] 📊 activeCall?.participants: []
+GroupVideoCall.tsx:687 [GroupVideoCall] 📊 user?.id: 3
+GroupVideoCall.tsx:693 [GroupVideoCall] 📊 Current participants string: 
+GroupVideoCall.tsx:694 [GroupVideoCall] 📊 New participants string: []
+GroupVideoCall.tsx:703 [GroupVideoCall] 📊 Processing participants from activeCall: []
+GroupVideoCall.tsx:714 [GroupVideoCall] 📊 Other participants after filtering: []
+GroupVideoCall.tsx:1031 [GroupVideoCall] ⏳ Auto-initiation not ready: {participantsCount: 0, hasLocalStream: false, hasActiveCall: true, hasUser: true}
+GroupVideoCall.tsx:1040 [GroupVideoCall] 🚀 Force-initiating WebRTC for group call initiator
+GroupVideoCall.tsx:1102 [GroupVideoCall] Stream state updated: {remoteStreams: Array(0), participants: Array(0)}
+CallContext.tsx:3429 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+IncomingCallModal.tsx:4 [IncomingCallModal] 🔥 COMPONENT RENDERED - START
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+IncomingCallModal.tsx:8 [IncomingCallModal] 🔥 After useCall hook - incomingCall: null
+IncomingCallModal.tsx:9 [IncomingCallModal] 🔥 incomingCall type check: object
+IncomingCallModal.tsx:10 [IncomingCallModal] 🔥 incomingCall falsy check: true
+IncomingCallModal.tsx:13 [IncomingCallModal] No incoming call, returning null
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCall.tsx:412 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1752481598589_38_2', callType: 'video', status: 'connected', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:413 [GroupVideoCall] user?.id: 3
+GroupVideoCall.tsx:414 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:415 [GroupVideoCall] localStream: null
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCall.tsx:735 [GroupVideoCall] 📊 Updated participants list: []
+GroupVideoCall.tsx:412 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1752481598589_38_2', callType: 'video', status: 'connected', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:413 [GroupVideoCall] user?.id: 3
+GroupVideoCall.tsx:414 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:415 [GroupVideoCall] localStream: MediaStream {id: 'a76a90c0-12a2-474f-beca-bc027107d613', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:513 [GroupVideoCall] Local video stream attached to element
+GroupVideoCall.tsx:514 [GroupVideoCall] Local stream details: {id: 'a76a90c0-12a2-474f-beca-bc027107d613', active: true, videoTracks: 1, audioTracks: 1, videoTrackEnabled: true}
+GroupVideoCall.tsx:529 [GroupVideoCall] Video forcibly enabled for group call
+GroupVideoCall.tsx:1031 [GroupVideoCall] ⏳ Auto-initiation not ready: {participantsCount: 0, hasLocalStream: true, hasActiveCall: true, hasUser: true}
+GroupVideoCall.tsx:1040 [GroupVideoCall] 🚀 Force-initiating WebRTC for group call initiator
+GroupVideoCall.tsx:1102 [GroupVideoCall] Stream state updated: {remoteStreams: Array(0), participants: Array(0)}
+GroupVideoCall.tsx:1893 [GroupVideoCall] ✅ Local video started playing
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCall.tsx:412 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1752481598589_38_2', callType: 'video', status: 'connected', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:413 [GroupVideoCall] user?.id: 3
+GroupVideoCall.tsx:414 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:415 [GroupVideoCall] localStream: MediaStream {id: 'a76a90c0-12a2-474f-beca-bc027107d613', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:1887 [GroupVideoCall] Local video metadata loaded
+GroupVideoCall.tsx:1890 [GroupVideoCall] Local video can play
+GroupVideoCall.tsx:541 [GroupVideoCall] ✅ Local video playing successfully
+CallContext.tsx:3429 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCall.tsx:412 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1752481598589_38_2', callType: 'video', status: 'connected', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:413 [GroupVideoCall] user?.id: 3
+GroupVideoCall.tsx:414 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:415 [GroupVideoCall] localStream: null
+ChatList.tsx:149 📋 CHATLIST: Removing WebSocket event listeners
+GroupVideoCall.tsx:492 [GroupVideoCall] Effect cleanup - preserving streams for active call
+GroupVideoCall.tsx:505 [GroupVideoCall] Component re-rendering - preserving active call streams
+GroupVideoCall.tsx:423 [GroupVideoCall] Using existing local stream from activeCall
+GroupVideoCall.tsx:426 [GroupVideoCall] Existing stream details: {id: 'a76a90c0-12a2-474f-beca-bc027107d613', active: true, videoTracks: 1, audioTracks: 1}
+GroupVideoCall.tsx:477 [GroupVideoCall] Error getting local media: TypeError: Cannot assign to read only property 'enabled' of object '#<MediaStreamTrack>'
+    at getLocalMedia (GroupVideoCall.tsx:438:24)
+    at GroupVideoCall.tsx:482:7
+    at commitHookEffectListMount (chunk-RPCDYKBN.js?v=01fe63e0:16915:34)
+    at commitPassiveMountOnFiber (chunk-RPCDYKBN.js?v=01fe63e0:18156:19)
+    at commitPassiveMountEffects_complete (chunk-RPCDYKBN.js?v=01fe63e0:18129:17)
+    at commitPassiveMountEffects_begin (chunk-RPCDYKBN.js?v=01fe63e0:18119:15)
+    at commitPassiveMountEffects (chunk-RPCDYKBN.js?v=01fe63e0:18109:11)
+    at flushPassiveEffectsImpl (chunk-RPCDYKBN.js?v=01fe63e0:19490:11)
+    at flushPassiveEffects (chunk-RPCDYKBN.js?v=01fe63e0:19447:22)
+    at commitRootImpl (chunk-RPCDYKBN.js?v=01fe63e0:19416:13)
+getLocalMedia @ GroupVideoCall.tsx:477
+(anonymous) @ GroupVideoCall.tsx:482
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=01fe63e0:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=01fe63e0:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=01fe63e0:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=01fe63e0:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=01fe63e0:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=01fe63e0:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=01fe63e0:19447
+commitRootImpl @ chunk-RPCDYKBN.js?v=01fe63e0:19416
+commitRoot @ chunk-RPCDYKBN.js?v=01fe63e0:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=01fe63e0:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=01fe63e0:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=01fe63e0:18627
+setTimeout
+joinGroupCall @ CallContext.tsx:3396
+await in joinGroupCall
+acceptCall @ CallContext.tsx:2229
+callCallback2 @ chunk-RPCDYKBN.js?v=01fe63e0:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=01fe63e0:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=01fe63e0:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=01fe63e0:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=01fe63e0:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=01fe63e0:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=01fe63e0:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=01fe63e0:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=01fe63e0:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=01fe63e0:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=01fe63e0:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=01fe63e0:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=01fe63e0:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=01fe63e0:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=01fe63e0:5449Understand this error
+GroupVideoCall.tsx:550 [GroupVideoCall] ⚠️ No local stream available
+GroupVideoCall.tsx:555 [GroupVideoCall] ✅ Recovered local stream from activeCall
+GroupVideoCall.tsx:684 [GroupVideoCall] 📊 Participants effect triggered
+GroupVideoCall.tsx:685 [GroupVideoCall] 📊 activeCall: {callId: 'group_call_1752481598589_38_2', callType: 'video', status: 'connected', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:686 [GroupVideoCall] 📊 activeCall?.participants: []
+GroupVideoCall.tsx:687 [GroupVideoCall] 📊 user?.id: 3
+GroupVideoCall.tsx:693 [GroupVideoCall] 📊 Current participants string: 
+GroupVideoCall.tsx:694 [GroupVideoCall] 📊 New participants string: []
+GroupVideoCall.tsx:703 [GroupVideoCall] 📊 Processing participants from activeCall: []
+GroupVideoCall.tsx:714 [GroupVideoCall] 📊 Other participants after filtering: []
+GroupVideoCall.tsx:1031 [GroupVideoCall] ⏳ Auto-initiation not ready: {participantsCount: 0, hasLocalStream: false, hasActiveCall: true, hasUser: true}
+GroupVideoCall.tsx:1040 [GroupVideoCall] 🚀 Force-initiating WebRTC for group call initiator
+GroupVideoCall.tsx:1102 [GroupVideoCall] Stream state updated: {remoteStreams: Array(0), participants: Array(0)}
+CallContext.tsx:3333 [CallContext] Sent join group call message for recipient: {type: 'join_group_call', payload: {…}}
+CallContext.tsx:3354 [CallContext] 📊 Requested updated participant list: {type: 'request_group_participants', payload: {…}}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCall.tsx:735 [GroupVideoCall] 📊 Updated participants list: []
+GroupVideoCall.tsx:412 [GroupVideoCall] Component rendering with activeCall: {callId: 'group_call_1752481598589_38_2', callType: 'video', status: 'connected', isIncoming: false, localStream: MediaStream, …}
+GroupVideoCall.tsx:413 [GroupVideoCall] user?.id: 3
+GroupVideoCall.tsx:414 [GroupVideoCall] isVideoEnabled: true
+GroupVideoCall.tsx:415 [GroupVideoCall] localStream: MediaStream {id: 'a76a90c0-12a2-474f-beca-bc027107d613', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+GroupVideoCall.tsx:513 [GroupVideoCall] Local video stream attached to element
+GroupVideoCall.tsx:514 [GroupVideoCall] Local stream details: {id: 'a76a90c0-12a2-474f-beca-bc027107d613', active: true, videoTracks: 1, audioTracks: 1, videoTrackEnabled: true}
+chunk-RPCDYKBN.js?v=01fe63e0:16670 Uncaught TypeError: Cannot assign to read only property 'enabled' of object '#<MediaStreamTrack>'
+    at GroupVideoCall.tsx:527:20
+    at commitHookEffectListMount (chunk-RPCDYKBN.js?v=01fe63e0:16915:34)
+    at commitPassiveMountOnFiber (chunk-RPCDYKBN.js?v=01fe63e0:18156:19)
+    at commitPassiveMountEffects_complete (chunk-RPCDYKBN.js?v=01fe63e0:18129:17)
+    at commitPassiveMountEffects_begin (chunk-RPCDYKBN.js?v=01fe63e0:18119:15)
+    at commitPassiveMountEffects (chunk-RPCDYKBN.js?v=01fe63e0:18109:11)
+    at flushPassiveEffectsImpl (chunk-RPCDYKBN.js?v=01fe63e0:19490:11)
+    at flushPassiveEffects (chunk-RPCDYKBN.js?v=01fe63e0:19447:22)
+    at chunk-RPCDYKBN.js?v=01fe63e0:19328:17
+    at workLoop (chunk-RPCDYKBN.js?v=01fe63e0:197:42)
+(anonymous) @ GroupVideoCall.tsx:527
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=01fe63e0:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=01fe63e0:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=01fe63e0:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=01fe63e0:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=01fe63e0:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=01fe63e0:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=01fe63e0:19447
+(anonymous) @ chunk-RPCDYKBN.js?v=01fe63e0:19328
+workLoop @ chunk-RPCDYKBN.js?v=01fe63e0:197
+flushWork @ chunk-RPCDYKBN.js?v=01fe63e0:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=01fe63e0:384Understand this error
+chunk-RPCDYKBN.js?v=01fe63e0:14032 The above error occurred in the <GroupVideoCall> component:
+
+    at GroupVideoCall (https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/src/components/GroupVideoCall.tsx:261:38)
+    at CallProvider (https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/src/context/CallContext.tsx:67:32)
+    at AuthCheck (https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/src/App.tsx?v=KB6_mHKB_XKRPgWdCvmoY:37:22)
+    at Route (https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=01fe63e0:323:16)
+    at Switch (https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=01fe63e0:379:17)
+    at Router
+    at QueryClientProvider (https://d6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=01fe63e0:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ chunk-RPCDYKBN.js?v=01fe63e0:14032
+update.callback @ chunk-RPCDYKBN.js?v=01fe63e0:14052
+callCallback @ chunk-RPCDYKBN.js?v=01fe63e0:11248
+commitUpdateQueue @ chunk-RPCDYKBN.js?v=01fe63e0:11265
+commitLayoutEffectOnFiber @ chunk-RPCDYKBN.js?v=01fe63e0:17093
+commitLayoutMountEffects_complete @ chunk-RPCDYKBN.js?v=01fe63e0:17980
+commitLayoutEffects_begin @ chunk-RPCDYKBN.js?v=01fe63e0:17969
+commitLayoutEffects @ chunk-RPCDYKBN.js?v=01fe63e0:17920
+commitRootImpl @ chunk-RPCDYKBN.js?v=01fe63e0:19353
+commitRoot @ chunk-RPCDYKBN.js?v=01fe63e0:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=01fe63e0:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=01fe63e0:9119
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=01fe63e0:19506
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=01fe63e0:19447
+(anonymous) @ chunk-RPCDYKBN.js?v=01fe63e0:19328
+workLoop @ chunk-RPCDYKBN.js?v=01fe63e0:197
+flushWork @ chunk-RPCDYKBN.js?v=01fe63e0:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=01fe63e0:384Understand this error
+chunk-RPCDYKBN.js?v=01fe63e0:9129 Uncaught TypeError: Cannot assign to read only property 'enabled' of object '#<MediaStreamTrack>'
+    at GroupVideoCall.tsx:527:20
+    at commitHookEffectListMount (chunk-RPCDYKBN.js?v=01fe63e0:16915:34)
+    at commitPassiveMountOnFiber (chunk-RPCDYKBN.js?v=01fe63e0:18156:19)
+    at commitPassiveMountEffects_complete (chunk-RPCDYKBN.js?v=01fe63e0:18129:17)
+    at commitPassiveMountEffects_begin (chunk-RPCDYKBN.js?v=01fe63e0:18119:15)
+    at commitPassiveMountEffects (chunk-RPCDYKBN.js?v=01fe63e0:18109:11)
+    at flushPassiveEffectsImpl (chunk-RPCDYKBN.js?v=01fe63e0:19490:11)
+    at flushPassiveEffects (chunk-RPCDYKBN.js?v=01fe63e0:19447:22)
+    at chunk-RPCDYKBN.js?v=01fe63e0:19328:17
+    at workLoop (chunk-RPCDYKBN.js?v=01fe63e0:197:42)
+(anonymous) @ GroupVideoCall.tsx:527
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=01fe63e0:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=01fe63e0:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=01fe63e0:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=01fe63e0:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=01fe63e0:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=01fe63e0:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=01fe63e0:19447
+(anonymous) @ chunk-RPCDYKBN.js?v=01fe63e0:19328
+workLoop @ chunk-RPCDYKBN.js?v=01fe63e0:197
+flushWork @ chunk-RPCDYKBN.js?v=01fe63e0:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=01fe63e0:384Understand this error
+GroupVideoCall.tsx:492 [GroupVideoCall] Effect cleanup - preserving streams for active call
+GroupVideoCall.tsx:505 [GroupVideoCall] Component re-rendering - preserving active call streams
+CallContext.tsx:882 [CallContext] WebSocket disconnected
+3GroupVideoCall.tsx:1043 [GroupVideoCall] 🔥 Triggering participant detection for initiator
+2GroupVideoCall.tsx:1063 [GroupVideoCall] 🔥 Secondary participant detection trigger
+CallContext.tsx:3381 [CallContext] 🚀 Triggered WebRTC initialization for group call
+GroupVideoCall.tsx:1063 [GroupVideoCall] 🔥 Secondary participant detection trigger
+3GroupVideoCall.tsx:1081 [GroupVideoCall] 🔥 Final aggressive participant detection trigger

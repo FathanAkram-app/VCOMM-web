@@ -432,7 +432,7 @@ export default function GroupVideoCall() {
           
           setLocalStream(existingStream);
           
-          // Force enable video for group calls and lock it
+          // Force enable video for group calls
           const videoTrack = existingStream.getVideoTracks()[0];
           if (videoTrack) {
             videoTrack.enabled = true;
@@ -490,6 +490,12 @@ export default function GroupVideoCall() {
         cleanupMediaTracks();
       } else {
         console.log('[GroupVideoCall] Effect cleanup - preserving streams for active call');
+        
+        // Ensure localStream is preserved if it gets lost during re-render
+        if (!localStream && activeCall.localStream) {
+          console.log('[GroupVideoCall] Restoring localStream during cleanup');
+          setLocalStream(activeCall.localStream);
+        }
       }
     };
   }, [activeCall]);
@@ -509,6 +515,13 @@ export default function GroupVideoCall() {
 
   // Update local video ref when stream changes - with enhanced debugging
   useEffect(() => {
+    // Always try to get localStream from activeCall if current localStream is null
+    if (!localStream && activeCall?.localStream) {
+      setLocalStream(activeCall.localStream);
+      console.log('[GroupVideoCall] ✅ Auto-recovered local stream from activeCall');
+      return;
+    }
+
     if (localVideoRef.current && localStream) {
       console.log('[GroupVideoCall] Local video stream attached to element');
       console.log('[GroupVideoCall] Local stream details:', {
@@ -527,13 +540,6 @@ export default function GroupVideoCall() {
         videoTrack.enabled = true; // Force enable video for group calls
         setIsVideoEnabled(true); // Always set to true for group calls
         console.log('[GroupVideoCall] Video forcibly enabled for group call');
-        
-        // Prevent any further state changes that might disable video
-        Object.defineProperty(videoTrack, 'enabled', {
-          value: true,
-          writable: false,
-          configurable: false
-        });
       }
       
       // Force play local video
@@ -547,16 +553,16 @@ export default function GroupVideoCall() {
         console.log('[GroupVideoCall] ⚠️ No local video ref available');
       }
       if (!localStream) {
-        console.log('[GroupVideoCall] ⚠️ No local stream available');
-      
-      // Try to get stream from activeCall as fallback
-      if (activeCall?.localStream) {
-        setLocalStream(activeCall.localStream);
-        console.log('[GroupVideoCall] ✅ Recovered local stream from activeCall');
-      }
+        console.log('[GroupVideoCall] ⚠️ No local stream available - checking activeCall');
+        
+        // Try to get stream from activeCall as fallback
+        if (activeCall?.localStream) {
+          setLocalStream(activeCall.localStream);
+          console.log('[GroupVideoCall] ✅ Recovered local stream from activeCall');
+        }
       }
     }
-  }, [localStream]);
+  }, [localStream, activeCall?.localStream]);
 
   // Update participants from activeCall with stable references  
   const participantsRef = useRef<string>('');
@@ -1753,6 +1759,12 @@ export default function GroupVideoCall() {
   };
 
   const cleanupMediaTracks = () => {
+    // Only cleanup if call has truly ended
+    if (activeCall?.status === 'connected') {
+      console.log('[GroupVideoCall] ⚠️ Refusing cleanup - call still active');
+      return;
+    }
+    
     console.log('[GroupVideoCall] Cleaning up media tracks');
     
     // Stop all tracks in the current stream
