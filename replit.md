@@ -359,7 +359,9 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - ✅ CREATED: /api/admin/lapsit/:id DELETE endpoint for report removal
   - ✅ ENHANCED: Photo attachment display in lapsit view modal with download functionality
   - ✅ ADDED: Image error handling and fallback display for attachment viewing
-  - Admin dashboard now provides complete oversight of situation reports with photo viewing, advanced filtering, and management capabilities
+  - ✅ IMPLEMENTED: Clickable image zoom with full-screen modal and close button
+  - ✅ FIXED: Delete lapsit error by properly handling admin_id in logging system
+  - Admin dashboard now provides complete oversight of situation reports with photo viewing, zooming, advanced filtering, and management capabilities
 - July 14, 2025: Super Admin Implementation:
   - ✅ CREATED: Super admin user (callsign: 'superadmin', password: 'admin123!!')
   - ✅ IMPLEMENTED: Auto-redirect system - super admin bypasses chat and goes directly to /superadmin

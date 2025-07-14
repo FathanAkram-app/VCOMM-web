@@ -34,6 +34,8 @@ export default function AdminComplete() {
   const [lapsitStatusFilter, setLapsitStatusFilter] = useState('all');
   const [selectedLapsitReport, setSelectedLapsitReport] = useState<any>(null);
   const [showLapsitViewModal, setShowLapsitViewModal] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string>('');
 
   // Queries
   const statsQuery = useQuery({
@@ -994,8 +996,12 @@ export default function AdminComplete() {
                               <img 
                                 src={selectedLapsitReport.attachmentUrl}
                                 alt="Lapsit attachment"
-                                className="max-w-full h-auto rounded-lg border border-gray-600"
+                                className="max-w-full h-auto rounded-lg border border-gray-600 cursor-pointer hover:opacity-80 transition-opacity"
                                 style={{ maxHeight: '400px' }}
+                                onClick={() => {
+                                  setSelectedImage(selectedLapsitReport.attachmentUrl);
+                                  setShowImageModal(true);
+                                }}
                                 onError={(e) => {
                                   e.currentTarget.style.display = 'none';
                                   e.currentTarget.nextElementSibling.style.display = 'block';
@@ -1028,6 +1034,28 @@ export default function AdminComplete() {
                     </Button>
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Image Zoom Modal */}
+          {showImageModal && selectedImage && (
+            <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[60] p-4">
+              <div className="relative max-w-[95vw] max-h-[95vh]">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowImageModal(false)}
+                  className="absolute -top-12 right-0 text-white hover:text-gray-300 bg-black bg-opacity-50 hover:bg-opacity-70"
+                >
+                  <X className="w-6 h-6" />
+                </Button>
+                <img 
+                  src={selectedImage}
+                  alt="Lapsit attachment enlarged"
+                  className="max-w-full max-h-full object-contain rounded-lg"
+                  onClick={() => setShowImageModal(false)}
+                />
               </div>
             </div>
           )}
