@@ -230,8 +230,27 @@ export default function GroupVideoCallSimple() {
   const handleIncomingWebRTCOffer = async (offerData: any) => {
     console.log('[GroupVideoCallSimple] Processing WebRTC offer from user:', offerData.fromUserId);
     
-    if (!localStream || !currentUser) {
-      console.log('[GroupVideoCallSimple] No local stream or current user available');
+    if (!currentUser) {
+      console.log('[GroupVideoCallSimple] No current user available');
+      return;
+    }
+
+    // Wait for local stream if not ready yet
+    if (!localStream) {
+      console.log('[GroupVideoCallSimple] Local stream not ready, initializing...');
+      try {
+        await initializeMedia();
+        // Give a moment for the stream to be set
+        await new Promise(resolve => setTimeout(resolve, 500));
+      } catch (error) {
+        console.error('[GroupVideoCallSimple] Failed to initialize media for incoming offer:', error);
+        return;
+      }
+    }
+
+    // Double-check localStream is now available
+    if (!localStream) {
+      console.log('[GroupVideoCallSimple] Still no local stream available after initialization');
       return;
     }
 
@@ -364,6 +383,8 @@ export default function GroupVideoCallSimple() {
           pc!.addTrack(track, localStream);
           console.log('[GroupVideoCallSimple] ✅ Added local track to peer connection for user', userId, ':', track.kind);
         });
+      } else {
+        console.log('[GroupVideoCallSimple] ⚠️ No local stream available when creating peer connection for user', userId);
       }
       
       // Store peer connection
@@ -380,9 +401,21 @@ export default function GroupVideoCallSimple() {
   const initiateWebRTCConnections = async (data: any) => {
     console.log('[GroupVideoCallSimple] Initiating WebRTC connections with participants:', data.participants);
     
-    if (!localStream || !currentUser) {
-      console.log('[GroupVideoCallSimple] Missing requirements for WebRTC initiation');
+    if (!currentUser) {
+      console.log('[GroupVideoCallSimple] Missing current user for WebRTC initiation');
       return;
+    }
+
+    // Ensure we have local stream before creating connections
+    if (!localStream) {
+      console.log('[GroupVideoCallSimple] No local stream for WebRTC initiation, waiting...');
+      try {
+        await initializeMedia();
+        await new Promise(resolve => setTimeout(resolve, 300));
+      } catch (error) {
+        console.error('[GroupVideoCallSimple] Failed to get local stream for WebRTC initiation:', error);
+        return;
+      }
     }
 
     try {
