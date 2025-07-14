@@ -54,6 +54,8 @@ export interface IStorage {
   isUserMemberOfConversation(userId: number, conversationId: number): Promise<boolean>;
   removeUserFromConversation(userId: number, conversationId: number): Promise<void>;
   hideConversationForUser(userId: number, conversationId: number): Promise<void>;
+  unhideConversationForUser(userId: number, conversationId: number): Promise<void>;
+  findHiddenDirectChatBetweenUsers(userId: number, otherUserId: number): Promise<Conversation | undefined>;
   
   // Message operations
   createMessage(data: InsertMessage): Promise<Message>;
@@ -624,6 +626,68 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error(`Error hiding conversation ${conversationId} for user ${userId}:`, error);
       throw new Error("Failed to hide conversation for user");
+    }
+  }
+
+  async unhideConversationForUser(userId: number, conversationId: number): Promise<void> {
+    try {
+      // Update the conversation member record to set isHidden = false
+      await db
+        .update(conversationMembers)
+        .set({ isHidden: false })
+        .where(
+          and(
+            eq(conversationMembers.userId, userId),
+            eq(conversationMembers.conversationId, conversationId)
+          )
+        );
+      
+      console.log(`[Storage] Unhidden conversation ${conversationId} for user ${userId}`);
+    } catch (error) {
+      console.error(`Error unhiding conversation ${conversationId} for user ${userId}:`, error);
+      throw new Error("Failed to unhide conversation for user");
+    }
+  }
+
+  async findHiddenDirectChatBetweenUsers(userId: number, otherUserId: number): Promise<Conversation | undefined> {
+    try {
+      // Query untuk mencari conversation yang disembunyikan antara dua user
+      const hiddenConversations = await db
+        .select({
+          conversation: conversations,
+          member: conversationMembers
+        })
+        .from(conversations)
+        .innerJoin(conversationMembers, eq(conversations.id, conversationMembers.conversationId))
+        .where(
+          and(
+            eq(conversations.isGroup, false), // Direct chat saja
+            eq(conversationMembers.userId, userId),
+            eq(conversationMembers.isHidden, true) // Yang disembunyikan
+          )
+        );
+
+      console.log(`[Storage] Found ${hiddenConversations.length} hidden conversations for user ${userId}`);
+
+      // Untuk setiap conversation yang disembunyikan, cek apakah ada otherUserId sebagai member
+      for (const hiddenConv of hiddenConversations) {
+        const members = await this.getConversationMembers(hiddenConv.conversation.id);
+        const memberIds = members.map(m => m.userId);
+        
+        // Jika conversation berisi tepat 2 member dan salah satunya adalah otherUserId
+        if (memberIds.length === 2 && 
+            memberIds.includes(userId) && 
+            memberIds.includes(otherUserId)) {
+          console.log(`[Storage] Found hidden direct chat ${hiddenConv.conversation.id} between users ${userId} and ${otherUserId}`);
+          return hiddenConv.conversation;
+        }
+      }
+
+      console.log(`[Storage] No hidden direct chat found between users ${userId} and ${otherUserId}`);
+      return undefined;
+    } catch (error) {
+      console.error(`Error finding hidden direct chat between users ${userId} and ${otherUserId}:`, error);
+      return undefined;
     }
   }
 

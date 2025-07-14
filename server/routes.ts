@@ -395,40 +395,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Other user not found" });
       }
       
-      // PERBAIKAN: Cek apakah sudah ada direct chat antara kedua user ini
-      const userConversations = await storage.getUserConversations(userId);
-      
-      // Debug
+      // PERBAIKAN: Cek conversation yang sudah ada (termasuk yang disembunyikan)
       console.log(`[API] Checking for existing direct chat between users ${userId} and ${otherUserId}`);
-      console.log(`[API] User ${userId} has ${userConversations.length} conversations`);
       
-      // Filter untuk direct chats saja
+      // Pertama, cek conversation yang terlihat
+      const userConversations = await storage.getUserConversations(userId);
       const directChats = userConversations.filter(c => c.isGroup === false);
-      console.log(`[API] User ${userId} has ${directChats.length} direct chats`);
+      console.log(`[API] User ${userId} has ${directChats.length} visible direct chats`);
       
       let existingChat = null;
       
-      // Untuk setiap direct chat yang ada
+      // Cek direct chat yang terlihat
       for (const chat of directChats) {
-        // Ambil anggota percakapan
         const members = await storage.getConversationMembers(chat.id);
         const memberIds = members.map(m => m.userId);
         
-        console.log(`[API] Checking conversation ${chat.id} with members: ${memberIds.join(', ')}`);
-        
-        // Jika percakapan berisi tepat 2 anggota (user saat ini dan user tujuan)
         if (memberIds.length === 2 && 
             memberIds.includes(userId) && 
             memberIds.includes(otherUserId)) {
           existingChat = chat;
-          console.log(`[API] Found existing conversation ${chat.id} between users ${userId} and ${otherUserId}`);
+          console.log(`[API] Found existing visible conversation ${chat.id} between users ${userId} and ${otherUserId}`);
           break;
         }
       }
       
-      // Jika sudah ada, gunakan percakapan yang sudah ada
+      // Jika tidak ada conversation yang terlihat, cek conversation yang disembunyikan
+      if (!existingChat) {
+        console.log(`[API] Checking for hidden direct chat between users ${userId} and ${otherUserId}`);
+        const hiddenChat = await storage.findHiddenDirectChatBetweenUsers(userId, otherUserId);
+        
+        if (hiddenChat) {
+          console.log(`[API] Found hidden conversation ${hiddenChat.id}, restoring it for user ${userId}`);
+          // Kembalikan conversation yang disembunyikan
+          await storage.unhideConversationForUser(userId, hiddenChat.id);
+          existingChat = hiddenChat;
+        }
+      }
+      
+      // Jika sudah ada conversation (visible atau restored), gunakan yang ada
       if (existingChat) {
-        console.log(`[API] Using existing direct chat ${existingChat.id} between users ${userId} and ${otherUserId}`);
+        console.log(`[API] Using existing/restored direct chat ${existingChat.id} between users ${userId} and ${otherUserId}`);
         return res.status(200).json(existingChat);
       }
       

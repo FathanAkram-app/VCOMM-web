@@ -890,8 +890,8 @@ export default function Chat() {
         return;
       }
       
-      // Create a new direct chat
-      console.log(`Creating new direct chat with user ${otherUserId}`);
+      // Create a new direct chat or restore hidden chat
+      console.log(`Creating/restoring direct chat with user ${otherUserId}`);
       const response = await fetch('/api/direct-chats', {
         method: 'POST',
         headers: {
@@ -911,20 +911,20 @@ export default function Chat() {
         throw new Error(`Failed to create direct chat: ${errorText}`);
       }
       
-      const newChat = await response.json();
-      console.log('Direct chat created successfully:', newChat);
+      const chatData = await response.json();
+      console.log('Direct chat created/restored successfully:', chatData);
       
-      // Refresh chat list
-      fetchUserChats(user.id);
+      // Refresh chat list untuk menampilkan chat yang baru dibuat atau dikembalikan
+      await fetchUserChats(user.id);
       setShowNewDirectChatDialog(false);
       setSelectedUserId(null);
       
-      // Buka chat baru yang dibuat
-      if (newChat && newChat.id) {
-        setActiveChat({ id: newChat.id, isGroup: false });
+      // Buka chat yang dibuat/dikembalikan
+      if (chatData && chatData.id) {
+        setActiveChat({ id: chatData.id, isGroup: false });
         setShowChatRoom(true);
         setActiveView('chats');
-        fetchMessagesForChat(newChat.id, false);
+        await fetchMessagesForChat(chatData.id, false);
       }
     } catch (error) {
       console.error('Error creating direct chat:', error);
