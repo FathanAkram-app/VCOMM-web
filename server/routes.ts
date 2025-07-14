@@ -738,6 +738,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[BROADCAST] Sending notification for message ${message.id} to conversation ${message.conversationId}`);
       console.log(`[BROADCAST] Current WebSocket clients count: ${clients.size}`);
       console.log(`[BROADCAST] Message sender: ${userId}`);
+      console.log(`[BROADCAST] Message content: ${message.content}`);
       
       // Log all connected clients
       const connectedClientIds = Array.from(clients.keys());
@@ -747,6 +748,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: 'new_message',
         payload: message
       };
+      
+      console.log(`[BROADCAST] WebSocket message payload:`, JSON.stringify(wsMessage, null, 2));
       
       // Broadcast only to conversation members (more efficient)
       await broadcastToConversation(message.conversationId, wsMessage);

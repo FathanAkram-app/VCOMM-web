@@ -151,10 +151,14 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
 
   // Listen for real-time updates via custom events (more reliable than direct WebSocket)
   useEffect(() => {
+    console.log('🔥 CHATROOM: Setting up WebSocket message listener for chatId:', chatId);
+    
     const handleWebSocketMessage = (event: CustomEvent) => {
       try {
         const message = event.detail;
         console.log('🔥 CHATROOM: Received WebSocket message via custom event:', message);
+        console.log('🔥 CHATROOM: Message type:', message.type);
+        console.log('🔥 CHATROOM: Message payload:', message.payload);
         
         // Handle group updates
         if (message.type === 'group_update' && message.payload?.groupId === chatId) {
@@ -238,10 +242,12 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     };
 
     // Listen for custom WebSocket messages
+    console.log('🔥 CHATROOM: Adding websocket-message event listener');
     window.addEventListener('websocket-message', handleWebSocketMessage as EventListener);
     
     // Also keep the old WebSocket listener as fallback
     if (ws) {
+      console.log('🔥 CHATROOM: Adding direct WebSocket message listener as fallback');
       const handleDirectMessage = (event: MessageEvent) => {
         try {
           const message = JSON.parse(event.data);
@@ -249,6 +255,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
           
           // Handle the same way as custom event
           if (message.type === 'new_message') {
+            console.log('🔥 CHATROOM: Processing fallback new_message');
             handleWebSocketMessage({ detail: message } as CustomEvent);
           }
         } catch (error) {
@@ -259,12 +266,14 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
       ws.addEventListener('message', handleDirectMessage);
       
       return () => {
+        console.log('🔥 CHATROOM: Removing event listeners');
         window.removeEventListener('websocket-message', handleWebSocketMessage as EventListener);
         ws.removeEventListener('message', handleDirectMessage);
       };
     }
     
     return () => {
+      console.log('🔥 CHATROOM: Removing websocket-message event listener');
       window.removeEventListener('websocket-message', handleWebSocketMessage as EventListener);
     };
   }, [ws, chatId, queryClient, refetchMessages]);
