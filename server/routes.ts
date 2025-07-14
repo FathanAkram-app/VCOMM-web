@@ -1438,6 +1438,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const participants = Array.from(activeGroupCalls.get(callId) || []);
           console.log(`[Group Call] Current participants in ${callId}:`, participants);
           
+          // Update participants in call history
+          await storage.updateGroupCallParticipants(callId, participants.map(id => id.toString()));
+          
           try {
             // Get group members to notify
             const members = await storage.getConversationMembers(groupId);

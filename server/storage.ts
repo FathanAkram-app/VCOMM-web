@@ -689,6 +689,20 @@ export class DatabaseStorage implements IStorage {
           displayStatus = 'reject';
         }
 
+        // Get participant names for group calls
+        let participantNames: string[] = [];
+        if (call.participants && call.participants.length > 0) {
+          try {
+            const participantUsers = await db
+              .select()
+              .from(users)
+              .where(inArray(users.id, call.participants.map((id: string) => parseInt(id))));
+            participantNames = participantUsers.map(user => user.callsign || user.fullName || 'Unknown');
+          } catch (error) {
+            console.error('Error getting participant names:', error);
+          }
+        }
+
         return {
           id: call.id,
           callId: call.callId,
@@ -700,7 +714,9 @@ export class DatabaseStorage implements IStorage {
           status: displayStatus,
           duration: call.duration || 0,
           timestamp: call.startTime.toISOString(),
-          fromUserName: contactName
+          fromUserName: contactName,
+          participants: call.participants || [],
+          participantNames
         };
       }));
 
@@ -731,16 +747,16 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Update call status method
-  async updateCallStatus(callId: string, status: string): Promise<void> {
+  // Update group call participants
+  async updateGroupCallParticipants(callId: string, participants: string[]): Promise<void> {
     try {
       await db
         .update(callHistory)
-        .set({ status })
+        .set({ participants })
         .where(eq(callHistory.callId, callId));
-      console.log(`[Storage] Updated call status for ${callId} to ${status}`);
+      console.log(`[Storage] Updated participants for call ${callId}:`, participants);
     } catch (error) {
-      console.error(`Error updating call status for ${callId}:`, error);
+      console.error(`Error updating participants for call ${callId}:`, error);
     }
   }
 
