@@ -35,6 +35,8 @@ export default function AdminComplete() {
 
   const usersQuery = useQuery({
     queryKey: ['/api/admin/users'],
+    refetchInterval: 10000, // Auto-refresh every 10 seconds
+    staleTime: 5000, // Consider data stale after 5 seconds
   });
 
   const configQuery = useQuery({
@@ -69,11 +71,20 @@ export default function AdminComplete() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      queryClient.refetchQueries({ queryKey: ['/api/admin/users'] });
       toast({
         title: "Berhasil",
         description: "Role pengguna berhasil diperbarui",
       });
     },
+    onError: (error) => {
+      console.error("Error updating user role:", error);
+      toast({
+        title: "Error",
+        description: "Gagal memperbarui role pengguna",
+        variant: "destructive",
+      });
+    }
   });
 
   const updateUserStatus = useMutation({
@@ -85,11 +96,20 @@ export default function AdminComplete() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      queryClient.refetchQueries({ queryKey: ['/api/admin/users'] });
       toast({
         title: "Berhasil",
         description: "Status pengguna berhasil diperbarui",
       });
     },
+    onError: (error) => {
+      console.error("Error updating user status:", error);
+      toast({
+        title: "Error", 
+        description: "Gagal memperbarui status pengguna",
+        variant: "destructive",
+      });
+    }
   });
 
   const deleteUser = useMutation({
@@ -100,11 +120,20 @@ export default function AdminComplete() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      queryClient.refetchQueries({ queryKey: ['/api/admin/users'] });
       toast({
         title: "Berhasil",
         description: "Pengguna berhasil dihapus",
       });
     },
+    onError: (error) => {
+      console.error("Error deleting user:", error);
+      toast({
+        title: "Error",
+        description: "Gagal menghapus pengguna",
+        variant: "destructive",
+      });
+    }
   });
 
   // Config Management Mutations
