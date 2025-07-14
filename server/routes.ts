@@ -893,6 +893,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public endpoints for registration (without authentication)
+  app.get("/api/public/ranks", async (req, res) => {
+    try {
+      const ranks = await cmsStorage.getAllRanks();
+      res.json(ranks);
+    } catch (error) {
+      console.error("Error fetching public ranks:", error);
+      res.status(500).json({ message: "Failed to fetch ranks" });
+    }
+  });
+
+  app.get("/api/public/branches", async (req, res) => {
+    try {
+      const branches = await cmsStorage.getAllBranches();
+      res.json(branches);
+    } catch (error) {
+      console.error("Error fetching public branches:", error);
+      res.status(500).json({ message: "Failed to fetch branches" });
+    }
+  });
+
   // Call history route
   app.get('/api/call-history', isAuthenticated, async (req: AuthRequest, res) => {
     try {

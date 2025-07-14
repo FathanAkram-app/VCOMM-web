@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import iconPath from "@assets/Icon Chat NXXZ.png";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RANKS, BRANCHES } from "@shared/schema";
+import { useQuery } from "@tanstack/react-query";
 
 // Registration validation schema
 const registerSchema = z.object({
@@ -34,6 +34,17 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { toast } = useToast();
+
+  // Fetch ranks and branches from database (public endpoints)
+  const { data: ranks } = useQuery({
+    queryKey: ['/api/public/ranks'],
+    retry: false,
+  });
+
+  const { data: branches } = useQuery({
+    queryKey: ['/api/public/branches'],
+    retry: false,
+  });
 
   const form = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
@@ -208,9 +219,9 @@ export default function Register() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="bg-[#222222] border border-[#444444] text-white">
-                        {RANKS.map((rank) => (
-                          <SelectItem key={rank} value={rank} className="focus:bg-[#4d5d30] focus:text-white">
-                            {rank}
+                        {ranks?.map((rank: any) => (
+                          <SelectItem key={rank.id} value={rank.rankName} className="focus:bg-[#4d5d30] focus:text-white">
+                            {rank.rankName}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -236,9 +247,9 @@ export default function Register() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="bg-[#222222] border border-[#444444] text-white">
-                        {BRANCHES.map((branch) => (
-                          <SelectItem key={branch} value={branch} className="focus:bg-[#4d5d30] focus:text-white">
-                            {branch}
+                        {branches?.map((branch: any) => (
+                          <SelectItem key={branch.id} value={branch.branchName} className="focus:bg-[#4d5d30] focus:text-white">
+                            {branch.branchName}
                           </SelectItem>
                         ))}
                       </SelectContent>
