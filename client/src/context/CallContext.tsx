@@ -1601,8 +1601,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
       if (messageGroupId === activeGroupId) {
         console.log('[CallContext] Group IDs match, updating participants:', participants);
         
+        // Handle both array of IDs and array of participant objects
+        let processedParticipants = participants;
+        if (participants && participants.length > 0 && typeof participants[0] === 'object' && participants[0].userId) {
+          // Already in participant object format, extract IDs for deduplication
+          processedParticipants = participants.map((p: any) => p.userId);
+        }
+        
         // Remove duplicates from participants list
-        const uniqueParticipants = Array.from(new Set(participants));
+        const uniqueParticipants = Array.from(new Set(processedParticipants));
         console.log('[CallContext] Unique participants after deduplication:', uniqueParticipants);
         
         // Fetch user names for participants
@@ -1639,12 +1646,14 @@ export function CallProvider({ children }: { children: ReactNode }) {
             }
           }));
           
-          // Additional enhanced trigger for WebRTC initiation
+          // Enhanced trigger for WebRTC initiation with immediate dispatch
+          console.log('[CallContext] 🚀 Dispatching group-participants-update event:', participantObjects);
           window.dispatchEvent(new CustomEvent('group-participants-update', {
             detail: { 
               callId: callId,
               participants: participantObjects,
-              triggerWebRTC: true
+              triggerWebRTC: true,
+              groupId: groupCallToUpdate.groupId
             }
           }));
           

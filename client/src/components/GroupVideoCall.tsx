@@ -592,14 +592,61 @@ export default function GroupVideoCall() {
       });
     };
     
+    // Add the critical group-participants-update listener
+    const handleGroupParticipantsUpdate = (event: CustomEvent) => {
+      const { callId, participants: newParticipants, triggerWebRTC } = event.detail;
+      console.log('[GroupVideoCall] 📊 Group participants update received:', { callId, participants: newParticipants, triggerWebRTC });
+      
+      if (activeCall?.callId === callId || (activeCall && callId.includes(`_${activeCall.groupId}_`))) {
+        console.log('[GroupVideoCall] 📊 Processing group participants update for matching call');
+        
+        // Ensure participants are in the correct format
+        const formattedParticipants = (newParticipants || []).map((p: any) => {
+          if (typeof p === 'number') {
+            return {
+              userId: p,
+              userName: `User ${p}`,
+              audioEnabled: true,
+              videoEnabled: true
+            };
+          } else if (p && typeof p === 'object' && p.userId) {
+            return p;
+          }
+          return p;
+        });
+        
+        // Filter out current user from participants list
+        const otherParticipants = formattedParticipants.filter((p: any) => p.userId !== user?.id);
+        console.log('[GroupVideoCall] 📊 Setting participants after group update:', otherParticipants);
+        setParticipants(otherParticipants);
+        
+        // Force WebRTC setup if trigger flag is set
+        if (triggerWebRTC && otherParticipants.length > 0 && localStream) {
+          console.log('[GroupVideoCall] 🚀 Auto-triggering WebRTC from group participants update');
+          setTimeout(() => {
+            otherParticipants.forEach((participant: any, index: number) => {
+              if (participant.userId !== user?.id) {
+                setTimeout(() => {
+                  console.log(`[GroupVideoCall] 🎯 Auto-creating WebRTC for participant: ${participant.userId}`);
+                  createPeerConnection(participant.userId);
+                }, index * 300); // Staggered timing
+              }
+            });
+          }, 500);
+        }
+      }
+    };
+    
     window.addEventListener('participants-updated', handleParticipantsUpdate as EventListener);
     window.addEventListener('force-webrtc-init', handleWebRTCInit as EventListener);
     window.addEventListener('auto-initiate-webrtc', handleAutoInitiateWebRTC as EventListener);
+    window.addEventListener('group-participants-update', handleGroupParticipantsUpdate as EventListener);
     
     return () => {
       window.removeEventListener('participants-updated', handleParticipantsUpdate as EventListener);
       window.removeEventListener('force-webrtc-init', handleWebRTCInit as EventListener);
       window.removeEventListener('auto-initiate-webrtc', handleAutoInitiateWebRTC as EventListener);
+      window.removeEventListener('group-participants-update', handleGroupParticipantsUpdate as EventListener);
     };
   }, [user?.id, activeCall?.participants]);
 
