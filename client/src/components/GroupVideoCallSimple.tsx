@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Video, VideoOff, Phone, Camera } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, Phone, Camera, RefreshCw } from 'lucide-react';
 import { useCall } from '@/hooks/useCall';
 import { useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
@@ -864,10 +864,50 @@ export default function GroupVideoCallSimple() {
             size="lg"
             onClick={handleCameraSwitch}
             className="rounded-full w-12 h-12 p-0"
+            title="Ganti Kamera"
           >
             <Camera size={20} />
           </Button>
         )}
+
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={() => {
+            console.log('[GroupVideoCallSimple] 🔄 Manual video refresh triggered');
+            // Force refresh all remote streams
+            participants.forEach(participant => {
+              if (participant.stream && participant.videoRef?.current) {
+                const videoElement = participant.videoRef.current;
+                console.log(`[GroupVideoCallSimple] 🔄 Refreshing video for ${participant.userName}`);
+                
+                // Reset srcObject and restart playback
+                videoElement.srcObject = null;
+                videoElement.load();
+                setTimeout(() => {
+                  videoElement.srcObject = participant.stream;
+                  videoElement.play().catch(console.warn);
+                }, 200);
+              }
+            });
+            
+            // Also refresh local video
+            if (localStream && localVideoRef.current) {
+              console.log('[GroupVideoCallSimple] 🔄 Refreshing local video');
+              const localVideo = localVideoRef.current;
+              localVideo.srcObject = null;
+              localVideo.load();
+              setTimeout(() => {
+                localVideo.srcObject = localStream;
+                localVideo.play().catch(console.warn);
+              }, 200);
+            }
+          }}
+          className="rounded-full w-12 h-12 p-0"
+          title="Refresh Video"
+        >
+          <RefreshCw size={20} />
+        </Button>
 
         <Button
           variant="destructive"
@@ -912,31 +952,47 @@ function ParticipantVideo({ participant }: {
     
     if (videoElement && participant.stream) {
       console.log(`[ParticipantVideo] Attaching stream for ${participant.userName}`);
+      
+      // Clear any existing srcObject first to prevent conflicts
+      if (videoElement.srcObject && videoElement.srcObject !== participant.stream) {
+        videoElement.srcObject = null;
+        videoElement.load();
+      }
+      
+      // Set new stream
       videoElement.srcObject = participant.stream;
       
-      videoElement.play()
-        .then(() => {
-          console.log(`[ParticipantVideo] ✅ Video playing successfully for ${participant.userName}`);
+      // Enhanced play strategy with multiple fallbacks
+      const playVideo = async (attempt = 1) => {
+        try {
+          // Wait for stream to be ready
+          await new Promise(resolve => setTimeout(resolve, 100 * attempt));
+          
+          // Check if element still exists and has the correct stream
+          if (!videoElement || videoElement.srcObject !== participant.stream) {
+            console.log(`[ParticipantVideo] Element or stream changed for ${participant.userName}, aborting play attempt ${attempt}`);
+            return;
+          }
+          
+          await videoElement.play();
+          console.log(`[ParticipantVideo] ✅ Video playing successfully for ${participant.userName} (attempt ${attempt})`);
           setHasVideo(true);
           
-          // Force refresh video element after successful play
-          setTimeout(() => {
-            if (videoElement && videoElement.srcObject === participant.stream) {
-              videoElement.play().catch(console.warn);
-            }
-          }, 500);
-        })
-        .catch(error => {
-          console.warn(`[ParticipantVideo] ❌ Video play failed for ${participant.userName}:`, error);
+        } catch (error) {
+          console.warn(`[ParticipantVideo] ❌ Video play failed for ${participant.userName} (attempt ${attempt}):`, error);
           setHasVideo(false);
           
-          // Retry playing after 1 second
-          setTimeout(() => {
-            if (videoElement && participant.stream) {
-              videoElement.play().catch(console.warn);
-            }
-          }, 1000);
-        });
+          // Retry with exponential backoff up to 3 attempts
+          if (attempt < 3 && videoElement && participant.stream) {
+            setTimeout(() => {
+              playVideo(attempt + 1);
+            }, 500 * attempt);
+          }
+        }
+      };
+      
+      // Start video playback
+      playVideo();
       
       const videoTracks = participant.stream.getVideoTracks();
       const hasVideoEnabled = videoTracks.length > 0 && videoTracks[0].enabled;
@@ -949,6 +1005,29 @@ function ParticipantVideo({ participant }: {
         videoEnabled: videoTracks[0]?.enabled,
         hasVideo: hasVideoEnabled
       });
+      
+      // Add event listeners for video events
+      const handleLoadedData = () => {
+        console.log(`[ParticipantVideo] Video loaded for ${participant.userName}`);
+        setHasVideo(true);
+      };
+      
+      const handleError = (event: Event) => {
+        console.warn(`[ParticipantVideo] Video error for ${participant.userName}:`, event);
+        setHasVideo(false);
+      };
+      
+      videoElement.addEventListener('loadeddata', handleLoadedData);
+      videoElement.addEventListener('error', handleError);
+      
+      // Cleanup event listeners
+      return () => {
+        if (videoElement) {
+          videoElement.removeEventListener('loadeddata', handleLoadedData);
+          videoElement.removeEventListener('error', handleError);
+        }
+      };
+      
     } else {
       console.log(`[ParticipantVideo] No stream or video element for ${participant.userName}`);
       setHasVideo(false);
