@@ -1,0 +1,28 @@
+[useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:14 [VideoCall] Component rendering with activeCall: {callId: 'call_1752475532079_4_2', callType: 'video', status: 'calling', isIncoming: false, peerUserId: 2, …}
+CallContext.tsx:430 [CallContext] Playing waiting tone - tuuutt
+CallContext.tsx:3161 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:14 [VideoCall] Component rendering with activeCall: {callId: 'call_1752475532079_4_2', callType: 'video', status: 'calling', isIncoming: false, peerUserId: 2, …}
+CallContext.tsx:430 [CallContext] Playing waiting tone - tuuutt
+CallContext.tsx:3161 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:14 [VideoCall] Component rendering with activeCall: {callId: 'call_1752475532079_4_2', callType: 'video', status: 'calling', isIncoming: false, peerUserId: 2, …}
+VideoCall.tsx:297 [VideoCall] 🔥 SWITCH CAMERA BUTTON CLICKED!
+VideoCall.tsx:298 [VideoCall] Current activeCall state: {callId: 'call_1752475532079_4_2', callType: 'video', status: 'calling', isIncoming: false, peerUserId: 2, …}
+CallContext.tsx:2649 [CallContext] 🔥 SWITCH CAMERA BUTTON CLICKED!
+CallContext.tsx:2650 [CallContext] Current activeCall: {callId: 'call_1752475532079_4_2', callType: 'video', status: 'calling', isIncoming: false, peerUserId: 2, …}
+CallContext.tsx:2651 [CallContext] Has localStream: true
+CallContext.tsx:2652 [CallContext] Call type: video
+CallContext.tsx:2661 [CallContext] Starting camera switch...
+CallContext.tsx:2689 [CallContext] Current camera facingMode: user
+CallContext.tsx:2694 [CallContext] Available video devices: 1 [InputDeviceInfo]
+CallContext.tsx:2697 [CallContext] Only one camera available, cannot switch
+CallContext.tsx:430 [CallContext] Playing waiting tone - tuuutt
+CallContext.tsx:3161 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:14 [VideoCall] Component rendering with activeCall: {callId: 'call_1752475532079_4_2', callType: 'video', status: 'calling', isIncoming: false, peerUserId: 2, …}
+CallContext.tsx:430 [CallContext] Playing waiting tone - tuuutt
+CallContext.tsx:3161 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:14 [VideoCall] Component rendering with activeCall: {callId: 'call_1752475532079_4_2', callType: 'video', status: 'calling', isIncoming: false, peerUserId: 2, …}

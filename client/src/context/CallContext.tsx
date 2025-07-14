@@ -2661,8 +2661,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
       console.log('[CallContext] Starting camera switch...');
       
       // Request permissions first on mobile
-      const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      if (isMobile) {
+      const isMobileDevice = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      console.log('[CallContext] Device detection - isMobile:', isMobileDevice, 'userAgent:', navigator.userAgent.slice(0, 50));
+      
+      if (isMobileDevice) {
         console.log('[CallContext] Mobile device detected, checking permissions...');
         try {
           const permissions = await navigator.permissions.query({ name: 'camera' as PermissionName });
@@ -2691,61 +2693,79 @@ export function CallProvider({ children }: { children: ReactNode }) {
       // Enumerate available video devices
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = devices.filter(device => device.kind === 'videoinput');
-      console.log('[CallContext] Available video devices:', videoDevices.length, videoDevices);
+      console.log('[CallContext] Available video devices:', videoDevices.length);
+      videoDevices.forEach((device, index) => {
+        console.log(`[CallContext] Camera ${index + 1}:`, {
+          label: device.label,
+          deviceId: device.deviceId.slice(0, 8),
+          groupId: device.groupId?.slice(0, 8)
+        });
+      });
 
+      // Use the mobile detection from above
+      
       if (videoDevices.length <= 1) {
-        console.log('[CallContext] Only one camera available, cannot switch');
-        alert('Hanya satu kamera yang tersedia pada perangkat ini.');
-        return;
-      }
-
-      // Find current device ID and determine next camera
-      const currentDeviceId = currentSettings.deviceId;
-      const currentIndex = videoDevices.findIndex(device => device.deviceId === currentDeviceId);
-      
-      // Get next camera in rotation
-      const nextIndex = (currentIndex + 1) % videoDevices.length;
-      const nextDevice = videoDevices[nextIndex];
-      
-      // Determine facing mode - try device ID first, then facingMode as fallback
-      let nextFacingMode: string;
-      if (nextDevice.label.toLowerCase().includes('back') || nextDevice.label.toLowerCase().includes('rear') || nextDevice.label.toLowerCase().includes('environment')) {
-        nextFacingMode = 'environment';
-      } else if (nextDevice.label.toLowerCase().includes('front') || nextDevice.label.toLowerCase().includes('user')) {
-        nextFacingMode = 'user';
-      } else {
-        // Fallback to opposite of current
-        nextFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
-      }
-      
-      console.log('[CallContext] Switching from device:', currentDeviceId, 'to device:', nextDevice.deviceId, 'facingMode:', nextFacingMode);
-
-      // Create constraints for new camera with both deviceId and facingMode
-      const constraints = {
-        audio: false,
-        video: {
-          deviceId: nextDevice.deviceId ? { exact: nextDevice.deviceId } : undefined,
-          facingMode: nextFacingMode,
-          width: { ideal: 720 },
-          height: { ideal: 1280 },
-          aspectRatio: { ideal: 9/16 }
+        console.log('[CallContext] Only one camera detected');
+        
+        if (isMobileDevice) {
+          console.log('[CallContext] Mobile device detected - attempting force switch anyway');
+          // On mobile, try to switch even with 1 detected camera
+          // Some mobile browsers don't properly enumerate all cameras
+        } else {
+          console.log('[CallContext] Desktop device - cannot switch with only 1 camera');
+          alert('Hanya satu kamera yang tersedia pada perangkat ini.');
+          return;
         }
-      };
+      }
+
+      // Determine next facing mode - especially important for mobile
+      let nextFacingMode: string;
+      
+      if (videoDevices.length > 1) {
+        // Multiple cameras detected - use device rotation
+        const currentDeviceId = currentSettings.deviceId;
+        const currentIndex = videoDevices.findIndex(device => device.deviceId === currentDeviceId);
+        const nextIndex = (currentIndex + 1) % videoDevices.length;
+        const nextDevice = videoDevices[nextIndex];
+        
+        // Determine facing mode from device label
+        if (nextDevice.label.toLowerCase().includes('back') || nextDevice.label.toLowerCase().includes('rear') || nextDevice.label.toLowerCase().includes('environment')) {
+          nextFacingMode = 'environment';
+        } else if (nextDevice.label.toLowerCase().includes('front') || nextDevice.label.toLowerCase().includes('user')) {
+          nextFacingMode = 'user';
+        } else {
+          nextFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+        }
+        
+        console.log('[CallContext] Switching from device:', currentDeviceId?.slice(0, 8), 'to device:', nextDevice.deviceId?.slice(0, 8), 'facingMode:', nextFacingMode);
+      } else {
+        // Single camera or mobile force switch - toggle facing mode
+        nextFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+        console.log('[CallContext] Force switching from facingMode:', currentFacingMode, 'to:', nextFacingMode);
+        
+        if (isMobileDevice && nextFacingMode === 'environment') {
+          console.log('[CallContext] 📱 Attempting to access rear camera on mobile device');
+        }
+      }
+
+      // For mobile devices with rear camera attempt, use more specific constraints
+      const isMobileRearCamera = isMobileDevice && nextFacingMode === 'environment';
+      console.log('[CallContext] Is mobile rear camera attempt:', isMobileRearCamera);
 
       // Get new video stream with 4-tier fallback system (like CameraTestSimple)
       let newVideoStream: MediaStream;
       let newVideoTrack: MediaStreamTrack;
       
       const strategies = [
-        // Strategy 1: Exact facingMode with high quality
+        // Strategy 1: Exact facingMode with mobile-optimized constraints
         {
           video: {
             facingMode: { exact: nextFacingMode },
-            width: { ideal: 720 },
-            height: { ideal: 1280 }
+            width: { ideal: isMobileRearCamera ? 1920 : 720 },
+            height: { ideal: isMobileRearCamera ? 1080 : 1280 }
           }
         },
-        // Strategy 2: Preferred facingMode with medium quality
+        // Strategy 2: Preferred facingMode 
         {
           video: {
             facingMode: nextFacingMode,
@@ -2753,13 +2773,21 @@ export function CallProvider({ children }: { children: ReactNode }) {
             height: { ideal: 480 }
           }
         },
-        // Strategy 3: Just facingMode
+        // Strategy 3: Just facingMode without constraints
         {
           video: {
             facingMode: nextFacingMode
           }
         },
-        // Strategy 4: Any video (last resort)
+        // Strategy 4: Force exact environment for mobile rear camera
+        ...(isMobileRearCamera ? [
+          {
+            video: {
+              facingMode: { exact: 'environment' }
+            }
+          }
+        ] : []),
+        // Strategy 5: Any video (last resort)
         {
           video: true
         }
