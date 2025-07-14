@@ -1356,24 +1356,36 @@ export default function GroupVideoCall() {
   };
 
   const switchCamera = async () => {
-    console.log('[GroupVideoCall] Switch camera function called');
+    console.log('[GroupVideoCall] 🔥 GROUP SWITCH CAMERA FUNCTION CALLED!');
+    
+    // Always show alert for mobile debugging
+    alert(`📱 GROUP Camera Switch diklik!\n\nLocalStream: ${!!localStream}\nActiveCall stream: ${!!activeCall?.localStream}\nComponent: GroupVideoCall`);
     
     const streamToUse = localStream || activeCall?.localStream;
     if (!streamToUse) {
       console.log('[GroupVideoCall] No local stream available');
-      alert('Tidak ada stream video aktif untuk mengganti kamera.');
+      alert('❌ Tidak ada stream video aktif untuk mengganti kamera.');
       return;
     }
 
     try {
-      // Get all video devices
+      // Get all video devices with mobile debugging
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = devices.filter(device => device.kind === 'videoinput');
       console.log('[GroupVideoCall] Available video devices:', videoDevices.length);
       
+      // Mobile debugging - show camera info for PWA users  
+      const isMobileDevice = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      if (isMobileDevice) {
+        const cameraInfo = videoDevices.map((device, index) => 
+          `Camera ${index + 1}: ${device.label || 'Unknown'}`
+        ).join('\n');
+        alert(`📱 GROUP Debug Info:\nDevice: Mobile\nKamera ditemukan: ${videoDevices.length}\n${cameraInfo}`);
+      }
+      
       if (videoDevices.length <= 1) {
         console.log('[GroupVideoCall] Only one camera available');
-        alert('Hanya satu kamera yang tersedia pada perangkat ini.');
+        alert(`❌ GROUP: Hanya ${videoDevices.length} kamera tersedia.\n\nHP ini mungkin tidak memiliki kamera belakang.`);
         return;
       }
       
@@ -1855,16 +1867,22 @@ export default function GroupVideoCall() {
           )}
         </Button>
 
-        {isVideoEnabled && (
-          <Button
-            onClick={switchCamera}
-            variant="ghost"
-            size="sm"
-            className="rounded-full w-10 h-10 border bg-[#4a7c59]/20 border-[#4a7c59] text-[#a6c455] hover:bg-[#4a7c59]/40 transition-all"
-          >
-            <SwitchCamera className="h-4 w-4" />
-          </Button>
-        )}
+        <Button
+          onClick={() => {
+            console.log('[GroupVideoCall] 🔥 GROUP SWITCH CAMERA BUTTON CLICKED!');
+            alert(`🔥 GROUP Switch Camera diklik!\n\nVideo enabled: ${isVideoEnabled}\nComponent: GroupVideoCall`);
+            if (!isVideoEnabled) {
+              alert('❌ Video tidak aktif di group call!\nNyalakan video dulu.');
+              return;
+            }
+            switchCamera();
+          }}
+          variant="ghost"
+          size="sm"
+          className="rounded-full w-10 h-10 border bg-[#4a7c59]/20 border-[#4a7c59] text-[#a6c455] hover:bg-[#4a7c59]/40 transition-all"
+        >
+          <SwitchCamera className="h-4 w-4" />
+        </Button>
 
         <Button
           onClick={handleEndCall}
