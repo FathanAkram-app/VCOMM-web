@@ -59,7 +59,7 @@ export default function MessageAttachment({
   };
 
   const handleFullscreenChange = () => {
-    const isCurrentlyFullscreen = !!(
+    const isCurrentlyFullscreen = Boolean(
       document.fullscreenElement ||
       (document as any).webkitFullscreenElement ||
       (document as any).mozFullScreenElement ||
@@ -101,90 +101,100 @@ export default function MessageAttachment({
     switch (attachmentType) {
       case 'image':
         return (
-          <div className="mb-1 overflow-hidden" style={{ maxWidth: '100%', width: '100%' }}>
+          <div 
+            className="mb-1 overflow-hidden rounded-md" 
+            style={{ 
+              maxWidth: '260px',
+              width: '100%',
+              minWidth: '200px'
+            }}
+          >
             <img 
               src={attachmentUrl} 
               alt={attachmentName} 
               className="rounded-md object-contain cursor-pointer hover:opacity-80 transition-opacity"
               style={{
-                maxWidth: '100%',
                 width: '100%',
                 height: 'auto',
-                maxHeight: '200px',
+                maxHeight: '180px',
                 display: 'block',
                 boxSizing: 'border-box'
               }}
               onClick={() => onImageClick?.(attachmentUrl)} 
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/broken-image.svg';
-                  (e.target as HTMLImageElement).classList.add('max-h-32');
-                }}
-              />
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/broken-image.svg';
+                (e.target as HTMLImageElement).classList.add('max-h-32');
+              }}
+            />
           </div>
         );
       case 'video':
         return (
-          <div className="mb-1 relative overflow-hidden" style={{ maxWidth: '100%', width: '100%' }}>
-            <div className="relative" style={{ maxWidth: '100%', width: '100%' }}>
-              <video 
-                ref={videoRef}
-                controls 
-                className="rounded-md bg-black border border-gray-600 object-contain" 
-                preload="metadata"
-                playsInline
-                muted={false}
-                style={{
-                  maxWidth: '100%',
-                  width: '100%',
-                  height: 'auto',
-                  maxHeight: '200px',
-                  minHeight: '160px',
-                  backgroundColor: '#000000',
-                  display: 'block',
-                  boxSizing: 'border-box'
-                }}
-                onError={(e) => {
-                  console.error('❌ Video playback error:', e);
-                  console.error('❌ Video URL:', attachmentUrl);
-                }}
-                onLoadStart={() => {
-                  console.log('📹 Video loading started:', attachmentUrl);
-                }}
-                onCanPlay={() => {
-                  console.log('✅ Video can play:', attachmentUrl);
-                }}
-                onLoadedMetadata={() => {
-                  console.log('📊 Video metadata loaded:', attachmentUrl);
-                }}
-                onLoadedData={() => {
-                  console.log('💾 Video data loaded:', attachmentUrl);
-                }}
-              >
-                <source src={attachmentUrl} type="video/mp4" />
-                <source src={attachmentUrl} type="video/webm" />
-                <source src={attachmentUrl} type="video/ogg" />
-                <source src={attachmentUrl} type="video/avi" />
-                Browser Anda tidak mendukung tag video. 
-                <a href={attachmentUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">
-                  Klik untuk mendownload video
-                </a>
-              </video>
-              
-              {/* Fullscreen Toggle Button */}
-              <Button
-                size="sm"
-                variant="ghost"
-                className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white border-none backdrop-blur-sm"
-                onClick={handleFullscreenToggle}
-                title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
-              >
-                {isFullscreen ? (
-                  <Minimize className="h-4 w-4" />
-                ) : (
-                  <Maximize className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
+          <div 
+            className="mb-1 relative overflow-hidden rounded-md" 
+            style={{ 
+              maxWidth: '260px',
+              width: '100%',
+              minWidth: '200px'
+            }}
+          >
+            <video 
+              ref={videoRef}
+              controls 
+              className="rounded-md bg-black border border-gray-600 object-contain" 
+              preload="metadata"
+              playsInline
+              muted={false}
+              style={{
+                width: '100%',
+                height: 'auto',
+                maxHeight: '180px',
+                minHeight: '140px',
+                backgroundColor: '#000000',
+                display: 'block',
+                boxSizing: 'border-box'
+              }}
+              onError={(e) => {
+                console.error('❌ Video playback error:', e);
+                console.error('❌ Video URL:', attachmentUrl);
+              }}
+              onLoadStart={() => {
+                console.log('📹 Video loading started:', attachmentUrl);
+              }}
+              onCanPlay={() => {
+                console.log('✅ Video can play:', attachmentUrl);
+              }}
+              onLoadedMetadata={() => {
+                console.log('📊 Video metadata loaded:', attachmentUrl);
+              }}
+              onLoadedData={() => {
+                console.log('💾 Video data loaded:', attachmentUrl);
+              }}
+            >
+              <source src={attachmentUrl} type="video/mp4" />
+              <source src={attachmentUrl} type="video/webm" />
+              <source src={attachmentUrl} type="video/ogg" />
+              <source src={attachmentUrl} type="video/avi" />
+              Browser Anda tidak mendukung tag video. 
+              <a href={attachmentUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">
+                Klik untuk mendownload video
+              </a>
+            </video>
+            
+            {/* Fullscreen Toggle Button */}
+            <Button
+              size="sm"
+              variant="ghost"
+              className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white border-none backdrop-blur-sm"
+              onClick={handleFullscreenToggle}
+              title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+            >
+              {isFullscreen ? (
+                <Minimize className="h-4 w-4" />
+              ) : (
+                <Maximize className="h-4 w-4" />
+              )}
+            </Button>
             
             {/* Fullscreen Close Button Overlay */}
             {isFullscreen && (
@@ -295,12 +305,15 @@ export default function MessageAttachment({
         <Button
           size="sm"
           variant="ghost"
-          className="ml-2 text-gray-300 hover:text-white"
-          asChild
+          className="h-8 w-8 p-0 text-[#8ba742] hover:bg-[#333333]"
+          onClick={() => {
+            const link = document.createElement('a');
+            link.href = attachmentUrl;
+            link.download = attachmentName;
+            link.click();
+          }}
         >
-          <a href={attachmentUrl} download={attachmentName} target="_blank" rel="noopener noreferrer">
-            <Download className="h-4 w-4" />
-          </a>
+          <Download className="h-4 w-4" />
         </Button>
       </div>
     </div>

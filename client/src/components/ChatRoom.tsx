@@ -1149,7 +1149,13 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
       </Dialog>
       
       {/* Messages container with space for input at bottom */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 pb-32 space-y-6 w-full">
+      <div 
+        className="flex-1 overflow-y-auto overflow-x-hidden p-4 pb-32 space-y-6" 
+        style={{ 
+          width: '100%',
+          maxWidth: '100vw'
+        }}
+      >
         {messageGroups.map(group => {
           // Buat array semua pesan untuk mencari referenced messages
           const allMessages = messageGroups.flatMap(g => g.messages);
@@ -1181,18 +1187,26 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
               return (
                 <div 
                   key={msg.id} 
-                  className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group w-full`}
+                  className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group`}
+                  style={{ 
+                    width: '100%',
+                    maxWidth: '100%',
+                    paddingLeft: '4px',
+                    paddingRight: '4px'
+                  }}
                 >
                   <div 
-                    className={`relative max-w-[80%] sm:max-w-[65%] rounded-lg px-3 py-2 overflow-hidden ${
+                    className={`relative rounded-lg px-3 py-2 overflow-hidden ${
                       isOwnMessage 
                         ? 'bg-[#4d5d30] text-white rounded-br-none' 
                         : 'bg-[#333333] text-white rounded-bl-none'
                     }`}
                     style={{ 
                       wordBreak: 'break-word',
-                      maxWidth: '80%',
-                      boxSizing: 'border-box'
+                      maxWidth: '75%',
+                      width: 'fit-content',
+                      boxSizing: 'border-box',
+                      minWidth: '120px'
                     }}
                   >
                     {!isOwnMessage && (
@@ -1242,7 +1256,15 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                             audioUrl={msg.attachmentUrl ? msg.attachmentUrl : `/uploads/voice_note_${msg.id}.webm`}
                           />
                         ) : (
-                          <div className="overflow-hidden" style={{ maxWidth: '100%', width: '100%' }}>
+                          <div 
+                            className="overflow-hidden" 
+                            style={{ 
+                              maxWidth: '100%',
+                              width: '100%',
+                              display: 'flex',
+                              justifyContent: 'center'
+                            }}
+                          >
                             <MessageAttachment 
                               attachmentType={msg.attachmentType || 'document'} 
                               attachmentUrl={msg.attachmentUrl} 
