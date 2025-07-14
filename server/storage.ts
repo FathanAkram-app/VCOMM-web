@@ -183,7 +183,7 @@ export class DatabaseStorage implements IStorage {
     
     console.log(`[Storage] Retrieved ${userConversations.length} conversations for user ${userId}`);
     
-    // Add unread count and member count for each conversation
+    // Add unread count, member count, and personal last message for each conversation
     const conversationsWithUnreadAndMembers = await Promise.all(
       userConversations.map(async (conv) => {
         // Get unread message count for this user in this conversation
@@ -193,10 +193,16 @@ export class DatabaseStorage implements IStorage {
         const members = await this.getConversationMembers(conv.id);
         const memberCount = members.length;
         
+        // Get personal last message (that hasn't been deleted by this user)
+        const personalLastMessage = await this.getPersonalLastMessage(conv.id, userId);
+        
         return {
           ...conv,
           unreadCount,
-          memberCount
+          memberCount,
+          // Override last message with personal version if available
+          lastMessage: personalLastMessage?.content || conv.lastMessage || "Belum ada pesan",
+          lastMessageTime: personalLastMessage?.createdAt || conv.lastMessageTime
         };
       })
     );
@@ -738,10 +744,50 @@ export class DatabaseStorage implements IStorage {
         await this.markMessageAsDeletedForUser(message.id, userId);
       }
 
+      // Update last_message di conversation untuk user ini dengan mengecek pesan terakhir yang masih terlihat
+      await this.updateLastMessageAfterClear(conversationId, userId);
+
       console.log(`[Storage] Cleared chat history for user ${userId} in conversation ${conversationId}`);
     } catch (error) {
       console.error(`Error clearing chat history for user ${userId} in conversation ${conversationId}:`, error);
       throw new Error("Failed to clear chat history for user");
+    }
+  }
+
+  async updateLastMessageAfterClear(conversationId: number, userId: number): Promise<void> {
+    try {
+      // Get remaining visible messages for this user
+      const visibleMessages = await this.getMessagesByConversationForUser(conversationId, userId);
+      
+      if (visibleMessages.length === 0) {
+        // Jika tidak ada pesan yang tersisa untuk user ini, set last_message ke null untuk conversation member
+        // Tapi kita tidak bisa update per-user di table conversations, jadi kita skip update ini
+        // Last message akan ter-update ketika ada pesan baru
+        console.log(`[Storage] No visible messages left for user ${userId} in conversation ${conversationId}`);
+      } else {
+        // Ada pesan yang masih terlihat, ambil yang terakhir
+        const lastMessage = visibleMessages[visibleMessages.length - 1];
+        console.log(`[Storage] Last visible message for user ${userId}: "${lastMessage.content}"`);
+      }
+    } catch (error) {
+      console.error(`Error updating last message after clear for user ${userId}:`, error);
+    }
+  }
+
+  async getPersonalLastMessage(conversationId: number, userId: number): Promise<any | null> {
+    try {
+      // Get all visible messages for this user
+      const visibleMessages = await this.getMessagesByConversationForUser(conversationId, userId);
+      
+      if (visibleMessages.length === 0) {
+        return null; // No visible messages for this user
+      }
+      
+      // Return the last visible message
+      return visibleMessages[visibleMessages.length - 1];
+    } catch (error) {
+      console.error(`Error getting personal last message for user ${userId}:`, error);
+      return null;
     }
   }
 
