@@ -2113,20 +2113,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[Group Call] No active participants, finding all online group members for group ${groupId}`);
             
             try {
-              // Get all group members from database first
-              const allGroupMembers = await storage.getGroupMembers(groupId);
-              console.log(`[Group Call] All group members for group ${groupId}:`, allGroupMembers);
+              // Get all conversation members from database
+              const conversationMembers = await storage.getConversationMembers(groupId);
+              console.log(`[Group Call] 🔥 All conversation members for group ${groupId}:`, conversationMembers.map(m => ({ userId: m.userId, role: m.role })));
               
-              // Filter to only online members
-              const onlineParticipants = allGroupMembers.filter(userId => {
-                const client = clients.get(userId);
-                return client && client.readyState === client.OPEN;
-              });
+              // Filter to only online members (excluding the requesting user)
+              const onlineParticipants = [];
+              for (const member of conversationMembers) {
+                if (member.userId !== requestingUserId && member.userId !== ws.userId) {
+                  const client = clients.get(member.userId);
+                  if (client && client.readyState === WebSocket.OPEN) {
+                    // Get user info for participant
+                    const userInfo = await storage.getUser(member.userId.toString());
+                    onlineParticipants.push({
+                      userId: member.userId,
+                      userName: userInfo?.callsign || userInfo?.fullName || `User ${member.userId}`,
+                      audioEnabled: true,
+                      videoEnabled: true
+                    });
+                  }
+                }
+              }
               
               participants = onlineParticipants;
-              console.log(`[Group Call] Found ${participants.length} online group members:`, participants);
+              console.log(`[Group Call] 🔥 Found ${participants.length} online participants:`, participants);
             } catch (error) {
-              console.error(`[Group Call] Error getting group members:`, error);
+              console.error(`[Group Call] ❌ Error getting conversation members:`, error);
               participants = [];
             }
           }
@@ -2355,40 +2367,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
-        // Handle request for group participants (for initiator)
-        if (data.type === 'request_group_participants' && ws.userId) {
-          const { callId, groupId, userId } = data.payload;
-          console.log(`[Group Call] User ${userId} requesting participants for group call ${callId}`);
-          
-          try {
-            // Get group members
-            const members = await storage.getConversationMembers(groupId);
-            const onlineParticipants = [];
-            
-            for (const member of members) {
-              if (member.userId !== userId && clients.has(member.userId)) {
-                onlineParticipants.push(member.userId);
-              }
-            }
-            
-            console.log(`[Group Call] Found ${onlineParticipants.length} online participants for group ${groupId}`);
-            
-            // Send participants update to requestor
-            if (ws.readyState === WebSocket.OPEN) {
-              ws.send(JSON.stringify({
-                type: 'group_call_participants_update',
-                payload: {
-                  callId,
-                  participants: onlineParticipants,
-                  requestedBy: userId
-                }
-              }));
-              console.log(`[Group Call] Sent participants update to user ${userId}:`, onlineParticipants);
-            }
-          } catch (error) {
-            console.error(`[Group Call] Error getting group participants:`, error);
-          }
-        }
+        // REMOVED: Duplicate handler for request_group_participants - consolidated below
       } catch (error) {
         console.error('WebSocket message error:', error);
       }

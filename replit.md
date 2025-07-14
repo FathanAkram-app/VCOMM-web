@@ -121,15 +121,17 @@ NXZZ-VComm is a military communications platform designed for intranet environme
 - Port configuration for different deployment targets
 
 # Changelog
-- July 14, 2025: CRITICAL BREAKTHROUGH - Group Video Call Stream Stability Fixed:
-  - ✅ RESOLVED: "Cannot assign to read only property 'enabled'" error by removing property locking
-  - ✅ IMPLEMENTED: Multi-level stream recovery system with automatic fallback mechanisms
-  - ✅ ENHANCED: Protected cleanup system that only runs when call truly ends, not during re-renders
-  - ✅ ADDED: Auto-recovery for localStream that gets lost during component state changes
-  - ✅ VERIFIED: Video streams now remain stable and visible throughout group video calls
-  - ✅ CONFIRMED: Stream preservation system working - "✅ Local video playing successfully"
-  - ✅ TESTED: Multiple users can join group video calls with stable video display
-  - Video calling system now production-ready with robust stream management
+- July 14, 2025: Group Video Call Audio-First Implementation & Participant Detection Fix:
+  - ✅ IMPLEMENTED: Audio-first approach for group video calls with manual video toggle functionality
+  - ✅ ENHANCED: GroupVideoCall.tsx with avatar overlays and audio-only indicators for better UX
+  - ✅ ADDED: toggleVideo function that can add video tracks to existing audio streams dynamically
+  - ✅ IMPROVED: Smart controls where camera switch button only appears when video is enabled
+  - ✅ CLEANED: All debugging alerts removed for production-ready interface
+  - ✅ FIXED: Participant detection system using proper getConversationMembers() method
+  - ✅ ENHANCED: Server-side request_group_participants handler with better error handling
+  - ✅ REMOVED: Duplicate WebSocket handlers causing participant detection conflicts
+  - ✅ RESOLVED: Audio-first strategy improves connection stability and mobile compatibility
+  - Group video calls now start audio-only with manual video activation for better reliability
 - June 25, 2025: Initial setup with local server deployment optimization
 - June 25, 2025: Added comprehensive local deployment guides:
   - LOCAL-DEPLOYMENT-GUIDE.md: Hardware specs and deployment strategy
