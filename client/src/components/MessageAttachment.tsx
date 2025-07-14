@@ -126,6 +126,37 @@ export default function MessageAttachment({
                 (e.target as HTMLImageElement).classList.add('max-h-32');
               }}
             />
+            
+            {/* Download button positioned below image */}
+            <div className="flex items-center justify-between p-2 bg-[#1a1a1a] rounded-b-md mt-1">
+              <div className="flex items-center gap-2">
+                <Image className="h-4 w-4 text-green-500" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-white truncate" title={attachmentName}>
+                    {attachmentName}
+                  </div>
+                  {attachmentSize && (
+                    <div className="text-xs text-gray-400">
+                      {formatFileSize(attachmentSize)}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 w-8 p-0 text-[#8ba742] hover:bg-[#333333] flex-shrink-0"
+                onClick={() => {
+                  const link = document.createElement('a');
+                  link.href = attachmentUrl;
+                  link.download = attachmentName;
+                  link.click();
+                }}
+                title="Download gambar"
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         );
       case 'video':
@@ -351,8 +382,8 @@ export default function MessageAttachment({
     <div className="flex flex-col mb-1">
       {renderContent()}
       
-      {/* File info and download button - always visible for all file types */}
-      {attachmentType !== 'audio' && (
+      {/* File info and download button - for video and other files only */}
+      {attachmentType !== 'audio' && attachmentType !== 'image' && (
         <div className="flex items-center p-2 bg-[#202020] rounded-md mb-1 mt-1 gap-2">
           <div className="flex-shrink-0">
             {getFileIcon()}
