@@ -1869,12 +1869,31 @@ export function CallProvider({ children }: { children: ReactNode }) {
       console.log('[CallContext] Error stopping audio sources:', error);
     }
     
-    setActiveCall(null);
-    setIncomingCall(null);
+    // CRITICAL FIX: Only clear states for actual ongoing calls, NOT incoming calls
+    // Check if this call ended event is for the current active call
+    const callId = message.callId;
     
-    // Clean up media streams
-    if (activeCall?.localStream) {
-      activeCall.localStream.getTracks().forEach(track => track.stop());
+    if (activeCall && activeCall.callId === callId) {
+      console.log('[CallContext] ✅ Ending active call:', callId);
+      setActiveCall(null);
+      
+      // Clean up media streams
+      if (activeCall.localStream) {
+        activeCall.localStream.getTracks().forEach(track => track.stop());
+      }
+    } else {
+      console.log('[CallContext] ⚠️ Call ended event for non-active call:', callId, 'current activeCall:', activeCall?.callId);
+    }
+    
+    // CRITICAL: Do NOT clear incoming call if it's still ringing
+    // Only clear incoming call if the ended call matches AND it was accepted (not ringing)
+    if (incomingCall && incomingCall.callId === callId && incomingCall.status !== 'ringing') {
+      console.log('[CallContext] ✅ Clearing incoming call because it was accepted and then ended');
+      setIncomingCall(null);
+    } else if (incomingCall && incomingCall.callId === callId && incomingCall.status === 'ringing') {
+      console.log('[CallContext] 🚫 NOT clearing incoming call - still ringing, user hasn\'t responded yet');
+    } else {
+      console.log('[CallContext] ⚠️ Call ended event does not match incoming call, or no incoming call exists');
     }
   };
 
