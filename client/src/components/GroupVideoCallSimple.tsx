@@ -369,16 +369,21 @@ export default function GroupVideoCallSimple() {
   const handleIncomingICECandidate = async (candidateData: any) => {
     console.log('[GroupVideoCallSimple] 🧊 Processing ICE candidate from user:', candidateData.fromUserId);
     
-    // Get existing peer connection untuk user ini
-    let pc = peerConnections.get(candidateData.fromUserId);
+    // Get existing peer connection untuk user ini - don't create new one here
+    const pc = peerConnections.get(candidateData.fromUserId);
     if (!pc) {
-      console.log('[GroupVideoCallSimple] ⚠️ No peer connection found for user:', candidateData.fromUserId, '- creating one now');
+      console.log('[GroupVideoCallSimple] ⏳ No peer connection found for user:', candidateData.fromUserId, '- queueing ICE candidate');
       
-      // Create peer connection if it doesn't exist yet (untuk handle timing issues)
-      pc = getOrCreatePeerConnection(candidateData.fromUserId);
-      
-      // Wait a moment for peer connection to be ready
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Queue ICE candidate untuk diproses nanti saat peer connection dibuat
+      setPendingICECandidates(prev => {
+        const newMap = new Map(prev);
+        if (!newMap.has(candidateData.fromUserId)) {
+          newMap.set(candidateData.fromUserId, []);
+        }
+        newMap.get(candidateData.fromUserId)!.push(new RTCIceCandidate(candidateData.candidate));
+        return newMap;
+      });
+      return;
     }
 
     try {
@@ -528,6 +533,8 @@ export default function GroupVideoCallSimple() {
       setPeerConnections(prev => {
         const newMap = new Map(prev);
         newMap.set(userId, pc!);
+        console.log('[GroupVideoCallSimple] 📊 Updated peerConnections map, total connections:', newMap.size);
+        console.log('[GroupVideoCallSimple] 📊 Stored connection for users:', Array.from(newMap.keys()));
         return newMap;
       });
     }
