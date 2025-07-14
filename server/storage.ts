@@ -61,6 +61,7 @@ export interface IStorage {
   // Message operations
   createMessage(data: InsertMessage): Promise<Message>;
   getMessagesByConversation(conversationId: number): Promise<Message[]>;
+  getMessagesByConversationForUser(conversationId: number, userId: number): Promise<Message[]>;
   clearConversationMessages(conversationId: number): Promise<void>;
   
   // Call history operations
@@ -429,6 +430,36 @@ export class DatabaseStorage implements IStorage {
     }
     
     return result;
+  }
+
+  async getMessagesByConversationForUser(conversationId: number, userId: number): Promise<Message[]> {
+    try {
+      // Get all messages for the conversation
+      const allMessages = await db
+        .select()
+        .from(messages)
+        .where(eq(messages.conversationId, conversationId))
+        .orderBy(messages.createdAt);
+
+      // Get messages deleted by this specific user
+      const deletedByUser = await db
+        .select({ messageId: deletedMessagesPerUser.messageId })
+        .from(deletedMessagesPerUser)
+        .where(eq(deletedMessagesPerUser.userId, userId));
+      
+      const deletedMessageIds = new Set(deletedByUser.map(d => d.messageId));
+      
+      // Filter out messages deleted by this user
+      const visibleMessages = allMessages.filter(msg => !deletedMessageIds.has(msg.id));
+      
+      console.log(`[Storage] User ${userId} sees ${visibleMessages.length}/${allMessages.length} messages in conversation ${conversationId}`);
+      console.log(`[Storage] User ${userId} has ${deletedMessageIds.size} deleted messages`);
+      
+      return visibleMessages;
+    } catch (error) {
+      console.error(`Error getting messages for user ${userId} in conversation ${conversationId}:`, error);
+      return [];
+    }
   }
   
   async clearConversationMessages(conversationId: number): Promise<void> {

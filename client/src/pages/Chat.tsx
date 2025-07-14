@@ -1394,7 +1394,15 @@ export default function Chat() {
                         try {
                           const response = await apiRequest('POST', `/api/conversations/${id}/clear`);
                           
-                          console.log(`Riwayat chat ${id} berhasil dibersihkan`);
+                          console.log(`Chat history cleared for user only: ${response.message}`);
+                          
+                          // Show success message to user
+                          setToastMessage({
+                            type: 'success',
+                            message: 'Chat berhasil dibersihkan untuk Anda. Orang lain masih bisa melihat history mereka.',
+                            duration: 4000
+                          });
+                          
                           // Invalidate and refetch messages for immediate update
                           if (activeChat?.id === id) {
                             queryClient.invalidateQueries({ queryKey: [`/api/conversations/${id}/messages`] });
@@ -1405,7 +1413,11 @@ export default function Chat() {
                           queryClient.invalidateQueries({ queryKey: ['/api/rooms'] });
                         } catch (error) {
                           console.error('Error membersihkan riwayat chat:', error);
-                          alert('Terjadi kesalahan saat membersihkan riwayat chat');
+                          setToastMessage({
+                            type: 'error',
+                            message: 'Gagal membersihkan chat. Silakan coba lagi.',
+                            duration: 3000
+                          });
                         }
                       }}
                       onCreateGroup={() => setShowNewGroupDialog(true)}

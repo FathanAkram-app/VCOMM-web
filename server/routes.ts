@@ -665,9 +665,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "User ID not found in session" });
       }
       
-      // Get messages and filter out deleted messages for this user
-      const allMessages = await storage.getMessagesByConversation(conversationId);
-      const messages = await storage.filterMessagesForUser(allMessages, userId);
+      // Get messages filtered for this specific user (excluding messages they deleted)
+      const messages = await storage.getMessagesByConversationForUser(conversationId, userId);
       
       // Log jumlah pesan yang ditemukan untuk debugging
       console.log(`Found ${messages.length} messages for conversation ${conversationId}`);
