@@ -42,6 +42,13 @@ const formatLastMessageTime = (isoDate: string) => {
   }
 };
 
+// Fungsi untuk membatasi teks maksimal 20 karakter
+const truncateText = (text: string, maxLength: number = 20) => {
+  if (!text) return "";
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + "...";
+};
+
 // Komponen utama
 export default function ChatList({
   activeChat,
@@ -241,14 +248,14 @@ export default function ChatList({
             </div>
             
             {/* Chat details */}
-            <div className="ml-3 flex-1 min-w-0 max-w-[calc(100%-120px)]">
+            <div className="ml-3 flex-1 min-w-0">
               <div className="flex justify-between items-center mb-1">
-                <div className="flex-1 min-w-0 max-w-[calc(100%-60px)]">
-                  <h3 className="text-white font-medium truncate overflow-hidden whitespace-nowrap text-ellipsis">
-                    {chat.name}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-white font-medium">
+                    {truncateText(chat.name, 20)}
                     {chat.isGroup && 
                       <span className="ml-2 text-xs font-normal text-gray-400">
-                        ({chat.members} anggota)
+                        ({chat.members})
                       </span>
                     }
                   </h3>
@@ -259,15 +266,15 @@ export default function ChatList({
               </div>
               
               <div className="flex justify-between items-center">
-                <div className="flex-1 min-w-0 max-w-[calc(100%-40px)]">
-                  <p className="text-gray-400 text-sm truncate overflow-hidden whitespace-nowrap text-ellipsis">
+                <div className="flex-1 min-w-0">
+                  <p className="text-gray-400 text-sm">
                     {chat.lastMessage && chat.lastMessage.includes("Pesan Suara") ? (
                       <span className="inline-flex items-center">
                         <span className="text-green-500 mr-1">🔊</span>
                         <span className="text-gray-300">Pesan Suara</span>
                       </span>
                     ) : (
-                      chat.lastMessage || "Belum ada pesan"
+                      truncateText(chat.lastMessage || "Belum ada pesan", 20)
                     )}
                   </p>
                 </div>
