@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useCall } from "../hooks/useCall";
 import { Button } from "./ui/button";
-import { ChevronDown, Mic, MicOff, Video, VideoOff, Phone, Volume2, VolumeX, SwitchCamera } from "lucide-react";
+import { ChevronDown, Mic, MicOff, Video, VideoOff, Phone, SwitchCamera } from "lucide-react";
 import { useLocation } from "wouter";
 
 export default function VideoCall() {
-  const { activeCall, hangupCall, toggleCallAudio, toggleCallVideo, toggleMute, switchCallCamera, remoteAudioStream } = useCall();
+  const { activeCall, hangupCall, toggleCallAudio, toggleCallVideo, switchCallCamera, remoteAudioStream } = useCall();
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const [callDuration, setCallDuration] = useState("00:00:00");
@@ -309,18 +309,7 @@ export default function VideoCall() {
           >
             <SwitchCamera className="h-5 w-5" />
           </Button>
-          <Button 
-            variant="outline" 
-            size="icon" 
-            className={`w-12 h-12 rounded-full ${
-              !activeCall.isMuted 
-                ? 'text-[#a6c455] border-[#a6c455]' 
-                : 'text-red-500 border-red-500'
-            } hover:bg-[#333333]`}
-            onClick={toggleMute}
-          >
-            {!activeCall.isMuted ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
-          </Button>
+
         </div>
       </div>
     </div>
