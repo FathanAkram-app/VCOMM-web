@@ -32,13 +32,14 @@ export default function GroupVideoCallSimple() {
     videoRef: React.RefObject<HTMLVideoElement>;
   }>>([]);
   
-  // Remote streams state for force re-render
+  // Use useRef for persistent data to avoid setState timing issues
+  const peerConnectionsRef = useRef(new Map<number, RTCPeerConnection>());
+  const pendingICECandidatesRef = useRef(new Map<number, RTCIceCandidate[]>());
+  const remoteStreamsRef = useRef(new Map<string, MediaStream>());
+  
+  // State untuk trigger re-renders
   const [remoteStreams, setRemoteStreams] = useState<Map<string, MediaStream>>(new Map());
-  
-  // Peer connections untuk setiap participant
   const [peerConnections, setPeerConnections] = useState<Map<number, RTCPeerConnection>>(new Map());
-  
-  // Pending ICE candidates untuk timing issues
   const [pendingICECandidates, setPendingICECandidates] = useState<Map<number, RTCIceCandidate[]>>(new Map());
 
   // Reusable media initialization function  
@@ -336,10 +337,10 @@ export default function GroupVideoCallSimple() {
     });
     
     // Get existing peer connection untuk user ini
-    const pc = peerConnections.get(answerData.fromUserId);
+    const pc = peerConnectionsRef.current.get(answerData.fromUserId);
     if (!pc) {
       console.log('[GroupVideoCallSimple] ❌ No peer connection found for user:', answerData.fromUserId);
-      console.log('[GroupVideoCallSimple] 🔍 Available peer connections:', Array.from(peerConnections.keys()));
+      console.log('[GroupVideoCallSimple] 🔍 Available peer connections:', Array.from(peerConnectionsRef.current.keys()));
       return;
     }
 
@@ -370,11 +371,16 @@ export default function GroupVideoCallSimple() {
     console.log('[GroupVideoCallSimple] 🧊 Processing ICE candidate from user:', candidateData.fromUserId);
     
     // Get existing peer connection untuk user ini - don't create new one here
-    const pc = peerConnections.get(candidateData.fromUserId);
+    const pc = peerConnectionsRef.current.get(candidateData.fromUserId);
     if (!pc) {
       console.log('[GroupVideoCallSimple] ⏳ No peer connection found for user:', candidateData.fromUserId, '- queueing ICE candidate');
       
       // Queue ICE candidate untuk diproses nanti saat peer connection dibuat
+      if (!pendingICECandidatesRef.current.has(candidateData.fromUserId)) {
+        pendingICECandidatesRef.current.set(candidateData.fromUserId, []);
+      }
+      pendingICECandidatesRef.current.get(candidateData.fromUserId)!.push(new RTCIceCandidate(candidateData.candidate));
+      
       setPendingICECandidates(prev => {
         const newMap = new Map(prev);
         if (!newMap.has(candidateData.fromUserId)) {
@@ -395,6 +401,11 @@ export default function GroupVideoCallSimple() {
         console.log('[GroupVideoCallSimple] ⏳ Queuing ICE candidate (no remote description yet) for user:', candidateData.fromUserId);
         
         // Queue ICE candidate untuk diproses nanti
+        if (!pendingICECandidatesRef.current.has(candidateData.fromUserId)) {
+          pendingICECandidatesRef.current.set(candidateData.fromUserId, []);
+        }
+        pendingICECandidatesRef.current.get(candidateData.fromUserId)!.push(new RTCIceCandidate(candidateData.candidate));
+        
         setPendingICECandidates(prev => {
           const newMap = new Map(prev);
           if (!newMap.has(candidateData.fromUserId)) {
@@ -411,7 +422,7 @@ export default function GroupVideoCallSimple() {
 
   // Process pending ICE candidates untuk user setelah remote description di-set
   const processPendingICECandidates = async (userId: number, pc: RTCPeerConnection) => {
-    const candidates = pendingICECandidates.get(userId);
+    const candidates = pendingICECandidatesRef.current.get(userId);
     if (candidates && candidates.length > 0) {
       console.log(`[GroupVideoCallSimple] 🧊 Processing ${candidates.length} pending ICE candidates for user:`, userId);
       
@@ -424,7 +435,8 @@ export default function GroupVideoCallSimple() {
         }
       }
       
-      // Clear processed candidates
+      // Clear processed candidates from both ref and state
+      pendingICECandidatesRef.current.delete(userId);
       setPendingICECandidates(prev => {
         const newMap = new Map(prev);
         newMap.delete(userId);
@@ -435,7 +447,7 @@ export default function GroupVideoCallSimple() {
 
   // Create or get peer connection for specific user
   const getOrCreatePeerConnection = (userId: number): RTCPeerConnection => {
-    let pc = peerConnections.get(userId);
+    let pc = peerConnectionsRef.current.get(userId);
     
     if (!pc) {
       console.log('[GroupVideoCallSimple] Creating new peer connection for user:', userId);
@@ -460,7 +472,8 @@ export default function GroupVideoCallSimple() {
             audioTracks: remoteStream.getAudioTracks().length
           });
           
-          // Update remote streams state dengan key yang konsisten
+          // Update remote streams both in ref and state
+          remoteStreamsRef.current.set(`user_${userId}`, remoteStream);
           setRemoteStreams(prev => {
             const newMap = new Map(prev);
             newMap.set(`user_${userId}`, remoteStream);
@@ -529,7 +542,8 @@ export default function GroupVideoCallSimple() {
         console.log('[GroupVideoCallSimple] ⚠️ No local stream available when creating peer connection for user', userId);
       }
       
-      // Store peer connection
+      // Store peer connection in both ref and state
+      peerConnectionsRef.current.set(userId, pc!);
       setPeerConnections(prev => {
         const newMap = new Map(prev);
         newMap.set(userId, pc!);
@@ -669,7 +683,7 @@ export default function GroupVideoCallSimple() {
   // Cleanup peer connections
   const cleanupPeerConnections = () => {
     console.log('[GroupVideoCallSimple] Cleaning up peer connections...');
-    peerConnections.forEach((pc, userId) => {
+    peerConnectionsRef.current.forEach((pc, userId) => {
       try {
         pc.close();
         console.log('[GroupVideoCallSimple] Closed peer connection for user:', userId);
@@ -677,19 +691,28 @@ export default function GroupVideoCallSimple() {
         console.error('[GroupVideoCallSimple] Error closing peer connection for user', userId, ':', error);
       }
     });
+    
+    // Clear both ref and state
+    peerConnectionsRef.current.clear();
+    remoteStreamsRef.current.clear();
+    pendingICECandidatesRef.current.clear();
+    
     setPeerConnections(new Map());
     setRemoteStreams(new Map());
+    setPendingICECandidates(new Map());
   };
 
-  // Cleanup effect on component unmount
+  // Cleanup effect on component unmount ONLY
   useEffect(() => {
     return () => {
+      // Only cleanup on actual unmount, not on re-renders
+      console.log('[GroupVideoCallSimple] 🧹 Component unmounting - final cleanup');
       cleanupPeerConnections();
       if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
       }
     };
-  }, []);
+  }, []); // Empty dependency array to prevent re-running
 
   // Handle hangup
   const handleHangup = () => {
