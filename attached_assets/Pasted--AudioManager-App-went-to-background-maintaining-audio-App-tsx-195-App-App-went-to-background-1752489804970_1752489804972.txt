@@ -1,0 +1,141 @@
+[AudioManager] App went to background, maintaining audio...
+App.tsx:195 [App] App went to background, maintaining connection...
+audioManager.ts:93 [AudioManager] App returned to foreground, checking audio...
+App.tsx:197 [App] App returned to foreground
+CallContext.tsx:3587 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:130 [GroupVideoCallSimple] Updating participants: [{…}]
+GroupVideoCallSimple.tsx:131 [GroupVideoCallSimple] Current user ID: 3
+GroupVideoCallSimple.tsx:132 [GroupVideoCallSimple] Available remote streams: Map(0) {size: 0}
+GroupVideoCallSimple.tsx:136 [GroupVideoCallSimple] Remote streams array: []
+GroupVideoCallSimple.tsx:162 [GroupVideoCallSimple] 📋 Final participants list: []
+CallContext.tsx:667 [CallContext] Creating stable WebSocket for calls...
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:882 [CallContext] WebSocket disconnected
+CallContext.tsx:3587 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:674 [CallContext] WebSocket connected successfully for calls
+CallContext.tsx:698 [CallContext] Authenticated user 3 with WebSocket
+CallContext.tsx:3587 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:717 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:776 [CallContext] Received user status update: {userId: 3, status: 'online'}
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:819 [CallContext] 🔥 GROUP_CALL_PARTICIPANTS_UPDATE received: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1627 [CallContext] Group call participants update: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1632 [CallContext] Comparing callIds - message: group_call_1752489728775_38_3 activeCall: group_call_1752489728775_38_3
+CallContext.tsx:1633 [CallContext] ActiveCall groupId: 38
+CallContext.tsx:1672 [CallContext] Extracted groupIds - message: 38 active: 38
+CallContext.tsx:1673 [CallContext] CallId parts: (5) ['group', 'call', '1752489728775', '38', '3']
+CallContext.tsx:1676 [CallContext] Group IDs match, updating participants: (2) [3, 4]
+CallContext.tsx:1687 [CallContext] Unique participants after deduplication: (2) [3, 4]
+CallContext.tsx:1690 [CallContext] 🔍 Fetching user names for participants: (2) [3, 4]
+CallContext.tsx:717 [CallContext] Received message: {type: 'initiate_group_webrtc', payload: {…}}
+CallContext.tsx:1692 [CallContext] 📊 Got all users data: 7
+CallContext.tsx:1707 [CallContext] 📋 Created participant objects: (2) [{…}, {…}]
+CallContext.tsx:1716 [CallContext] ✅ Updated participants with names: (2) [{…}, {…}]
+CallContext.tsx:1728 [CallContext] 🚀 Dispatching group-participants-update event: (2) [{…}, {…}]
+CallContext.tsx:1729 [CallContext] 🚀 Event details: {callId: 'group_call_1752489728775_38_3', groupId: 38}
+CallContext.tsx:3587 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:130 [GroupVideoCallSimple] Updating participants: (2) [{…}, {…}]
+GroupVideoCallSimple.tsx:131 [GroupVideoCallSimple] Current user ID: 3
+GroupVideoCallSimple.tsx:132 [GroupVideoCallSimple] Available remote streams: Map(0) {size: 0}
+GroupVideoCallSimple.tsx:136 [GroupVideoCallSimple] Remote streams array: []
+GroupVideoCallSimple.tsx:145 [GroupVideoCallSimple] 🔍 Mapping participant dino (4): {streamKey: 'user_4', hasStream: false, streamId: undefined, streamActive: undefined, videoTracks: 0, …}
+GroupVideoCallSimple.tsx:162 [GroupVideoCallSimple] 📋 Final participants list: [{…}]
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:858 [ParticipantVideo] Effect triggered for dino: {hasVideoRef: false, hasStream: false, streamId: undefined, streamActive: undefined}
+GroupVideoCallSimple.tsx:890 [ParticipantVideo] No stream or video ref for dino
+GroupVideoCallSimple.tsx:200 [GroupVideoCallSimple] Participants update received, triggerWebRTC: true
+CallContext.tsx:1741 [CallContext] ✅ group-participants-update event dispatched successfully
+GroupVideoCallSimple.tsx:193 [GroupVideoCallSimple] Initiating WebRTC for group call: {callId: 'group_call_1752489728775_38_3', participants: Array(2), forceInit: true}
+GroupVideoCallSimple.tsx:567 [GroupVideoCallSimple] 🚀 Initiating WebRTC connections with participants: (2) [{…}, {…}]
+GroupVideoCallSimple.tsx:592 [GroupVideoCallSimple] 📊 Local stream ready for offers: {streamId: '7d58fc03-30f4-4248-b2c6-d8a37af68626', active: true, videoTracks: 1, audioTracks: 1, videoEnabled: true, …}
+GroupVideoCallSimple.tsx:605 [GroupVideoCallSimple] 🔗 Creating offer for participant: dino (4)
+GroupVideoCallSimple.tsx:460 [GroupVideoCallSimple] Creating new peer connection for user: 4
+GroupVideoCallSimple.tsx:533 [GroupVideoCallSimple] ✅ Added local track to peer connection for user 4 : {trackKind: 'audio', trackEnabled: true, trackReadyState: 'live', senderId: 'created'}
+GroupVideoCallSimple.tsx:533 [GroupVideoCallSimple] ✅ Added local track to peer connection for user 4 : {trackKind: 'video', trackEnabled: true, trackReadyState: 'live', senderId: 'created'}
+GroupVideoCallSimple.tsx:541 [GroupVideoCallSimple] 📊 Peer connection state for user 4 : {connectionState: 'new', iceConnectionState: 'new', iceGatheringState: 'new', signalingState: 'stable', localTracks: 2}
+GroupVideoCallSimple.tsx:612 [GroupVideoCallSimple] 📊 Current senders for user 4: 2
+GroupVideoCallSimple.tsx:625 [GroupVideoCallSimple] ℹ️ Tracks already added for user 4
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:557 [GroupVideoCallSimple] 📊 Updated peerConnections map, total connections: 1
+GroupVideoCallSimple.tsx:558 [GroupVideoCallSimple] 📊 Stored connection for users: [4]
+GroupVideoCallSimple.tsx:632 [GroupVideoCallSimple] ✅ Created and set local offer for user: 4
+GroupVideoCallSimple.tsx:645 [GroupVideoCallSimple] Sent WebRTC offer to user: 4
+4GroupVideoCallSimple.tsx:515 [GroupVideoCallSimple] Sent ICE candidate to user: 4
+GroupVideoCallSimple.tsx:521 [GroupVideoCallSimple] Connection state for user 4 : connecting
+GroupVideoCallSimple.tsx:567 [GroupVideoCallSimple] 🚀 Initiating WebRTC connections with participants: (2) [{…}, {…}]
+GroupVideoCallSimple.tsx:592 [GroupVideoCallSimple] 📊 Local stream ready for offers: {streamId: '7d58fc03-30f4-4248-b2c6-d8a37af68626', active: true, videoTracks: 1, audioTracks: 1, videoEnabled: true, …}
+GroupVideoCallSimple.tsx:605 [GroupVideoCallSimple] 🔗 Creating offer for participant: dino (4)
+GroupVideoCallSimple.tsx:612 [GroupVideoCallSimple] 📊 Current senders for user 4: 2
+GroupVideoCallSimple.tsx:625 [GroupVideoCallSimple] ℹ️ Tracks already added for user 4
+GroupVideoCallSimple.tsx:632 [GroupVideoCallSimple] ✅ Created and set local offer for user: 4
+GroupVideoCallSimple.tsx:645 [GroupVideoCallSimple] Sent WebRTC offer to user: 4
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_answer', payload: {…}}
+CallContext.tsx:848 [CallContext] Forwarding group WebRTC answer: {callId: 'group_call_1752489728775_38_3', answer: {…}, fromUserId: 4}
+GroupVideoCallSimple.tsx:181 [GroupVideoCallSimple] Received group WebRTC answer: {callId: 'group_call_1752489728775_38_3', answer: {…}, fromUserId: 4}
+GroupVideoCallSimple.tsx:338 [GroupVideoCallSimple] 📥 PROCESSING WEBRTC ANSWER from user: 4
+GroupVideoCallSimple.tsx:339 [GroupVideoCallSimple] 📥 Answer data: {fromUserId: 4, hasAnswer: true, answerType: 'answer', callId: 'group_call_1752489728775_38_3'}
+GroupVideoCallSimple.tsx:354 [GroupVideoCallSimple] 🔗 Peer connection state before setting remote description: {connectionState: 'connecting', iceConnectionState: 'checking', signalingState: 'have-local-offer'}
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_ice_candidate', payload: {…}}
+CallContext.tsx:855 [CallContext] Forwarding group WebRTC ICE candidate: {callId: 'group_call_1752489728775_38_3', candidate: {…}, fromUserId: 4}
+GroupVideoCallSimple.tsx:187 [GroupVideoCallSimple] Received group WebRTC ICE candidate: {callId: 'group_call_1752489728775_38_3', candidate: {…}, fromUserId: 4}
+GroupVideoCallSimple.tsx:378 [GroupVideoCallSimple] 🧊 Processing ICE candidate from user: 4
+GroupVideoCallSimple.tsx:408 [GroupVideoCallSimple] ⏳ Queuing ICE candidate (no remote description yet) for user: 4
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_ice_candidate', payload: {…}}
+CallContext.tsx:855 [CallContext] Forwarding group WebRTC ICE candidate: {callId: 'group_call_1752489728775_38_3', candidate: {…}, fromUserId: 4}
+GroupVideoCallSimple.tsx:187 [GroupVideoCallSimple] Received group WebRTC ICE candidate: {callId: 'group_call_1752489728775_38_3', candidate: {…}, fromUserId: 4}
+GroupVideoCallSimple.tsx:378 [GroupVideoCallSimple] 🧊 Processing ICE candidate from user: 4
+GroupVideoCallSimple.tsx:408 [GroupVideoCallSimple] ⏳ Queuing ICE candidate (no remote description yet) for user: 4
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:470 [GroupVideoCallSimple] 🎥 RECEIVED REMOTE TRACK from user 4 : audio
+GroupVideoCallSimple.tsx:471 [GroupVideoCallSimple] 🎥 Event streams: [MediaStream]
+GroupVideoCallSimple.tsx:475 [GroupVideoCallSimple] 📦 STORING REMOTE STREAM for user 4 : {streamId: 'bd4b483f-10d7-47dc-803e-e3d752ab7065', active: true, videoTracks: 1, audioTracks: 1}
+GroupVideoCallSimple.tsx:470 [GroupVideoCallSimple] 🎥 RECEIVED REMOTE TRACK from user 4 : video
+GroupVideoCallSimple.tsx:471 [GroupVideoCallSimple] 🎥 Event streams: [MediaStream]
+GroupVideoCallSimple.tsx:475 [GroupVideoCallSimple] 📦 STORING REMOTE STREAM for user 4 : {streamId: 'bd4b483f-10d7-47dc-803e-e3d752ab7065', active: true, videoTracks: 1, audioTracks: 1}
+GroupVideoCallSimple.tsx:362 [GroupVideoCallSimple] ✅ Set remote description for answer from user: 4
+GroupVideoCallSimple.tsx:434 [GroupVideoCallSimple] 🧊 Processing 2 pending ICE candidates for user: 4
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+2GroupVideoCallSimple.tsx:487 [GroupVideoCallSimple] 📦 Updated remoteStreams map, total streams: 1
+GroupVideoCallSimple.tsx:439 [GroupVideoCallSimple] ✅ Added pending ICE candidate for user: 4
+GroupVideoCallSimple.tsx:130 [GroupVideoCallSimple] Updating participants: (2) [{…}, {…}]
+GroupVideoCallSimple.tsx:131 [GroupVideoCallSimple] Current user ID: 3
+GroupVideoCallSimple.tsx:132 [GroupVideoCallSimple] Available remote streams: Map(1) {'user_4' => MediaStream}
+GroupVideoCallSimple.tsx:136 [GroupVideoCallSimple] Remote streams array: [MediaStream]
+GroupVideoCallSimple.tsx:145 [GroupVideoCallSimple] 🔍 Mapping participant dino (4): {streamKey: 'user_4', hasStream: true, streamId: 'bd4b483f-10d7-47dc-803e-e3d752ab7065', streamActive: true, videoTracks: 1, …}
+GroupVideoCallSimple.tsx:162 [GroupVideoCallSimple] 📋 Final participants list: [{…}]
+GroupVideoCallSimple.tsx:439 [GroupVideoCallSimple] ✅ Added pending ICE candidate for user: 4
+GroupVideoCallSimple.tsx:367 [GroupVideoCallSimple] 🔗 Peer connection state after answer: {connectionState: 'connecting', iceConnectionState: 'checking', signalingState: 'stable'}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:858 [ParticipantVideo] Effect triggered for dino: {hasVideoRef: false, hasStream: true, streamId: 'bd4b483f-10d7-47dc-803e-e3d752ab7065', streamActive: true}
+GroupVideoCallSimple.tsx:890 [ParticipantVideo] No stream or video ref for dino
+GroupVideoCallSimple.tsx:521 [GroupVideoCallSimple] Connection state for user 4 : connected
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+2GroupVideoCallSimple.tsx:494 [GroupVideoCallSimple] 🔄 FORCE RE-RENDER participants for user 4
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_answer', payload: {…}}
+CallContext.tsx:848 [CallContext] Forwarding group WebRTC answer: {callId: 'group_call_1752489728775_38_3', answer: {…}, fromUserId: 4}
+GroupVideoCallSimple.tsx:181 [GroupVideoCallSimple] Received group WebRTC answer: {callId: 'group_call_1752489728775_38_3', answer: {…}, fromUserId: 4}
+GroupVideoCallSimple.tsx:338 [GroupVideoCallSimple] 📥 PROCESSING WEBRTC ANSWER from user: 4
+GroupVideoCallSimple.tsx:339 [GroupVideoCallSimple] 📥 Answer data: {fromUserId: 4, hasAnswer: true, answerType: 'answer', callId: 'group_call_1752489728775_38_3'}
+GroupVideoCallSimple.tsx:354 [GroupVideoCallSimple] 🔗 Peer connection state before setting remote description: {connectionState: 'connected', iceConnectionState: 'connected', signalingState: 'stable'}
+GroupVideoCallSimple.tsx:373 [GroupVideoCallSimple] ❌ Error processing WebRTC answer from user 4 : InvalidStateError: Failed to execute 'setRemoteDescription' on 'RTCPeerConnection': Failed to set remote answer sdp: Called in wrong state: stable
+handleIncomingWebRTCAnswer @ GroupVideoCallSimple.tsx:373
+await in handleIncomingWebRTCAnswer
+handleGroupWebRTCAnswer @ GroupVideoCallSimple.tsx:183
+websocket.onmessage @ CallContext.tsx:849Understand this error
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_offer', payload: {…}}
+CallContext.tsx:841 [CallContext] Forwarding group WebRTC offer: {callId: 'group_call_1752489728775_38_3', offer: {…}, fromUserId: 4}
+GroupVideoCallSimple.tsx:175 [GroupVideoCallSimple] Received group WebRTC offer: {callId: 'group_call_1752489728775_38_3', offer: {…}, fromUserId: 4}
+GroupVideoCallSimple.tsx:225 [GroupVideoCallSimple] 📥 PROCESSING WEBRTC OFFER from user: 4
+GroupVideoCallSimple.tsx:226 [GroupVideoCallSimple] 📥 Offer data: {fromUserId: 4, hasOffer: true, offerType: 'offer', callId: 'group_call_1752489728775_38_3'}
+GroupVideoCallSimple.tsx:271 [GroupVideoCallSimple] 📊 Current senders before answer for user 4: 2
+GroupVideoCallSimple.tsx:284 [GroupVideoCallSimple] ℹ️ Tracks already added for answer to user 4
+GroupVideoCallSimple.tsx:290 [GroupVideoCallSimple] 🔗 Peer connection state before setting remote description: {connectionState: 'connected', iceConnectionState: 'connected', signalingState: 'stable'}
+GroupVideoCallSimple.tsx:297 [GroupVideoCallSimple] ✅ Set remote description for offer from user: 4
+GroupVideoCallSimple.tsx:305 [GroupVideoCallSimple] ✅ Created and set local answer for user: 4
+GroupVideoCallSimple.tsx:306 [GroupVideoCallSimple] 📤 Answer details: {type: 'answer', hasAnswer: true}
+GroupVideoCallSimple.tsx:322 [GroupVideoCallSimple] 📤 Sent WebRTC answer to user: 4
+GroupVideoCallSimple.tsx:327 [GroupVideoCallSimple] 🔗 Peer connection state after answer: {connectionState: 'connected', iceConnectionState: 'connected', signalingState: 'stable'}

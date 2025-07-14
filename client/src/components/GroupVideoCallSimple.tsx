@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Mic, MicOff, Video, VideoOff, Phone, Camera } from 'lucide-react';
 import { useCall } from '@/hooks/useCall';
@@ -851,32 +851,41 @@ function ParticipantVideo({ participant }: {
     videoRef: React.RefObject<HTMLVideoElement>;
   }
 }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
   const [hasVideo, setHasVideo] = useState(false);
+  const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
+
+  // Callback ref untuk memastikan video element terdaftar
+  const videoCallbackRef = useCallback((node: HTMLVideoElement | null) => {
+    setVideoElement(node);
+    if (participant.videoRef) {
+      (participant.videoRef as any).current = node;
+    }
+  }, [participant.videoRef]);
 
   useEffect(() => {
     console.log(`[ParticipantVideo] Effect triggered for ${participant.userName}:`, {
-      hasVideoRef: !!videoRef.current,
+      hasVideoElement: !!videoElement,
       hasStream: !!participant.stream,
       streamId: participant.stream?.id,
       streamActive: participant.stream?.active
     });
     
-    if (videoRef.current && participant.stream) {
+    if (videoElement && participant.stream) {
       console.log(`[ParticipantVideo] Attaching stream for ${participant.userName}`);
-      videoRef.current.srcObject = participant.stream;
+      videoElement.srcObject = participant.stream;
       
-      videoRef.current.play()
+      videoElement.play()
         .then(() => {
           console.log(`[ParticipantVideo] ✅ Video playing successfully for ${participant.userName}`);
+          setHasVideo(true);
         })
         .catch(error => {
           console.warn(`[ParticipantVideo] ❌ Video play failed for ${participant.userName}:`, error);
+          setHasVideo(false);
         });
       
       const videoTracks = participant.stream.getVideoTracks();
       const hasVideoEnabled = videoTracks.length > 0 && videoTracks[0].enabled;
-      setHasVideo(hasVideoEnabled);
       
       console.log(`[ParticipantVideo] Stream details for ${participant.userName}:`, {
         streamId: participant.stream.id,
@@ -887,19 +896,21 @@ function ParticipantVideo({ participant }: {
         hasVideo: hasVideoEnabled
       });
     } else {
-      console.log(`[ParticipantVideo] No stream or video ref for ${participant.userName}`);
+      console.log(`[ParticipantVideo] No stream or video element for ${participant.userName}`);
       setHasVideo(false);
     }
-  }, [participant.stream, participant.userName]);
+  }, [participant.stream, participant.userName, videoElement]);
 
   return (
     <div className="relative bg-gray-800 rounded-lg overflow-hidden aspect-video">
-      {participant.stream && hasVideo ? (
+      {participant.stream ? (
         <video
-          ref={videoRef}
+          ref={videoCallbackRef}
           autoPlay
           playsInline
-          className="w-full h-full object-cover"
+          muted={false}
+          className="w-full h-full object-cover bg-black"
+          style={{ backgroundColor: '#000' }}
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center bg-gray-700">
@@ -910,13 +921,14 @@ function ParticipantVideo({ participant }: {
               </span>
             </div>
             <p className="text-sm">{participant.userName}</p>
-            {!hasVideo && <p className="text-xs text-gray-400 mt-1">Video Off</p>}
+            <p className="text-xs text-gray-400 mt-1">Connecting...</p>
           </div>
         </div>
       )}
       
       <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 px-2 py-1 rounded text-xs">
         {participant.userName}
+        {hasVideo && <span className="ml-1 text-green-400">●</span>}
       </div>
     </div>
   );
