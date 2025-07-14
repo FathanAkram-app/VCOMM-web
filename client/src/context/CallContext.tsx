@@ -3177,10 +3177,20 @@ export function CallProvider({ children }: { children: ReactNode }) {
         const [remoteStream] = event.streams;
         
         if (remoteStream) {
+          console.log('[CallContext] Remote stream details:', {
+            id: remoteStream.id,
+            active: remoteStream.active,
+            audioTracks: remoteStream.getAudioTracks().length,
+            videoTracks: remoteStream.getVideoTracks().length
+          });
+          
           setActiveCall(prev => {
             if (prev?.isGroupCall) {
               const newRemoteStreams = new Map(prev.remoteStreams);
-              newRemoteStreams.set(Date.now(), remoteStream);
+              // Use stream ID as key for better tracking
+              newRemoteStreams.set(remoteStream.id, remoteStream);
+              
+              console.log('[CallContext] Updated remote streams:', Array.from(newRemoteStreams.keys()));
               return { ...prev, remoteStreams: newRemoteStreams };
             }
             return prev;

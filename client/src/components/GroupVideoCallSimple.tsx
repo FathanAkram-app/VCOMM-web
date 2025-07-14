@@ -116,21 +116,26 @@ export default function GroupVideoCallSimple() {
     if (activeCall?.participants && currentUser) {
       console.log('[GroupVideoCallSimple] Updating participants:', activeCall.participants);
       console.log('[GroupVideoCallSimple] Current user ID:', currentUser.id);
+      console.log('[GroupVideoCallSimple] Available remote streams:', activeCall.remoteStreams);
+      
+      // Get remote streams as array
+      const remoteStreamsArray = activeCall.remoteStreams ? Array.from(activeCall.remoteStreams.values()) : [];
+      console.log('[GroupVideoCallSimple] Remote streams array:', remoteStreamsArray);
       
       // Filter out current user from participants to avoid duplication
       const newParticipants = activeCall.participants
         .filter(p => p.userId !== currentUser.id) // Filter out current user
-        .map(p => ({
+        .map((p, index) => ({
           userId: p.userId,
           userName: p.userName,
-          stream: p.stream,
+          stream: remoteStreamsArray[index] || null, // Assign remote streams to participants
           videoRef: React.createRef<HTMLVideoElement>()
         }));
       
       console.log('[GroupVideoCallSimple] Filtered participants (excluding self):', newParticipants);
       setParticipants(newParticipants);
     }
-  }, [activeCall?.participants, currentUser]);
+  }, [activeCall?.participants, activeCall?.remoteStreams, currentUser]);
 
   // Handle video toggle
   const handleVideoToggle = () => {
@@ -295,20 +300,42 @@ function ParticipantVideo({ participant }: {
   const [hasVideo, setHasVideo] = useState(false);
 
   useEffect(() => {
+    console.log(`[ParticipantVideo] Effect triggered for ${participant.userName}:`, {
+      hasVideoRef: !!videoRef.current,
+      hasStream: !!participant.stream,
+      streamId: participant.stream?.id,
+      streamActive: participant.stream?.active
+    });
+    
     if (videoRef.current && participant.stream) {
+      console.log(`[ParticipantVideo] Attaching stream for ${participant.userName}`);
       videoRef.current.srcObject = participant.stream;
-      videoRef.current.play().catch(console.warn);
+      
+      videoRef.current.play()
+        .then(() => {
+          console.log(`[ParticipantVideo] ✅ Video playing successfully for ${participant.userName}`);
+        })
+        .catch(error => {
+          console.warn(`[ParticipantVideo] ❌ Video play failed for ${participant.userName}:`, error);
+        });
       
       const videoTracks = participant.stream.getVideoTracks();
-      setHasVideo(videoTracks.length > 0 && videoTracks[0].enabled);
+      const hasVideoEnabled = videoTracks.length > 0 && videoTracks[0].enabled;
+      setHasVideo(hasVideoEnabled);
       
-      console.log(`[ParticipantVideo] Stream attached for ${participant.userName}:`, {
+      console.log(`[ParticipantVideo] Stream details for ${participant.userName}:`, {
         streamId: participant.stream.id,
+        active: participant.stream.active,
         videoTracks: videoTracks.length,
-        videoEnabled: videoTracks[0]?.enabled
+        audioTracks: participant.stream.getAudioTracks().length,
+        videoEnabled: videoTracks[0]?.enabled,
+        hasVideo: hasVideoEnabled
       });
+    } else {
+      console.log(`[ParticipantVideo] No stream or video ref for ${participant.userName}`);
+      setHasVideo(false);
     }
-  }, [participant.stream]);
+  }, [participant.stream, participant.userName]);
 
   return (
     <div className="relative bg-gray-800 rounded-lg overflow-hidden aspect-video">
