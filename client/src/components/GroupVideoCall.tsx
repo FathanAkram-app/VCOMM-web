@@ -432,16 +432,17 @@ export default function GroupVideoCall() {
           
           setLocalStream(existingStream);
           
-          // Check if video track exists (audio-first approach may not have video initially)
+          // Check if video track exists and enable it for group calls
           const videoTrack = existingStream.getVideoTracks()[0];
           if (videoTrack) {
-            // Don't force enable - let user control manually
-            setIsVideoEnabled(videoTrack.enabled);
-            console.log('[GroupVideoCall] Video track available, current state:', videoTrack.enabled);
+            // Enable video by default for group calls
+            videoTrack.enabled = true;
+            setIsVideoEnabled(true);
+            console.log('[GroupVideoCall] Video track enabled from start for group calls');
           } else {
-            // No video track available (audio-first)
+            // No video track available - still enable the UI state
             setIsVideoEnabled(false);
-            console.log('[GroupVideoCall] No video track - audio-first mode');
+            console.log('[GroupVideoCall] No video track available');
           }
           
           // Attach stream to video element
@@ -467,7 +468,10 @@ export default function GroupVideoCall() {
         const videoTrack = stream.getVideoTracks()[0];
         if (videoTrack) {
           videoTrack.enabled = true;
+          setIsVideoEnabled(true);
           console.log('[GroupVideoCall] Video track enabled by default for group calls');
+        } else {
+          setIsVideoEnabled(false);
         }
         
         setLocalStream(stream);
@@ -538,14 +542,15 @@ export default function GroupVideoCall() {
       
       localVideoRef.current.srcObject = localStream;
       
-      // Set initial video state based on track availability (audio-first approach)
+      // Set initial video state - enable video by default for group calls
       const videoTrack = localStream.getVideoTracks()[0];
       if (videoTrack) {
-        setIsVideoEnabled(videoTrack.enabled);
-        console.log('[GroupVideoCall] Video track state:', videoTrack.enabled);
+        videoTrack.enabled = true; // Force enable video for group calls
+        setIsVideoEnabled(true);
+        console.log('[GroupVideoCall] Video track enabled from start for group calls');
       } else {
         setIsVideoEnabled(false);
-        console.log('[GroupVideoCall] No video track - audio-only mode');
+        console.log('[GroupVideoCall] No video track available');
       }
       
       // Force play local video

@@ -3026,7 +3026,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         throw new Error('Media devices not supported');
       }
 
-      // Audio-first approach for better connection stability - video enabled manually later
+      // Full audio and video enabled from start for group calls
       const constraints = {
         audio: {
           echoCancellation: true,
@@ -3035,12 +3035,17 @@ export function CallProvider({ children }: { children: ReactNode }) {
           sampleRate: 48000,
           channelCount: 1
         },
-        video: false // Start with audio only for stability
+        video: {
+          width: { ideal: 640, max: 1280 },
+          height: { ideal: 480, max: 720 },
+          frameRate: { ideal: 24, max: 30 },
+          facingMode: 'user' // Front camera for group calls
+        }
       };
 
-      console.log('[CallContext] Requesting media permissions for group call (audio-first approach)...');
+      console.log('[CallContext] Requesting full media permissions for group call (audio + video enabled)...');
       const localStream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log('[CallContext] Got audio stream for group call - video disabled for now');
+      console.log('[CallContext] Got audio and video stream for group call - full media enabled from start');
 
       const callId = `group_call_${Date.now()}_${groupId}_${user.id}`;
 
