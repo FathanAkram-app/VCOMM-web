@@ -146,18 +146,6 @@ export default function Chat() {
   const handleImageSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Cek ukuran file (10MB = 10 * 1024 * 1024 bytes)
-      const maxSize = 10 * 1024 * 1024;
-      if (file.size > maxSize) {
-        toast({
-          title: "File terlalu besar!",
-          description: `Maksimal 10MB. File Anda: ${(file.size / (1024 * 1024)).toFixed(2)}MB`,
-          variant: "destructive",
-        });
-        event.target.value = ''; // Reset input
-        return;
-      }
-      
       // Cek tipe file untuk gambar
       const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
       if (!allowedImageTypes.includes(file.type)) {
@@ -2177,7 +2165,7 @@ export default function Chat() {
                 accept="image/*"
                 onChange={handleImageSelect}
                 className="hidden"
-                title="Maksimal 10MB - Gambar (JPEG, PNG, GIF, WebP)"
+                title="Gambar (JPEG, PNG, GIF, WebP) - File akan dikompres otomatis"
               />
               
               {imagePreview && (

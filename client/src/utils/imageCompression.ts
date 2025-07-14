@@ -30,12 +30,14 @@ export const compressImage = async (file: File, maxSizeMB: number = 1): Promise<
 };
 
 export const shouldCompressImage = (file: File): boolean => {
-  const maxSize = 1 * 1024 * 1024; // 1MB
+  // Always compress images larger than 500KB to optimize storage and transfer
+  const maxSize = 500 * 1024; // 500KB
   return file.size > maxSize && file.type.startsWith('image/');
 };
 
 export const shouldCompressVideo = (file: File): boolean => {
-  const maxSize = 20 * 1024 * 1024; // 20MB
+  // Always compress videos larger than 5MB
+  const maxSize = 5 * 1024 * 1024; // 5MB
   return file.size > maxSize && file.type.startsWith('video/');
 };
 
@@ -43,7 +45,7 @@ export const shouldCompressVideo = (file: File): boolean => {
 // We'll handle video compression on the server side only
 export const getCompressionMessage = (file: File): string => {
   if (shouldCompressImage(file)) {
-    return `Gambar ${(file.size / (1024 * 1024)).toFixed(2)}MB akan dikompres menjadi 1MB`;
+    return `Gambar ${(file.size / (1024 * 1024)).toFixed(2)}MB akan dikompres untuk kualitas optimal`;
   } else if (shouldCompressVideo(file)) {
     return `Video ${(file.size / (1024 * 1024)).toFixed(2)}MB akan dikompres di server`;
   }

@@ -23,27 +23,6 @@ export default function AttachmentUploader({ onFileUploaded }: AttachmentUploade
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
       
-      // Validasi ukuran file berdasarkan tipe
-      let maxSize = 10 * 1024 * 1024; // Default 10MB
-      let maxSizeText = "10MB";
-      
-      if (file.type.startsWith('video/')) {
-        maxSize = 100 * 1024 * 1024; // 100MB untuk video
-        maxSizeText = "100MB";
-      } else if (file.type.startsWith('audio/')) {
-        maxSize = 20 * 1024 * 1024; // 20MB untuk audio
-        maxSizeText = "20MB";
-      }
-      
-      if (file.size > maxSize) {
-        toast({
-          variant: "destructive",
-          title: "File terlalu besar",
-          description: `Ukuran file maksimum ${maxSizeText}`
-        });
-        return;
-      }
-      
       let finalFile = file;
       
       // Handle compression
