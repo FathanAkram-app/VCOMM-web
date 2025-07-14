@@ -64,10 +64,8 @@ export default function AdminComplete() {
   // User Management Mutations
   const updateUserRole = useMutation({
     mutationFn: async ({ id, role }: { id: number; role: string }) => {
-      return apiRequest(`/api/admin/users/${id}/role`, {
-        method: 'PUT',
-        body: { role }
-      });
+      const response = await apiRequest('PUT', `/api/admin/users/${id}/role`, { role });
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
@@ -89,10 +87,8 @@ export default function AdminComplete() {
 
   const updateUserStatus = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
-      return apiRequest(`/api/admin/users/${id}/status`, {
-        method: 'PUT',
-        body: { status }
-      });
+      const response = await apiRequest('PUT', `/api/admin/users/${id}/status`, { status });
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
@@ -114,9 +110,8 @@ export default function AdminComplete() {
 
   const deleteUser = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest(`/api/admin/users/${id}`, {
-        method: 'DELETE'
-      });
+      const response = await apiRequest('DELETE', `/api/admin/users/${id}`);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
@@ -139,10 +134,8 @@ export default function AdminComplete() {
   // Config Management Mutations
   const updateConfig = useMutation({
     mutationFn: async ({ id, configValue }: { id: number; configValue: string }) => {
-      return apiRequest(`/api/admin/config/${id}`, {
-        method: 'PUT',
-        body: { configValue }
-      });
+      const response = await apiRequest('PUT', `/api/admin/config/${id}`, { configValue });
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/config'] });
@@ -156,10 +149,8 @@ export default function AdminComplete() {
   // Ranks Management Mutations
   const createRank = useMutation({
     mutationFn: async (rankData: any) => {
-      return apiRequest('/api/admin/ranks', {
-        method: 'POST',
-        body: rankData
-      });
+      const response = await apiRequest('POST', '/api/admin/ranks', rankData);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/ranks'] });
@@ -173,10 +164,8 @@ export default function AdminComplete() {
 
   const updateRank = useMutation({
     mutationFn: async ({ id, ...data }: any) => {
-      return apiRequest(`/api/admin/ranks/${id}`, {
-        method: 'PUT',
-        body: data
-      });
+      const response = await apiRequest('PUT', `/api/admin/ranks/${id}`, data);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/ranks'] });
@@ -189,9 +178,8 @@ export default function AdminComplete() {
 
   const deleteRank = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest(`/api/admin/ranks/${id}`, {
-        method: 'DELETE'
-      });
+      const response = await apiRequest('DELETE', `/api/admin/ranks/${id}`);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/ranks'] });
@@ -205,10 +193,8 @@ export default function AdminComplete() {
   // Branches Management Mutations
   const createBranch = useMutation({
     mutationFn: async (branchData: any) => {
-      return apiRequest('/api/admin/branches', {
-        method: 'POST',
-        body: branchData
-      });
+      const response = await apiRequest('POST', '/api/admin/branches', branchData);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/branches'] });
@@ -222,10 +208,8 @@ export default function AdminComplete() {
 
   const updateBranch = useMutation({
     mutationFn: async ({ id, ...data }: any) => {
-      return apiRequest(`/api/admin/branches/${id}`, {
-        method: 'PUT',
-        body: data
-      });
+      const response = await apiRequest('PUT', `/api/admin/branches/${id}`, data);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/branches'] });
@@ -238,9 +222,8 @@ export default function AdminComplete() {
 
   const deleteBranch = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest(`/api/admin/branches/${id}`, {
-        method: 'DELETE'
-      });
+      const response = await apiRequest('DELETE', `/api/admin/branches/${id}`);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/branches'] });
