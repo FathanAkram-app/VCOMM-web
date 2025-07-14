@@ -278,24 +278,24 @@ export default function MessageAttachment({
               </div>
               
               {/* Download button for audio files */}
-              <div className="flex items-center justify-between p-2 bg-[#2a2a2a] rounded-md">
-                <div className="flex items-center">
-                  <Music className="h-4 w-4 text-purple-500 mr-2" />
-                  <div>
-                    <div className="text-sm font-medium text-white truncate">
-                      {attachmentName}
-                    </div>
-                    {attachmentSize && (
-                      <div className="text-xs text-gray-400">
-                        {formatFileSize(attachmentSize)}
-                      </div>
-                    )}
+              <div className="flex items-center p-2 bg-[#2a2a2a] rounded-md gap-2">
+                <div className="flex-shrink-0">
+                  <Music className="h-4 w-4 text-purple-500" />
+                </div>
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  <div className="text-sm font-medium text-white truncate" title={attachmentName}>
+                    {attachmentName}
                   </div>
+                  {attachmentSize && (
+                    <div className="text-xs text-gray-400">
+                      {formatFileSize(attachmentSize)}
+                    </div>
+                  )}
                 </div>
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-8 w-8 p-0 text-[#8ba742] hover:bg-[#333333] flex-shrink-0"
+                  className="h-8 w-8 p-0 text-[#8ba742] hover:bg-[#333333] flex-shrink-0 ml-2"
                   onClick={() => {
                     const link = document.createElement('a');
                     link.href = attachmentUrl;
@@ -313,12 +313,12 @@ export default function MessageAttachment({
       default:
         return (
           <div className="mb-1">
-            <div className="flex items-center p-3 bg-[#222222] rounded-lg border border-gray-600">
-              <div className="mr-3">
+            <div className="flex items-center p-3 bg-[#222222] rounded-lg border border-gray-600 gap-3">
+              <div className="flex-shrink-0">
                 {getFileIcon()}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-white truncate">
+              <div className="flex-1 min-w-0 overflow-hidden">
+                <div className="text-sm font-medium text-white truncate" title={attachmentName}>
                   {attachmentName}
                 </div>
                 {attachmentSize && (
@@ -330,7 +330,7 @@ export default function MessageAttachment({
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-8 w-8 p-0 text-[#8ba742] hover:bg-[#333333] flex-shrink-0"
+                className="h-8 w-8 p-0 text-[#8ba742] hover:bg-[#333333] flex-shrink-0 ml-2"
                 onClick={() => {
                   const link = document.createElement('a');
                   link.href = attachmentUrl;
@@ -353,12 +353,12 @@ export default function MessageAttachment({
       
       {/* File info and download button - always visible for all file types */}
       {attachmentType !== 'audio' && (
-        <div className="flex items-center p-2 bg-[#202020] rounded-md mb-1 mt-1">
-          <div className="mr-2">
+        <div className="flex items-center p-2 bg-[#202020] rounded-md mb-1 mt-1 gap-2">
+          <div className="flex-shrink-0">
             {getFileIcon()}
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium text-white truncate">
+          <div className="flex-1 min-w-0 overflow-hidden">
+            <div className="text-sm font-medium text-white truncate" title={attachmentName}>
               {attachmentName}
             </div>
             {attachmentSize && (
@@ -370,7 +370,7 @@ export default function MessageAttachment({
           <Button
             size="sm"
             variant="ghost"
-            className="h-8 w-8 p-0 text-[#8ba742] hover:bg-[#333333] flex-shrink-0"
+            className="h-8 w-8 p-0 text-[#8ba742] hover:bg-[#333333] flex-shrink-0 ml-2"
             onClick={() => {
               const link = document.createElement('a');
               link.href = attachmentUrl;
