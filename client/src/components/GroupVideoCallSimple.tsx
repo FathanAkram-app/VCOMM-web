@@ -134,14 +134,33 @@ export default function GroupVideoCallSimple() {
       // Filter out current user from participants to avoid duplication
       const newParticipants = activeCall.participants
         .filter(p => p.userId !== currentUser.id) // Filter out current user
-        .map((p) => ({
-          userId: p.userId,
-          userName: p.userName,
-          stream: remoteStreams.get(`user_${p.userId}`) || null, // Get stream berdasarkan user ID
-          videoRef: React.createRef<HTMLVideoElement>()
-        }));
+        .map((p) => {
+          const streamKey = `user_${p.userId}`;
+          const userStream = remoteStreams.get(streamKey);
+          
+          console.log(`[GroupVideoCallSimple] 🔍 Mapping participant ${p.userName} (${p.userId}):`, {
+            streamKey,
+            hasStream: !!userStream,
+            streamId: userStream?.id,
+            streamActive: userStream?.active,
+            videoTracks: userStream?.getVideoTracks().length || 0,
+            audioTracks: userStream?.getAudioTracks().length || 0
+          });
+          
+          return {
+            userId: p.userId,
+            userName: p.userName,
+            stream: userStream || null,
+            videoRef: React.createRef<HTMLVideoElement>()
+          };
+        });
       
-      console.log('[GroupVideoCallSimple] Filtered participants (excluding self):', newParticipants);
+      console.log('[GroupVideoCallSimple] 📋 Final participants list:', newParticipants.map(p => ({
+        userName: p.userName,
+        userId: p.userId,
+        hasStream: !!p.stream
+      })));
+      
       setParticipants(newParticipants);
     }
   }, [activeCall?.participants, remoteStreams, currentUser]);
@@ -199,29 +218,35 @@ export default function GroupVideoCallSimple() {
 
   // WebRTC Handler Functions (Updated for multiple peer connections)
   const handleIncomingWebRTCOffer = async (offerData: any) => {
-    console.log('[GroupVideoCallSimple] Processing WebRTC offer from user:', offerData.fromUserId);
+    console.log('[GroupVideoCallSimple] 📥 PROCESSING WEBRTC OFFER from user:', offerData.fromUserId);
+    console.log('[GroupVideoCallSimple] 📥 Offer data:', {
+      fromUserId: offerData.fromUserId,
+      hasOffer: !!offerData.offer,
+      offerType: offerData.offer?.type,
+      callId: offerData.callId
+    });
     
     if (!currentUser) {
-      console.log('[GroupVideoCallSimple] No current user available');
+      console.log('[GroupVideoCallSimple] ❌ No current user available');
       return;
     }
 
     // Wait for local stream if not ready yet
     if (!localStream) {
-      console.log('[GroupVideoCallSimple] Local stream not ready, initializing...');
+      console.log('[GroupVideoCallSimple] ⚠️ Local stream not ready, initializing...');
       try {
         await initializeMediaStream();
         // Give a moment for the stream to be set
         await new Promise(resolve => setTimeout(resolve, 500));
       } catch (error) {
-        console.error('[GroupVideoCallSimple] Failed to initialize media for incoming offer:', error);
+        console.error('[GroupVideoCallSimple] ❌ Failed to initialize media for incoming offer:', error);
         return;
       }
     }
 
     // Double-check localStream is now available
     if (!localStream) {
-      console.log('[GroupVideoCallSimple] Still no local stream available after initialization');
+      console.log('[GroupVideoCallSimple] ❌ Still no local stream available after initialization');
       return;
     }
 
@@ -229,13 +254,23 @@ export default function GroupVideoCallSimple() {
       // Get or create dedicated peer connection untuk user ini
       const pc = getOrCreatePeerConnection(offerData.fromUserId);
       
+      console.log('[GroupVideoCallSimple] 🔗 Peer connection state before setting remote description:', {
+        connectionState: pc.connectionState,
+        iceConnectionState: pc.iceConnectionState,
+        signalingState: pc.signalingState
+      });
+      
       await pc.setRemoteDescription(new RTCSessionDescription(offerData.offer));
-      console.log('[GroupVideoCallSimple] Set remote description for offer from user:', offerData.fromUserId);
+      console.log('[GroupVideoCallSimple] ✅ Set remote description for offer from user:', offerData.fromUserId);
 
       // Create answer
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
-      console.log('[GroupVideoCallSimple] Created and set local answer for user:', offerData.fromUserId);
+      console.log('[GroupVideoCallSimple] ✅ Created and set local answer for user:', offerData.fromUserId);
+      console.log('[GroupVideoCallSimple] 📤 Answer details:', {
+        type: answer.type,
+        hasAnswer: !!answer.sdp
+      });
 
       // Send answer via WebSocket
       if (ws && ws.readyState === WebSocket.OPEN) {
@@ -248,28 +283,55 @@ export default function GroupVideoCallSimple() {
             targetUserId: offerData.fromUserId
           }
         }));
-        console.log('[GroupVideoCallSimple] Sent WebRTC answer to user:', offerData.fromUserId);
+        console.log('[GroupVideoCallSimple] 📤 Sent WebRTC answer to user:', offerData.fromUserId);
+      } else {
+        console.log('[GroupVideoCallSimple] ❌ WebSocket not ready to send answer');
       }
+      
+      console.log('[GroupVideoCallSimple] 🔗 Peer connection state after answer:', {
+        connectionState: pc.connectionState,
+        iceConnectionState: pc.iceConnectionState,
+        signalingState: pc.signalingState
+      });
     } catch (error) {
-      console.error('[GroupVideoCallSimple] Error processing WebRTC offer from user', offerData.fromUserId, ':', error);
+      console.error('[GroupVideoCallSimple] ❌ Error processing WebRTC offer from user', offerData.fromUserId, ':', error);
     }
   };
 
   const handleIncomingWebRTCAnswer = async (answerData: any) => {
-    console.log('[GroupVideoCallSimple] Processing WebRTC answer from user:', answerData.fromUserId);
+    console.log('[GroupVideoCallSimple] 📥 PROCESSING WEBRTC ANSWER from user:', answerData.fromUserId);
+    console.log('[GroupVideoCallSimple] 📥 Answer data:', {
+      fromUserId: answerData.fromUserId,
+      hasAnswer: !!answerData.answer,
+      answerType: answerData.answer?.type,
+      callId: answerData.callId
+    });
     
     // Get existing peer connection untuk user ini
     const pc = peerConnections.get(answerData.fromUserId);
     if (!pc) {
-      console.log('[GroupVideoCallSimple] No peer connection found for user:', answerData.fromUserId);
+      console.log('[GroupVideoCallSimple] ❌ No peer connection found for user:', answerData.fromUserId);
+      console.log('[GroupVideoCallSimple] 🔍 Available peer connections:', Array.from(peerConnections.keys()));
       return;
     }
 
+    console.log('[GroupVideoCallSimple] 🔗 Peer connection state before setting remote description:', {
+      connectionState: pc.connectionState,
+      iceConnectionState: pc.iceConnectionState,
+      signalingState: pc.signalingState
+    });
+
     try {
       await pc.setRemoteDescription(new RTCSessionDescription(answerData.answer));
-      console.log('[GroupVideoCallSimple] Set remote description for answer from user:', answerData.fromUserId);
+      console.log('[GroupVideoCallSimple] ✅ Set remote description for answer from user:', answerData.fromUserId);
+      
+      console.log('[GroupVideoCallSimple] 🔗 Peer connection state after answer:', {
+        connectionState: pc.connectionState,
+        iceConnectionState: pc.iceConnectionState,
+        signalingState: pc.signalingState
+      });
     } catch (error) {
-      console.error('[GroupVideoCallSimple] Error processing WebRTC answer from user', answerData.fromUserId, ':', error);
+      console.error('[GroupVideoCallSimple] ❌ Error processing WebRTC answer from user', answerData.fromUserId, ':', error);
     }
   };
 
@@ -304,21 +366,35 @@ export default function GroupVideoCallSimple() {
       
       // Setup ontrack event untuk menerima remote stream
       pc.ontrack = (event) => {
-        console.log('[GroupVideoCallSimple] 🎥 Received remote track from user', userId, ':', event.track.kind);
+        console.log('[GroupVideoCallSimple] 🎥 RECEIVED REMOTE TRACK from user', userId, ':', event.track.kind);
+        console.log('[GroupVideoCallSimple] 🎥 Event streams:', event.streams);
         
         const remoteStream = event.streams[0];
         if (remoteStream) {
-          console.log('[GroupVideoCallSimple] 📦 Storing remote stream for user', userId, ':', remoteStream.id);
+          console.log('[GroupVideoCallSimple] 📦 STORING REMOTE STREAM for user', userId, ':', {
+            streamId: remoteStream.id,
+            active: remoteStream.active,
+            videoTracks: remoteStream.getVideoTracks().length,
+            audioTracks: remoteStream.getAudioTracks().length
+          });
           
-          // Update remote streams state
+          // Update remote streams state dengan key yang konsisten
           setRemoteStreams(prev => {
             const newMap = new Map(prev);
             newMap.set(`user_${userId}`, remoteStream);
+            console.log('[GroupVideoCallSimple] 📦 Updated remoteStreams map, total streams:', newMap.size);
             return newMap;
           });
           
-          // Force component re-render to update participant video
-          setParticipants(prevParticipants => [...prevParticipants]);
+          // Force re-render dengan delay untuk memastikan state sudah update
+          setTimeout(() => {
+            setParticipants(prevParticipants => {
+              console.log('[GroupVideoCallSimple] 🔄 FORCE RE-RENDER participants for user', userId);
+              return [...prevParticipants];
+            });
+          }, 100);
+        } else {
+          console.log('[GroupVideoCallSimple] ❌ No remote stream in ontrack event for user', userId);
         }
       };
       
@@ -351,8 +427,21 @@ export default function GroupVideoCallSimple() {
       // Add local tracks to this peer connection
       if (localStream) {
         localStream.getTracks().forEach(track => {
-          pc!.addTrack(track, localStream);
-          console.log('[GroupVideoCallSimple] ✅ Added local track to peer connection for user', userId, ':', track.kind);
+          const sender = pc!.addTrack(track, localStream);
+          console.log('[GroupVideoCallSimple] ✅ Added local track to peer connection for user', userId, ':', {
+            trackKind: track.kind,
+            trackEnabled: track.enabled,
+            trackReadyState: track.readyState,
+            senderId: sender ? 'created' : 'failed'
+          });
+        });
+        
+        console.log('[GroupVideoCallSimple] 📊 Peer connection state for user', userId, ':', {
+          connectionState: pc.connectionState,
+          iceConnectionState: pc.iceConnectionState,
+          iceGatheringState: pc.iceGatheringState,
+          signalingState: pc.signalingState,
+          localTracks: localStream.getTracks().length
         });
       } else {
         console.log('[GroupVideoCallSimple] ⚠️ No local stream available when creating peer connection for user', userId);
