@@ -546,6 +546,13 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - ✅ ENHANCED: Login system to detect super admin role and redirect appropriately
   - ✅ SECURED: Role-based access control for super admin privileges
   - Super admin has complete administrative control without accessing regular chat interface
+- July 14, 2025: IncomingCallModal Reject Button Navigation Fix:
+  - ✅ FIXED: Reject/tolak button now properly redirects user back to chat page
+  - ✅ IMPLEMENTED: handleRejectCall function with navigation using wouter useLocation
+  - ✅ ENHANCED: Proper call rejection followed by automatic redirect to home/chat page
+  - ✅ IMPROVED: User experience when declining calls - no longer stuck on call page
+  - ✅ ADDED: Small delay (100ms) to ensure call rejection completes before navigation
+  - User now seamlessly returns to chat interface after rejecting incoming calls
 - July 14, 2025: Complete CMS Dashboard Implementation:
   - ✅ IMPLEMENTED: Full-featured AdminComplete.tsx with 6 comprehensive dashboard sections
   - ✅ CREATED: Dashboard - Real-time statistics (online users, messages today, calls today, conversations)

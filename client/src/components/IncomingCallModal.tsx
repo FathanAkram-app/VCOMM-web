@@ -1,10 +1,12 @@
 import { useCall } from "../hooks/useCall";
 import { Phone, PhoneOff, Video, VideoOff, Users } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function IncomingCallModal() {
   console.log("[IncomingCallModal] 🔥 COMPONENT RENDERED - START");
   
   const { incomingCall, acceptCall, rejectCall } = useCall();
+  const [, setLocation] = useLocation();
   
   console.log("[IncomingCallModal] 🔥 After useCall hook - incomingCall:", incomingCall);
   console.log("[IncomingCallModal] 🔥 incomingCall type check:", typeof incomingCall);
@@ -25,6 +27,17 @@ export default function IncomingCallModal() {
 
   const isGroupCall = incomingCall.isGroupCall;
   const isVideoCall = incomingCall.callType === 'video';
+
+  // Handle reject with navigation back to chat
+  const handleRejectCall = () => {
+    console.log("[IncomingCallModal] 🚫 Rejecting call and redirecting to chat");
+    rejectCall();
+    
+    // Navigate back to chat page after rejecting call
+    setTimeout(() => {
+      setLocation('/');
+    }, 100); // Small delay to ensure reject call is processed first
+  };
   
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm">
@@ -77,7 +90,7 @@ export default function IncomingCallModal() {
           
           {/* Reject Button */}
           <button 
-            onClick={rejectCall}
+            onClick={handleRejectCall}
             className="bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-full font-bold transition-all duration-200 transform hover:scale-105 flex items-center gap-2 shadow-lg"
           >
             <PhoneOff className="h-5 w-5" />
