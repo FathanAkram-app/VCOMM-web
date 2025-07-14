@@ -2300,6 +2300,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }));
           }
         }
+
+        // Handle request for group participants (for initiator)
+        if (data.type === 'request_group_participants' && ws.userId) {
+          const { callId, groupId, userId } = data.payload;
+          console.log(`[Group Call] User ${userId} requesting participants for group call ${callId}`);
+          
+          try {
+            // Get group members
+            const members = await storage.getConversationMembers(groupId);
+            const onlineParticipants = [];
+            
+            for (const member of members) {
+              if (member.userId !== userId && clients.has(member.userId)) {
+                onlineParticipants.push(member.userId);
+              }
+            }
+            
+            console.log(`[Group Call] Found ${onlineParticipants.length} online participants for group ${groupId}`);
+            
+            // Send participants update to requestor
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({
+                type: 'group_call_participants_update',
+                payload: {
+                  callId,
+                  participants: onlineParticipants,
+                  requestedBy: userId
+                }
+              }));
+              console.log(`[Group Call] Sent participants update to user ${userId}:`, onlineParticipants);
+            }
+          } catch (error) {
+            console.error(`[Group Call] Error getting group participants:`, error);
+          }
+        }
       } catch (error) {
         console.error('WebSocket message error:', error);
       }

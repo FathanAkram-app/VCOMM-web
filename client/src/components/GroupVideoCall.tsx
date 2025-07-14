@@ -525,6 +525,12 @@ export default function GroupVideoCall() {
       }
       if (!localStream) {
         console.log('[GroupVideoCall] ⚠️ No local stream available');
+      
+      // Try to get stream from activeCall as fallback
+      if (activeCall?.localStream) {
+        setLocalStream(activeCall.localStream);
+        console.log('[GroupVideoCall] ✅ Recovered local stream from activeCall');
+      }
       }
     }
   }, [localStream]);
@@ -951,6 +957,29 @@ export default function GroupVideoCall() {
         hasActiveCall: !!activeCall?.callId,
         hasUser: !!user?.id
       });
+      
+      // Force initiate WebRTC for group call initiator when no participants yet
+      if (activeCall && user && (localStream || activeCall?.localStream) && participants.length === 0) {
+        console.log('[GroupVideoCall] 🚀 Force-initiating WebRTC for group call initiator');
+        setTimeout(() => {
+          if (activeCall && !activeCall.isIncoming) {
+            console.log('[GroupVideoCall] 🔥 Triggering participant detection for initiator');
+            // Trigger server to send participant updates
+            const ws = (window as any).__callWebSocket;
+            if (ws?.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({
+                type: 'request_group_participants',
+                payload: {
+                  callId: activeCall.callId,
+                  groupId: activeCall.groupId,
+                  userId: user.id
+                }
+              }));
+              console.log('[GroupVideoCall] 📡 Requested group participants from server');
+            }
+          }
+        }, 2000);
+      }
     }
   }, [participants.length, localStream, activeCall?.callId, user?.id]);
 
@@ -974,11 +1003,22 @@ export default function GroupVideoCall() {
         return;
       }
       
-      // Try to get local stream from multiple sources
-      const availableStream = localStream || activeCall?.localStream;
+      // Try to get local stream from multiple sources with aggressive fallback
+      let availableStream = localStream || activeCall?.localStream;
+      
+      // If no stream available, request new one
       if (!availableStream) {
-        console.log('[GroupVideoCall] ❌ No local stream available from either localStream or activeCall, cannot process offer from user:', fromUserId);
-        return;
+        console.log('[GroupVideoCall] ❌ No local stream available, requesting new stream for offer processing');
+        try {
+          availableStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user' },
+            audio: true
+          });
+          console.log('[GroupVideoCall] ✅ Created new local stream for offer processing');
+        } catch (error) {
+          console.error('[GroupVideoCall] ❌ Failed to get local stream:', error);
+          return;
+        }
       }
       
       console.log('[GroupVideoCall] ✅ Using stream for WebRTC offer processing:', {
