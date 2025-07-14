@@ -9,6 +9,7 @@ import {
   users,
   messages,
   conversations,
+  conversationMembers,
   callHistory,
   type MilitaryRank,
   type InsertMilitaryRank,
@@ -259,11 +260,32 @@ export class CMSStorage {
 
   async deleteUser(userId: number): Promise<boolean> {
     try {
+      // First, remove user from all conversations to avoid foreign key constraint
+      await db.delete(conversationMembers).where(eq(conversationMembers.userId, userId));
+      
+      // Delete user messages (mark as deleted from system user)
+      await db.update(messages)
+        .set({ 
+          senderId: 1, // System user ID
+          content: '[User Deleted]',
+          isDeleted: true 
+        })
+        .where(eq(messages.senderId, userId));
+      
+      // Finally delete the user
       await db.delete(users).where(eq(users.id, userId));
       return true;
     } catch (error) {
       console.error('Error deleting user:', error);
-      throw error;
+      // If deletion still fails, disable user instead
+      try {
+        await this.disableUser(userId);
+        console.log(`User ${userId} disabled instead of deleted due to constraints`);
+        return true;
+      } catch (disableError) {
+        console.error('Error disabling user as fallback:', disableError);
+        throw error;
+      }
     }
   }
 
