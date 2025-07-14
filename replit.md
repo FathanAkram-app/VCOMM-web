@@ -142,6 +142,14 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - New implementation provides stable video calling with both initiator and receiver having video enabled from start
   - Backend API working correctly with successful user authentication and WebSocket connections
   - Core group video call functionality verified working through server logs and user testing
+- July 14, 2025: GroupVideoCallSimple Critical Bug Fixes:
+  - ✅ FIXED: "React is not defined" error by adding proper React import
+  - ✅ FIXED: Participant duplication issue with currentUser.id filtering via useQuery
+  - ✅ ENHANCED: Video stream management with proper error handling
+  - ✅ IMPROVED: ParticipantVideo component with better stream attachment
+  - ✅ VERIFIED: Backend functionality fully operational - user authentication, WebSocket messaging, API responses all working
+  - ✅ CONFIRMED: Group call initiation, joining, and participant management working correctly on server side
+  - ISSUE: Frontend serving configuration needs attention for full UI functionality
 - June 25, 2025: Initial setup with local server deployment optimization
 - June 25, 2025: Added comprehensive local deployment guides:
   - LOCAL-DEPLOYMENT-GUIDE.md: Hardware specs and deployment strategy

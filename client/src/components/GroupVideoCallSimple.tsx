@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Mic, MicOff, Video, VideoOff, Phone, Camera } from 'lucide-react';
 import { useCall } from '@/hooks/useCall';
 import { useLocation } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
 
 /**
  * GroupVideoCallSimple - Sistem group video call yang bersih dan sederhana
@@ -104,13 +105,21 @@ export default function GroupVideoCallSimple() {
     }
   }, [localStream]);
 
+  // Get current user ID for filtering
+  const { data: currentUser } = useQuery({
+    queryKey: ['/api/auth/user'],
+    retry: false,
+  });
+
   // Update participants dari activeCall
   useEffect(() => {
-    if (activeCall?.participants) {
+    if (activeCall?.participants && currentUser) {
       console.log('[GroupVideoCallSimple] Updating participants:', activeCall.participants);
+      console.log('[GroupVideoCallSimple] Current user ID:', currentUser.id);
       
+      // Filter out current user from participants to avoid duplication
       const newParticipants = activeCall.participants
-        .filter(p => p.userId !== activeCall.groupId) // Filter out self
+        .filter(p => p.userId !== currentUser.id) // Filter out current user
         .map(p => ({
           userId: p.userId,
           userName: p.userName,
@@ -118,9 +127,10 @@ export default function GroupVideoCallSimple() {
           videoRef: React.createRef<HTMLVideoElement>()
         }));
       
+      console.log('[GroupVideoCallSimple] Filtered participants (excluding self):', newParticipants);
       setParticipants(newParticipants);
     }
-  }, [activeCall?.participants]);
+  }, [activeCall?.participants, currentUser]);
 
   // Handle video toggle
   const handleVideoToggle = () => {
