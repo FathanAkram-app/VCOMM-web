@@ -217,6 +217,15 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - ✅ VERIFIED: Real-time PWA status detection (installed vs available)
   - Install button provides direct installation when supported, manual guidance when needed
   - 🎯 STATUS: PWA Installation fully functional for mobile deployment
+- July 14, 2025: Call History System Enhancement and UI Cleanup:
+  - ✅ FIXED: Group call history visibility - now shows all calls (incoming/outgoing)
+  - ✅ ENHANCED: Call history query to include user-initiated calls alongside received calls
+  - ✅ IMPROVED: Status mapping for accurate call direction (incoming/outgoing/missed/rejected)
+  - ✅ ADDED: Specific date and time display (DD/MM/YYYY HH:MM format) instead of relative time
+  - ✅ FIXED: Scroll functionality in call history with proper padding and container height
+  - ✅ HIDDEN: Laporan Situasi (Lapsit) menu from navigation - commented out for future use
+  - Database shows 116+ call history entries working perfectly with filtering and timestamps
+  - Navigation now cleaner with 4 main sections: Chat, Calls, Personnel, Settings
 
 # User Preferences
 

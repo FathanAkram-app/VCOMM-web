@@ -1266,12 +1266,12 @@ export default function Chat() {
               <PhoneIcon className="h-6 w-6" />
             </button>
             
-            <button 
+            {/* <button 
               className={`p-3 rounded-lg ${activeView === 'lapsit' ? 'bg-[#2d3328] text-[#8d9c6b]' : 'text-gray-500 hover:bg-[#262626]'}`}
               onClick={handleShowLapsit}
             >
               <FileText className="h-6 w-6" />
-            </button>
+            </button> */}
             
             <button 
               className={`p-3 rounded-lg ${activeView === 'personnel' ? 'bg-[#2d3328] text-[#8d9c6b]' : 'text-gray-500 hover:bg-[#262626]'}`}
@@ -1316,12 +1316,12 @@ export default function Chat() {
             <PhoneIcon className="h-6 w-6" />
           </button>
           
-          <button 
+          {/* <button 
             className={`p-3 rounded-lg ${activeView === 'lapsit' ? 'text-[#8d9c6b]' : 'text-gray-500'}`}
             onClick={handleShowLapsit}
           >
             <FileText className="h-6 w-6" />
-          </button>
+          </button> */}
           
           <button 
             className={`p-3 rounded-lg ${activeView === 'personnel' ? 'text-[#8d9c6b]' : 'text-gray-500'}`}
