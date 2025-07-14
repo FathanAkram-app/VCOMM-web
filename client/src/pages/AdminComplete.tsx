@@ -72,6 +72,11 @@ export default function AdminComplete() {
     refetchInterval: 30000,
   });
 
+  // Check if Lapsit management should be shown
+  const lapsitManagementEnabled = configQuery.data?.find((config: any) => 
+    config.configKey === 'cms_lapsit_management_enabled'
+  )?.configValue === 'true';
+
   // User Management Mutations
   const updateUserRole = useMutation({
     mutationFn: async ({ id, role }: { id: number; role: string }) => {
@@ -297,7 +302,7 @@ export default function AdminComplete() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-7 bg-[#1a1a1a] border-[#333]">
+          <TabsList className={`grid w-full ${lapsitManagementEnabled ? 'grid-cols-7' : 'grid-cols-6'} bg-[#1a1a1a] border-[#333]`}>
             <TabsTrigger value="dashboard" className="data-[state=active]:bg-[#8d9c6b] data-[state=active]:text-black">
               <BarChart3 className="w-4 h-4 mr-2" />
               Dashboard
@@ -306,10 +311,12 @@ export default function AdminComplete() {
               <Users className="w-4 h-4 mr-2" />
               Users
             </TabsTrigger>
-            <TabsTrigger value="lapsit" className="data-[state=active]:bg-[#8d9c6b] data-[state=active]:text-black">
-              <FileText className="w-4 h-4 mr-2" />
-              Lapsit
-            </TabsTrigger>
+            {lapsitManagementEnabled && (
+              <TabsTrigger value="lapsit" className="data-[state=active]:bg-[#8d9c6b] data-[state=active]:text-black">
+                <FileText className="w-4 h-4 mr-2" />
+                Lapsit
+              </TabsTrigger>
+            )}
             <TabsTrigger value="config" className="data-[state=active]:bg-[#8d9c6b] data-[state=active]:text-black">
               <Settings className="w-4 h-4 mr-2" />
               Config
@@ -625,8 +632,9 @@ export default function AdminComplete() {
             </Card>
           </TabsContent>
 
-          {/* Lapsit Tab */}
-          <TabsContent value="lapsit" className="space-y-6">
+          {/* Lapsit Tab - Only show if enabled */}
+          {lapsitManagementEnabled && (
+            <TabsContent value="lapsit" className="space-y-6">
             <Card className="bg-[#1a1a1a] border-[#333]">
               <CardHeader>
                 <CardTitle className="text-[#8d9c6b] flex items-center justify-between">
@@ -759,6 +767,7 @@ export default function AdminComplete() {
               </CardContent>
             </Card>
           </TabsContent>
+          )}
 
           {/* Config Tab */}
           <TabsContent value="config" className="space-y-6">

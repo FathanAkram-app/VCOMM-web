@@ -345,6 +345,13 @@ export class CMSStorage {
         category: 'menu'
       },
       {
+        configKey: 'cms_lapsit_management_enabled',
+        configValue: 'true',
+        configDescription: 'Enable/disable Lapsit management tab in CMS dashboard',
+        configType: 'boolean',
+        category: 'cms'
+      },
+      {
         configKey: 'app_name',
         configValue: 'NXZZ-VComm',
         configDescription: 'Application name displayed in header',
@@ -370,20 +377,26 @@ export class CMSStorage {
 
   // Lapsit Management Functions
   async getAllLapsitReports(): Promise<any[]> {
-    return await db.select({
-      id: lapsitReports.id,
-      reporterId: lapsitReports.reporterId,
-      reporterName: users.callsign,
-      category: lapsitReports.category,
-      subcategory: lapsitReports.subcategory,
-      location: lapsitReports.location,
-      priority: lapsitReports.priority,
-      details: lapsitReports.details,
-      createdAt: lapsitReports.createdAt
-    })
-    .from(lapsitReports)
-    .leftJoin(users, eq(lapsitReports.reporterId, users.id))
-    .orderBy(desc(lapsitReports.createdAt));
+    try {
+      return await db.select({
+        id: lapsitReports.id,
+        reporterId: lapsitReports.reportedById,
+        reporterName: users.callsign,
+        category: lapsitReports.title,
+        subcategory: lapsitReports.status,
+        location: lapsitReports.location,
+        priority: lapsitReports.priority,
+        details: lapsitReports.content,
+        createdAt: lapsitReports.createdAt
+      })
+      .from(lapsitReports)
+      .leftJoin(users, eq(lapsitReports.reportedById, users.id))
+      .orderBy(desc(lapsitReports.createdAt));
+    } catch (error) {
+      console.error('Error fetching lapsit reports:', error);
+      // Return empty array if table doesn't exist or other error
+      return [];
+    }
   }
 }
 
