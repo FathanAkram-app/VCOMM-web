@@ -312,6 +312,13 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - ✅ IMPROVED: Sort algorithm handles chats without messages properly
   - ✅ OPTIMIZED: Newest conversations appear first, maintaining chronological order
   - ChatList now properly reflects message activity order in real-time
+- July 14, 2025: Mobile Camera Switch Investigation and Simplification:
+  - ✅ IDENTIFIED: HP with 4 cameras detects rear cameras but browser cannot access them
+  - ✅ IMPLEMENTED: Simplified strategy focusing on basic facingMode access instead of complex device enumeration
+  - ✅ ENHANCED: Better camera filtering to avoid false positive rear camera detection
+  - ✅ DIAGNOSED: Many mobile devices have hardware/OS restrictions preventing browser access to rear cameras
+  - ✅ CONCLUSION: Rear camera access via web browser is limited by device security policies
+  - ✅ RECOMMENDED: Use front camera for video calls on problematic devices
 - July 14, 2025: Video Call Camera Switch Enhancement:
   - ✅ FIXED: Camera switch functionality in both VideoCall and GroupVideoCall components
   - ✅ ENHANCED: switchCallCamera function with proper device enumeration and track replacement
