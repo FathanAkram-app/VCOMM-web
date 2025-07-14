@@ -239,7 +239,7 @@ export default function GroupVideoCallSimple() {
     if (!localStream) {
       console.log('[GroupVideoCallSimple] Local stream not ready, initializing...');
       try {
-        await initializeMedia();
+        await initializeMedia2();
         // Give a moment for the stream to be set
         await new Promise(resolve => setTimeout(resolve, 500));
       } catch (error) {
@@ -410,7 +410,7 @@ export default function GroupVideoCallSimple() {
     if (!localStream) {
       console.log('[GroupVideoCallSimple] No local stream for WebRTC initiation, waiting...');
       try {
-        await initializeMedia();
+        await initializeMedia2();
         await new Promise(resolve => setTimeout(resolve, 300));
       } catch (error) {
         console.error('[GroupVideoCallSimple] Failed to get local stream for WebRTC initiation:', error);
