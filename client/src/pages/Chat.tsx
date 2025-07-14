@@ -1260,6 +1260,13 @@ export default function Chat() {
             </button>
             
             <button 
+              className={`p-3 rounded-lg ${activeView === 'personnel' ? 'bg-[#2d3328] text-[#8d9c6b]' : 'text-gray-500 hover:bg-[#262626]'}`}
+              onClick={handleShowPersonnel}
+            >
+              <User className="h-6 w-6" />
+            </button>
+            
+            <button 
               className={`p-3 rounded-lg ${activeView === 'calls' ? 'bg-[#2d3328] text-[#8d9c6b]' : 'text-gray-500 hover:bg-[#262626]'}`}
               onClick={handleShowCalls}
             >
@@ -1272,13 +1279,6 @@ export default function Chat() {
             >
               <FileText className="h-6 w-6" />
             </button> */}
-            
-            <button 
-              className={`p-3 rounded-lg ${activeView === 'personnel' ? 'bg-[#2d3328] text-[#8d9c6b]' : 'text-gray-500 hover:bg-[#262626]'}`}
-              onClick={handleShowPersonnel}
-            >
-              <User className="h-6 w-6" />
-            </button>
             
             <button 
               className={`p-3 rounded-lg ${activeView === 'config' ? 'bg-[#2d3328] text-[#8d9c6b]' : 'text-gray-500 hover:bg-[#262626]'}`}
@@ -1310,6 +1310,13 @@ export default function Chat() {
           </button>
           
           <button 
+            className={`p-3 rounded-lg ${activeView === 'personnel' ? 'text-[#8d9c6b]' : 'text-gray-500'}`}
+            onClick={handleShowPersonnel}
+          >
+            <User className="h-6 w-6" />
+          </button>
+          
+          <button 
             className={`p-3 rounded-lg ${activeView === 'calls' ? 'text-[#8d9c6b]' : 'text-gray-500'}`}
             onClick={handleShowCalls}
           >
@@ -1322,13 +1329,6 @@ export default function Chat() {
           >
             <FileText className="h-6 w-6" />
           </button> */}
-          
-          <button 
-            className={`p-3 rounded-lg ${activeView === 'personnel' ? 'text-[#8d9c6b]' : 'text-gray-500'}`}
-            onClick={handleShowPersonnel}
-          >
-            <User className="h-6 w-6" />
-          </button>
           
           <button 
             className={`p-3 rounded-lg ${activeView === 'config' ? 'text-[#8d9c6b]' : 'text-gray-500'}`}
