@@ -28,7 +28,7 @@ interface ChatListProps {
   activeChat?: { id: number; isGroup: boolean } | null;
   onSelectChat?: (id: number, isGroup: boolean) => void;
   onChatDeleted?: (id: number, isGroup: boolean) => void;
-  onClearChatHistory?: (id: number, isGroup: boolean) => void;
+  onClearChatHistory?: (id: number, isGroup: boolean) => Promise<void>;
   onCreateGroup?: () => void;
 }
 
@@ -62,9 +62,10 @@ export default function ChatList({
   const [chatItems, setChatItems] = useState<ChatItem[]>([]);
   
   // Pindahkan SEMUA hooks ke level atas komponen
-  const { data: conversations, isLoading } = useQuery({
+  const { data: conversations, isLoading, refetch: refetchConversations } = useQuery({
     queryKey: ['/api/conversations'],
     enabled: !!user,
+    refetchInterval: false, // Disable auto refetch to avoid conflicts
   });
   
   const { data: allUsers } = useQuery({
@@ -307,7 +308,16 @@ export default function ChatList({
                       
                       if (confirm(confirmMessage)) {
                         if (onClearChatHistory) {
-                          onClearChatHistory(chat.id, chat.isGroup);
+                          // Set loading state untuk indikasi proses berlangsung
+                          setIsLoadingChats(true);
+                          
+                          onClearChatHistory(chat.id, chat.isGroup).then(() => {
+                            // Force refetch conversations untuk update UI
+                            refetchConversations();
+                          }).finally(() => {
+                            // Reset loading setelah proses selesai
+                            setIsLoadingChats(false);
+                          });
                         }
                       }
                     }}

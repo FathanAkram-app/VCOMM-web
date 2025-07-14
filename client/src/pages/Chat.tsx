@@ -1390,7 +1390,7 @@ export default function Chat() {
                           });
                         }
                       }}
-                      onClearChatHistory={async (id, isGroup) => {
+                      onClearChatHistory={async (id, isGroup): Promise<void> => {
                         try {
                           const response = await apiRequest('POST', `/api/conversations/${id}/clear`);
                           
@@ -1403,14 +1403,20 @@ export default function Chat() {
                             duration: 5000
                           });
                           
-                          // Invalidate and refetch messages for immediate update
+                          // Force refetch all data immediately to show "Belum ada pesan"
+                          await Promise.all([
+                            queryClient.invalidateQueries({ queryKey: ['/api/conversations'] }),
+                            queryClient.invalidateQueries({ queryKey: ['/api/direct-chats'] }),
+                            queryClient.invalidateQueries({ queryKey: ['/api/rooms'] })
+                          ]);
+                          
+                          // Force refetch messages if this is the active chat
                           if (activeChat?.id === id) {
-                            queryClient.invalidateQueries({ queryKey: [`/api/conversations/${id}/messages`] });
+                            await queryClient.invalidateQueries({ queryKey: [`/api/conversations/${id}/messages`] });
                           }
-                          // Also invalidate conversation list to update last message
-                          queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
-                          queryClient.invalidateQueries({ queryKey: ['/api/direct-chats'] });
-                          queryClient.invalidateQueries({ queryKey: ['/api/rooms'] });
+                          
+                          // Wait a bit to ensure backend has processed
+                          await new Promise(resolve => setTimeout(resolve, 300));
                         } catch (error) {
                           console.error('Error membersihkan riwayat chat:', error);
                           setToastMessage({
