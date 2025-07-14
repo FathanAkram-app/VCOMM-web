@@ -1399,6 +1399,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin Lapsit routes
+  app.get("/api/admin/lapsit", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const lapsitReports = await cmsStorage.getAllLapsitReports();
+      res.json(lapsitReports);
+    } catch (error) {
+      console.error("Error fetching lapsit reports:", error);
+      res.status(500).json({ message: "Failed to fetch lapsit reports" });
+    }
+  });
+
   // User Management
   app.get("/api/admin/users", isAuthenticated, isAdmin, async (req, res) => {
     try {

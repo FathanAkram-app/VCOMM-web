@@ -13,7 +13,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { queryClient } from '@/lib/queryClient';
 import {
   Users, UserCheck, MessageSquare, Phone, Server, Database, Shield, Settings, Trash2, Plus, Edit, Eye,
-  BarChart3, Activity, AlertTriangle, Clock, LogOut, Search, Filter, X
+  BarChart3, Activity, AlertTriangle, Clock, LogOut, Search, Filter, X, FileText, Calendar, MapPin
 } from 'lucide-react';
 
 export default function AdminComplete() {
@@ -64,6 +64,11 @@ export default function AdminComplete() {
 
   const logsQuery = useQuery({
     queryKey: ['/api/admin/logs'],
+    refetchInterval: 30000,
+  });
+
+  const lapsitQuery = useQuery({
+    queryKey: ['/api/admin/lapsit'],
     refetchInterval: 30000,
   });
 
@@ -292,7 +297,7 @@ export default function AdminComplete() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6 bg-[#1a1a1a] border-[#333]">
+          <TabsList className="grid w-full grid-cols-7 bg-[#1a1a1a] border-[#333]">
             <TabsTrigger value="dashboard" className="data-[state=active]:bg-[#8d9c6b] data-[state=active]:text-black">
               <BarChart3 className="w-4 h-4 mr-2" />
               Dashboard
@@ -300,6 +305,10 @@ export default function AdminComplete() {
             <TabsTrigger value="users" className="data-[state=active]:bg-[#8d9c6b] data-[state=active]:text-black">
               <Users className="w-4 h-4 mr-2" />
               Users
+            </TabsTrigger>
+            <TabsTrigger value="lapsit" className="data-[state=active]:bg-[#8d9c6b] data-[state=active]:text-black">
+              <FileText className="w-4 h-4 mr-2" />
+              Lapsit
             </TabsTrigger>
             <TabsTrigger value="config" className="data-[state=active]:bg-[#8d9c6b] data-[state=active]:text-black">
               <Settings className="w-4 h-4 mr-2" />
@@ -610,6 +619,141 @@ export default function AdminComplete() {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Lapsit Tab */}
+          <TabsContent value="lapsit" className="space-y-6">
+            <Card className="bg-[#1a1a1a] border-[#333]">
+              <CardHeader>
+                <CardTitle className="text-[#8d9c6b] flex items-center justify-between">
+                  <span>Laporan Situasi (Lapsit) Management</span>
+                  <Badge variant="outline" className="text-gray-400">
+                    {lapsitQuery.data?.length || 0} reports
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {lapsitQuery.isLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8d9c6b] mx-auto"></div>
+                    <p className="mt-2 text-gray-400">Loading lapsit reports...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Lapsit Statistics Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                      <Card className="bg-[#2a2a2a] border-[#444]">
+                        <CardContent className="p-4">
+                          <div className="flex items-center">
+                            <FileText className="h-6 w-6 text-blue-400" />
+                            <div className="ml-3">
+                              <p className="text-sm font-medium text-gray-400">Total Reports</p>
+                              <p className="text-xl font-bold text-white">{lapsitQuery.data?.length || 0}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="bg-[#2a2a2a] border-[#444]">
+                        <CardContent className="p-4">
+                          <div className="flex items-center">
+                            <Calendar className="h-6 w-6 text-green-400" />
+                            <div className="ml-3">
+                              <p className="text-sm font-medium text-gray-400">Today</p>
+                              <p className="text-xl font-bold text-white">
+                                {lapsitQuery.data?.filter((report: any) => {
+                                  const today = new Date().toDateString();
+                                  const reportDate = new Date(report.createdAt).toDateString();
+                                  return today === reportDate;
+                                }).length || 0}
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="bg-[#2a2a2a] border-[#444]">
+                        <CardContent className="p-4">
+                          <div className="flex items-center">
+                            <MapPin className="h-6 w-6 text-orange-400" />
+                            <div className="ml-3">
+                              <p className="text-sm font-medium text-gray-400">Categories</p>
+                              <p className="text-xl font-bold text-white">
+                                {[...new Set(lapsitQuery.data?.map((report: any) => report.category) || [])].length}
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* Lapsit Reports Table */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-gray-700">
+                            <th className="text-left p-3 text-gray-400">ID</th>
+                            <th className="text-left p-3 text-gray-400">Reporter</th>
+                            <th className="text-left p-3 text-gray-400">Category</th>
+                            <th className="text-left p-3 text-gray-400">Sub Category</th>
+                            <th className="text-left p-3 text-gray-400">Location</th>
+                            <th className="text-left p-3 text-gray-400">Priority</th>
+                            <th className="text-left p-3 text-gray-400">Date</th>
+                            <th className="text-left p-3 text-gray-400">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {lapsitQuery.data?.map((report: any) => (
+                            <tr key={report.id} className="border-b border-gray-800 hover:bg-[#2a2a2a]">
+                              <td className="p-3 text-white font-medium">#{report.id}</td>
+                              <td className="p-3 text-gray-300">{report.reporterName || report.reporterId}</td>
+                              <td className="p-3 text-gray-300">{report.category}</td>
+                              <td className="p-3 text-gray-300">{report.subcategory}</td>
+                              <td className="p-3 text-gray-300">{report.location || '-'}</td>
+                              <td className="p-3">
+                                <Badge 
+                                  variant={report.priority === 'urgent' ? 'destructive' : 
+                                          report.priority === 'high' ? 'default' : 'secondary'}
+                                  className={report.priority === 'urgent' ? 'bg-red-600' : 
+                                            report.priority === 'high' ? 'bg-orange-600' : 'bg-gray-600'}
+                                >
+                                  {report.priority}
+                                </Badge>
+                              </td>
+                              <td className="p-3 text-gray-300">
+                                {new Date(report.createdAt).toLocaleDateString('id-ID', {
+                                  day: '2-digit',
+                                  month: '2-digit', 
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </td>
+                              <td className="p-3">
+                                <div className="flex space-x-2">
+                                  <Button size="sm" variant="outline" className="text-blue-400 border-blue-400 hover:bg-blue-900">
+                                    <Eye className="w-4 h-4" />
+                                  </Button>
+                                  <Button size="sm" variant="outline" className="text-red-400 border-red-400 hover:bg-red-900">
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          )) || (
+                            <tr>
+                              <td colSpan={8} className="p-8 text-center text-gray-400">
+                                No lapsit reports found
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
               </CardContent>

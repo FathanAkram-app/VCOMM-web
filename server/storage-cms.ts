@@ -11,6 +11,7 @@ import {
   conversations,
   conversationMembers,
   callHistory,
+  lapsitReports,
   type MilitaryRank,
   type InsertMilitaryRank,
   type MilitaryBranch,
@@ -19,7 +20,8 @@ import {
   type InsertMilitaryUnit,
   type SystemConfig,
   type InsertSystemConfig,
-  type InsertAdminLog
+  type InsertAdminLog,
+  type LapsitReport
 } from "@shared/schema";
 
 export class CMSStorage {
@@ -364,6 +366,24 @@ export class CMSStorage {
         await this.createConfig(config);
       }
     }
+  }
+
+  // Lapsit Management Functions
+  async getAllLapsitReports(): Promise<any[]> {
+    return await db.select({
+      id: lapsitReports.id,
+      reporterId: lapsitReports.reporterId,
+      reporterName: users.callsign,
+      category: lapsitReports.category,
+      subcategory: lapsitReports.subcategory,
+      location: lapsitReports.location,
+      priority: lapsitReports.priority,
+      details: lapsitReports.details,
+      createdAt: lapsitReports.createdAt
+    })
+    .from(lapsitReports)
+    .leftJoin(users, eq(lapsitReports.reporterId, users.id))
+    .orderBy(desc(lapsitReports.createdAt));
   }
 }
 
