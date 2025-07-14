@@ -35,14 +35,26 @@ export default function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { toast } = useToast();
 
-  // Fetch ranks and branches from database (public endpoints)
-  const { data: ranks } = useQuery({
-    queryKey: ['/api/public/ranks'],
+  // Fetch branches from database (public endpoints)
+  const { data: branches } = useQuery({
+    queryKey: ['/api/public/branches'],
     retry: false,
   });
 
-  const { data: branches } = useQuery({
-    queryKey: ['/api/public/branches'],
+  // Watch branch selection to fetch ranks accordingly
+  const selectedBranch = form.watch("branch");
+
+  // Fetch ranks based on selected branch
+  const { data: ranks } = useQuery({
+    queryKey: ['/api/public/ranks', selectedBranch],
+    queryFn: async () => {
+      if (!selectedBranch) return [];
+      const params = new URLSearchParams({ branch: selectedBranch });
+      const response = await fetch(`/api/public/ranks?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch ranks');
+      return response.json();
+    },
+    enabled: !!selectedBranch,
     retry: false,
   });
 
@@ -205,23 +217,27 @@ export default function Register() {
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="rank"
+                name="branch"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-400 uppercase text-sm font-medium">RANK</FormLabel>
+                    <FormLabel className="text-gray-400 uppercase text-sm font-medium">BRANCH</FormLabel>
                     <Select 
-                      onValueChange={field.onChange} 
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        // Reset rank when branch changes
+                        form.setValue("rank", "");
+                      }}
                       defaultValue={field.value}
                     >
                       <FormControl>
                         <SelectTrigger className="w-full bg-[#222222] border border-[#444444] p-3 text-white placeholder:text-[#555555] h-12">
-                          <SelectValue placeholder="SELECT RANK" />
+                          <SelectValue placeholder="SELECT BRANCH FIRST" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="bg-[#222222] border border-[#444444] text-white">
-                        {ranks?.map((rank: any) => (
-                          <SelectItem key={rank.id} value={rank.rankName} className="focus:bg-[#4d5d30] focus:text-white">
-                            {rank.rankName}
+                        {branches?.map((branch: any) => (
+                          <SelectItem key={branch.id} value={branch.branchName} className="focus:bg-[#4d5d30] focus:text-white">
+                            {branch.branchName}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -233,23 +249,28 @@ export default function Register() {
               
               <FormField
                 control={form.control}
-                name="branch"
+                name="rank"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-400 uppercase text-sm font-medium">BRANCH</FormLabel>
+                    <FormLabel className="text-gray-400 uppercase text-sm font-medium">RANK</FormLabel>
                     <Select 
                       onValueChange={field.onChange} 
                       defaultValue={field.value}
+                      disabled={!selectedBranch}
                     >
                       <FormControl>
-                        <SelectTrigger className="w-full bg-[#222222] border border-[#444444] p-3 text-white placeholder:text-[#555555] h-12">
-                          <SelectValue placeholder="SELECT BRANCH" />
+                        <SelectTrigger className="w-full bg-[#222222] border border-[#444444] p-3 text-white placeholder:text-[#555555] h-12 disabled:opacity-50">
+                          <SelectValue placeholder={
+                            !selectedBranch ? "SELECT BRANCH FIRST" : 
+                            !ranks?.length ? "NO RANKS AVAILABLE" :
+                            "SELECT RANK"
+                          } />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="bg-[#222222] border border-[#444444] text-white">
-                        {branches?.map((branch: any) => (
-                          <SelectItem key={branch.id} value={branch.branchName} className="focus:bg-[#4d5d30] focus:text-white">
-                            {branch.branchName}
+                        {ranks?.map((rank: any) => (
+                          <SelectItem key={rank.id} value={rank.rankName} className="focus:bg-[#4d5d30] focus:text-white">
+                            {rank.rankName} - Level {rank.level} {rank.isOfficer ? "(OFFICER)" : "(ENLISTED)"}
                           </SelectItem>
                         ))}
                       </SelectContent>

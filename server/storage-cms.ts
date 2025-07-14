@@ -28,6 +28,12 @@ export class CMSStorage {
     return await db.select().from(militaryRanks).orderBy(militaryRanks.level);
   }
 
+  async getRanksByBranch(branch: string): Promise<MilitaryRank[]> {
+    return await db.select().from(militaryRanks)
+      .where(eq(militaryRanks.branch, branch))
+      .orderBy(militaryRanks.level);
+  }
+
   async createRank(data: InsertMilitaryRank): Promise<MilitaryRank> {
     const [rank] = await db.insert(militaryRanks).values(data).returning();
     return rank;

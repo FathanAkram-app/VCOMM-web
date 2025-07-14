@@ -896,7 +896,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Public endpoints for registration (without authentication)
   app.get("/api/public/ranks", async (req, res) => {
     try {
-      const ranks = await cmsStorage.getAllRanks();
+      const { branch } = req.query;
+      let ranks;
+      
+      if (branch) {
+        ranks = await cmsStorage.getRanksByBranch(branch as string);
+      } else {
+        ranks = await cmsStorage.getAllRanks();
+      }
+      
       res.json(ranks);
     } catch (error) {
       console.error("Error fetching public ranks:", error);

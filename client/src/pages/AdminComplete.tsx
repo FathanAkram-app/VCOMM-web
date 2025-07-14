@@ -775,6 +775,11 @@ export default function AdminComplete() {
 
 // Add Rank Form Component
 function AddRankForm({ onSubmit }: { onSubmit: (data: any) => void }) {
+  const { data: branches } = useQuery({
+    queryKey: ['/api/admin/branches'],
+    retry: false,
+  });
+
   const [formData, setFormData] = useState({
     rankName: '',
     rankCode: '',
@@ -827,14 +832,18 @@ function AddRankForm({ onSubmit }: { onSubmit: (data: any) => void }) {
       </div>
       <div>
         <Label htmlFor="branch" className="text-white">Branch</Label>
-        <Input
-          id="branch"
-          value={formData.branch}
-          onChange={(e) => setFormData({...formData, branch: e.target.value})}
-          className="bg-[#2a2a2a] border-gray-600 text-white"
-          placeholder="e.g., TNI AD, TNI AL, TNI AU, POLRI"
-          required
-        />
+        <Select onValueChange={(value) => setFormData({...formData, branch: value})} value={formData.branch}>
+          <SelectTrigger className="bg-[#2a2a2a] border-gray-600 text-white">
+            <SelectValue placeholder="Select branch" />
+          </SelectTrigger>
+          <SelectContent className="bg-[#2a2a2a] border-gray-600">
+            {branches?.map((branch: any) => (
+              <SelectItem key={branch.id} value={branch.branchName} className="text-white focus:bg-[#8d9c6b] focus:text-black">
+                {branch.branchName} - {branch.branchFullName}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="flex items-center space-x-2">
         <input
