@@ -312,6 +312,16 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - ✅ IMPROVED: Sort algorithm handles chats without messages properly
   - ✅ OPTIMIZED: Newest conversations appear first, maintaining chronological order
   - ChatList now properly reflects message activity order in real-time
+- July 14, 2025: Video Call Camera Switch Enhancement:
+  - ✅ FIXED: Camera switch functionality in both VideoCall and GroupVideoCall components
+  - ✅ ENHANCED: switchCallCamera function with proper device enumeration and track replacement
+  - ✅ IMPROVED: Error handling with Indonesian user-friendly messages for camera issues
+  - ✅ ADDED: Dynamic camera switching between front (user) and back (environment) cameras
+  - ✅ IMPLEMENTED: Proper WebRTC track replacement in all peer connections
+  - ✅ ADDED: Switch camera button that only appears when video is enabled
+  - ✅ OPTIMIZED: Video constraints with proper aspect ratio and resolution settings
+  - ✅ ENHANCED: CallContext with comprehensive camera switching logic including device detection
+  - Camera switching now works reliably for both individual and group video calls
 - July 14, 2025: Comprehensive CMS Dashboard Implementation:
   - ✅ IMPLEMENTED: Complete admin dashboard with 6 main sections (Dashboard, Users, Config, Ranks, Branches, Security)
   - ✅ ADDED: Real-time statistics display (online users, messages today, calls today, total conversations)

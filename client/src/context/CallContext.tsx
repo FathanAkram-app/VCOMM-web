@@ -2646,36 +2646,93 @@ export function CallProvider({ children }: { children: ReactNode }) {
   };
 
   const switchCallCamera = async () => {
-    if (!activeCall?.localStream || activeCall.callType !== 'video') return;
+    if (!activeCall?.localStream || activeCall.callType !== 'video') {
+      console.log('[CallContext] No active video call or stream available');
+      return;
+    }
 
     try {
-      // Get video track
-      const videoTrack = activeCall.localStream.getVideoTracks()[0];
-      if (!videoTrack) return;
+      console.log('[CallContext] Starting camera switch...');
+      
+      // Get current video track
+      const currentVideoTrack = activeCall.localStream.getVideoTracks()[0];
+      if (!currentVideoTrack) {
+        console.log('[CallContext] No video track found in current stream');
+        return;
+      }
 
-      // Stop current video track
-      videoTrack.stop();
+      // Get current settings to determine which camera is active
+      const currentSettings = currentVideoTrack.getSettings();
+      const currentFacingMode = currentSettings.facingMode;
+      console.log('[CallContext] Current camera facingMode:', currentFacingMode);
 
-      // Get new video stream with different camera
+      // Enumerate available video devices
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter(device => device.kind === 'videoinput');
+      console.log('[CallContext] Available video devices:', videoDevices.length);
+
+      if (videoDevices.length <= 1) {
+        console.log('[CallContext] Only one camera available, cannot switch');
+        return;
+      }
+
+      // Determine next camera facingMode
+      const nextFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+      console.log('[CallContext] Switching to facingMode:', nextFacingMode);
+
+      // Create constraints for new camera
       const constraints = {
         audio: false,
         video: {
-          facingMode: videoTrack.getSettings().facingMode === 'user' ? 'environment' : 'user'
+          facingMode: nextFacingMode,
+          width: { ideal: 720 },
+          height: { ideal: 1280 },
+          aspectRatio: { ideal: 9/16 }
         }
       };
 
+      // Get new video stream
       const newVideoStream = await navigator.mediaDevices.getUserMedia(constraints);
       const newVideoTrack = newVideoStream.getVideoTracks()[0];
+      console.log('[CallContext] Got new video track:', newVideoTrack.id);
 
-      // Replace video track in local stream
-      const sender = activeCall.localStream.getVideoTracks()[0];
-      if (sender) {
-        activeCall.localStream.removeTrack(sender);
-        activeCall.localStream.addTrack(newVideoTrack);
+      // Replace video track in all peer connections first
+      if (peerConnections.current) {
+        for (const [peerId, pc] of peerConnections.current) {
+          const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
+          if (sender) {
+            await sender.replaceTrack(newVideoTrack);
+            console.log(`[CallContext] Replaced video track for peer ${peerId}`);
+          }
+        }
       }
+
+      // Remove old track from local stream and add new one
+      activeCall.localStream.removeTrack(currentVideoTrack);
+      activeCall.localStream.addTrack(newVideoTrack);
+      
+      // Stop the old track
+      currentVideoTrack.stop();
+      
+      // Update activeCall state with new stream
+      setActiveCall(prev => prev ? {
+        ...prev,
+        localStream: activeCall.localStream
+      } : null);
+
+      console.log('[CallContext] Camera switch completed successfully');
 
     } catch (error) {
       console.error('[CallContext] Error switching camera:', error);
+      
+      // Show user-friendly error message
+      const errorMessage = error instanceof Error && error.name === 'NotAllowedError' 
+        ? 'Izin kamera diperlukan untuk mengganti kamera. Periksa pengaturan browser.'
+        : error instanceof Error && error.name === 'NotFoundError'
+        ? 'Kamera belakang tidak ditemukan pada perangkat ini.'
+        : 'Gagal mengganti kamera. Pastikan kamera tersedia dan tidak digunakan aplikasi lain.';
+      
+      alert(errorMessage);
     }
   };
 

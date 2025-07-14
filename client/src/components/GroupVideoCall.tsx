@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCall } from '@/hooks/useCall';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { PhoneOff, Mic, MicOff, Video, VideoOff, Users, ArrowLeft, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
+import { PhoneOff, Mic, MicOff, Video, VideoOff, Users, ArrowLeft, ChevronLeft, ChevronRight, Settings, SwitchCamera } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 // Removed GroupManagement import - menu removed from video call interface
 
@@ -1355,6 +1355,111 @@ export default function GroupVideoCall() {
     }
   };
 
+  const switchCamera = async () => {
+    console.log('[GroupVideoCall] Switch camera function called');
+    
+    if (!localStream) {
+      console.log('[GroupVideoCall] No local stream available');
+      return;
+    }
+
+    try {
+      // Get all video devices
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter(device => device.kind === 'videoinput');
+      console.log('[GroupVideoCall] Available video devices:', videoDevices.length);
+      
+      if (videoDevices.length <= 1) {
+        console.log('[GroupVideoCall] Only one camera available');
+        alert('Hanya satu kamera yang tersedia pada perangkat ini.');
+        return;
+      }
+      
+      const currentVideoTrack = localStream.getVideoTracks()[0];
+      if (!currentVideoTrack) {
+        console.log('[GroupVideoCall] No video track found');
+        return;
+      }
+
+      const currentSettings = currentVideoTrack.getSettings();
+      const currentDeviceId = currentSettings.deviceId;
+      
+      // Find current camera index
+      const currentIndex = videoDevices.findIndex(device => device.deviceId === currentDeviceId);
+      const nextIndex = (currentIndex + 1) % videoDevices.length;
+      const nextDevice = videoDevices[nextIndex];
+      
+      // Determine facing mode based on device label or index
+      const isFrontCamera = nextDevice.label.toLowerCase().includes('front') || 
+                           nextDevice.label.toLowerCase().includes('user') ||
+                           nextIndex === 0;
+      const nextFacingMode = isFrontCamera ? 'user' : 'environment';
+      
+      console.log('[GroupVideoCall] Switching from camera', currentIndex, 'to camera', nextIndex, 'facingMode:', nextFacingMode);
+      
+      // Create new video constraints
+      const videoConstraints = {
+        deviceId: { exact: nextDevice.deviceId },
+        facingMode: nextFacingMode,
+        width: { ideal: 720 },
+        height: { ideal: 1280 },
+        aspectRatio: { ideal: 9/16 }
+      };
+
+      // Get new stream with next camera
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: videoConstraints,
+        audio: false // Don't replace audio, just video
+      });
+      
+      const newVideoTrack = newStream.getVideoTracks()[0];
+      console.log('[GroupVideoCall] Got new video track:', newVideoTrack.id);
+
+      // Replace video track in all peer connections
+      if (peerConnections.current) {
+        for (const [peerId, pc] of peerConnections.current) {
+          const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
+          if (sender) {
+            await sender.replaceTrack(newVideoTrack);
+            console.log(`[GroupVideoCall] Replaced video track for peer ${peerId}`);
+          }
+        }
+      }
+
+      // Replace track in local stream
+      localStream.removeTrack(currentVideoTrack);
+      localStream.addTrack(newVideoTrack);
+      
+      // Stop old track
+      currentVideoTrack.stop();
+
+      // Update local video element
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = localStream;
+        console.log('[GroupVideoCall] Updated local video element with new stream');
+      }
+
+      // Force update local stream state
+      setLocalStream(localStream);
+      
+      console.log('[GroupVideoCall] Camera switched successfully to', isFrontCamera ? 'front' : 'back', 'camera');
+      
+    } catch (error) {
+      console.error('[GroupVideoCall] Error switching camera:', error);
+      
+      // User-friendly error messages
+      const errorMessage = error instanceof Error && error.name === 'NotAllowedError' 
+        ? 'Izin kamera diperlukan. Periksa pengaturan browser dan izinkan akses kamera.'
+        : error instanceof Error && error.name === 'NotFoundError'
+        ? 'Kamera yang diminta tidak ditemukan. Pastikan semua kamera terhubung dengan benar.'
+        : error instanceof Error && error.name === 'NotReadableError'
+        ? 'Kamera sedang digunakan aplikasi lain. Tutup aplikasi tersebut dan coba lagi.'
+        : 'Gagal mengganti kamera. Pastikan kamera tersedia dan tidak digunakan aplikasi lain.';
+      
+      alert(errorMessage);
+    }
+  };
+
   const cleanupMediaTracks = () => {
     console.log('[GroupVideoCall] Cleaning up media tracks');
     
@@ -1683,6 +1788,17 @@ export default function GroupVideoCall() {
             <VideoOff className="h-4 w-4" />
           )}
         </Button>
+
+        {isVideoEnabled && (
+          <Button
+            onClick={switchCamera}
+            variant="ghost"
+            size="sm"
+            className="rounded-full w-10 h-10 border bg-[#4a7c59]/20 border-[#4a7c59] text-[#a6c455] hover:bg-[#4a7c59]/40 transition-all"
+          >
+            <SwitchCamera className="h-4 w-4" />
+          </Button>
+        )}
 
         <Button
           onClick={handleEndCall}
