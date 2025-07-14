@@ -301,8 +301,9 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - ✅ ADDED: activeSessions tracking with sessionId and WebSocket reference
   - ✅ ENHANCED: WebSocket authentication to terminate existing sessions
   - ✅ ADDED: 'session_terminated' message type for notifying displaced users
-  - ✅ IMPLEMENTED: Client-side session termination handler with alert and redirect
+  - ✅ IMPLEMENTED: Client-side session termination handler with Indonesian alert and redirect
   - ✅ ADDED: Proper cleanup of sessions on WebSocket disconnection
+  - ✅ LOCALIZED: Alert message in Indonesian "Sesi Anda telah dihentikan karena Anda login dari perangkat lain"
   - When user logs in from new device, previous session automatically terminated
 
 # User Preferences

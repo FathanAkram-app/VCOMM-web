@@ -1165,7 +1165,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   type: 'session_terminated',
                   payload: {
                     reason: 'login_elsewhere',
-                    message: 'Your session has been terminated because you logged in from another device'
+                    message: 'Sesi Anda telah dihentikan karena Anda login dari perangkat lain'
                   }
                 }));
                 existingSession.ws.close();

@@ -725,7 +725,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         // Handle session termination (single session enforcement)
         if (message.type === 'session_terminated') {
           console.log('[CallContext] Session terminated:', message.payload);
-          alert(message.payload.message || 'Your session has been terminated because you logged in from another device');
+          alert('Sesi Anda telah dihentikan karena Anda login dari perangkat lain');
           
           // Redirect to login page
           window.location.href = '/api/login';
