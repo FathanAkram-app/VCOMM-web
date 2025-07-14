@@ -3026,7 +3026,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         throw new Error('Media devices not supported');
       }
 
-      // Enhanced mobile-friendly media constraints for group calls
+      // Audio-first approach for better connection stability - video enabled manually later
       const constraints = {
         audio: {
           echoCancellation: true,
@@ -3035,17 +3035,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
           sampleRate: 48000,
           channelCount: 1
         },
-        video: callType === 'video' ? {
-          facingMode: 'user',
-          width: { ideal: 640, max: 1280 },
-          height: { ideal: 480, max: 720 },
-          frameRate: { ideal: 15, max: 30 }
-        } : false
+        video: false // Start with audio only for stability
       };
 
-      console.log('[CallContext] Requesting media permissions for group call...');
+      console.log('[CallContext] Requesting media permissions for group call (audio-first approach)...');
       const localStream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log('[CallContext] Got local media stream for group call');
+      console.log('[CallContext] Got audio stream for group call - video disabled for now');
 
       const callId = `group_call_${Date.now()}_${groupId}_${user.id}`;
 
@@ -3264,7 +3259,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         throw new Error('User not authenticated or WebSocket not connected');
       }
 
-      // Enhanced mobile-friendly media constraints for group calls
+      // Audio-first approach for better connection stability - video enabled manually later
       const constraints = {
         audio: {
           echoCancellation: true,
@@ -3273,17 +3268,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
           sampleRate: 48000,
           channelCount: 1
         },
-        video: callType === 'video' ? {
-          facingMode: 'user',
-          width: { ideal: 640, max: 1280 },
-          height: { ideal: 480, max: 720 },
-          frameRate: { ideal: 15, max: 30 }
-        } : false
+        video: false // Start with audio only for stability
       };
 
-      console.log('[CallContext] Requesting media permissions for joining group call...');
+      console.log('[CallContext] Requesting media permissions for joining group call (audio-first approach)...');
       const localStream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log('[CallContext] Got local media stream for joining group call');
+      console.log('[CallContext] Got audio stream for joining group call - video disabled for now');
 
       // Enhanced RTCPeerConnection for joining group calls
       const peerConnection = new RTCPeerConnection({

@@ -432,12 +432,16 @@ export default function GroupVideoCall() {
           
           setLocalStream(existingStream);
           
-          // Force enable video for group calls
+          // Check if video track exists (audio-first approach may not have video initially)
           const videoTrack = existingStream.getVideoTracks()[0];
           if (videoTrack) {
-            videoTrack.enabled = true;
-            setIsVideoEnabled(true); // Ensure UI state matches
-            console.log('[GroupVideoCall] Video track forcibly enabled for group calls');
+            // Don't force enable - let user control manually
+            setIsVideoEnabled(videoTrack.enabled);
+            console.log('[GroupVideoCall] Video track available, current state:', videoTrack.enabled);
+          } else {
+            // No video track available (audio-first)
+            setIsVideoEnabled(false);
+            console.log('[GroupVideoCall] No video track - audio-first mode');
           }
           
           // Attach stream to video element
@@ -534,12 +538,14 @@ export default function GroupVideoCall() {
       
       localVideoRef.current.srcObject = localStream;
       
-      // Set initial video state based on track - force enable for group calls
+      // Set initial video state based on track availability (audio-first approach)
       const videoTrack = localStream.getVideoTracks()[0];
       if (videoTrack) {
-        videoTrack.enabled = true; // Force enable video for group calls
-        setIsVideoEnabled(true); // Always set to true for group calls
-        console.log('[GroupVideoCall] Video forcibly enabled for group call');
+        setIsVideoEnabled(videoTrack.enabled);
+        console.log('[GroupVideoCall] Video track state:', videoTrack.enabled);
+      } else {
+        setIsVideoEnabled(false);
+        console.log('[GroupVideoCall] No video track - audio-only mode');
       }
       
       // Force play local video
@@ -1558,33 +1564,73 @@ export default function GroupVideoCall() {
     }
   };
 
-  const toggleVideo = () => {
-    if (localStream) {
-      const videoTrack = localStream.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack.enabled = !videoTrack.enabled;
-        setIsVideoEnabled(videoTrack.enabled);
-        console.log('[GroupVideoCall] Video toggled:', videoTrack.enabled);
+  const toggleVideo = async () => {
+    if (!localStream) {
+      console.log('[GroupVideoCall] No local stream for video toggle');
+      return;
+    }
+
+    const currentVideoTrack = localStream.getVideoTracks()[0];
+    
+    if (currentVideoTrack) {
+      // Video track exists - toggle it
+      currentVideoTrack.enabled = !currentVideoTrack.enabled;
+      setIsVideoEnabled(currentVideoTrack.enabled);
+      console.log('[GroupVideoCall] Video track toggled:', currentVideoTrack.enabled);
+    } else {
+      // No video track - add one (manual video activation from audio-first)
+      try {
+        console.log('[GroupVideoCall] Adding video track to audio-only stream...');
         
-        // Force video element update
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = localStream;
-          console.log('[GroupVideoCall] Video element updated');
+        const videoStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: 'user',
+            width: { ideal: 640, max: 1280 },
+            height: { ideal: 480, max: 720 },
+            frameRate: { ideal: 15, max: 30 }
+          },
+          audio: false
+        });
+        
+        const videoTrack = videoStream.getVideoTracks()[0];
+        if (videoTrack) {
+          // Add video track to existing stream
+          localStream.addTrack(videoTrack);
+          setIsVideoEnabled(true);
+          console.log('[GroupVideoCall] ✅ Video track added to stream');
+          
+          // Update all peer connections with new video track
+          Object.values(peerConnections.current || {}).forEach(pc => {
+            if (pc && typeof pc.addTrack === 'function') {
+              pc.addTrack(videoTrack, localStream);
+              console.log('[GroupVideoCall] Added video track to peer connection');
+            }
+          });
+          
+          // Update local video element
+          if (localVideoRef.current) {
+            localVideoRef.current.srcObject = localStream;
+            console.log('[GroupVideoCall] Updated local video element with new track');
+          }
         }
+      } catch (error) {
+        console.error('[GroupVideoCall] Error adding video track:', error);
+        alert('Gagal mengaktifkan video. Pastikan kamera dapat diakses.');
       }
+    }
+    
+    // Force video element update
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = localStream;
     }
   };
 
   const switchCamera = async () => {
-    console.log('[GroupVideoCall] 🔥 GROUP SWITCH CAMERA FUNCTION CALLED!');
-    
-    // Always show alert for mobile debugging
-    alert(`📱 GROUP Camera Switch diklik!\n\nLocalStream: ${!!localStream}\nActiveCall stream: ${!!activeCall?.localStream}\nComponent: GroupVideoCall`);
+    console.log('[GroupVideoCall] Switching camera for group video call');
     
     const streamToUse = localStream || activeCall?.localStream;
     if (!streamToUse) {
       console.log('[GroupVideoCall] No local stream available');
-      alert('❌ Tidak ada stream video aktif untuk mengganti kamera.');
       return;
     }
 
@@ -1594,18 +1640,8 @@ export default function GroupVideoCall() {
       const videoDevices = devices.filter(device => device.kind === 'videoinput');
       console.log('[GroupVideoCall] Available video devices:', videoDevices.length);
       
-      // Mobile debugging - show camera info for PWA users  
-      const isMobileDevice = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      if (isMobileDevice) {
-        const cameraInfo = videoDevices.map((device, index) => 
-          `Camera ${index + 1}: ${device.label || 'Unknown'}`
-        ).join('\n');
-        alert(`📱 GROUP Debug Info:\nDevice: Mobile\nKamera ditemukan: ${videoDevices.length}\n${cameraInfo}`);
-      }
-      
       if (videoDevices.length <= 1) {
         console.log('[GroupVideoCall] Only one camera available');
-        alert(`❌ GROUP: Hanya ${videoDevices.length} kamera tersedia.\n\nHP ini mungkin tidak memiliki kamera belakang.`);
         return;
       }
       
@@ -1887,35 +1923,39 @@ export default function GroupVideoCall() {
                 {/* Current User - Always first position */}
                 {user && activeCall && (
                   <div className="relative bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700 aspect-[4/3] min-h-[120px] max-h-[160px]">
-                    {/* Video element - always present */}
-                    <video
-                      ref={localVideoRef}
-                      autoPlay
-                      muted
-                      playsInline
-                      className="w-full h-full object-cover"
-                      style={{ display: isVideoEnabled ? 'block' : 'none' }}
-                      onLoadedMetadata={() => {
-                        console.log(`[GroupVideoCall] Local video metadata loaded`);
-                      }}
-                      onCanPlay={() => {
-                        console.log(`[GroupVideoCall] Local video can play`);
-                      }}
-                      onPlay={() => {
-                        console.log(`[GroupVideoCall] ✅ Local video started playing`);
-                      }}
-                      onError={(e) => {
-                        console.error(`[GroupVideoCall] ❌ Local video error:`, e);
-                      }}
-                    />
-                    {/* Avatar overlay when video is disabled */}
-                    {!isVideoEnabled && (
-                      <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-[#2d4a2d] to-[#1e3a1e]">
-                        <Avatar className="h-12 w-12 bg-[#4a7c59] border-2 border-[#a6c455]">
-                          <AvatarFallback className="bg-[#4a7c59] text-white text-sm font-bold">
+                    {/* Video element - conditionally displayed */}
+                    {isVideoEnabled ? (
+                      <video
+                        ref={localVideoRef}
+                        autoPlay
+                        muted
+                        playsInline
+                        className="w-full h-full object-cover"
+                        onLoadedMetadata={() => {
+                          console.log(`[GroupVideoCall] Local video metadata loaded`);
+                        }}
+                        onCanPlay={() => {
+                          console.log(`[GroupVideoCall] Local video can play`);
+                        }}
+                        onPlay={() => {
+                          console.log(`[GroupVideoCall] ✅ Local video started playing`);
+                        }}
+                        onError={(e) => {
+                          console.error(`[GroupVideoCall] ❌ Local video error:`, e);
+                        }}
+                      />
+                    ) : (
+                      /* Audio-only mode display */
+                      <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#2d4a2d] to-[#1e3a1e]">
+                        <Avatar className="h-16 w-16 bg-[#4a7c59] border-2 border-[#a6c455] mb-2">
+                          <AvatarFallback className="bg-[#4a7c59] text-white text-lg font-bold">
                             {(user.callsign || user.fullName || 'A').substring(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
+                        <div className="flex items-center space-x-1 bg-black/60 px-2 py-1 rounded-full">
+                          <Mic className="h-3 w-3 text-[#a6c455]" />
+                          <span className="text-[#a6c455] text-xs font-medium">Audio Only</span>
+                        </div>
                       </div>
                     )}
                     <div className="absolute bottom-1 left-1 bg-black/80 px-2 py-1 rounded border border-[#4a7c59]/50">
@@ -2096,22 +2136,17 @@ export default function GroupVideoCall() {
           )}
         </Button>
 
-        <Button
-          onClick={() => {
-            console.log('[GroupVideoCall] 🔥 GROUP SWITCH CAMERA BUTTON CLICKED!');
-            alert(`🔥 GROUP Switch Camera diklik!\n\nVideo enabled: ${isVideoEnabled}\nComponent: GroupVideoCall`);
-            if (!isVideoEnabled) {
-              alert('❌ Video tidak aktif di group call!\nNyalakan video dulu.');
-              return;
-            }
-            switchCamera();
-          }}
-          variant="ghost"
-          size="sm"
-          className="rounded-full w-10 h-10 border bg-[#4a7c59]/20 border-[#4a7c59] text-[#a6c455] hover:bg-[#4a7c59]/40 transition-all"
-        >
-          <SwitchCamera className="h-4 w-4" />
-        </Button>
+        {/* Camera switch button - only show when video is enabled */}
+        {isVideoEnabled && (
+          <Button
+            onClick={switchCamera}
+            variant="ghost"
+            size="sm"
+            className="rounded-full w-10 h-10 border bg-[#4a7c59]/20 border-[#4a7c59] text-[#a6c455] hover:bg-[#4a7c59]/40 transition-all"
+          >
+            <SwitchCamera className="h-4 w-4" />
+          </Button>
+        )}
 
         <Button
           onClick={handleEndCall}
