@@ -37,6 +37,9 @@ export default function GroupVideoCallSimple() {
   
   // Peer connections untuk setiap participant
   const [peerConnections, setPeerConnections] = useState<Map<number, RTCPeerConnection>>(new Map());
+  
+  // Pending ICE candidates untuk timing issues
+  const [pendingICECandidates, setPendingICECandidates] = useState<Map<number, RTCIceCandidate[]>>(new Map());
 
   // Reusable media initialization function  
   const initializeMediaStream = async () => {
@@ -263,6 +266,9 @@ export default function GroupVideoCallSimple() {
       await pc.setRemoteDescription(new RTCSessionDescription(offerData.offer));
       console.log('[GroupVideoCallSimple] ✅ Set remote description for offer from user:', offerData.fromUserId);
 
+      // Process any pending ICE candidates now that remote description is set
+      await processPendingICECandidates(offerData.fromUserId, pc);
+
       // Create answer
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
@@ -325,6 +331,9 @@ export default function GroupVideoCallSimple() {
       await pc.setRemoteDescription(new RTCSessionDescription(answerData.answer));
       console.log('[GroupVideoCallSimple] ✅ Set remote description for answer from user:', answerData.fromUserId);
       
+      // Process any pending ICE candidates now that remote description is set
+      await processPendingICECandidates(answerData.fromUserId, pc);
+      
       console.log('[GroupVideoCallSimple] 🔗 Peer connection state after answer:', {
         connectionState: pc.connectionState,
         iceConnectionState: pc.iceConnectionState,
@@ -336,20 +345,64 @@ export default function GroupVideoCallSimple() {
   };
 
   const handleIncomingICECandidate = async (candidateData: any) => {
-    console.log('[GroupVideoCallSimple] Processing ICE candidate from user:', candidateData.fromUserId);
+    console.log('[GroupVideoCallSimple] 🧊 Processing ICE candidate from user:', candidateData.fromUserId);
     
     // Get existing peer connection untuk user ini
-    const pc = peerConnections.get(candidateData.fromUserId);
+    let pc = peerConnections.get(candidateData.fromUserId);
     if (!pc) {
-      console.log('[GroupVideoCallSimple] No peer connection found for user:', candidateData.fromUserId);
-      return;
+      console.log('[GroupVideoCallSimple] ⚠️ No peer connection found for user:', candidateData.fromUserId, '- creating one now');
+      
+      // Create peer connection if it doesn't exist yet (untuk handle timing issues)
+      pc = getOrCreatePeerConnection(candidateData.fromUserId);
+      
+      // Wait a moment for peer connection to be ready
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
 
     try {
-      await pc.addIceCandidate(new RTCIceCandidate(candidateData.candidate));
-      console.log('[GroupVideoCallSimple] Added ICE candidate from user:', candidateData.fromUserId);
+      // Check if remote description is set before adding ICE candidate
+      if (pc.remoteDescription) {
+        await pc.addIceCandidate(new RTCIceCandidate(candidateData.candidate));
+        console.log('[GroupVideoCallSimple] ✅ Added ICE candidate from user:', candidateData.fromUserId);
+      } else {
+        console.log('[GroupVideoCallSimple] ⏳ Queuing ICE candidate (no remote description yet) for user:', candidateData.fromUserId);
+        
+        // Queue ICE candidate untuk diproses nanti
+        setPendingICECandidates(prev => {
+          const newMap = new Map(prev);
+          if (!newMap.has(candidateData.fromUserId)) {
+            newMap.set(candidateData.fromUserId, []);
+          }
+          newMap.get(candidateData.fromUserId)!.push(new RTCIceCandidate(candidateData.candidate));
+          return newMap;
+        });
+      }
     } catch (error) {
-      console.error('[GroupVideoCallSimple] Error adding ICE candidate from user', candidateData.fromUserId, ':', error);
+      console.error('[GroupVideoCallSimple] ❌ Error adding ICE candidate from user', candidateData.fromUserId, ':', error);
+    }
+  };
+
+  // Process pending ICE candidates untuk user setelah remote description di-set
+  const processPendingICECandidates = async (userId: number, pc: RTCPeerConnection) => {
+    const candidates = pendingICECandidates.get(userId);
+    if (candidates && candidates.length > 0) {
+      console.log(`[GroupVideoCallSimple] 🧊 Processing ${candidates.length} pending ICE candidates for user:`, userId);
+      
+      for (const candidate of candidates) {
+        try {
+          await pc.addIceCandidate(candidate);
+          console.log('[GroupVideoCallSimple] ✅ Added pending ICE candidate for user:', userId);
+        } catch (error) {
+          console.error('[GroupVideoCallSimple] ❌ Error adding pending ICE candidate for user', userId, ':', error);
+        }
+      }
+      
+      // Clear processed candidates
+      setPendingICECandidates(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(userId);
+        return newMap;
+      });
     }
   };
 
