@@ -1362,9 +1362,10 @@ export default function Chat() {
                       onSelectChat={handleSelectChat}
                       onChatDeleted={async (id, isGroup) => {
                         try {
-                          const response = await apiRequest('POST', `/api/conversations/${id}/delete`);
+                          // Hide chat dari UI user ini saja, tanpa menghapus history dari database
+                          const response = await apiRequest('POST', `/api/conversations/${id}/hide`);
                           
-                          console.log(`Chat ${id} berhasil dihapus`);
+                          console.log(`Chat ${id} berhasil disembunyikan dari daftar`);
                           // Invalidate and refetch chat lists to update UI immediately
                           queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
                           queryClient.invalidateQueries({ queryKey: ['/api/direct-chats'] });
@@ -1375,9 +1376,18 @@ export default function Chat() {
                             setActiveChat(null);
                             setShowChatRoom(false);
                           }
+                          
+                          toast({
+                            title: "Chat Disembunyikan",
+                            description: "Chat telah dihapus dari daftar Anda. History masih bisa diakses melalui halaman Personel.",
+                          });
                         } catch (error) {
-                          console.error('Error menghapus chat:', error);
-                          alert('Terjadi kesalahan saat menghapus chat');
+                          console.error('Error menyembunyikan chat:', error);
+                          toast({
+                            title: "Error",
+                            description: "Gagal menyembunyikan chat",
+                            variant: "destructive",
+                          });
                         }
                       }}
                       onClearChatHistory={async (id, isGroup) => {

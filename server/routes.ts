@@ -749,6 +749,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Hide conversation endpoint - only hide from user's view, don't delete history
+  app.post('/api/conversations/:id/hide', isAuthenticated, async (req: AuthRequest, res) => {
+    console.log('[DEBUG] HIDE conversation endpoint reached');
+    
+    try {
+      const conversationId = parseInt(req.params.id);
+      const userId = req.session?.user?.id;
+      
+      if (!userId) {
+        console.log('[DEBUG] No user ID in session');
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      console.log(`[API] User ${userId} attempting to hide conversation ${conversationId}`);
+      
+      if (isNaN(conversationId)) {
+        return res.status(400).json({ message: "Invalid conversation ID" });
+      }
+      
+      // Check if conversation exists
+      const conversation = await storage.getConversation(conversationId);
+      if (!conversation) {
+        return res.status(404).json({ message: "Conversation not found" });
+      }
+      
+      // Check if user is a member of this conversation
+      const isMember = await storage.isUserMemberOfConversation(userId, conversationId);
+      if (!isMember) {
+        return res.status(403).json({ message: "Not authorized - not a member of this conversation" });
+      }
+      
+      // Hide conversation from user's list (set isHidden = true)
+      await storage.hideConversationForUser(userId, conversationId);
+      
+      res.json({ message: "Conversation hidden successfully" });
+    } catch (error) {
+      console.error("Error hiding conversation:", error);
+      res.status(500).json({ message: "Failed to hide conversation" });
+    }
+  });
+
   // Delete conversation endpoint (changed to POST to handle session properly)
   app.post('/api/conversations/:id/delete', isAuthenticated, async (req: AuthRequest, res) => {
     console.log('[DEBUG] DELETE (POST) endpoint reached');

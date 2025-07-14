@@ -60,6 +60,7 @@ export const conversationMembers = pgTable("conversation_members", {
   userId: integer("user_id").references(() => users.id).notNull(),
   role: varchar("role").default("member"), // 'admin' or 'member'
   joinedAt: timestamp("joined_at").defaultNow(),
+  isHidden: boolean("is_hidden").default(false), // Hide conversation from user's list
 });
 
 // Messages table

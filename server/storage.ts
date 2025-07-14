@@ -53,6 +53,7 @@ export interface IStorage {
   updateConversation(conversationId: number, data: Partial<Conversation>): Promise<Conversation>;
   isUserMemberOfConversation(userId: number, conversationId: number): Promise<boolean>;
   removeUserFromConversation(userId: number, conversationId: number): Promise<void>;
+  hideConversationForUser(userId: number, conversationId: number): Promise<void>;
   
   // Message operations
   createMessage(data: InsertMessage): Promise<Message>;
@@ -150,11 +151,16 @@ export class DatabaseStorage implements IStorage {
   async getUserConversations(userId: number): Promise<any[]> {
     console.log(`[Storage] Getting conversations for user ID: ${userId}`);
     
-    // Get all conversations where user is a member
+    // Get all conversations where user is a member and not hidden
     const members = await db
       .select()
       .from(conversationMembers)
-      .where(eq(conversationMembers.userId, userId));
+      .where(
+        and(
+          eq(conversationMembers.userId, userId),
+          eq(conversationMembers.isHidden, false)
+        )
+      );
 
     console.log(`[Storage] Found ${members.length} memberships for user ${userId}`);
     
@@ -599,6 +605,26 @@ export class DatabaseStorage implements IStorage {
           eq(conversationMembers.conversationId, conversationId)
         )
       );
+  }
+
+  async hideConversationForUser(userId: number, conversationId: number): Promise<void> {
+    try {
+      // Update the conversation member record to set isHidden = true
+      await db
+        .update(conversationMembers)
+        .set({ isHidden: true })
+        .where(
+          and(
+            eq(conversationMembers.userId, userId),
+            eq(conversationMembers.conversationId, conversationId)
+          )
+        );
+      
+      console.log(`[Storage] Hidden conversation ${conversationId} for user ${userId}`);
+    } catch (error) {
+      console.error(`Error hiding conversation ${conversationId} for user ${userId}:`, error);
+      throw new Error("Failed to hide conversation for user");
+    }
   }
 
   // Delete call history entry

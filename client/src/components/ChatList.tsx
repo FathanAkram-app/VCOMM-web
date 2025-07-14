@@ -316,13 +316,13 @@ export default function ChatList({
                     className="text-red-500 cursor-pointer hover:bg-[#3d5040] focus:bg-[#3d5040] focus:text-red-400"
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (confirm(`Apakah Anda yakin ingin menghapus chat dengan ${chat.name}?`)) {
+                      if (confirm(`Apakah Anda yakin ingin menyembunyikan chat dengan ${chat.name}? Chat akan dihapus dari daftar tetapi history masih bisa diakses melalui halaman Personel.`)) {
                         handleDeleteChat(chat.id, chat.isGroup, e as React.MouseEvent);
                       }
                     }}
                   >
                     <Trash className="mr-2 h-4 w-4" />
-                    Hapus {chat.isGroup ? "Grup" : "Chat"}
+                    Sembunyikan {chat.isGroup ? "Grup" : "Chat"}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

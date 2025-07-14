@@ -235,6 +235,15 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - ✅ OPTIMIZED: Chat list layout with flex-shrink-0 for timestamps and dropdown menus
   - Mobile layout now consistently shows menu dropdown and timestamps regardless of text length
   - Real-time message deletion working for both "delete for me" and "delete for everyone" options
+- July 14, 2025: Hide Chat Functionality Implementation:
+  - ✅ CHANGED: "Hapus Chat" dropdown menu now only hides chat from user's list without deleting database history
+  - ✅ ADDED: New is_hidden column to conversation_members table for tracking hidden conversations
+  - ✅ IMPLEMENTED: hideConversationForUser function in storage.ts for hiding conversations per user
+  - ✅ CREATED: /api/conversations/:id/hide endpoint for hiding conversations from user's view
+  - ✅ UPDATED: getUserConversations query to filter out hidden conversations (isHidden = false)
+  - ✅ MODIFIED: Chat deletion UI text to clearly indicate hiding behavior vs permanent deletion
+  - Chat history remains intact in database and can be accessed again via Personnel page
+  - Users can chat with someone from Personnel page to restore hidden conversation to their list
 
 # User Preferences
 
