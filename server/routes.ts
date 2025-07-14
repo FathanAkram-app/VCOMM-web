@@ -2279,6 +2279,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
+        // Handle group call WebRTC ICE candidate
+        if (data.type === 'group_webrtc_ice_candidate' && ws.userId) {
+          const { callId, candidate, targetUserId, fromUserId } = data.payload;
+          console.log(`[Group WebRTC] Relaying ICE candidate for call ${callId} from ${fromUserId} to ${targetUserId}`);
+          
+          const targetClient = clients.get(targetUserId);
+          if (targetClient && targetClient.readyState === targetClient.OPEN) {
+            targetClient.send(JSON.stringify({
+              type: 'group_webrtc_ice_candidate',
+              payload: {
+                callId,
+                candidate,
+                fromUserId
+              }
+            }));
+          }
+        }
+
         // REMOVED: Duplicate handler for request_group_participants - consolidated below
       } catch (error) {
         console.error('WebSocket message error:', error);

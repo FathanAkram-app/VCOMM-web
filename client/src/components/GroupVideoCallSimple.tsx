@@ -255,7 +255,7 @@ export default function GroupVideoCallSimple() {
             callId: activeCall?.callId,
             answer,
             fromUserId: currentUser.id,
-            toUserId: offerData.fromUserId
+            targetUserId: offerData.fromUserId
           }
         }));
         console.log('[GroupVideoCallSimple] Sent WebRTC answer to user:', offerData.fromUserId);
@@ -341,7 +341,7 @@ export default function GroupVideoCallSimple() {
               callId: activeCall?.callId,
               candidate: event.candidate,
               fromUserId: currentUser?.id,
-              toUserId: userId
+              targetUserId: userId
             }
           }));
           console.log('[GroupVideoCallSimple] Sent ICE candidate to user:', userId);
@@ -404,7 +404,7 @@ export default function GroupVideoCallSimple() {
                 callId: activeCall?.callId,
                 offer,
                 fromUserId: currentUser.id,
-                toUserId: participant.userId
+                targetUserId: participant.userId
               }
             }));
             console.log('[GroupVideoCallSimple] Sent WebRTC offer to user:', participant.userId);

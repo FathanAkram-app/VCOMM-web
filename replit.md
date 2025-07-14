@@ -397,6 +397,14 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - Architecture now supports unlimited participants with individual WebRTC connections
   - Each participant has dedicated peer connection for optimal video quality and reliability
   - System ready for production deployment with robust error handling and recovery
+- July 14, 2025: CRITICAL WebRTC Message Payload Fixes:
+  - ✅ FIXED: Payload structure mismatch - Changed 'toUserId' to 'targetUserId' in all WebRTC messages
+  - ✅ ADDED: Missing server handler for 'group_webrtc_ice_candidate' message type
+  - ✅ ENHANCED: Complete WebRTC message relay system (offer, answer, ICE candidate)
+  - ✅ IMPROVED: Proper payload forwarding from server to target participants
+  - ✅ RESOLVED: Remote video streams should now work with proper WebRTC exchange
+  - WebRTC message flow now complete: offer → answer → ICE candidates for all participants
+  - Multi-peer connections ready for full video streaming between all group members
 - July 14, 2025: Group Video Call Stability Enhancement:
   - ✅ IMPLEMENTED: Enhanced WebRTC configuration with iceCandidatePoolSize and reduced iceGatheringTimeout
   - ✅ ADDED: Comprehensive connection state monitoring with auto-recovery mechanisms
