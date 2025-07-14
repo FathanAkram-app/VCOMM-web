@@ -978,7 +978,25 @@ export default function GroupVideoCall() {
               console.log('[GroupVideoCall] 📡 Requested group participants from server');
             }
           }
-        }, 2000);
+        }, 1000);
+        
+        // Additional force trigger after longer delay to ensure participants are detected
+        setTimeout(() => {
+          if (activeCall && participants.length === 0) {
+            console.log('[GroupVideoCall] 🔥 Secondary participant detection trigger');
+            const ws = (window as any).__callWebSocket;
+            if (ws?.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({
+                type: 'request_group_participants',
+                payload: {
+                  callId: activeCall.callId,
+                  groupId: activeCall.groupId,
+                  userId: user.id
+                }
+              }));
+            }
+          }
+        }, 3000);
       }
     }
   }, [participants.length, localStream, activeCall?.callId, user?.id]);
@@ -1352,16 +1370,77 @@ export default function GroupVideoCall() {
       }
     };
 
+    // Enhanced event handler for force WebRTC initiation
+    const handleInitiateGroupWebRTC = (event: CustomEvent) => {
+      const { callId, participants, forceInit } = event.detail;
+      console.log('[GroupVideoCall] 🚀 Force WebRTC initiation received:', { callId, participants, forceInit });
+      
+      if (activeCall?.callId === callId && localStream && user) {
+        console.log('[GroupVideoCall] 🔥 Force-initiating WebRTC connections to all participants');
+        
+        // Force create peer connections for all participants
+        participants.forEach((participant: any, index: number) => {
+          if (participant.userId !== user.id) {
+            setTimeout(() => {
+              console.log(`[GroupVideoCall] 🎯 Force-creating WebRTC offer for participant: ${participant.userId}`);
+              
+              // Force create peer connection if not exists
+              if (!peerConnections.current[participant.userId]) {
+                const peerConnection = new RTCPeerConnection({
+                  iceServers: [],
+                  iceCandidatePoolSize: 10
+                });
+                
+                // Add local stream
+                localStream.getTracks().forEach(track => {
+                  peerConnection.addTrack(track, localStream);
+                });
+                
+                peerConnections.current[participant.userId] = peerConnection;
+                console.log(`[GroupVideoCall] ✅ Created forced peer connection for ${participant.userId}`);
+              }
+              
+              // Force create and send offer
+              const peerConnection = peerConnections.current[participant.userId];
+              if (peerConnection) {
+                peerConnection.createOffer().then(offer => {
+                  return peerConnection.setLocalDescription(offer);
+                }).then(() => {
+                  const ws = (window as any).__callWebSocket;
+                  if (ws?.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({
+                      type: 'group_webrtc_offer',
+                      payload: {
+                        callId: activeCall.callId,
+                        offer: peerConnection.localDescription,
+                        targetUserId: participant.userId,
+                        fromUserId: user.id
+                      }
+                    }));
+                    console.log(`[GroupVideoCall] 🚀 Force-sent offer to participant: ${participant.userId}`);
+                  }
+                }).catch(error => {
+                  console.error(`[GroupVideoCall] ❌ Force offer error for ${participant.userId}:`, error);
+                });
+              }
+            }, index * 300); // Staggered timing
+          }
+        });
+      }
+    };
+
     // Add event listeners
     window.addEventListener('group-webrtc-offer', handleGroupWebRTCOffer as any);
     window.addEventListener('group-webrtc-answer', handleGroupWebRTCAnswer as any);
     window.addEventListener('group-webrtc-ice-candidate', handleGroupWebRTCIceCandidate as any);
+    window.addEventListener('initiate-group-webrtc', handleInitiateGroupWebRTC as any);
 
     // Cleanup function
     return () => {
       window.removeEventListener('group-webrtc-offer', handleGroupWebRTCOffer as any);
       window.removeEventListener('group-webrtc-answer', handleGroupWebRTCAnswer as any);
       window.removeEventListener('group-webrtc-ice-candidate', handleGroupWebRTCIceCandidate as any);
+      window.removeEventListener('initiate-group-webrtc', handleInitiateGroupWebRTC as any);
     };
   }, [activeCall?.callId, user?.id]);
 

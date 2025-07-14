@@ -1630,7 +1630,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
           setActiveCall(updatedCall);
           console.log('[CallContext] ✅ Updated participants with names:', participantObjects);
           
-          // Trigger WebRTC setup in GroupVideoCall component
+          // Trigger WebRTC setup in GroupVideoCall component with multiple event types for reliability
           window.dispatchEvent(new CustomEvent('participants-updated', {
             detail: {
               callId: callId,
@@ -1638,6 +1638,26 @@ export function CallProvider({ children }: { children: ReactNode }) {
               userMap
             }
           }));
+          
+          // Additional enhanced trigger for WebRTC initiation
+          window.dispatchEvent(new CustomEvent('group-participants-update', {
+            detail: { 
+              callId: callId,
+              participants: participantObjects,
+              triggerWebRTC: true
+            }
+          }));
+          
+          // Direct WebRTC initiation trigger
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('initiate-group-webrtc', {
+              detail: { 
+                callId: callId,
+                participants: participantObjects,
+                forceInit: true
+              }
+            }));
+          }, 500);
         }).catch(error => {
           console.error('[CallContext] Error fetching user names:', error);
           
