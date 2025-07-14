@@ -1839,6 +1839,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[Call] Sent call rejected notification to user ${toUserId}`);
           }
         }
+
+        // Handle group call rejection
+        if (data.type === 'reject_group_call' && ws.userId) {
+          const { callId, groupId, fromUserId, userName } = data.payload;
+          console.log(`[Group Call] User ${fromUserId} (${userName}) rejected group call ${callId} in group ${groupId}`);
+          
+          try {
+            // Update call history status to rejected
+            await storage.updateCallStatus(callId, 'rejected');
+            
+            // Get group members to notify about rejection
+            const members = await storage.getConversationMembers(groupId);
+            
+            // Notify other group members that this user rejected the call
+            let notificationsSent = 0;
+            for (const member of members) {
+              if (member.userId !== fromUserId) { // Don't send to the person who rejected
+                const targetClient = clients.get(member.userId);
+                if (targetClient && targetClient.readyState === targetClient.OPEN) {
+                  targetClient.send(JSON.stringify({
+                    type: 'group_call_rejected',
+                    payload: {
+                      callId,
+                      groupId,
+                      rejectedByUserId: fromUserId,
+                      rejectedByUserName: userName
+                    }
+                  }));
+                  notificationsSent++;
+                  console.log(`[Group Call] Sent rejection notification to user ${member.userId}`);
+                }
+              }
+            }
+            console.log(`[Group Call] Sent ${notificationsSent} group call rejection notifications`);
+            
+          } catch (error) {
+            console.error('[Group Call] Error handling group call rejection:', error);
+          }
+        }
         
         // Handle group call initiation
         if (data.type === 'start_group_call' && ws.userId) {

@@ -2441,7 +2441,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    console.log('[CallContext] Rejecting call');
+    console.log('[CallContext] 🚫 Rejecting call:', incomingCall.callId);
+    console.log('[CallContext] 🚫 Call details:', {
+      isGroupCall: incomingCall.isGroupCall,
+      groupName: incomingCall.groupName,
+      callType: incomingCall.callType,
+      fromUser: incomingCall.peerName
+    });
     
     // FORCE STOP ALL WAITING TONES AND RINGTONES IMMEDIATELY
     console.log('[CallContext] FORCE STOPPING ALL RINGTONES - reject call');
@@ -2472,17 +2478,48 @@ export function CallProvider({ children }: { children: ReactNode }) {
       ringtoneAudio.currentTime = 0;
     }
 
-    // Send call rejection message
-    ws.send(JSON.stringify({
-      type: 'reject_call',
-      payload: {
-        callId: incomingCall.callId,
-        toUserId: incomingCall.peerUserId,
-        fromUserId: user.id,
+    // Handle group call rejection vs individual call rejection
+    if (incomingCall.isGroupCall) {
+      console.log('[CallContext] 🚫 Rejecting group call - sending reject_group_call message');
+      
+      // Send group call rejection message
+      ws.send(JSON.stringify({
+        type: 'reject_group_call',
+        payload: {
+          callId: incomingCall.callId,
+          groupId: incomingCall.groupId,
+          fromUserId: user.id,
+          userName: user.callsign
+        }
+      }));
+      
+      // Clean up any pre-created peer connection for group call
+      if (incomingCall.peerConnection) {
+        console.log('[CallContext] 🧹 Cleaning up group call peer connection');
+        try {
+          incomingCall.peerConnection.close();
+        } catch (e) {
+          console.warn('[CallContext] Error closing peer connection:', e);
+        }
       }
-    }));
+      
+    } else {
+      console.log('[CallContext] 🚫 Rejecting individual call - sending reject_call message');
+      
+      // Send individual call rejection message
+      ws.send(JSON.stringify({
+        type: 'reject_call',
+        payload: {
+          callId: incomingCall.callId,
+          toUserId: incomingCall.peerUserId,
+          fromUserId: user.id,
+        }
+      }));
+    }
 
+    // Clear the incoming call state
     setIncomingCall(null);
+    console.log('[CallContext] ✅ Incoming call cleared after rejection');
   };
 
   const hangupCall = () => {

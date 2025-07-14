@@ -431,6 +431,17 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - ✅ OPTIMIZED: Single reusable function for media initialization reducing code duplication
   - Media initialization now accessible from any context within GroupVideoCallSimple component
   - WebRTC offer processing can properly initialize streams when needed
+- July 14, 2025: Enhanced Answer/Reject Call UI and Functionality:
+  - ✅ REDESIGNED: Professional IncomingCallModal with military theme and modern UI
+  - ✅ ENHANCED: Dynamic call type detection (individual vs group, audio vs video)
+  - ✅ IMPROVED: Indonesian language interface with appropriate icons and styling
+  - ✅ IMPLEMENTED: Separate handling for group call rejection vs individual call rejection
+  - ✅ ADDED: reject_group_call message type for proper group call rejection handling
+  - ✅ ENHANCED: Server-side group call rejection with member notification system
+  - ✅ FIXED: Group call rejection functionality that was not working properly
+  - ✅ IMPROVED: Call modal UI with gradient backgrounds, proper button styling, and status indicators
+  - Answer and reject functionality now works correctly for both individual and group calls
+  - Modal displays appropriate call type information with professional military aesthetic
 - July 14, 2025: Group Video Call Stability Enhancement:
   - ✅ IMPLEMENTED: Enhanced WebRTC configuration with iceCandidatePoolSize and reduced iceGatheringTimeout
   - ✅ ADDED: Comprehensive connection state monitoring with auto-recovery mechanisms
