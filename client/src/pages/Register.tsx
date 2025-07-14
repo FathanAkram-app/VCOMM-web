@@ -35,6 +35,19 @@ export default function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { toast } = useToast();
 
+  const form = useForm<RegisterValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      callsign: "",
+      nrp: "",
+      fullName: "",
+      rank: "",
+      branch: "",
+      password: "",
+      confirmPassword: "",
+    },
+  });
+
   // Fetch branches from database (public endpoints)
   const { data: branches } = useQuery({
     queryKey: ['/api/public/branches'],
@@ -56,19 +69,6 @@ export default function Register() {
     },
     enabled: !!selectedBranch,
     retry: false,
-  });
-
-  const form = useForm<RegisterValues>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      callsign: "",
-      nrp: "",
-      fullName: "",
-      rank: "",
-      branch: "",
-      password: "",
-      confirmPassword: "",
-    },
   });
 
   const onSubmit = async (values: RegisterValues) => {
