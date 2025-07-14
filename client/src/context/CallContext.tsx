@@ -2646,8 +2646,14 @@ export function CallProvider({ children }: { children: ReactNode }) {
   };
 
   const switchCallCamera = async () => {
+    console.log('[CallContext] 🔥 SWITCH CAMERA BUTTON CLICKED!');
+    console.log('[CallContext] Current activeCall:', activeCall);
+    console.log('[CallContext] Has localStream:', !!activeCall?.localStream);
+    console.log('[CallContext] Call type:', activeCall?.callType);
+    
     if (!activeCall?.localStream || activeCall.callType !== 'video') {
       console.log('[CallContext] No active video call or stream available');
+      alert('Tidak ada panggilan video aktif untuk mengganti kamera.');
       return;
     }
 

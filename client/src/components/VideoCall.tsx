@@ -287,14 +287,21 @@ export default function VideoCall() {
         
         {/* Secondary Controls */}
         <div className="flex justify-center items-center space-x-6 mt-4">
-          <Button 
-            variant="outline" 
-            size="icon" 
-            className="w-12 h-12 rounded-full text-[#a6c455] border-[#a6c455] hover:bg-[#333333]"
-            onClick={switchCallCamera}
-          >
-            <SwitchCamera className="h-5 w-5" />
-          </Button>
+          {/* Switch Camera - Only show when video is enabled */}
+          {activeCall.videoEnabled && (
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="w-12 h-12 rounded-full text-[#a6c455] border-[#a6c455] hover:bg-[#333333]"
+              onClick={() => {
+                console.log('[VideoCall] 🔥 SWITCH CAMERA BUTTON CLICKED!');
+                console.log('[VideoCall] Current activeCall state:', activeCall);
+                switchCallCamera();
+              }}
+            >
+              <SwitchCamera className="h-5 w-5" />
+            </Button>
+          )}
           <Button 
             variant="outline" 
             size="icon" 
