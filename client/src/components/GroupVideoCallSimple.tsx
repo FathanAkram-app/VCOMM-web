@@ -38,10 +38,9 @@ export default function GroupVideoCallSimple() {
   // Peer connections untuk setiap participant
   const [peerConnections, setPeerConnections] = useState<Map<number, RTCPeerConnection>>(new Map());
 
-  // Initialize local media stream saat component mount
-  useEffect(() => {
-    const initializeMedia = async () => {
-      try {
+  // Reusable media initialization function  
+  const initializeMediaStream = async () => {
+    try {
         console.log('[GroupVideoCallSimple] Initializing media with video enabled from start...');
         
         const constraints = {
@@ -69,8 +68,6 @@ export default function GroupVideoCallSimple() {
           audioTracks: stream.getAudioTracks().length
         });
 
-        setLocalStream(stream);
-
         // Ensure video track is enabled
         const videoTrack = stream.getVideoTracks()[0];
         if (videoTrack) {
@@ -86,45 +83,19 @@ export default function GroupVideoCallSimple() {
           console.log('[GroupVideoCallSimple] ✅ Local video attached and playing');
         }
 
-        // If activeCall has a peer connection, add tracks and setup ontrack
-        if (activeCall?.peerConnection) {
-          // Add local tracks to peer connection
-          stream.getTracks().forEach(track => {
-            activeCall.peerConnection?.addTrack(track, stream);
-            console.log('[GroupVideoCallSimple] ✅ Added track to peer connection:', track.kind);
-          });
+      setLocalStream(stream);
+      return stream;
 
-          // Setup ontrack event handler for receiving remote streams
-          activeCall.peerConnection.ontrack = (event) => {
-            console.log('[GroupVideoCallSimple] 🎥 Received remote track:', event.track.kind, 'from stream:', event.streams[0].id);
-            
-            const remoteStream = event.streams[0];
-            
-            // Initialize remoteStreams Map if not exists
-            if (!activeCall.remoteStreams) {
-              activeCall.remoteStreams = new Map();
-            }
-            
-            // Store remote stream
-            activeCall.remoteStreams.set(remoteStream.id, remoteStream);
-            console.log('[GroupVideoCallSimple] 📦 Stored remote stream:', remoteStream.id);
-            
-            // Force re-render by updating state
-            setRemoteStreams(new Map(activeCall.remoteStreams));
-            
-            console.log('[GroupVideoCallSimple] 🔄 Updated remote streams state for re-render');
-          };
+    } catch (error) {
+      console.error('[GroupVideoCallSimple] ❌ Failed to get media:', error);
+      alert('Gagal mengakses kamera/mikrofon. Pastikan izin sudah diberikan.');
+      throw error;
+    }
+  };
 
-          console.log('[GroupVideoCallSimple] 🎯 Configured ontrack event handler for remote streams');
-        }
-
-      } catch (error) {
-        console.error('[GroupVideoCallSimple] ❌ Failed to get media:', error);
-        alert('Gagal mengakses kamera/mikrofon. Pastikan izin sudah diberikan.');
-      }
-    };
-
-    initializeMedia();
+  // Initialize local media stream saat component mount
+  useEffect(() => {
+    initializeMediaStream();
 
     // Cleanup saat component unmount
     return () => {
@@ -239,7 +210,7 @@ export default function GroupVideoCallSimple() {
     if (!localStream) {
       console.log('[GroupVideoCallSimple] Local stream not ready, initializing...');
       try {
-        await initializeMedia2();
+        await initializeMediaStream();
         // Give a moment for the stream to be set
         await new Promise(resolve => setTimeout(resolve, 500));
       } catch (error) {
@@ -410,7 +381,7 @@ export default function GroupVideoCallSimple() {
     if (!localStream) {
       console.log('[GroupVideoCallSimple] No local stream for WebRTC initiation, waiting...');
       try {
-        await initializeMedia2();
+        await initializeMediaStream();
         await new Promise(resolve => setTimeout(resolve, 300));
       } catch (error) {
         console.error('[GroupVideoCallSimple] Failed to get local stream for WebRTC initiation:', error);
