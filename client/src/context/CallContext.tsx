@@ -3197,6 +3197,49 @@ export function CallProvider({ children }: { children: ReactNode }) {
         console.log('[CallContext] Auto-joined group call as initiator:', joinMessage);
       }, 500); // Small delay to ensure call is created first
 
+      // Aggressively request participants multiple times to ensure detection
+      setTimeout(() => {
+        const participantsRequest = {
+          type: 'request_group_participants',
+          payload: {
+            callId,
+            groupId,
+            userId: user.id
+          }
+        };
+        
+        ws.send(JSON.stringify(participantsRequest));
+        console.log('[CallContext] 🔥 Initial participants request sent:', participantsRequest);
+      }, 800);
+
+      setTimeout(() => {
+        const participantsRequest = {
+          type: 'request_group_participants',
+          payload: {
+            callId,
+            groupId,
+            userId: user.id
+          }
+        };
+        
+        ws.send(JSON.stringify(participantsRequest));
+        console.log('[CallContext] 🔥 Secondary participants request sent:', participantsRequest);
+      }, 1500);
+
+      setTimeout(() => {
+        const participantsRequest = {
+          type: 'request_group_participants',
+          payload: {
+            callId,
+            groupId,
+            userId: user.id
+          }
+        };
+        
+        ws.send(JSON.stringify(participantsRequest));
+        console.log('[CallContext] 🔥 Final participants request sent:', participantsRequest);
+      }, 3000);
+
       // Navigate to appropriate group call interface based on call type
       setTimeout(() => {
         if (callType === 'video') {

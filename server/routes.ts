@@ -2133,6 +2133,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Send participants update to requesting user
           if (participants.length > 0) {
+            console.log(`[Group Call] 🎯 Preparing to send participants update for ${participants.length} participants`);
+            
             const updateMessage = {
               type: 'group_call_participants_update',
               payload: {
@@ -2144,6 +2146,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             };
             
+            console.log(`[Group Call] 📤 Sending participants update message:`, updateMessage);
             ws.send(JSON.stringify(updateMessage));
             console.log(`[Group Call] ✅ Sent participants update response to user ${requestingUserId || ws.userId}:`, participants);
             
@@ -2151,12 +2154,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
             participants.forEach(participantId => {
               const participantClient = clients.get(participantId);
               if (participantClient && participantClient.readyState === participantClient.OPEN && participantId !== ws.userId) {
+                console.log(`[Group Call] 📤 Broadcasting to user ${participantId}`);
                 participantClient.send(JSON.stringify(updateMessage));
                 console.log(`[Group Call] 🔄 Synced participants to user ${participantId}`);
+              } else {
+                console.log(`[Group Call] ❌ Cannot broadcast to user ${participantId}: client=${!!participantClient}, readyState=${participantClient?.readyState || 'N/A'}`);
               }
             });
           } else {
-            console.log(`[Group Call] ❌ No participants found for call ${callId}`);
+            console.log(`[Group Call] ❌ No participants found for call ${callId} - but still sending empty update`);
+            // Send empty participants update to inform client no one is available
+            const emptyUpdateMessage = {
+              type: 'group_call_participants_update',
+              payload: {
+                callId,
+                participants: [],
+                groupId,
+                requestResponse: true,
+                triggerWebRTC: false
+              }
+            };
+            
+            ws.send(JSON.stringify(emptyUpdateMessage));
+            console.log(`[Group Call] 📤 Sent empty participants update to user ${requestingUserId || ws.userId}`);
           }
         }
 
