@@ -1399,8 +1399,8 @@ export default function Chat() {
                           // Show success message to user
                           setToastMessage({
                             type: 'success',
-                            message: 'Chat berhasil dibersihkan untuk Anda. Orang lain masih bisa melihat history mereka.',
-                            duration: 4000
+                            message: `✅ Chat berhasil dibersihkan! Chat ${isGroup ? 'grup' : ''} sekarang kosong untuk Anda. Peserta lain masih melihat history lengkap.`,
+                            duration: 5000
                           });
                           
                           // Invalidate and refetch messages for immediate update

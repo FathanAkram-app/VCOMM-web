@@ -301,7 +301,11 @@ export default function ChatList({
                     onClick={(e) => {
                       e.stopPropagation();
                       // Feature: Bersihkan riwayat chat (hanya untuk user ini)
-                      if (confirm(`Apakah Anda yakin ingin membersihkan chat dengan ${chat.name}? Chat akan kosong untuk Anda, tetapi ${chat.name} masih bisa melihat history chat mereka.`)) {
+                      const confirmMessage = chat.isGroup 
+                        ? `Bersihkan Chat Pribadi\n\nApakah Anda yakin ingin menghapus semua pesan dalam grup "${chat.name}" dari tampilan Anda?\n\n✓ Chat akan kosong untuk Anda saja\n✓ Anggota lain masih bisa melihat semua pesan\n✓ Pesan baru akan tetap terlihat normal\n\nTindakan ini tidak dapat dibatalkan.`
+                        : `Bersihkan Chat Pribadi\n\nApakah Anda yakin ingin menghapus semua pesan dengan "${chat.name}" dari tampilan Anda?\n\n✓ Chat akan kosong untuk Anda saja\n✓ ${chat.name} masih bisa melihat semua pesan\n✓ Pesan baru akan tetap terlihat normal\n\nTindakan ini tidak dapat dibatalkan.`;
+                      
+                      if (confirm(confirmMessage)) {
                         if (onClearChatHistory) {
                           onClearChatHistory(chat.id, chat.isGroup);
                         }
@@ -316,7 +320,11 @@ export default function ChatList({
                     className="text-red-500 cursor-pointer hover:bg-[#3d5040] focus:bg-[#3d5040] focus:text-red-400"
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (confirm(`Apakah Anda yakin ingin menyembunyikan chat dengan ${chat.name}? Chat akan dihapus dari daftar tetapi history masih bisa diakses melalui halaman Personel.`)) {
+                      const confirmMessage = chat.isGroup 
+                        ? `Sembunyikan Grup\n\nApakah Anda yakin ingin menyembunyikan grup "${chat.name}" dari daftar chat Anda?\n\n✓ Grup akan hilang dari daftar chat Anda\n✓ Semua riwayat chat tetap tersimpan aman\n✓ Anda masih anggota grup ini\n✓ Dapat diakses kembali melalui halaman Personel\n\nGrup tidak akan terhapus dari sistem.`
+                        : `Sembunyikan Chat\n\nApakah Anda yakin ingin menyembunyikan chat dengan "${chat.name}" dari daftar Anda?\n\n✓ Chat akan hilang dari daftar chat Anda\n✓ Semua riwayat chat tetap tersimpan aman\n✓ Dapat diakses kembali melalui halaman Personel\n✓ ${chat.name} tidak akan tahu chat disembunyikan\n\nChat tidak akan terhapus dari sistem.`;
+                      
+                      if (confirm(confirmMessage)) {
                         handleDeleteChat(chat.id, chat.isGroup, e as React.MouseEvent);
                       }
                     }}

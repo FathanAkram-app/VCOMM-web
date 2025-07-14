@@ -196,13 +196,26 @@ export class DatabaseStorage implements IStorage {
         // Get personal last message (that hasn't been deleted by this user)
         const personalLastMessage = await this.getPersonalLastMessage(conv.id, userId);
         
+        // Determine what to show as last message
+        let displayLastMessage = "Belum ada pesan";
+        let displayLastMessageTime = conv.lastMessageTime;
+        
+        if (personalLastMessage) {
+          // User has visible messages, show the latest one
+          displayLastMessage = personalLastMessage.content;
+          displayLastMessageTime = personalLastMessage.createdAt;
+        } else if (conv.lastMessage) {
+          // User has no visible messages but conversation has messages (user cleared them)
+          displayLastMessage = "Belum ada pesan";
+          displayLastMessageTime = null;
+        }
+        
         return {
           ...conv,
           unreadCount,
           memberCount,
-          // Override last message with personal version if available
-          lastMessage: personalLastMessage?.content || conv.lastMessage || "Belum ada pesan",
-          lastMessageTime: personalLastMessage?.createdAt || conv.lastMessageTime
+          lastMessage: displayLastMessage,
+          lastMessageTime: displayLastMessageTime
         };
       })
     );
@@ -779,12 +792,17 @@ export class DatabaseStorage implements IStorage {
       // Get all visible messages for this user
       const visibleMessages = await this.getMessagesByConversationForUser(conversationId, userId);
       
+      console.log(`[Storage] Personal last message check for user ${userId} in conversation ${conversationId}: ${visibleMessages.length} visible messages`);
+      
       if (visibleMessages.length === 0) {
+        console.log(`[Storage] No visible messages for user ${userId} in conversation ${conversationId} - returning null`);
         return null; // No visible messages for this user
       }
       
       // Return the last visible message
-      return visibleMessages[visibleMessages.length - 1];
+      const lastMessage = visibleMessages[visibleMessages.length - 1];
+      console.log(`[Storage] Last visible message for user ${userId}: "${lastMessage.content}"`);
+      return lastMessage;
     } catch (error) {
       console.error(`Error getting personal last message for user ${userId}:`, error);
       return null;
