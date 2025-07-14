@@ -136,9 +136,13 @@ export default function GroupVideoCallSimple() {
       console.log('[GroupVideoCallSimple] Remote streams array:', remoteStreamsArray);
       
       // Filter out current user from participants to avoid duplication
-      const newParticipants = activeCall.participants
-        .filter(p => p.userId !== currentUser.id) // Filter out current user
-        .map((p) => {
+      console.log('[GroupVideoCallSimple] 🔍 Before filtering participants:', activeCall.participants.map(p => `${p.userName}(${p.userId})`));
+      console.log('[GroupVideoCallSimple] 🔍 Current user to filter out:', currentUser.id);
+      
+      const filteredParticipants = activeCall.participants.filter(p => p.userId !== currentUser.id);
+      console.log('[GroupVideoCallSimple] 🔍 After filtering participants:', filteredParticipants.map(p => `${p.userName}(${p.userId})`));
+      
+      const newParticipants = filteredParticipants.map((p) => {
           const streamKey = `user_${p.userId}`;
           const userStream = remoteStreams.get(streamKey);
           
