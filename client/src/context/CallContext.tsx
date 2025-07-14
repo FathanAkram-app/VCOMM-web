@@ -809,6 +809,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
           case 'group_call_ended':
             handleGroupCallEnded(message.payload || message);
             break;
+          case 'group_call_rejected':
+            handleGroupCallRejected(message.payload || message);
+            break;
           case 'group_call_user_left':
             handleGroupCallUserLeft(message);
             break;
@@ -1539,6 +1542,29 @@ export function CallProvider({ children }: { children: ReactNode }) {
     // Clear localStorage when group call ends
     localStorage.removeItem('activeGroupCall');
     console.log('[CallContext] Cleared group call data from localStorage');
+  };
+
+  const handleGroupCallRejected = (message: any) => {
+    console.log('[CallContext] 🚫 Group call rejected by user:', message);
+    const { callId, groupId, rejectedByUserId, rejectedByUserName } = message;
+    
+    // Show notification to other participants that someone rejected the call
+    console.log(`[CallContext] User ${rejectedByUserName} (${rejectedByUserId}) rejected group call ${callId}`);
+    
+    // Optional: Show toast notification
+    if (typeof window !== 'undefined' && window.dispatchEvent) {
+      window.dispatchEvent(new CustomEvent('show-toast', {
+        detail: {
+          title: 'Group Call Update',
+          description: `${rejectedByUserName} menolak panggilan grup`,
+          variant: 'warning'
+        }
+      }));
+    }
+    
+    // Don't automatically end the call, let other participants continue
+    // The call should only end when all participants have rejected or left
+    console.log('[CallContext] ✅ Group call rejection handled - other participants can still join');
   };
 
   const handleGroupCallUserLeft = (message: any) => {

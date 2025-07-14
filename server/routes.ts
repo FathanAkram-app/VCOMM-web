@@ -1846,7 +1846,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`[Group Call] User ${fromUserId} (${userName}) rejected group call ${callId} in group ${groupId}`);
           
           try {
-            // Update call history status to rejected
+            // CRITICAL FIX: Remove rejecting user from active group calls to prevent auto-join
+            console.log(`[Group Call] 🚫 Removing user ${fromUserId} from ALL active group calls for group ${groupId}`);
+            
+            // Find and remove user from any active group call for this group
+            for (const [activeCallId, participants] of activeGroupCalls.entries()) {
+              if (activeCallId.includes(`_${groupId}_`) && participants.has(fromUserId)) {
+                participants.delete(fromUserId);
+                console.log(`[Group Call] 🗑️ Removed user ${fromUserId} from call ${activeCallId}, remaining participants:`, Array.from(participants));
+                
+                // If no participants left, remove the call entirely
+                if (participants.size === 0) {
+                  activeGroupCalls.delete(activeCallId);
+                  console.log(`[Group Call] 🗑️ Removed empty group call ${activeCallId}`);
+                }
+              }
+            }
+            
+            // Update call history status to rejected (only for the rejecting user's record)
             await storage.updateCallStatus(callId, 'rejected');
             
             // Get group members to notify about rejection
