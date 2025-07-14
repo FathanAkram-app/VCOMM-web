@@ -13,7 +13,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { queryClient } from '@/lib/queryClient';
 import {
   Users, UserCheck, MessageSquare, Phone, Server, Database, Shield, Settings, Trash2, Plus, Edit, Eye,
-  BarChart3, Activity, AlertTriangle, Clock, LogOut
+  BarChart3, Activity, AlertTriangle, Clock, LogOut, Search, Filter, X
 } from 'lucide-react';
 
 export default function AdminComplete() {
@@ -21,6 +21,11 @@ export default function AdminComplete() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showAddRankModal, setShowAddRankModal] = useState(false);
   const [showAddBranchModal, setShowAddBranchModal] = useState(false);
+  
+  // User search and filter states
+  const [userSearchTerm, setUserSearchTerm] = useState('');
+  const [userStatusFilter, setUserStatusFilter] = useState('all');
+  const [userRoleFilter, setUserRoleFilter] = useState('all');
 
   // Queries
   const statsQuery = useQuery({
@@ -130,6 +135,27 @@ export default function AdminComplete() {
       });
     }
   });
+
+  // Filter users based on search term and filters
+  const filteredUsers = usersQuery.data?.filter((user: any) => {
+    const matchesSearch = userSearchTerm === '' || 
+      user.callsign?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+      user.nrp?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+      user.fullName?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+      user.rank?.toLowerCase().includes(userSearchTerm.toLowerCase());
+    
+    const matchesStatus = userStatusFilter === 'all' || user.status === userStatusFilter;
+    const matchesRole = userRoleFilter === 'all' || user.role === userRoleFilter;
+    
+    return matchesSearch && matchesStatus && matchesRole;
+  }) || [];
+
+  // Clear all filters
+  const clearFilters = () => {
+    setUserSearchTerm('');
+    setUserStatusFilter('all');
+    setUserRoleFilter('all');
+  };
 
   // Config Management Mutations
   const updateConfig = useMutation({
@@ -405,9 +431,70 @@ export default function AdminComplete() {
           <TabsContent value="users" className="space-y-6">
             <Card className="bg-[#1a1a1a] border-[#333]">
               <CardHeader>
-                <CardTitle className="text-[#8d9c6b]">User Management</CardTitle>
+                <CardTitle className="text-[#8d9c6b] flex items-center justify-between">
+                  <span>User Management</span>
+                  <Badge variant="outline" className="text-gray-400">
+                    {filteredUsers.length} / {usersQuery.data?.length || 0} users
+                  </Badge>
+                </CardTitle>
               </CardHeader>
               <CardContent>
+                {/* Search and Filter Section */}
+                <div className="mb-6 space-y-4">
+                  <div className="flex flex-col md:flex-row gap-4">
+                    {/* Search Input */}
+                    <div className="flex-1 relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <Input
+                        placeholder="Search callsign, NRP, name, or rank..."
+                        value={userSearchTerm}
+                        onChange={(e) => setUserSearchTerm(e.target.value)}
+                        className="pl-10 bg-[#2a2a2a] border-gray-600 text-white"
+                      />
+                    </div>
+                    
+                    {/* Status Filter */}
+                    <Select value={userStatusFilter} onValueChange={setUserStatusFilter}>
+                      <SelectTrigger className="w-[180px] bg-[#2a2a2a] border-gray-600 text-white">
+                        <Filter className="w-4 h-4 mr-2" />
+                        <SelectValue placeholder="Filter Status" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#2a2a2a] border-gray-600">
+                        <SelectItem value="all" className="text-white focus:bg-[#8d9c6b] focus:text-black">All Status</SelectItem>
+                        <SelectItem value="online" className="text-white focus:bg-[#8d9c6b] focus:text-black">Online</SelectItem>
+                        <SelectItem value="offline" className="text-white focus:bg-[#8d9c6b] focus:text-black">Offline</SelectItem>
+                        <SelectItem value="disabled" className="text-white focus:bg-[#8d9c6b] focus:text-black">Disabled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    
+                    {/* Role Filter */}
+                    <Select value={userRoleFilter} onValueChange={setUserRoleFilter}>
+                      <SelectTrigger className="w-[180px] bg-[#2a2a2a] border-gray-600 text-white">
+                        <Filter className="w-4 h-4 mr-2" />
+                        <SelectValue placeholder="Filter Role" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#2a2a2a] border-gray-600">
+                        <SelectItem value="all" className="text-white focus:bg-[#8d9c6b] focus:text-black">All Roles</SelectItem>
+                        <SelectItem value="user" className="text-white focus:bg-[#8d9c6b] focus:text-black">User</SelectItem>
+                        <SelectItem value="admin" className="text-white focus:bg-[#8d9c6b] focus:text-black">Admin</SelectItem>
+                        <SelectItem value="super_admin" className="text-white focus:bg-[#8d9c6b] focus:text-black">Super Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    
+                    {/* Clear Filters Button */}
+                    {(userSearchTerm || userStatusFilter !== 'all' || userRoleFilter !== 'all') && (
+                      <Button
+                        variant="outline"
+                        onClick={clearFilters}
+                        className="border-gray-600 text-gray-400 hover:bg-gray-700"
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        Clear
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
                 {usersQuery.isLoading ? (
                   <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8d9c6b] mx-auto"></div>
@@ -429,7 +516,7 @@ export default function AdminComplete() {
                         </tr>
                       </thead>
                       <tbody>
-                        {usersQuery.data?.map((user: any) => (
+                        {filteredUsers.map((user: any) => (
                           <tr key={user.id} className="border-b border-gray-800 hover:bg-[#2a2a2a]">
                             <td className="p-3 text-white font-medium">{user.callsign}</td>
                             <td className="p-3 text-gray-300">{user.nrp}</td>
