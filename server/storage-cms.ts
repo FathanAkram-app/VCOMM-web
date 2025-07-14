@@ -387,6 +387,8 @@ export class CMSStorage {
         location: lapsitReports.location,
         priority: lapsitReports.priority,
         details: lapsitReports.content,
+        attachmentUrl: lapsitReports.attachmentUrl,
+        attachmentName: lapsitReports.attachmentName,
         createdAt: lapsitReports.createdAt
       })
       .from(lapsitReports)

@@ -970,6 +970,53 @@ export default function AdminComplete() {
                         <p className="text-white whitespace-pre-wrap">{selectedLapsitReport.details || 'No details available'}</p>
                       </div>
                     </div>
+                    
+                    {/* Photo Attachment */}
+                    {selectedLapsitReport.attachmentUrl && (
+                      <div>
+                        <label className="text-sm text-gray-400">Foto Lampiran</label>
+                        <div className="mt-2">
+                          <div className="bg-[#2a2a2a] rounded-lg border border-gray-600 p-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="text-white text-sm">
+                                {selectedLapsitReport.attachmentName || 'attachment.jpg'}
+                              </span>
+                              <a 
+                                href={selectedLapsitReport.attachmentUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-blue-400 hover:text-blue-300 text-sm"
+                              >
+                                Download
+                              </a>
+                            </div>
+                            <div className="max-w-full">
+                              <img 
+                                src={selectedLapsitReport.attachmentUrl}
+                                alt="Lapsit attachment"
+                                className="max-w-full h-auto rounded-lg border border-gray-600"
+                                style={{ maxHeight: '400px' }}
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                  e.currentTarget.nextElementSibling.style.display = 'block';
+                                }}
+                              />
+                              <div className="hidden text-center text-gray-400 p-8 border border-gray-600 rounded-lg">
+                                <p>Tidak dapat memuat gambar</p>
+                                <a 
+                                  href={selectedLapsitReport.attachmentUrl} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-blue-400 hover:text-blue-300 underline"
+                                >
+                                  Buka file
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex justify-end mt-6">
