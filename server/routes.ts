@@ -1022,12 +1022,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // CMS Admin routes (protected)
-  const isAdmin = (req: any, res: any, next: any) => {
-    const user = req.user?.claims || req.session?.user;
-    if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
-      return res.status(403).json({ message: "Admin access required" });
+  const isAdmin = async (req: any, res: any, next: any) => {
+    try {
+      const user = req.user?.claims || req.session?.user;
+      if (!user || !user.id) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      // Get user data from database to check current role
+      const userRecord = await storage.getUser(user.id);
+      if (!userRecord || (userRecord.role !== 'admin' && userRecord.role !== 'super_admin')) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      next();
+    } catch (error) {
+      console.error("Error checking admin status:", error);
+      res.status(500).json({ message: "Failed to verify admin status" });
     }
-    next();
   };
 
   // System Configuration routes

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { 
   MessageSquare, PhoneIcon, Settings, Plus, User, 
   ArrowLeft, PaperclipIcon, SendIcon, Users, Search, Info, FileText,
-  Upload, Camera, X, Eye, EyeOff
+  Upload, Camera, X, Eye, EyeOff, Shield
 } from 'lucide-react';
 import ChatList from '../components/ChatList';
 import chatIcon from '@assets/Icon Chat NXXZ.png';
@@ -1276,6 +1276,17 @@ export default function Chat() {
             >
               <Settings className="h-6 w-6" />
             </button>
+
+            {/* Admin Button for Desktop */}
+            {user && (user.role === 'admin' || user.role === 'super_admin') && (
+              <button 
+                className="p-3 rounded-lg text-orange-400 hover:bg-[#2d2121]"
+                onClick={() => window.location.href = '/admin'}
+                title="Admin Dashboard"
+              >
+                <Shield className="h-6 w-6" />
+              </button>
+            )}
           </div>
           
           <div className="mt-auto mb-6 flex justify-center">
@@ -1344,7 +1355,7 @@ export default function Chat() {
               onClick={() => window.location.href = '/admin'}
               title="Admin Dashboard"
             >
-              <Settings className="h-6 w-6" />
+              <Shield className="h-6 w-6" />
             </button>
           )}
         </div>
