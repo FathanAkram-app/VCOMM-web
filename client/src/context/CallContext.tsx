@@ -2739,6 +2739,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
       // NEW STRATEGY: For HP with 4 cameras, specifically target back camera
       let nextFacingMode: string;
       let targetDeviceId: string | undefined;
+      let rearCameras: MediaDeviceInfo[] = [];
+      let frontCameras: MediaDeviceInfo[] = [];
       
       if (videoDevices.length > 1) {
         // Multiple cameras detected - ENHANCED STRATEGY for 4-camera phones
@@ -2746,7 +2748,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         console.log('[CallContext] Current device ID:', currentDeviceId?.slice(0, 8));
         
         // ENHANCED: Find ALL possible rear cameras (HP bisa punya multiple rear cameras)
-        const rearCameras = videoDevices.filter(device => 
+        rearCameras = videoDevices.filter(device => 
           device.label.toLowerCase().includes('back') || 
           device.label.toLowerCase().includes('rear') || 
           device.label.toLowerCase().includes('environment') ||
@@ -2756,7 +2758,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         );
         
         // Find front cameras
-        const frontCameras = videoDevices.filter(device => 
+        frontCameras = videoDevices.filter(device => 
           device.label.toLowerCase().includes('front') || 
           device.label.toLowerCase().includes('user') ||
           device.label.toLowerCase().includes('selfie') ||
@@ -2795,7 +2797,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
             alert(`🔄 Switch ke KAMERA DEPAN\nTarget: ${frontCamera.label}\nDevice ID: ${targetDeviceId?.slice(0, 8)}`);
           }
         } else {
-          // Fallback: cycle through devices - but pass camera arrays to strategies
+          // Fallback: cycle through devices
           const currentIndex = videoDevices.findIndex(device => device.deviceId === currentDeviceId);
           const nextIndex = (currentIndex + 1) % videoDevices.length;
           const nextDevice = videoDevices[nextIndex];
@@ -2803,10 +2805,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
           targetDeviceId = nextDevice.deviceId;
           console.log('[CallContext] Fallback cycling to device:', nextDevice.label);
         }
-        
-        // Pass camera arrays to be used in strategies
-        window.tempRearCameras = rearCameras;
-        window.tempFrontCameras = frontCameras;
       } else {
         // Single camera or mobile force switch - toggle facing mode
         nextFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
@@ -2814,6 +2812,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
         
         if (isMobileDevice && nextFacingMode === 'environment') {
           console.log('[CallContext] 📱 Attempting to access rear camera on mobile device');
+        }
+        
+        // For single camera devices, still try to populate camera arrays
+        if (nextFacingMode === 'environment') {
+          rearCameras = videoDevices; // Assume current device might be rear
+        } else {
+          frontCameras = videoDevices; // Assume current device might be front
         }
       }
 
@@ -2847,7 +2852,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
         });
         
         if (isMobileDevice) {
-          alert(`🎯 AGGRESSIVE MODE: Akan coba ${rearCameras.length} kamera belakang secara individual...`);
+          const cameraList = rearCameras.map((camera, idx) => 
+            `${idx + 1}. ${camera.label} (ID: ${camera.deviceId.slice(0, 8)})`
+          ).join('\n');
+          alert(`🎯 AGGRESSIVE MODE: Akan coba ${rearCameras.length} kamera belakang:\n${cameraList}`);
         }
       } else if (targetDeviceId) {
         // Normal deviceId strategy for front camera
