@@ -41,6 +41,9 @@ export default function GroupVideoCallSimple() {
   const [remoteStreams, setRemoteStreams] = useState<Map<string, MediaStream>>(new Map());
   const [peerConnections, setPeerConnections] = useState<Map<number, RTCPeerConnection>>(new Map());
   const [pendingICECandidates, setPendingICECandidates] = useState<Map<number, RTCIceCandidate[]>>(new Map());
+  
+  // Track offer creation state to prevent duplicates
+  const offerCreationStateRef = useRef(new Map<number, 'creating' | 'created' | 'idle'>());
 
   // Reusable media initialization function  
   const initializeMediaStream = async () => {
@@ -239,6 +242,17 @@ export default function GroupVideoCallSimple() {
       return;
     }
 
+    // Get or create dedicated peer connection untuk user ini
+    const pc = getOrCreatePeerConnection(offerData.fromUserId);
+    
+    // Check current signaling state to prevent collision
+    if (pc.signalingState !== 'stable' && pc.signalingState !== 'have-local-offer') {
+      console.log(`[GroupVideoCallSimple] ⚠️ Peer connection for user ${offerData.fromUserId} not in correct state for offer:`, pc.signalingState);
+      // If we're in the middle of another negotiation, queue this offer
+      setTimeout(() => handleIncomingWebRTCOffer(offerData), 1000);
+      return;
+    }
+
     // Wait for local stream if not ready yet
     let streamToUse = localStream;
     if (!streamToUse) {
@@ -266,9 +280,6 @@ export default function GroupVideoCallSimple() {
     }
 
     try {
-      // Get or create dedicated peer connection untuk user ini
-      const pc = getOrCreatePeerConnection(offerData.fromUserId);
-      
       // Ensure local tracks are added before setting remote description
       if (finalStream) {
         const senders = pc.getSenders();
@@ -364,6 +375,9 @@ export default function GroupVideoCallSimple() {
     try {
       await pc.setRemoteDescription(new RTCSessionDescription(answerData.answer));
       console.log('[GroupVideoCallSimple] ✅ Set remote description for answer from user:', answerData.fromUserId);
+      
+      // Reset offer creation state after successful answer
+      offerCreationStateRef.current.set(answerData.fromUserId, 'idle');
       
       // Process any pending ICE candidates now that remote description is set
       await processPendingICECandidates(answerData.fromUserId, pc);
@@ -606,47 +620,69 @@ export default function GroupVideoCallSimple() {
       // Create peer connection dan offer untuk setiap participant
       for (const participant of data.participants) {
         if (participant.userId !== currentUser.id) {
-          console.log(`[GroupVideoCallSimple] 🔗 Creating offer for participant: ${participant.userName} (${participant.userId})`);
-          
-          const pc = getOrCreatePeerConnection(participant.userId);
-          
-          // Ensure local tracks are added before creating offer
-          if (localStream) {
-            const senders = pc.getSenders();
-            console.log(`[GroupVideoCallSimple] 📊 Current senders for user ${participant.userId}:`, senders.length);
+          try {
+            console.log(`[GroupVideoCallSimple] 🔗 Creating offer for participant: ${participant.userName} (${participant.userId})`);
             
-            // Only add tracks if they haven't been added yet
-            if (senders.length === 0) {
-              localStream.getTracks().forEach(track => {
-                const sender = pc.addTrack(track, localStream);
-                console.log(`[GroupVideoCallSimple] ✅ Re-added local track for offer to user ${participant.userId}:`, {
-                  trackKind: track.kind,
-                  trackEnabled: track.enabled,
-                  senderId: sender ? 'created' : 'failed'
-                });
-              });
-            } else {
-              console.log(`[GroupVideoCallSimple] ℹ️ Tracks already added for user ${participant.userId}`);
+            const pc = getOrCreatePeerConnection(participant.userId);
+            
+            // Check signaling state and offer creation state to prevent collision
+            const currentOfferState = offerCreationStateRef.current.get(participant.userId);
+            if (pc.signalingState !== 'stable' || currentOfferState === 'creating') {
+              console.log(`[GroupVideoCallSimple] ⚠️ Skipping offer creation for user ${participant.userId}, signaling state: ${pc.signalingState}, offer state: ${currentOfferState}`);
+              continue;
             }
-          }
-          
-          // Create offer
-          const offer = await pc.createOffer();
-          await pc.setLocalDescription(offer);
-          console.log('[GroupVideoCallSimple] ✅ Created and set local offer for user:', participant.userId);
-
-          // Send offer via WebSocket
-          if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({
-              type: 'group_webrtc_offer',
-              payload: {
-                callId: activeCall?.callId,
-                offer,
-                fromUserId: currentUser.id,
-                targetUserId: participant.userId
+            
+            // Mark offer as being created
+            offerCreationStateRef.current.set(participant.userId, 'creating');
+            
+            // Ensure local tracks are added before creating offer
+            if (localStream) {
+              const senders = pc.getSenders();
+              console.log(`[GroupVideoCallSimple] 📊 Current senders for user ${participant.userId}:`, senders.length);
+              
+              // Only add tracks if they haven't been added yet
+              if (senders.length === 0) {
+                localStream.getTracks().forEach(track => {
+                  const sender = pc.addTrack(track, localStream);
+                  console.log(`[GroupVideoCallSimple] ✅ Re-added local track for offer to user ${participant.userId}:`, {
+                    trackKind: track.kind,
+                    trackEnabled: track.enabled,
+                    senderId: sender ? 'created' : 'failed'
+                  });
+                });
+              } else {
+                console.log(`[GroupVideoCallSimple] ℹ️ Tracks already added for user ${participant.userId}`);
               }
-            }));
-            console.log('[GroupVideoCallSimple] Sent WebRTC offer to user:', participant.userId);
+            }
+            
+            // Create offer
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            console.log('[GroupVideoCallSimple] ✅ Created and set local offer for user:', participant.userId);
+
+            // Send offer via WebSocket
+            if (ws && ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({
+                type: 'group_webrtc_offer',
+                payload: {
+                  callId: activeCall?.callId,
+                  offer,
+                  fromUserId: currentUser.id,
+                  targetUserId: participant.userId
+                }
+              }));
+              console.log('[GroupVideoCallSimple] Sent WebRTC offer to user:', participant.userId);
+              
+              // Mark offer as created
+              offerCreationStateRef.current.set(participant.userId, 'created');
+            } else {
+              // Reset state if sending failed
+              offerCreationStateRef.current.set(participant.userId, 'idle');
+            }
+          } catch (participantError) {
+            console.error(`[GroupVideoCallSimple] Error creating offer for participant ${participant.userId}:`, participantError);
+            // Reset offer state on error
+            offerCreationStateRef.current.set(participant.userId, 'idle');
           }
         }
       }
