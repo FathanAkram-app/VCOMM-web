@@ -1911,13 +1911,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           try {
-            // Create new group call
+            // Create new group call with enhanced stability
+            activeGroupCalls.set(callId, new Set([fromUserId]));
+            
+            // Auto-cleanup abandoned group calls after 30 minutes
+            setTimeout(() => {
+              if (activeGroupCalls.has(callId)) {
+                console.log(`[Group Call] Auto-cleaning up inactive group call ${callId}`);
+                activeGroupCalls.delete(callId);
+              }
+            }, 30 * 60 * 1000);
+            
             // Get group members
             const members = await storage.getConversationMembers(groupId);
             console.log(`[Group Call] Found ${members.length} members in group ${groupId}`);
             
             // Send group call invitation to all members except the initiator
             let invitationsSent = 0;
+            let onlineMembers = 0;
+            
             console.log(`[Group Call] Checking ${members.length} members:`, members.map(m => ({ userId: m.userId, role: m.role })));
             console.log(`[Group Call] Connected clients:`, Array.from(clients.keys()));
             
@@ -1927,6 +1939,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 console.log(`[Group Call] Checking member ${member.userId}: client=${!!targetClient}, readyState=${targetClient?.readyState}`);
                 
                 if (targetClient && targetClient.readyState === targetClient.OPEN) {
+                  onlineMembers++;
+                  
                   const inviteMessage = {
                     type: 'incoming_group_call',
                     payload: {
@@ -1935,15 +1949,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       groupName,
                       callType,
                       fromUserId,
-                      fromUserName
+                      fromUserName,
+                      totalMembers: members.length,
+                      onlineMembers: onlineMembers + 1, // +1 for initiator
+                      connectionTimeout: 15000 // 15 second timeout for better UX
                     }
                   };
                   
-                  console.log(`[Group Call] 📤 Sending message to user ${member.userId}, WebSocket state: ${targetClient.readyState}`);
+                  console.log(`[Group Call] 📤 Sending enhanced invite to user ${member.userId}`);
                   targetClient.send(JSON.stringify(inviteMessage));
                   invitationsSent++;
-                  console.log(`[Group Call] ✅ Sent group call invitation to user ${member.userId}:`, inviteMessage);
-                  console.log(`[Group Call] 📡 Message sent successfully to user ${member.userId}`);
+                  console.log(`[Group Call] ✅ Sent enhanced group call invitation to user ${member.userId}`);
                 } else {
                   console.log(`[Group Call] ❌ Cannot send to user ${member.userId}: client=${!!targetClient}, readyState=${targetClient?.readyState || 'N/A'}`);
                 }
@@ -1951,11 +1967,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 console.log(`[Group Call] Skipping initiator ${member.userId}`);
               }
             }
-            console.log(`[Group Call] Sent ${invitationsSent} group call invitations for call ${callId}`);
+            
+            // Send confirmation to initiator with enhanced info
+            const initiatorClient = clients.get(fromUserId);
+            if (initiatorClient && initiatorClient.readyState === initiatorClient.OPEN) {
+              initiatorClient.send(JSON.stringify({
+                type: 'group_call_initiated',
+                payload: {
+                  callId,
+                  groupId,
+                  totalMembers: members.length,
+                  onlineMembers: onlineMembers + 1,
+                  invitationsSent,
+                  success: true,
+                  message: `Group call started. ${invitationsSent} invitations sent to online members.`
+                }
+              }));
+            }
+            
+            console.log(`[Group Call] Enhanced group call ${callId} initiated: ${invitationsSent} invitations sent to ${onlineMembers} online members`);
             
             // If no invitations were sent, notify the initiator
             if (invitationsSent === 0) {
-              const initiatorClient = clients.get(fromUserId);
               if (initiatorClient && initiatorClient.readyState === initiatorClient.OPEN) {
                 initiatorClient.send(JSON.stringify({
                   type: 'group_call_no_participants',

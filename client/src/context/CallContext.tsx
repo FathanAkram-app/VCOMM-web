@@ -857,6 +857,14 @@ export function CallProvider({ children }: { children: ReactNode }) {
               detail: message.payload || message
             }));
             break;
+          case 'group_call_initiated':
+            console.log('[CallContext] Group call initiated confirmation:', message.payload);
+            // Optional: Show success message to initiator
+            break;
+          case 'group_call_no_participants':
+            console.log('[CallContext] No participants available for group call:', message.payload);
+            alert(message.payload?.message || 'Tidak ada anggota grup yang online saat ini.');
+            break;
           case 'new_message':
             // Forward new message to Chat component for real-time updates
             console.log('[CallContext] Forwarding new message for Chat:', message.payload || message);
@@ -3002,17 +3010,101 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
       const callId = `group_call_${Date.now()}_${groupId}_${user.id}`;
 
-      // Create RTCPeerConnection for intranet/offline mode (no internet required)
+      // Enhanced RTCPeerConnection for group calls with better stability
       const peerConnection = new RTCPeerConnection({
-        iceServers: [], // Empty array for local network only - no internet connection needed
-        iceTransportPolicy: 'all', // Allow both UDP and TCP
+        iceServers: [], // Empty array for local intranet operation
+        iceTransportPolicy: 'all',
         bundlePolicy: 'max-bundle',
-        rtcpMuxPolicy: 'require'
+        rtcpMuxPolicy: 'require',
+        iceCandidatePoolSize: 10, // Pre-gather candidates for faster connection
+        iceGatheringTimeout: 5000  // Reduce gathering timeout
       });
+
+      // Enhanced connection state monitoring for group calls
+      peerConnection.onconnectionstatechange = () => {
+        console.log('[CallContext] Group call connection state:', peerConnection.connectionState);
+        
+        if (peerConnection.connectionState === 'connected') {
+          console.log('[CallContext] ✅ Group call WebRTC connection established successfully');
+          setActiveCall(prev => prev ? { ...prev, status: 'connected' } : null);
+        } else if (peerConnection.connectionState === 'failed' || peerConnection.connectionState === 'disconnected') {
+          console.log('[CallContext] ❌ Group call connection failed/disconnected - attempting recovery');
+          
+          // Auto-recovery for failed connections
+          setTimeout(() => {
+            if (peerConnection.connectionState === 'failed') {
+              console.log('[CallContext] Restarting ICE for group call recovery...');
+              peerConnection.restartIce();
+            }
+          }, 2000);
+        }
+      };
+
+      // Enhanced ICE connection state monitoring with timeout
+      peerConnection.oniceconnectionstatechange = () => {
+        console.log('[CallContext] Group call ICE connection state:', peerConnection.iceConnectionState);
+        
+        if (peerConnection.iceConnectionState === 'checking') {
+          setActiveCall(prev => prev ? { ...prev, status: 'calling' } : null);
+          
+          // Set timeout for checking state - auto-recovery if stuck
+          setTimeout(() => {
+            if (peerConnection.iceConnectionState === 'checking') {
+              console.log('[CallContext] ICE checking timeout - attempting restart');
+              peerConnection.restartIce();
+            }
+          }, 15000); // 15 second timeout
+          
+        } else if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
+          console.log('[CallContext] ✅ Group call ICE connection established successfully');
+          setActiveCall(prev => prev ? { ...prev, status: 'connected' } : null);
+        } else if (peerConnection.iceConnectionState === 'failed') {
+          console.log('[CallContext] ❌ ICE connection failed - attempting immediate recovery');
+          setTimeout(() => {
+            console.log('[CallContext] Executing ICE restart for failed connection');
+            peerConnection.restartIce();
+          }, 1000);
+        } else if (peerConnection.iceConnectionState === 'disconnected') {
+          console.log('[CallContext] ICE disconnected - monitoring for reconnection');
+          setTimeout(() => {
+            if (peerConnection.iceConnectionState === 'disconnected') {
+              console.log('[CallContext] ICE still disconnected - attempting restart');
+              peerConnection.restartIce();
+            }
+          }, 5000);
+        }
+      };
+
+      // Enhanced ICE candidate gathering with timeout
+      peerConnection.onicegatheringstatechange = () => {
+        console.log('[CallContext] ICE gathering state:', peerConnection.iceGatheringState);
+        
+        if (peerConnection.iceGatheringState === 'complete') {
+          console.log('[CallContext] ✅ ICE candidate gathering completed for group call');
+        }
+      };
+
+      // Add ontrack event for receiving remote streams
+      peerConnection.ontrack = (event) => {
+        console.log('[CallContext] ✅ Received remote track for group call:', event.track.kind);
+        const [remoteStream] = event.streams;
+        
+        if (remoteStream) {
+          setActiveCall(prev => {
+            if (prev?.isGroupCall) {
+              const newRemoteStreams = new Map(prev.remoteStreams);
+              newRemoteStreams.set(Date.now(), remoteStream);
+              return { ...prev, remoteStreams: newRemoteStreams };
+            }
+            return prev;
+          });
+        }
+      };
 
       // Add local stream to peer connection
       localStream.getTracks().forEach(track => {
         peerConnection.addTrack(track, localStream);
+        console.log('[CallContext] Added local track to group call:', track.kind);
       });
 
       // Set up group call state
@@ -3111,17 +3203,37 @@ export function CallProvider({ children }: { children: ReactNode }) {
       const localStream = await navigator.mediaDevices.getUserMedia(constraints);
       console.log('[CallContext] Got local media stream for joining group call');
 
-      // Create RTCPeerConnection for intranet/offline mode (no internet required)
+      // Enhanced RTCPeerConnection for joining group calls
       const peerConnection = new RTCPeerConnection({
-        iceServers: [], // Empty array for local network only - no internet connection needed
-        iceTransportPolicy: 'all', // Allow both UDP and TCP
+        iceServers: [], // Empty array for local intranet operation
+        iceTransportPolicy: 'all',
         bundlePolicy: 'max-bundle',
-        rtcpMuxPolicy: 'require'
+        rtcpMuxPolicy: 'require',
+        iceCandidatePoolSize: 10,
+        iceGatheringTimeout: 5000
       });
+
+      // Connection monitoring for joining group call
+      peerConnection.onconnectionstatechange = () => {
+        console.log('[CallContext] Join group call connection state:', peerConnection.connectionState);
+        
+        if (peerConnection.connectionState === 'connected') {
+          console.log('[CallContext] ✅ Successfully joined group call');
+          setActiveCall(prev => prev ? { ...prev, status: 'connected' } : null);
+        } else if (peerConnection.connectionState === 'failed') {
+          console.log('[CallContext] ❌ Failed to join group call - attempting recovery');
+          setTimeout(() => peerConnection.restartIce(), 2000);
+        }
+      };
+
+      peerConnection.oniceconnectionstatechange = () => {
+        console.log('[CallContext] Join group call ICE state:', peerConnection.iceConnectionState);
+      };
 
       // Add local stream to peer connection
       localStream.getTracks().forEach(track => {
         peerConnection.addTrack(track, localStream);
+        console.log('[CallContext] Added local track for joining group call:', track.kind);
       });
 
       // Set up group call state
