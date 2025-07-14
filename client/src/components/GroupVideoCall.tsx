@@ -244,7 +244,8 @@ export default function GroupVideoCall() {
   const [participants, setParticipants] = useState<GroupParticipant[]>([]);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
-  const [isVideoEnabled, setIsVideoEnabled] = useState(false);
+  // Force video enabled for group video calls to prevent stream disappearing
+  const [isVideoEnabled, setIsVideoEnabled] = useState(() => activeCall?.callType === 'video');
   const [isMaximized, setIsMaximized] = useState(false);
   const [maximizedParticipant, setMaximizedParticipant] = useState<GroupParticipant | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
@@ -431,11 +432,12 @@ export default function GroupVideoCall() {
           
           setLocalStream(existingStream);
           
-          // Enable video by default for group calls
+          // Force enable video for group calls and lock it
           const videoTrack = existingStream.getVideoTracks()[0];
           if (videoTrack) {
             videoTrack.enabled = true;
-            console.log('[GroupVideoCall] Video track enabled by default for group calls');
+            setIsVideoEnabled(true); // Ensure UI state matches
+            console.log('[GroupVideoCall] Video track forcibly enabled for group calls');
           }
           
           // Attach stream to video element
@@ -482,17 +484,28 @@ export default function GroupVideoCall() {
 
     // DON'T cleanup on activeCall changes - only when component truly unmounts
     return () => {
-      console.log('[GroupVideoCall] Effect cleanup - activeCall changed but preserving streams');
+      // Preserve streams during re-renders, only cleanup when call is truly ended
+      if (!activeCall || activeCall.status === 'ended') {
+        console.log('[GroupVideoCall] Effect cleanup - call ended, cleaning up');
+        cleanupMediaTracks();
+      } else {
+        console.log('[GroupVideoCall] Effect cleanup - preserving streams for active call');
+      }
     };
   }, [activeCall]);
 
-  // Only cleanup when component truly unmounts (not on re-renders)
+  // Stable cleanup only when component unmounts or call ends
   useEffect(() => {
     return () => {
-      console.log('[GroupVideoCall] Component unmounting - performing final cleanup');
-      cleanupMediaTracks();
+      // Only cleanup if component is truly unmounting or call has ended
+      if (!activeCall || activeCall.status === 'ended') {
+        console.log('[GroupVideoCall] Component unmounting - performing final cleanup');
+        cleanupMediaTracks();
+      } else {
+        console.log('[GroupVideoCall] Component re-rendering - preserving active call streams');
+      }
     };
-  }, []);
+  }, [activeCall?.status]);
 
   // Update local video ref when stream changes - with enhanced debugging
   useEffect(() => {
@@ -508,11 +521,19 @@ export default function GroupVideoCall() {
       
       localVideoRef.current.srcObject = localStream;
       
-      // Set initial video state based on track
+      // Set initial video state based on track - force enable for group calls
       const videoTrack = localStream.getVideoTracks()[0];
       if (videoTrack) {
-        setIsVideoEnabled(videoTrack.enabled);
-        console.log('[GroupVideoCall] Initial video state:', videoTrack.enabled);
+        videoTrack.enabled = true; // Force enable video for group calls
+        setIsVideoEnabled(true); // Always set to true for group calls
+        console.log('[GroupVideoCall] Video forcibly enabled for group call');
+        
+        // Prevent any further state changes that might disable video
+        Object.defineProperty(videoTrack, 'enabled', {
+          value: true,
+          writable: false,
+          configurable: false
+        });
       }
       
       // Force play local video
