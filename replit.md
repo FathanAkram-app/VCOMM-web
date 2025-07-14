@@ -287,6 +287,15 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - ✅ ADDED: Dual system with WebSocket fallback for maximum reliability
   - ✅ RESOLVED: Coordination issues between CallContext and ChatRoom components
   - Real-time messaging now symmetric and reliable for both directions
+- July 14, 2025: ChatList Real-time & Audio Notification Restoration:
+  - ✅ FIXED: ChatList now updates real-time when new messages arrive
+  - ✅ RESTORED: Audio notification system with multi-fallback approach
+  - ✅ IMPLEMENTED: Web Audio API with HTML5 Audio and browser notification fallbacks
+  - ✅ ADDED: 'chatlist-update' custom event for conversation list updates
+  - ✅ ENHANCED: Multiple event listeners in ChatList for reliability
+  - ✅ IMPROVED: Audio notification plays high-low double beep pattern
+  - ✅ ADDED: Vibration API fallback for mobile devices
+  - Real-time updates now work for both ChatRoom and ChatList simultaneously
 
 # User Preferences
 

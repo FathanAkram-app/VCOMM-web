@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 
 // Interface untuk item chat
 export interface ChatItem {
@@ -90,6 +91,42 @@ export default function ChatList({
     return partner?.callsign || partner?.fullName || chatName;
   };
   
+  // Real-time WebSocket handler for ChatList updates
+  useEffect(() => {
+    console.log('📋 CHATLIST: Setting up WebSocket message listeners');
+    
+    const handleChatListUpdate = (event: CustomEvent) => {
+      try {
+        const message = event.detail;
+        console.log('📋 CHATLIST: Received WebSocket message:', message);
+        
+        if (message.type === 'new_message') {
+          console.log('📋 CHATLIST: New message received, updating conversation list');
+          
+          // Force refresh conversation list to show new message and update unread count
+          queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+          refetchConversations();
+        }
+      } catch (error) {
+        console.error('📋 CHATLIST: Error processing WebSocket message:', error);
+      }
+    };
+    
+    // Listen for chatlist-specific updates
+    window.addEventListener('chatlist-update', handleChatListUpdate as EventListener);
+    
+    // Also listen for general WebSocket messages as fallback
+    window.addEventListener('websocket-message', handleChatListUpdate as EventListener);
+    window.addEventListener('new-message-realtime', handleChatListUpdate as EventListener);
+    
+    return () => {
+      console.log('📋 CHATLIST: Removing WebSocket event listeners');
+      window.removeEventListener('chatlist-update', handleChatListUpdate as EventListener);
+      window.removeEventListener('websocket-message', handleChatListUpdate as EventListener);
+      window.removeEventListener('new-message-realtime', handleChatListUpdate as EventListener);
+    };
+  }, [refetchConversations]);
+
   // Load chat list dari API
   useEffect(() => {
     if (isLoading) {

@@ -122,6 +122,68 @@ export function CallProvider({ children }: { children: ReactNode }) {
   // Add ref for pending participant updates
   const pendingParticipantUpdatesRef = useRef<Array<{type: string, payload: any}>>([]);
   const [remoteAudioStream, setRemoteAudioStream] = useState<MediaStream | null>(null);
+  
+  // Audio notification function for new messages
+  const playNewMessageSound = async () => {
+    console.log('[CallContext] 🔊 Attempting to play new message sound');
+    
+    try {
+      // Method 1: Web Audio API (most reliable)
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Resume audio context if suspended
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
+      
+      // Create a simple beep sound
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // High-low double beep pattern
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+      oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.2);
+      
+      console.log('[CallContext] ✅ Audio notification played successfully');
+      
+    } catch (error) {
+      console.log('[CallContext] ❌ Web Audio API failed, trying HTML5 Audio fallback');
+      
+      try {
+        // Method 2: HTML5 Audio fallback
+        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBjqY4PCBEDTUJJjXe');
+        audio.volume = 0.3;
+        await audio.play();
+        
+        console.log('[CallContext] ✅ HTML5 Audio notification played successfully');
+        
+      } catch (audioError) {
+        console.log('[CallContext] ❌ HTML5 Audio failed, trying browser notification');
+        
+        // Method 3: Browser notification as fallback
+        if (Notification.permission === 'granted') {
+          new Notification('New Message', {
+            body: 'You have a new message',
+            icon: '/icon-192x192.png'
+          });
+        }
+        
+        // Method 4: Vibration API as last resort (mobile)
+        if ('vibrate' in navigator) {
+          navigator.vibrate([100, 50, 100]);
+        }
+      }
+    }
+  };
 
   // Restore group call state from localStorage when on group-call page
   useEffect(() => {
@@ -668,6 +730,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
           console.log('[CallContext] 🔥 Message conversation ID:', message.payload?.conversationId);
           console.log('[CallContext] 🔥 Broadcasting to ChatRoom via custom event');
           
+          // Play audio notification for new messages from other users
+          if (message.payload?.senderId !== user?.id) {
+            console.log('[CallContext] 🔊 Playing audio notification for new message');
+            playNewMessageSound();
+          }
+          
           // Dispatch multiple events for maximum reliability
           window.dispatchEvent(new CustomEvent('websocket-message', {
             detail: message
@@ -675,6 +743,11 @@ export function CallProvider({ children }: { children: ReactNode }) {
           
           // Also dispatch with different event name for fallback
           window.dispatchEvent(new CustomEvent('new-message-realtime', {
+            detail: message
+          }));
+          
+          // Dispatch event specifically for ChatList updates
+          window.dispatchEvent(new CustomEvent('chatlist-update', {
             detail: message
           }));
           
