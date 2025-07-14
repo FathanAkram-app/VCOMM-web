@@ -882,10 +882,24 @@ function ParticipantVideo({ participant }: {
         .then(() => {
           console.log(`[ParticipantVideo] ✅ Video playing successfully for ${participant.userName}`);
           setHasVideo(true);
+          
+          // Force refresh video element after successful play
+          setTimeout(() => {
+            if (videoElement && videoElement.srcObject === participant.stream) {
+              videoElement.play().catch(console.warn);
+            }
+          }, 500);
         })
         .catch(error => {
           console.warn(`[ParticipantVideo] ❌ Video play failed for ${participant.userName}:`, error);
           setHasVideo(false);
+          
+          // Retry playing after 1 second
+          setTimeout(() => {
+            if (videoElement && participant.stream) {
+              videoElement.play().catch(console.warn);
+            }
+          }, 1000);
         });
       
       const videoTracks = participant.stream.getVideoTracks();
@@ -932,7 +946,13 @@ function ParticipantVideo({ participant }: {
       
       <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 px-2 py-1 rounded text-xs">
         {participant.userName}
-        {hasVideo && <span className="ml-1 text-green-400">●</span>}
+        {hasVideo ? (
+          <span className="ml-1 text-green-400" title="Video Active">● LIVE</span>
+        ) : participant.stream ? (
+          <span className="ml-1 text-yellow-400" title="Loading Video">⏳ Loading</span>
+        ) : (
+          <span className="ml-1 text-red-400" title="No Video Stream">● Offline</span>
+        )}
       </div>
     </div>
   );
