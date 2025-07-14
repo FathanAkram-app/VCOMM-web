@@ -244,20 +244,20 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
   }
 
   return (
-    <div className="h-full flex flex-col bg-gray-900 text-white">
+    <div className="h-full flex flex-col bg-[#111] text-white">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-700">
+      <div className="flex items-center justify-between p-4 border-b border-[#333]">
         <div className="flex items-center">
           <Button
             variant="ghost"
             size="sm"
             onClick={onBack}
-            className="mr-3 text-white hover:bg-gray-700"
+            className="mr-3 text-white hover:bg-[#262626]"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="flex items-center">
-            <PhoneCall className="w-6 h-6 mr-2 text-green-500" />
+            <PhoneCall className="w-6 h-6 mr-2 text-[#8d9c6b]" />
             <h1 className="text-xl font-semibold">Riwayat Panggilan</h1>
           </div>
         </div>
@@ -265,7 +265,7 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
           variant="ghost"
           size="sm"
           onClick={handleForceRefresh}
-          className="text-green-400 hover:text-green-300 hover:bg-gray-700"
+          className="text-[#8d9c6b] hover:text-green-300 hover:bg-[#262626]"
           title="Refresh data"
         >
           <RefreshCw className="w-5 h-5" />
@@ -273,12 +273,12 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
       </div>
 
       {/* Filter Buttons */}
-      <div className="flex p-4 space-x-2 border-b border-gray-700">
+      <div className="flex p-4 space-x-2 border-b border-[#333]">
         <Button
           variant={filter === 'all' ? 'default' : 'ghost'}
           size="sm"
           onClick={() => setFilter('all')}
-          className={filter === 'all' ? 'bg-green-600 hover:bg-green-700' : 'text-gray-300 hover:bg-gray-700'}
+          className={filter === 'all' ? 'bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]' : 'text-gray-300 hover:bg-[#262626]'}
         >
           Semua
         </Button>
@@ -286,7 +286,7 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
           variant={filter === 'audio' ? 'default' : 'ghost'}
           size="sm"
           onClick={() => setFilter('audio')}
-          className={filter === 'audio' ? 'bg-green-600 hover:bg-green-700' : 'text-gray-300 hover:bg-gray-700'}
+          className={filter === 'audio' ? 'bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]' : 'text-gray-300 hover:bg-[#262626]'}
         >
           <Phone className="w-4 h-4 mr-1" />
           Audio
@@ -295,7 +295,7 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
           variant={filter === 'video' ? 'default' : 'ghost'}
           size="sm"
           onClick={() => setFilter('video')}
-          className={filter === 'video' ? 'bg-green-600 hover:bg-green-700' : 'text-gray-300 hover:bg-gray-700'}
+          className={filter === 'video' ? 'bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]' : 'text-gray-300 hover:bg-[#262626]'}
         >
           <Video className="w-4 h-4 mr-1" />
           Video
@@ -304,7 +304,7 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
           variant={filter === 'group' ? 'default' : 'ghost'}
           size="sm"
           onClick={() => setFilter('group')}
-          className={filter === 'group' ? 'bg-green-600 hover:bg-green-700' : 'text-gray-300 hover:bg-gray-700'}
+          className={filter === 'group' ? 'bg-[#2d3328] text-[#8d9c6b] hover:bg-[#3d4338]' : 'text-gray-300 hover:bg-[#262626]'}
         >
           <Users className="w-4 h-4 mr-1" />
           Grup
@@ -319,9 +319,9 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
             <p>Tidak ada riwayat panggilan</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-700">
+          <div className="divide-y divide-[#333]">
             {filteredHistory.map((call: CallHistoryItem) => (
-              <div key={call.id} className="p-4 hover:bg-gray-800 transition-colors">
+              <div key={call.id} className="p-4 hover:bg-[#1a1a1a] transition-colors">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center flex-1">
                     {/* Call Icon */}
@@ -336,7 +336,7 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
                           {call.contactName || 'Unknown'}
                         </h3>
                         {call.callType.includes('group') && (
-                          <span className="ml-2 px-2 py-1 text-xs bg-gray-700 rounded-full text-gray-300">
+                          <span className="ml-2 px-2 py-1 text-xs bg-[#2d3328] rounded-full text-[#8d9c6b]">
                             Group
                           </span>
                         )}
@@ -407,15 +407,15 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
                   {call.callType?.startsWith('group_') && call.participantNames && call.participantNames.length > 0 && (
                     <div className="flex -space-x-2 ml-4">
                       {call.participantNames.slice(0, 3).map((name: string, index: number) => (
-                        <Avatar key={index} className="w-8 h-8 border-2 border-gray-700">
-                          <AvatarFallback className="bg-gray-600 text-white text-xs">
+                        <Avatar key={index} className="w-8 h-8 border-2 border-[#333]">
+                          <AvatarFallback className="bg-[#2d3328] text-[#8d9c6b] text-xs">
                             {name.substring(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                       ))}
                       {call.participantNames.length > 3 && (
-                        <div className="w-8 h-8 bg-gray-600 border-2 border-gray-700 rounded-full flex items-center justify-center">
-                          <span className="text-xs text-white">
+                        <div className="w-8 h-8 bg-[#2d3328] border-2 border-[#333] rounded-full flex items-center justify-center">
+                          <span className="text-xs text-[#8d9c6b]">
                             +{call.participantNames.length - 3}
                           </span>
                         </div>
@@ -429,7 +429,7 @@ export default function CallHistory({ onBack }: CallHistoryProps) {
                       variant="ghost"
                       size="sm"
                       onClick={() => handleCallback(call)}
-                      className="p-2 h-8 w-8 text-green-500 hover:text-green-400 hover:bg-green-500/10"
+                      className="p-2 h-8 w-8 text-[#8d9c6b] hover:text-green-400 hover:bg-[#2d3328]"
                       title="Call back"
                     >
                       {call.callType?.includes('video') ? (
