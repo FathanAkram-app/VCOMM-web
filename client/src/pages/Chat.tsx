@@ -2284,7 +2284,7 @@ export default function Chat() {
               <div className="relative">
                 <Input
                   type={showCurrentPassword ? "text" : "password"}
-                  className="bg-[#262626] border-[#333] text-gray-300 pr-12"
+                  className="bg-[#262626] border-[#333] text-gray-300 pr-14"
                   value={passwordForm.currentPassword}
                   onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
                   placeholder="Masukkan kata sandi saat ini"
@@ -2292,12 +2292,12 @@ export default function Chat() {
                 <button
                   type="button"
                   onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
                 >
                   {showCurrentPassword ? (
-                    <EyeOff className="w-4 h-4" />
+                    <EyeOff className="w-6 h-6" />
                   ) : (
-                    <Eye className="w-4 h-4" />
+                    <Eye className="w-6 h-6" />
                   )}
                 </button>
               </div>
@@ -2308,7 +2308,7 @@ export default function Chat() {
               <div className="relative">
                 <Input
                   type={showNewPassword ? "text" : "password"}
-                  className="bg-[#262626] border-[#333] text-gray-300 pr-12"
+                  className="bg-[#262626] border-[#333] text-gray-300 pr-14"
                   value={passwordForm.newPassword}
                   onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
                   placeholder="Masukkan kata sandi baru (min. 6 karakter)"
@@ -2316,12 +2316,12 @@ export default function Chat() {
                 <button
                   type="button"
                   onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
                 >
                   {showNewPassword ? (
-                    <EyeOff className="w-4 h-4" />
+                    <EyeOff className="w-6 h-6" />
                   ) : (
-                    <Eye className="w-4 h-4" />
+                    <Eye className="w-6 h-6" />
                   )}
                 </button>
               </div>
@@ -2332,7 +2332,7 @@ export default function Chat() {
               <div className="relative">
                 <Input
                   type={showConfirmPassword ? "text" : "password"}
-                  className="bg-[#262626] border-[#333] text-gray-300 pr-12"
+                  className="bg-[#262626] border-[#333] text-gray-300 pr-14"
                   value={passwordForm.confirmPassword}
                   onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
                   placeholder="Konfirmasi kata sandi baru"
@@ -2340,12 +2340,12 @@ export default function Chat() {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
                 >
                   {showConfirmPassword ? (
-                    <EyeOff className="w-4 h-4" />
+                    <EyeOff className="w-6 h-6" />
                   ) : (
-                    <Eye className="w-4 h-4" />
+                    <Eye className="w-6 h-6" />
                   )}
                 </button>
               </div>
