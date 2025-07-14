@@ -141,7 +141,16 @@ export async function setupAuth(app: express.Express) {
       
       // Return user without password
       const { password: _, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
+      
+      // Check if user is super admin for redirect
+      if (user.role === 'super_admin') {
+        res.json({ 
+          ...userWithoutPassword, 
+          redirectTo: '/superadmin' 
+        });
+      } else {
+        res.json(userWithoutPassword);
+      }
     } catch (error) {
       console.error('Login error:', error);
       res.status(500).json({ message: "Failed to login" });

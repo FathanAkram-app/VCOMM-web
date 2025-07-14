@@ -9,6 +9,7 @@ import Register from "@/pages/Register";
 import Chat from "@/pages/Chat";
 import Settings from "@/pages/Settings";
 import Admin from "@/pages/Admin";
+import SuperAdmin from "@/pages/SuperAdmin";
 import NotFound from "@/pages/not-found";
 import AudioCall from "@/components/AudioCall";
 import VideoCall from "@/components/VideoCall";
@@ -32,7 +33,13 @@ function AuthCheck({ children }: { children: React.ReactNode }) {
         });
         
         if (response.ok) {
+          const userData = await response.json();
           setIsLoggedIn(true);
+          
+          // Auto-redirect super admin to dashboard
+          if (userData.role === 'super_admin' && window.location.pathname === '/') {
+            window.location.href = '/superadmin';
+          }
         } else {
           setIsLoggedIn(false);
           // Redirect to login if needed
@@ -118,6 +125,11 @@ function Router() {
       <Route path="/admin">
         <AuthCheck>
           <Admin />
+        </AuthCheck>
+      </Route>
+      <Route path="/superadmin">
+        <AuthCheck>
+          <SuperAdmin />
         </AuthCheck>
       </Route>
       <Route path="/">

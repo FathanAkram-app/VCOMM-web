@@ -47,6 +47,17 @@ export default function Login() {
         description: "Anda dialihkan ke halaman chat.",
       });
 
+      // Check if user is super admin for redirect
+      const userResponse = await fetch('/api/auth/user', { credentials: 'include' });
+      if (userResponse.ok) {
+        const userData = await userResponse.json();
+        if (userData.role === 'super_admin') {
+          console.log("Super admin login, mengarahkan ke dashboard...");
+          window.location.href = "/superadmin";
+          return;
+        }
+      }
+      
       // Redirect to chat on successful login dengan refresh halaman penuh
       console.log("Login berhasil, mengarahkan ke halaman chat...");
       window.location.href = "/chat";
