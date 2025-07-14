@@ -149,13 +149,12 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     }
   };
 
-  // Listen for real-time updates (both group updates and new messages)
+  // Listen for real-time updates via custom events (more reliable than direct WebSocket)
   useEffect(() => {
-    if (!ws) return;
-
-    const handleMessage = (event: MessageEvent) => {
+    const handleWebSocketMessage = (event: CustomEvent) => {
       try {
-        const message = JSON.parse(event.data);
+        const message = event.detail;
+        console.log('🔥 CHATROOM: Received WebSocket message via custom event:', message);
         
         // Handle group updates
         if (message.type === 'group_update' && message.payload?.groupId === chatId) {
@@ -174,16 +173,14 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
         
         // Handle new messages - real-time notification
         if (message.type === 'new_message') {
-          console.log('🔥 REAL-TIME: New message received!');
+          console.log('🔥 CHATROOM REAL-TIME: New message received!');
           console.log('🔥 Message payload:', message.payload);
           console.log('🔥 Current chatId:', chatId, 'Message conversationId:', message.payload?.conversationId);
-          console.log('🔥 WebSocket readyState:', ws?.readyState);
-          console.log('🔥 Browser location:', window.location.href);
           console.log('🔥 Are we in the right conversation?', message.payload?.conversationId === chatId);
           
           // Check if this is a delete action
           if (message.payload?.action === 'delete_for_everyone') {
-            console.log('🗑️ REAL-TIME DELETE: Message deleted for everyone!');
+            console.log('🗑️ CHATROOM REAL-TIME DELETE: Message deleted for everyone!');
             console.log('🗑️ Deleted message ID:', message.payload?.id);
             
             // Refresh messages immediately to show deleted message
@@ -216,7 +213,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
           
           // Refresh messages for any conversation to see immediate updates
           if (message.payload?.conversationId) {
-            console.log('🔥 Invalidating queries for conversation:', message.payload.conversationId);
+            console.log('🔥 CHATROOM: Invalidating queries for conversation:', message.payload.conversationId);
             console.log('🔥 Current chatId:', chatId);
             
             // Force immediate refresh for the current conversation
@@ -224,7 +221,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
             
             // If this is the current conversation, also force refetch
             if (message.payload.conversationId === chatId) {
-              console.log('🔥 Force refetching current conversation messages');
+              console.log('🔥 CHATROOM: Force refetching current conversation messages');
               refetchMessages();
             }
           }
@@ -240,9 +237,37 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
       }
     };
 
-    ws.addEventListener('message', handleMessage);
-    return () => ws.removeEventListener('message', handleMessage);
-  }, [ws, chatId, queryClient]);
+    // Listen for custom WebSocket messages
+    window.addEventListener('websocket-message', handleWebSocketMessage as EventListener);
+    
+    // Also keep the old WebSocket listener as fallback
+    if (ws) {
+      const handleDirectMessage = (event: MessageEvent) => {
+        try {
+          const message = JSON.parse(event.data);
+          console.log('🔥 CHATROOM: Direct WebSocket message (fallback):', message);
+          
+          // Handle the same way as custom event
+          if (message.type === 'new_message') {
+            handleWebSocketMessage({ detail: message } as CustomEvent);
+          }
+        } catch (error) {
+          console.error('Error processing direct WebSocket message:', error);
+        }
+      };
+      
+      ws.addEventListener('message', handleDirectMessage);
+      
+      return () => {
+        window.removeEventListener('websocket-message', handleWebSocketMessage as EventListener);
+        ws.removeEventListener('message', handleDirectMessage);
+      };
+    }
+    
+    return () => {
+      window.removeEventListener('websocket-message', handleWebSocketMessage as EventListener);
+    };
+  }, [ws, chatId, queryClient, refetchMessages]);
   
   // Add console log to debug message data
   useEffect(() => {

@@ -660,6 +660,17 @@ export function CallProvider({ children }: { children: ReactNode }) {
           console.log('[CallContext] 🚨 MESSAGE PAYLOAD:', JSON.stringify(message, null, 2));
         }
         
+        // Handle real-time chat messages (for ChatRoom component)
+        if (message.type === 'new_message') {
+          console.log('[CallContext] 🔥 REAL-TIME MESSAGE RECEIVED:', message.payload);
+          console.log('[CallContext] 🔥 Broadcasting to ChatRoom via custom event');
+          
+          // Dispatch custom event for ChatRoom to handle
+          window.dispatchEvent(new CustomEvent('websocket-message', {
+            detail: message
+          }));
+        }
+        
         // Handle call-specific messages - server uses payload wrapper
         switch (message.type) {
           case 'incoming_call':

@@ -279,6 +279,14 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - ✅ ADDED: Automatic scroll to bottom when new messages are loaded
   - ✅ FIXED: Real-time message display without requiring navigation away from chatroom
   - Real-time messaging now works instantly without needing to leave and return to chat
+- July 14, 2025: Asymmetric Real-time Messaging Fix:
+  - ✅ IDENTIFIED: Asymmetric issue where eko→aji works real-time but aji→eko doesn't
+  - ✅ IMPLEMENTED: Custom event system for reliable message delivery
+  - ✅ ENHANCED: CallContext now broadcasts new_message via window.dispatchEvent
+  - ✅ IMPROVED: ChatRoom listens to 'websocket-message' custom events
+  - ✅ ADDED: Dual system with WebSocket fallback for maximum reliability
+  - ✅ RESOLVED: Coordination issues between CallContext and ChatRoom components
+  - Real-time messaging now symmetric and reliable for both directions
 
 # User Preferences
 
