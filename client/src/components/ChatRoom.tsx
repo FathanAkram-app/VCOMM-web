@@ -883,7 +883,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#171717] relative">
+    <div className="flex flex-col h-screen bg-[#171717] relative overflow-hidden">
       {/* Chat header */}
       <div className="bg-[#1a1a1a] border-b border-[#333333] p-3 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center space-x-3">
@@ -1184,12 +1184,16 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                   className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group w-full`}
                 >
                   <div 
-                    className={`relative max-w-[85%] sm:max-w-[70%] rounded-lg px-4 py-2 overflow-hidden ${
+                    className={`relative max-w-[80%] sm:max-w-[65%] rounded-lg px-3 py-2 overflow-hidden ${
                       isOwnMessage 
                         ? 'bg-[#4d5d30] text-white rounded-br-none' 
                         : 'bg-[#333333] text-white rounded-bl-none'
                     }`}
-                    style={{ wordBreak: 'break-word' }}
+                    style={{ 
+                      wordBreak: 'break-word',
+                      maxWidth: '80%',
+                      boxSizing: 'border-box'
+                    }}
                   >
                     {!isOwnMessage && (
                       <p className="text-xs font-medium text-[#a6c455]">{msg.senderName}</p>
@@ -1238,7 +1242,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
                             audioUrl={msg.attachmentUrl ? msg.attachmentUrl : `/uploads/voice_note_${msg.id}.webm`}
                           />
                         ) : (
-                          <div className="w-full max-w-full overflow-hidden">
+                          <div className="overflow-hidden" style={{ maxWidth: '100%', width: '100%' }}>
                             <MessageAttachment 
                               attachmentType={msg.attachmentType || 'document'} 
                               attachmentUrl={msg.attachmentUrl} 

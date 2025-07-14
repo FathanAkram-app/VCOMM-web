@@ -101,16 +101,18 @@ export default function MessageAttachment({
     switch (attachmentType) {
       case 'image':
         return (
-          <div className="mb-1 w-full max-w-full overflow-hidden">
+          <div className="mb-1 overflow-hidden" style={{ maxWidth: '100%', width: '100%' }}>
             <img 
               src={attachmentUrl} 
               alt={attachmentName} 
-              className="max-h-56 w-full max-w-full rounded-md object-contain cursor-pointer hover:opacity-80 transition-opacity"
+              className="rounded-md object-contain cursor-pointer hover:opacity-80 transition-opacity"
               style={{
                 maxWidth: '100%',
-                width: 'auto',
+                width: '100%',
                 height: 'auto',
-                display: 'block'
+                maxHeight: '200px',
+                display: 'block',
+                boxSizing: 'border-box'
               }}
               onClick={() => onImageClick?.(attachmentUrl)} 
                 onError={(e) => {
@@ -122,12 +124,12 @@ export default function MessageAttachment({
         );
       case 'video':
         return (
-          <div className="mb-1 relative w-full max-w-full overflow-hidden">
-            <div className="relative w-full">
+          <div className="mb-1 relative overflow-hidden" style={{ maxWidth: '100%', width: '100%' }}>
+            <div className="relative" style={{ maxWidth: '100%', width: '100%' }}>
               <video 
                 ref={videoRef}
                 controls 
-                className="w-full max-w-full rounded-md bg-black border border-gray-600 object-contain" 
+                className="rounded-md bg-black border border-gray-600 object-contain" 
                 preload="metadata"
                 playsInline
                 muted={false}
@@ -135,10 +137,11 @@ export default function MessageAttachment({
                   maxWidth: '100%',
                   width: '100%',
                   height: 'auto',
-                  maxHeight: '240px',
-                  minHeight: '180px',
+                  maxHeight: '200px',
+                  minHeight: '160px',
                   backgroundColor: '#000000',
-                  display: 'block'
+                  display: 'block',
+                  boxSizing: 'border-box'
                 }}
                 onError={(e) => {
                   console.error('❌ Video playback error:', e);
