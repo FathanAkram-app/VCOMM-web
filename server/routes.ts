@@ -2101,12 +2101,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Handle request for group participants update
         if (data.type === 'request_group_participants' && ws.userId) {
-          const { callId, groupId, requestingUserId } = data.payload;
-          console.log(`[Group Call] User ${requestingUserId} requesting participants for call ${callId}`);
+          const { callId, groupId, userId: requestingUserId } = data.payload;
+          console.log(`[Group Call] User ${requestingUserId || ws.userId} requesting participants for call ${callId}`);
           
-          // Get current participants list
-          const participants = Array.from(activeGroupCalls.get(callId) || []);
+          // Get current participants list from active calls
+          let participants = Array.from(activeGroupCalls.get(callId)?.participants || []);
           console.log(`[Group Call] Current participants in ${callId}:`, participants);
+          
+          // If no participants found in active call, find all online group members
+          if (participants.length === 0) {
+            console.log(`[Group Call] No active participants, finding all online group members for group ${groupId}`);
+            const onlineParticipants = [];
+            
+            // Get all online users who are members of this group
+            for (const [userId, client] of clients.entries()) {
+              if (client && client.readyState === client.OPEN) {
+                try {
+                  // Check if user is member of this group
+                  const userGroups = await storage.getUserGroups(userId);
+                  const isMember = userGroups.some(group => group.id === groupId);
+                  if (isMember) {
+                    onlineParticipants.push(userId);
+                  }
+                } catch (error) {
+                  console.error(`[Group Call] Error checking group membership for user ${userId}:`, error);
+                }
+              }
+            }
+            
+            participants = onlineParticipants;
+            console.log(`[Group Call] Found ${participants.length} online group members:`, participants);
+          }
           
           // Send participants update to requesting user
           if (participants.length > 0) {
@@ -2114,13 +2139,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
               type: 'group_call_participants_update',
               payload: {
                 callId,
-                participants,
-                requestResponse: true
+                participants: participants.map(id => ({ userId: id, userName: '', audioEnabled: true, videoEnabled: true })),
+                groupId,
+                requestResponse: true,
+                triggerWebRTC: true // Flag to trigger WebRTC setup
               }
             };
             
             ws.send(JSON.stringify(updateMessage));
-            console.log(`[Group Call] ✅ Sent participants update response to user ${requestingUserId}:`, updateMessage);
+            console.log(`[Group Call] ✅ Sent participants update response to user ${requestingUserId || ws.userId}:`, participants);
+            
+            // Also broadcast to all participants to sync everyone
+            participants.forEach(participantId => {
+              const participantClient = clients.get(participantId);
+              if (participantClient && participantClient.readyState === participantClient.OPEN && participantId !== ws.userId) {
+                participantClient.send(JSON.stringify(updateMessage));
+                console.log(`[Group Call] 🔄 Synced participants to user ${participantId}`);
+              }
+            });
           } else {
             console.log(`[Group Call] ❌ No participants found for call ${callId}`);
           }

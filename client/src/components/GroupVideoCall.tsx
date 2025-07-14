@@ -996,7 +996,25 @@ export default function GroupVideoCall() {
               }));
             }
           }
-        }, 3000);
+        }, 2000);
+        
+        // Final aggressive trigger if still no participants
+        setTimeout(() => {
+          if (activeCall && participants.length === 0) {
+            console.log('[GroupVideoCall] 🔥 Final aggressive participant detection trigger');
+            const ws = (window as any).__callWebSocket;
+            if (ws?.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({
+                type: 'request_group_participants',
+                payload: {
+                  callId: activeCall.callId,
+                  groupId: activeCall.groupId,
+                  userId: user.id
+                }
+              }));
+            }
+          }
+        }, 4000);
       }
     }
   }, [participants.length, localStream, activeCall?.callId, user?.id]);

@@ -340,6 +340,11 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - ✅ ADDED: Force WebRTC initiation system with initiate-group-webrtc event handler
   - ✅ ENHANCED: Multiple fallback triggers in CallContext for reliable participant detection
   - ✅ IMPROVED: Staggered WebRTC offer creation to prevent timing conflicts
+  - ✅ ENHANCED: Server-side request_group_participants handler with online group member detection
+  - ✅ IMPLEMENTED: Aggressive participant detection with multiple fallback triggers (1s, 2s, 4s delays)
+  - ✅ ADDED: Enhanced participant update response with triggerWebRTC flag for automatic connection setup
+  - ✅ IMPROVED: Proper participant data format conversion with userId/userName structure
+  - ✅ ENHANCED: Broadcast participant updates to all group members for better synchronization
   - Users should experience significantly fewer "connecting" stuck states and better auto-recovery
 - July 14, 2025: Video Call Camera Switch Enhancement:
   - ✅ FIXED: Camera switch functionality in both VideoCall and GroupVideoCall components
