@@ -326,6 +326,35 @@ export default function GroupVideoCallSimple() {
             newMap.set(`user_${userId}`, remoteStream);
             return newMap;
           });
+          
+          // Force component re-render to update participant video
+          setParticipants(prevParticipants => [...prevParticipants]);
+        }
+      };
+      
+      // Setup ICE candidate handling
+      pc.onicecandidate = (event) => {
+        if (event.candidate && ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: 'group_webrtc_ice_candidate',
+            payload: {
+              callId: activeCall?.callId,
+              candidate: event.candidate,
+              fromUserId: currentUser?.id,
+              toUserId: userId
+            }
+          }));
+          console.log('[GroupVideoCallSimple] Sent ICE candidate to user:', userId);
+        }
+      };
+      
+      // Connection state monitoring
+      pc.onconnectionstatechange = () => {
+        console.log('[GroupVideoCallSimple] Connection state for user', userId, ':', pc.connectionState);
+        if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+          console.log('[GroupVideoCallSimple] Connection failed for user', userId, '- attempting restart');
+          // Restart ICE untuk recovery
+          pc.restartIce();
         }
       };
       
@@ -423,12 +452,44 @@ export default function GroupVideoCallSimple() {
     }
   };
 
+  // Cleanup peer connections
+  const cleanupPeerConnections = () => {
+    console.log('[GroupVideoCallSimple] Cleaning up peer connections...');
+    peerConnections.forEach((pc, userId) => {
+      try {
+        pc.close();
+        console.log('[GroupVideoCallSimple] Closed peer connection for user:', userId);
+      } catch (error) {
+        console.error('[GroupVideoCallSimple] Error closing peer connection for user', userId, ':', error);
+      }
+    });
+    setPeerConnections(new Map());
+    setRemoteStreams(new Map());
+  };
+
+  // Cleanup effect on component unmount
+  useEffect(() => {
+    return () => {
+      cleanupPeerConnections();
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
+
   // Handle hangup
   const handleHangup = () => {
     console.log('[GroupVideoCallSimple] Hanging up call...');
+    
+    // Cleanup peer connections
+    cleanupPeerConnections();
+    
+    // Stop local stream
     if (localStream) {
       localStream.getTracks().forEach(track => track.stop());
+      setLocalStream(null);
     }
+    
     hangupCall();
     setLocation('/chat');
   };
