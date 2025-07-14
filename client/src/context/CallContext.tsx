@@ -2690,13 +2690,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
       const videoDevices = devices.filter(device => device.kind === 'videoinput');
       console.log('[CallContext] Available video devices:', videoDevices.length);
       
-      // Mobile debugging - show camera info for all cases
-      if (isMobileDevice) {
-        const cameraInfo = videoDevices.map((device, index) => 
-          `Camera ${index + 1}: ${device.label || 'Unknown'}\nDevice ID: ${device.deviceId?.slice(0, 8) || 'N/A'}`
-        ).join('\n\n');
-        alert(`📱 Mobile Camera Detection:\nTotal kamera: ${videoDevices.length}\n\n${cameraInfo}`);
-      }
+      // Log camera info for debugging
+      console.log(`[CallContext] Mobile device camera detection: ${videoDevices.length} cameras found`);
       
       videoDevices.forEach((device, index) => {
         console.log(`[CallContext] Camera ${index + 1}:`, {
