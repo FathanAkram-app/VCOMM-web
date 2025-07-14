@@ -644,16 +644,16 @@ export class DatabaseStorage implements IStorage {
   // Call history using database storage
   async getCallHistory(userId: number): Promise<any[]> {
     try {
-      // Only show calls where user received the call (not initiated)
+      // Show ALL calls where user participated (including calls they initiated)
       const calls = await db
         .select()
         .from(callHistory)
         .where(
-          and(
-            // User is in participants but not the initiator
+          or(
+            // User is in participants
             sql`${callHistory.participants} @> ARRAY[${userId.toString()}]::text[]`,
-            ne(callHistory.initiatorId, userId)
-            // Show all incoming calls regardless of status
+            // User is the initiator
+            eq(callHistory.initiatorId, userId)
           )
         )
         .orderBy(desc(callHistory.startTime));
@@ -661,7 +661,7 @@ export class DatabaseStorage implements IStorage {
       // Enrich with contact names
       const enrichedCalls = await Promise.all(calls.map(async (call) => {
         let contactName = 'Unknown';
-        const isIncoming = call.initiatorId !== userId; // Since we only show incoming calls
+        const isIncoming = call.initiatorId !== userId; // Check if call is incoming or outgoing
 
         if (call.conversationId) {
           // Group call - get conversation name
@@ -671,22 +671,37 @@ export class DatabaseStorage implements IStorage {
             .where(eq(conversations.id, call.conversationId));
           contactName = conversation?.name || 'Group Call';
         } else {
-          // Individual call - get caller's name (since this is incoming)
-          const [callerUser] = await db
-            .select()
-            .from(users)
-            .where(eq(users.id, call.initiatorId));
-          contactName = callerUser ? (callerUser.callsign || callerUser.fullName || 'Unknown') : 'Unknown';
+          // Individual call - get the other user's name
+          if (isIncoming) {
+            // Incoming call - show caller's name
+            const [callerUser] = await db
+              .select()
+              .from(users)
+              .where(eq(users.id, call.initiatorId));
+            contactName = callerUser ? (callerUser.callsign || callerUser.fullName || 'Unknown') : 'Unknown';
+          } else {
+            // Outgoing call - show recipient's name
+            const otherParticipant = call.participants?.find((id: string) => parseInt(id) !== userId);
+            if (otherParticipant) {
+              const [recipientUser] = await db
+                .select()
+                .from(users)
+                .where(eq(users.id, parseInt(otherParticipant)));
+              contactName = recipientUser ? (recipientUser.callsign || recipientUser.fullName || 'Unknown') : 'Unknown';
+            }
+          }
         }
 
         // Map database status to display status
         let displayStatus = call.status;
         if (call.status === 'ended') {
-          displayStatus = isIncoming ? 'incoming' : 'outgoing';
+          displayStatus = isIncoming ? 'accepted' : 'initiated';
+        } else if (call.status === 'incoming') {
+          displayStatus = isIncoming ? 'accepted' : 'initiated';
         } else if (call.status === 'initiated') {
-          displayStatus = 'missed call';
+          displayStatus = 'missed';
         } else if (call.status === 'rejected') {
-          displayStatus = 'reject';
+          displayStatus = 'rejected';
         }
 
         // Get participant names for group calls
@@ -710,7 +725,7 @@ export class DatabaseStorage implements IStorage {
           fromUserId: call.initiatorId,
           toUserId: userId,
           contactName,
-          isOutgoing: false, // Always false since we only show incoming calls
+          isOutgoing: !isIncoming, // True if user initiated the call
           status: displayStatus,
           duration: call.duration || 0,
           timestamp: call.startTime.toISOString(),
