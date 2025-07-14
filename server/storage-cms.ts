@@ -398,6 +398,10 @@ export class CMSStorage {
       return [];
     }
   }
+
+  async deleteLapsitReport(reportId: number): Promise<void> {
+    await db.delete(lapsitReports).where(eq(lapsitReports.id, reportId));
+  }
 }
 
 export const cmsStorage = new CMSStorage();

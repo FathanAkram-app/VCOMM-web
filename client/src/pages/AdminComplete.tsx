@@ -28,6 +28,13 @@ export default function AdminComplete() {
   const [userRoleFilter, setUserRoleFilter] = useState('all');
   const [userBranchFilter, setUserBranchFilter] = useState('all');
 
+  // Lapsit search and filter states
+  const [lapsitSearchTerm, setLapsitSearchTerm] = useState('');
+  const [lapsitPriorityFilter, setLapsitPriorityFilter] = useState('all');
+  const [lapsitStatusFilter, setLapsitStatusFilter] = useState('all');
+  const [selectedLapsitReport, setSelectedLapsitReport] = useState<any>(null);
+  const [showLapsitViewModal, setShowLapsitViewModal] = useState(false);
+
   // Queries
   const statsQuery = useQuery({
     queryKey: ['/api/admin/dashboard/stats'],
@@ -163,12 +170,34 @@ export default function AdminComplete() {
     return matchesSearch && matchesStatus && matchesRole && matchesBranch;
   }) || [];
 
-  // Clear all filters
+  // Clear user filters
   const clearFilters = () => {
     setUserSearchTerm('');
     setUserStatusFilter('all');
     setUserRoleFilter('all');
     setUserBranchFilter('all');
+  };
+
+  // Filter lapsit reports based on search term and filters
+  const filteredLapsitReports = lapsitQuery.data?.filter((report: any) => {
+    const matchesSearch = lapsitSearchTerm === '' || 
+      report.category?.toLowerCase().includes(lapsitSearchTerm.toLowerCase()) ||
+      report.subcategory?.toLowerCase().includes(lapsitSearchTerm.toLowerCase()) ||
+      report.reporterName?.toLowerCase().includes(lapsitSearchTerm.toLowerCase()) ||
+      report.location?.toLowerCase().includes(lapsitSearchTerm.toLowerCase()) ||
+      report.details?.toLowerCase().includes(lapsitSearchTerm.toLowerCase());
+    
+    const matchesPriority = lapsitPriorityFilter === 'all' || report.priority === lapsitPriorityFilter;
+    const matchesStatus = lapsitStatusFilter === 'all' || report.subcategory === lapsitStatusFilter;
+    
+    return matchesSearch && matchesPriority && matchesStatus;
+  }) || [];
+
+  // Clear lapsit filters
+  const clearLapsitFilters = () => {
+    setLapsitSearchTerm('');
+    setLapsitPriorityFilter('all');
+    setLapsitStatusFilter('all');
   };
 
   // Config Management Mutations
@@ -270,6 +299,28 @@ export default function AdminComplete() {
       toast({
         title: "Berhasil",
         description: "Kesatuan berhasil dihapus",
+      });
+    }
+  });
+
+  // Delete Lapsit Report Mutation
+  const deleteLapsitReport = useMutation({
+    mutationFn: async (reportId: number) => {
+      const response = await apiRequest('DELETE', `/api/admin/lapsit/${reportId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Laporan lapsit berhasil dihapus",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/lapsit'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Gagal menghapus laporan lapsit",
+        variant: "destructive",
       });
     }
   });
@@ -652,6 +703,55 @@ export default function AdminComplete() {
                   </div>
                 ) : (
                   <div className="space-y-4">
+                    {/* Lapsit Search and Filter Controls */}
+                    <div className="flex flex-col md:flex-row gap-4 mb-6">
+                      <div className="flex-1">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                          <input
+                            type="text"
+                            placeholder="Search lapsit reports..."
+                            className="w-full pl-10 pr-4 py-2 bg-[#2a2a2a] border border-gray-600 rounded-lg text-white focus:border-[#8d9c6b] focus:outline-none"
+                            value={lapsitSearchTerm}
+                            onChange={(e) => setLapsitSearchTerm(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      
+                      <Select value={lapsitPriorityFilter} onValueChange={setLapsitPriorityFilter}>
+                        <SelectTrigger className="w-40 bg-[#2a2a2a] border-gray-600">
+                          <SelectValue placeholder="Priority" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#2a2a2a] border-gray-600">
+                          <SelectItem value="all">All Priority</SelectItem>
+                          <SelectItem value="low">Low</SelectItem>
+                          <SelectItem value="normal">Normal</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                          <SelectItem value="urgent">Urgent</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      <Select value={lapsitStatusFilter} onValueChange={setLapsitStatusFilter}>
+                        <SelectTrigger className="w-40 bg-[#2a2a2a] border-gray-600">
+                          <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#2a2a2a] border-gray-600">
+                          <SelectItem value="all">All Status</SelectItem>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="reviewed">Reviewed</SelectItem>
+                          <SelectItem value="approved">Approved</SelectItem>
+                          <SelectItem value="rejected">Rejected</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      {(lapsitSearchTerm !== '' || lapsitPriorityFilter !== 'all' || lapsitStatusFilter !== 'all') && (
+                        <Button onClick={clearLapsitFilters} variant="outline" size="sm">
+                          <X className="w-4 h-4 mr-2" />
+                          Clear
+                        </Button>
+                      )}
+                    </div>
+
                     {/* Lapsit Statistics Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                       <Card className="bg-[#2a2a2a] border-[#444]">
@@ -660,7 +760,7 @@ export default function AdminComplete() {
                             <FileText className="h-6 w-6 text-blue-400" />
                             <div className="ml-3">
                               <p className="text-sm font-medium text-gray-400">Total Reports</p>
-                              <p className="text-xl font-bold text-white">{lapsitQuery.data?.length || 0}</p>
+                              <p className="text-xl font-bold text-white">{filteredLapsitReports.length || 0}</p>
                             </div>
                           </div>
                         </CardContent>
@@ -673,7 +773,7 @@ export default function AdminComplete() {
                             <div className="ml-3">
                               <p className="text-sm font-medium text-gray-400">Today</p>
                               <p className="text-xl font-bold text-white">
-                                {lapsitQuery.data?.filter((report: any) => {
+                                {filteredLapsitReports.filter((report: any) => {
                                   const today = new Date().toDateString();
                                   const reportDate = new Date(report.createdAt).toDateString();
                                   return today === reportDate;
@@ -691,7 +791,7 @@ export default function AdminComplete() {
                             <div className="ml-3">
                               <p className="text-sm font-medium text-gray-400">Categories</p>
                               <p className="text-xl font-bold text-white">
-                                {[...new Set(lapsitQuery.data?.map((report: any) => report.category) || [])].length}
+                                {[...new Set(filteredLapsitReports.map((report: any) => report.category) || [])].length}
                               </p>
                             </div>
                           </div>
@@ -715,7 +815,7 @@ export default function AdminComplete() {
                           </tr>
                         </thead>
                         <tbody>
-                          {lapsitQuery.data?.map((report: any) => (
+                          {filteredLapsitReports.map((report: any) => (
                             <tr key={report.id} className="border-b border-gray-800 hover:bg-[#2a2a2a]">
                               <td className="p-3 text-white font-medium">#{report.id}</td>
                               <td className="p-3 text-gray-300">{report.reporterName || report.reporterId}</td>
@@ -743,10 +843,27 @@ export default function AdminComplete() {
                               </td>
                               <td className="p-3">
                                 <div className="flex space-x-2">
-                                  <Button size="sm" variant="outline" className="text-blue-400 border-blue-400 hover:bg-blue-900">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="text-blue-400 border-blue-400 hover:bg-blue-900"
+                                    onClick={() => {
+                                      setSelectedLapsitReport(report);
+                                      setShowLapsitViewModal(true);
+                                    }}
+                                  >
                                     <Eye className="w-4 h-4" />
                                   </Button>
-                                  <Button size="sm" variant="outline" className="text-red-400 border-red-400 hover:bg-red-900">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="text-red-400 border-red-400 hover:bg-red-900"
+                                    onClick={() => {
+                                      if (confirm('Apakah Anda yakin ingin menghapus laporan ini?')) {
+                                        deleteLapsitReport.mutate(report.id);
+                                      }
+                                    }}
+                                  >
                                     <Trash2 className="w-4 h-4" />
                                   </Button>
                                 </div>
@@ -767,6 +884,105 @@ export default function AdminComplete() {
               </CardContent>
             </Card>
           </TabsContent>
+          )}
+
+          {/* Lapsit View Modal */}
+          {showLapsitViewModal && selectedLapsitReport && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-[#1a1a1a] rounded-lg border border-[#333] max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-bold text-[#8d9c6b]">Detail Laporan Situasi</h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowLapsitViewModal(false)}
+                      className="text-gray-400 hover:text-white"
+                    >
+                      <X className="w-5 h-5" />
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-gray-400">ID Laporan</label>
+                        <p className="text-white font-medium">#{selectedLapsitReport.id}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm text-gray-400">Pelapor</label>
+                        <p className="text-white font-medium">{selectedLapsitReport.reporterName || 'Unknown'}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-gray-400">Kategori</label>
+                        <p className="text-white font-medium">{selectedLapsitReport.category}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm text-gray-400">Status</label>
+                        <Badge 
+                          variant={selectedLapsitReport.subcategory === 'approved' ? 'default' : 
+                                  selectedLapsitReport.subcategory === 'rejected' ? 'destructive' : 'secondary'}
+                          className={selectedLapsitReport.subcategory === 'approved' ? 'bg-green-600' : 
+                                    selectedLapsitReport.subcategory === 'rejected' ? 'bg-red-600' : 'bg-gray-600'}
+                        >
+                          {selectedLapsitReport.subcategory}
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-gray-400">Prioritas</label>
+                        <Badge 
+                          variant={selectedLapsitReport.priority === 'urgent' ? 'destructive' : 
+                                  selectedLapsitReport.priority === 'high' ? 'default' : 'secondary'}
+                          className={selectedLapsitReport.priority === 'urgent' ? 'bg-red-600' : 
+                                    selectedLapsitReport.priority === 'high' ? 'bg-orange-600' : 'bg-gray-600'}
+                        >
+                          {selectedLapsitReport.priority}
+                        </Badge>
+                      </div>
+                      <div>
+                        <label className="text-sm text-gray-400">Lokasi</label>
+                        <p className="text-white font-medium">{selectedLapsitReport.location || '-'}</p>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm text-gray-400">Tanggal Laporan</label>
+                      <p className="text-white font-medium">
+                        {new Date(selectedLapsitReport.createdAt).toLocaleDateString('id-ID', {
+                          day: '2-digit',
+                          month: 'long',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm text-gray-400">Detail Laporan</label>
+                      <div className="mt-2 p-4 bg-[#2a2a2a] rounded-lg border border-gray-600">
+                        <p className="text-white whitespace-pre-wrap">{selectedLapsitReport.details || 'No details available'}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end mt-6">
+                    <Button
+                      onClick={() => setShowLapsitViewModal(false)}
+                      className="bg-[#8d9c6b] hover:bg-[#7a8c5e] text-black"
+                    >
+                      Tutup
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Config Tab */}

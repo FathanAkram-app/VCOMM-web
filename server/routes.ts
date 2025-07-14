@@ -1410,6 +1410,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/admin/lapsit/:id", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const reportId = parseInt(req.params.id);
+      await cmsStorage.deleteLapsitReport(reportId);
+      
+      // Log admin activity
+      await cmsStorage.logAdminActivity(
+        req.session?.user?.id,
+        'DELETE_LAPSIT_REPORT',
+        `Deleted lapsit report ID: ${reportId}`
+      );
+      
+      res.json({ message: "Lapsit report deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting lapsit report:", error);
+      res.status(500).json({ message: "Failed to delete lapsit report" });
+    }
+  });
+
   // User Management
   app.get("/api/admin/users", isAuthenticated, isAdmin, async (req, res) => {
     try {
