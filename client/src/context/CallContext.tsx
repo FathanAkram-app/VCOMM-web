@@ -2720,20 +2720,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
         console.log('[CallContext] Only one camera detected');
         
         if (isMobileDevice) {
-          console.log('[CallContext] Mobile device detected - akan coba force switch');
-          alert(`📱 Hanya ${videoDevices.length} kamera terdeteksi, tapi akan coba force switch untuk HP...`);
+          console.log('[CallContext] Mobile device detected - attempting force switch');
           // On mobile, try to switch even with 1 detected camera
           // Some mobile browsers don't properly enumerate all cameras
         } else {
           console.log('[CallContext] Desktop device - cannot switch with only 1 camera');
-          alert('Hanya satu kamera yang tersedia pada perangkat ini.');
           return;
         }
       } else {
         console.log(`[CallContext] ${videoDevices.length} cameras detected - normal switch`);
-        if (isMobileDevice) {
-          alert(`📱 ${videoDevices.length} kamera terdeteksi - akan switch normal...`);
-        }
       }
 
       // NEW STRATEGY: For HP with 4 cameras, specifically target back camera
@@ -2768,12 +2763,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
           device.label.toLowerCase().includes('1') // Sometimes front is camera1
         );
         
-        // Show camera analysis for debugging
-        if (isMobileDevice) {
-          const rearInfo = rearCameras.map(c => c.label).join(', ');
-          const frontInfo = frontCameras.map(c => c.label).join(', ');
-          alert(`📱 Camera Analysis:\nRear cameras (${rearCameras.length}): ${rearInfo}\nFront cameras (${frontCameras.length}): ${frontInfo}`);
-        }
+        // Log camera analysis for debugging (console only)
+        console.log('[CallContext] Camera Analysis:');
+        console.log('Rear cameras:', rearCameras.map(c => c.label));
+        console.log('Front cameras:', frontCameras.map(c => c.label));
         
         // Choose primary cameras
         const rearCamera = rearCameras[0]; // Take first rear camera
@@ -2788,17 +2781,11 @@ export function CallProvider({ children }: { children: ReactNode }) {
           nextFacingMode = 'environment';
           targetDeviceId = rearCamera.deviceId;
           console.log('[CallContext] Switching TO rear camera:', rearCamera.label, 'ID:', targetDeviceId?.slice(0, 8));
-          if (isMobileDevice) {
-            alert(`🔄 Switch ke KAMERA BELAKANG\nTarget: ${rearCamera.label}\nDevice ID: ${targetDeviceId?.slice(0, 8)}`);
-          }
         } else if (!isCurrentlyFront && frontCamera) {
           // Switch TO front camera
           nextFacingMode = 'user';
           targetDeviceId = frontCamera.deviceId;
           console.log('[CallContext] Switching TO front camera:', frontCamera.label, 'ID:', targetDeviceId?.slice(0, 8));
-          if (isMobileDevice) {
-            alert(`🔄 Switch ke KAMERA DEPAN\nTarget: ${frontCamera.label}\nDevice ID: ${targetDeviceId?.slice(0, 8)}`);
-          }
         } else {
           // Fallback: cycle through devices
           const currentIndex = videoDevices.findIndex(device => device.deviceId === currentDeviceId);
@@ -2837,9 +2824,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       const strategies = [];
       
       if (isMobileRearCamera) {
-        if (isMobileDevice) {
-          alert(`🎯 SIMPLIFIED MODE: Mencoba akses kamera belakang dengan strategi dasar...`);
-        }
+        console.log('[CallContext] Attempting rear camera access with simplified strategies');
         
         // Strategy 1: Just exact environment - paling basic
         strategies.push({
@@ -2896,36 +2881,17 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
       for (const [index, strategy] of strategies.entries()) {
         try {
-          console.log(`[CallContext] Trying camera switch strategy ${index + 1}:`, strategy);
-          
-          // Show strategy attempt progress for mobile debugging  
-          if (isMobileDevice && index <= 3) {
-            const hasDeviceId = strategy.video && typeof strategy.video === 'object' && 'deviceId' in strategy.video;
-            const hasFacingMode = strategy.video && typeof strategy.video === 'object' && 'facingMode' in strategy.video;
-            
-            let strategyDesc = 'Basic';
-            if (hasDeviceId) {
-              strategyDesc = 'Device ID';
-            } else if (hasFacingMode) {
-              const facingMode = strategy.video.facingMode;
-              strategyDesc = typeof facingMode === 'object' && 'exact' in facingMode ? 'Exact FacingMode' : 'Basic FacingMode';
-            }
-            
-            alert(`🔄 Strategi ${index + 1} (${strategyDesc}): Mencoba akses kamera ${isMobileRearCamera ? 'belakang' : 'depan'}...`);
-          }
+          console.log(`[CallContext] Trying camera switch strategy ${index + 1} for ${isMobileRearCamera ? 'rear' : 'front'} camera:`, strategy);
           
           newVideoStream = await navigator.mediaDevices.getUserMedia(strategy);
           newVideoTrack = newVideoStream.getVideoTracks()[0];
           console.log(`[CallContext] Strategy ${index + 1} SUCCESS! Got video track:`, newVideoTrack.id);
           
-          // Show success for mobile users
-          if (isMobileDevice) {
-            const newSettings = newVideoTrack.getSettings();
-            const cameraType = newSettings.facingMode === 'environment' ? 'Kamera Belakang' : 
-                              newSettings.facingMode === 'user' ? 'Kamera Depan' : 'Unknown';
-            const resolution = `${newSettings.width || 'Unknown'}x${newSettings.height || 'Unknown'}`;
-            alert(`✅ Berhasil switch kamera!\n\nTipe: ${cameraType}\nResolusi: ${resolution}\nDevice ID: ${newSettings.deviceId?.slice(0, 8) || 'N/A'}`);
-          }
+          // Log success for debugging
+          const newSettings = newVideoTrack.getSettings();
+          const cameraType = newSettings.facingMode === 'environment' ? 'rear' : 
+                            newSettings.facingMode === 'user' ? 'front' : 'unknown';
+          console.log(`[CallContext] Camera switch successful - Type: ${cameraType}, Resolution: ${newSettings.width}x${newSettings.height}`);
           
           strategySucceeded = true;
           break;
@@ -2942,19 +2908,11 @@ export function CallProvider({ children }: { children: ReactNode }) {
       }
 
       if (!strategySucceeded || !newVideoStream) {
-        // Show comprehensive failure message for mobile users
-        if (isMobileDevice) {
-          const errorMsg = lastError?.name === 'NotFoundError' ? 
-            'Kamera belakang tidak ditemukan di HP ini.' :
-            lastError?.name === 'NotAllowedError' ?
-            'Izin kamera ditolak. Buka Pengaturan browser → Izin situs.' :
-            lastError?.name === 'OverconstrainedError' ?
-            'Kamera belakang tidak mendukung resolusi yang diminta.' :
-            lastError?.name === 'NotReadableError' ?
-            'Kamera sedang digunakan aplikasi lain.' :
-            `Error: ${lastError?.message || 'Tidak diketahui'}`;
-          
-          alert(`❌ SIMPLIFIED MODE GAGAL!\n\n${errorMsg}\n\nError: ${lastError?.name || 'Unknown'}\n\nCONCLUSION: HP ini mungkin tidak memiliki kamera belakang yang accessible via browser, atau ada pembatasan hardware/OS.\n\nSolusi: Gunakan kamera depan untuk video call.`);
+        // Log failure for debugging and show simple error message
+        console.error('[CallContext] Camera switch failed:', lastError);
+        if (isMobileDevice && isMobileRearCamera) {
+          // Only show simple message for rear camera failures on mobile
+          console.log('[CallContext] Rear camera access blocked - falling back to front camera');
         }
         throw lastError || new Error('Semua strategi camera switch gagal');
       }
