@@ -1285,13 +1285,14 @@ function ParticipantVideo({ participant, onRefreshConnection }: {
             setHasVideo(false);
             setConnectionStatus('failed');
             setShowRefreshButton(true);
-            console.log(`[ParticipantVideo] ❌ Failed to attach video for ${participant.userName}`);
+            console.log(`[ParticipantVideo] ❌ Failed to attach video for ${participant.userName} - ENABLING REFRESH BUTTON`);
           }
         } catch (error) {
           console.error(`[ParticipantVideo] Error attaching video for ${participant.userName}:`, error);
           setHasVideo(false);
           setConnectionStatus('failed');
           setShowRefreshButton(true);
+          console.log(`[ParticipantVideo] ❌ Exception in video attach for ${participant.userName} - ENABLING REFRESH BUTTON`);
         }
       };
       
@@ -1323,6 +1324,7 @@ function ParticipantVideo({ participant, onRefreshConnection }: {
         setHasVideo(false);
         setConnectionStatus('failed');
         setShowRefreshButton(true);
+        console.log(`[ParticipantVideo] 🔄 Enabling refresh button for ${participant.userName} due to video error`);
       };
       
       videoElement.addEventListener('loadeddata', handleLoadedData);
@@ -1341,14 +1343,29 @@ function ParticipantVideo({ participant, onRefreshConnection }: {
       setHasVideo(false);
       setConnectionStatus(participant.stream ? 'loading' : 'failed');
       
-      // Show refresh button after timeout if no stream
+      // Show refresh button immediately if no stream, or after timeout for loading
       if (!participant.stream) {
+        setShowRefreshButton(true);
+        setConnectionStatus('failed');
+      } else {
+        // If there's a stream but no video element, wait a bit then show refresh
         setTimeout(() => {
           setShowRefreshButton(true);
-        }, 5000); // Wait 5 seconds before showing refresh option
+          setConnectionStatus('failed');
+          console.log(`[ParticipantVideo] ⏰ Timeout reached for ${participant.userName} - ENABLING REFRESH BUTTON`);
+        }, 3000); // Reduced to 3 seconds
       }
     }
   }, [participant.stream, participant.userName, videoElement]);
+
+  // Debug logging untuk refresh button visibility
+  console.log(`[ParticipantVideo] ${participant.userName} render state:`, {
+    hasVideo,
+    connectionStatus,
+    showRefreshButton,
+    hasStream: !!participant.stream,
+    shouldShowRefresh: showRefreshButton || connectionStatus === 'failed'
+  });
 
   return (
     <div className="relative bg-gray-800 rounded-lg overflow-hidden aspect-video">
@@ -1390,7 +1407,7 @@ function ParticipantVideo({ participant, onRefreshConnection }: {
       )}
       
       {/* Individual refresh button untuk video yang bermasalah */}
-      {hasVideo && showRefreshButton && (
+      {(showRefreshButton || connectionStatus === 'failed') && (
         <div className="absolute top-2 right-2">
           <Button
             variant="outline"
