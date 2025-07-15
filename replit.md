@@ -135,7 +135,13 @@ NXZZ-VComm is a military communications platform designed for intranet environme
     * Result: Both users receive each other's video streams after refresh
   - ✅ CONFIRMED: Remote tracks properly received (audio + video) with streamId verification
   - ✅ SUCCESS: WebRTC connection states reach "connected" after bidirectional refresh
+  - ✅ FIXED: Connection loop prevention - added anti-loop protection dengan:
+    * Debouncing mechanism (5 second minimum between reconnection attempts)
+    * Maximum reconnection attempts limit (3 attempts max per user)
+    * Connection timeout tracking untuk prevent duplicate timeouts
+    * Proper cleanup untuk reconnection state on component unmount
   - Asymmetric refresh issue permanently resolved - both directions now work automatically
+  - Connection stability improved - no more infinite "connecting" loops pada video calls
 - July 15, 2025: 🔧 ENHANCED STABILITY IMPROVEMENTS - Triple-Layer Stream Management:
   - ✅ IMPLEMENTED: Enhanced media initialization dengan 3 retry attempts dan exponential backoff
   - ✅ ADDED: Stream waiting mechanism dengan polling untuk prevent "No local stream" errors
