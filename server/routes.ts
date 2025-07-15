@@ -2367,6 +2367,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
+        // Handle group participant refresh for bidirectional WebRTC refresh
+        if (data.type === 'group_participant_refresh' && ws.userId) {
+          const { callId, fromUserId, targetUserId } = data.payload;
+          console.log(`[Group WebRTC] Relaying participant refresh request for call ${callId} from ${fromUserId} to ${targetUserId}`);
+          
+          const targetClient = clients.get(targetUserId);
+          if (targetClient && targetClient.readyState === targetClient.OPEN) {
+            targetClient.send(JSON.stringify({
+              type: 'group_participant_refresh',
+              payload: {
+                callId,
+                fromUserId,
+                targetUserId
+              }
+            }));
+            console.log(`[Group WebRTC] Participant refresh request sent to user ${targetUserId}`);
+          } else {
+            console.log(`[Group WebRTC] Cannot send refresh request to user ${targetUserId} - client not available`);
+          }
+        }
+
         // REMOVED: Duplicate handler for request_group_participants - consolidated below
       } catch (error) {
         console.error('WebSocket message error:', error);

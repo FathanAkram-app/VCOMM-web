@@ -857,6 +857,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
               detail: message.payload || message
             }));
             break;
+          case 'group_participant_refresh':
+            // Forward group participant refresh request to GroupVideoCallSimple component
+            console.log('[CallContext] Forwarding group participant refresh:', message.payload || message);
+            window.dispatchEvent(new CustomEvent('group-participant-refresh', {
+              detail: message.payload || message
+            }));
+            break;
           case 'group_call_initiated':
             console.log('[CallContext] Group call initiated confirmation:', message.payload);
             // Optional: Show success message to initiator

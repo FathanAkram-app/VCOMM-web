@@ -341,11 +341,25 @@ export default function GroupVideoCallSimple() {
       }
     };
 
+    // Handle participant refresh requests
+    const handleParticipantRefresh = (event: CustomEvent) => {
+      const data = event.detail;
+      console.log(`[GroupVideoCallSimple] Received participant refresh request:`, data);
+      
+      // If this is for us, refresh our connection back
+      if (data.targetUserId === currentUser?.id) {
+        console.log(`[GroupVideoCallSimple] 🔄 Responding to refresh request from user ${data.fromUserId}`);
+        // Refresh our connection to the requesting user
+        refreshParticipantConnection(data.fromUserId);
+      }
+    };
+
     window.addEventListener('group-webrtc-offer', handleGroupWebRTCOffer as EventListener);
     window.addEventListener('group-webrtc-answer', handleGroupWebRTCAnswer as EventListener);
     window.addEventListener('group-webrtc-ice-candidate', handleGroupWebRTCIceCandidate as EventListener);
     window.addEventListener('initiate-group-webrtc', handleInitiateWebRTC as EventListener);
     window.addEventListener('group-participants-update', handleGroupParticipantsUpdate as EventListener);
+    window.addEventListener('group-participant-refresh', handleParticipantRefresh as EventListener);
 
     return () => {
       window.removeEventListener('group-webrtc-offer', handleGroupWebRTCOffer as EventListener);
@@ -353,6 +367,7 @@ export default function GroupVideoCallSimple() {
       window.removeEventListener('group-webrtc-ice-candidate', handleGroupWebRTCIceCandidate as EventListener);
       window.removeEventListener('initiate-group-webrtc', handleInitiateWebRTC as EventListener);
       window.removeEventListener('group-participants-update', handleGroupParticipantsUpdate as EventListener);
+      window.removeEventListener('group-participant-refresh', handleParticipantRefresh as EventListener);
     };
   }, [activeCall]);
 
@@ -959,7 +974,7 @@ export default function GroupVideoCallSimple() {
 
   // Individual participant refresh function untuk re-request WebRTC connection
   const refreshParticipantConnection = async (userId: number) => {
-    console.log(`[GroupVideoCallSimple] 🔄 Refreshing connection for user ${userId}`);
+    console.log(`[GroupVideoCallSimple] 🔄 Refreshing bidirectional connection for user ${userId}`);
     
     try {
       // Reset status untuk participant yang di-refresh
@@ -995,19 +1010,30 @@ export default function GroupVideoCallSimple() {
       // Wait a moment untuk cleanup
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Create new peer connection dan send new offer
-      if (currentUser && localStream) {
-        console.log(`[GroupVideoCallSimple] 🚀 Creating new offer for user ${userId}`);
+      // Send bidirectional refresh request
+      if (currentUser && ws && ws.readyState === WebSocket.OPEN) {
+        console.log(`[GroupVideoCallSimple] 🔄 Sending bidirectional refresh request to user ${userId}`);
         
-        const pc = getOrCreatePeerConnection(userId);
+        // Send refresh request message untuk trigger mutual refresh
+        ws.send(JSON.stringify({
+          type: 'group_participant_refresh',
+          payload: {
+            callId: activeCall?.callId,
+            fromUserId: currentUser.id,
+            targetUserId: userId
+          }
+        }));
         
-        // Create and send new offer
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        
-        console.log(`[GroupVideoCallSimple] 📤 Sending refresh offer to user ${userId}`);
-        
-        if (ws && ws.readyState === WebSocket.OPEN) {
+        // Also create new offer dari current user
+        if (localStream) {
+          const pc = getOrCreatePeerConnection(userId);
+          
+          // Create and send new offer
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          
+          console.log(`[GroupVideoCallSimple] 📤 Sending refresh offer to user ${userId}`);
+          
           ws.send(JSON.stringify({
             type: 'group_webrtc_offer',
             payload: {
@@ -1017,9 +1043,9 @@ export default function GroupVideoCallSimple() {
               targetUserId: userId
             }
           }));
-          
-          console.log(`[GroupVideoCallSimple] ✅ Refresh offer sent to user ${userId}`);
         }
+        
+        console.log(`[GroupVideoCallSimple] ✅ Bidirectional refresh initiated for user ${userId}`);
       }
     } catch (error) {
       console.error(`[GroupVideoCallSimple] ❌ Error refreshing connection for user ${userId}:`, error);

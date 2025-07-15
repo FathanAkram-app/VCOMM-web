@@ -1,0 +1,844 @@
+🔥 CHATROOM: Message payload: {userId: 2, status: 'online'}
+ChatRoom.tsx:270 🔥 CHATROOM: Direct WebSocket message (fallback): {type: 'user_status', payload: {…}}
+CallContext.tsx:717 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:776 [CallContext] Received user status update: {userId: 4, status: 'offline'}
+ChatRoom.tsx:159 🔥 CHATROOM: Received WebSocket message via custom event: {type: 'user_status', payload: {…}}
+ChatRoom.tsx:160 🔥 CHATROOM: Message type: user_status
+ChatRoom.tsx:161 🔥 CHATROOM: Message payload: {userId: 4, status: 'offline'}
+ChatRoom.tsx:270 🔥 CHATROOM: Direct WebSocket message (fallback): {type: 'user_status', payload: {…}}
+CallContext.tsx:717 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:776 [CallContext] Received user status update: {userId: 4, status: 'online'}
+ChatRoom.tsx:159 🔥 CHATROOM: Received WebSocket message via custom event: {type: 'user_status', payload: {…}}
+ChatRoom.tsx:160 🔥 CHATROOM: Message type: user_status
+ChatRoom.tsx:161 🔥 CHATROOM: Message payload: {userId: 4, status: 'online'}
+ChatRoom.tsx:270 🔥 CHATROOM: Direct WebSocket message (fallback): {type: 'user_status', payload: {…}}
+sw.js:194 [SW] Message received: {type: 'KEEP_ALIVE'}
+sw.js:201 Uncaught TypeError: Cannot read properties of undefined (reading 'postMessage')
+    at sw.js:201:22
+(anonymous) @ sw.js:201Understand this error
+ChatRoom.tsx:1051 Starting group video call for group: Ampera Grup
+CallContext.tsx:3142 [CallContext] Starting group call: {groupId: 38, groupName: 'Ampera Grup', callType: 'video'}
+CallContext.tsx:11 [CallContext] Mobile compatibility check: {isMobile: false, isHTTPS: true, userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWeb…KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36', hasMediaDevices: ƒ}
+CallContext.tsx:3153 [CallContext] Mobile compatibility check for group call: {isMobile: false, isHTTPS: true, hasMediaDevices: ƒ}
+CallContext.tsx:3176 [CallContext] Requesting full media permissions for group call (audio + video enabled)...
+CallContext.tsx:3178 [CallContext] Got audio and video stream for group call - full media enabled from start
+CallContext.tsx:3286 [CallContext] Added local track to group call: audio
+CallContext.tsx:3286 [CallContext] Added local track to group call: video
+CallContext.tsx:3323 [CallContext] Group call invitation sent
+CallContext.tsx:3587 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+ChatRoom.tsx:828 Processing message data for grouping: (12) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:829 Total messages to process: 12
+ChatRoom.tsx:834 Messages with replies: [{…}]
+ChatRoom.tsx:901 Grouped messages: (2) [{…}, {…}]
+ChatRoom.tsx:902 Total date groups: 2
+ChatRoom.tsx:904 Total messages in first group: 8
+ChatRoom.tsx:1253 [Message Debug] Message ID: 197, replyToId: null, content: cek
+ChatRoom.tsx:1253 [Message Debug] Message ID: 198, replyToId: null, content: gmn
+ChatRoom.tsx:1253 [Message Debug] Message ID: 199, replyToId: null, content: coba
+ChatRoom.tsx:1253 [Message Debug] Message ID: 200, replyToId: null, content: kok
+ChatRoom.tsx:1253 [Message Debug] Message ID: 214, replyToId: null, content: Cek
+ChatRoom.tsx:1253 [Message Debug] Message ID: 215, replyToId: null, content: [User Deleted]
+ChatRoom.tsx:1253 [Message Debug] Message ID: 216, replyToId: null, content: [User Deleted]
+ChatRoom.tsx:1253 [Message Debug] Message ID: 217, replyToId: 216, content: cakep
+ChatRoom.tsx:1294 [Reply Debug] Message 217 has replyToId: 216
+ChatRoom.tsx:1295 [Reply Debug] All messages: (12) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:1298 [Reply Debug] Found replied message: {id: 216, senderId: 1, senderName: 'test123', content: '[User Deleted]', timestamp: '2025-06-05T12:27:36.691Z', …}
+ChatRoom.tsx:1253 [Message Debug] Message ID: 310, replyToId: null, content: [Diteruskan] Tess
+ChatRoom.tsx:1253 [Message Debug] Message ID: 311, replyToId: null, content: [File: 17521563299775275155729307715143.jpg]
+ChatRoom.tsx:1253 [Message Debug] Message ID: 312, replyToId: null, content: [File: 17521563531216073247134206960683.jpg]
+ChatRoom.tsx:1253 [Message Debug] Message ID: 315, replyToId: null, content: [Diteruskan] [Diteruskan] [File: 17521563531216073247134206960683.jpg]
+IncomingCallModal.tsx:6 [IncomingCallModal] 🔥 COMPONENT RENDERED - START
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+IncomingCallModal.tsx:11 [IncomingCallModal] 🔥 After useCall hook - incomingCall: null
+IncomingCallModal.tsx:12 [IncomingCallModal] 🔥 incomingCall type check: object
+IncomingCallModal.tsx:13 [IncomingCallModal] 🔥 incomingCall falsy check: true
+IncomingCallModal.tsx:16 [IncomingCallModal] No incoming call, returning null
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:149 [GroupVideoCallSimple] Initializing media with video enabled from start...
+GroupVideoCallSimple.tsx:262 [GroupVideoCallSimple] Updating participants: []
+GroupVideoCallSimple.tsx:263 [GroupVideoCallSimple] Current user ID: 3
+GroupVideoCallSimple.tsx:264 [GroupVideoCallSimple] Available remote streams: Map(0) {size: 0}
+GroupVideoCallSimple.tsx:268 [GroupVideoCallSimple] Remote streams array: []
+GroupVideoCallSimple.tsx:271 [GroupVideoCallSimple] 🔍 Before filtering participants: []
+GroupVideoCallSimple.tsx:272 [GroupVideoCallSimple] 🔍 Current user to filter out: 3
+GroupVideoCallSimple.tsx:275 [GroupVideoCallSimple] 🔍 After filtering participants: []
+GroupVideoCallSimple.tsx:298 [GroupVideoCallSimple] 📋 Final participants list: []
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:169 [GroupVideoCallSimple] ✅ Got media stream: {id: '0374b607-10ba-44a9-a4ea-1f2e6537d16e', active: true, videoTracks: 1, audioTracks: 1}
+GroupVideoCallSimple.tsx:181 [GroupVideoCallSimple] ✅ Video enabled from start
+GroupVideoCallSimple.tsx:60 [GroupVideoCallSimple] 🔄 Attempting Local video attach (1/3)
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:110 [GroupVideoCallSimple] ✅ Local video playing successfully (attempt 1)
+GroupVideoCallSimple.tsx:191 [GroupVideoCallSimple] 📊 Media stream set in state and marked as initialized
+CallContext.tsx:3587 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+ChatRoom.tsx:285 🔥 CHATROOM: Removing all event listeners
+GroupVideoCallSimple.tsx:952 [GroupVideoCallSimple] 🧹 Component unmounting - final cleanup
+GroupVideoCallSimple.tsx:928 [GroupVideoCallSimple] Cleaning up peer connections...
+GroupVideoCallSimple.tsx:149 [GroupVideoCallSimple] Initializing media with video enabled from start...
+GroupVideoCallSimple.tsx:262 [GroupVideoCallSimple] Updating participants: []
+GroupVideoCallSimple.tsx:263 [GroupVideoCallSimple] Current user ID: 3
+GroupVideoCallSimple.tsx:264 [GroupVideoCallSimple] Available remote streams: Map(0) {size: 0}
+GroupVideoCallSimple.tsx:268 [GroupVideoCallSimple] Remote streams array: []
+GroupVideoCallSimple.tsx:271 [GroupVideoCallSimple] 🔍 Before filtering participants: []
+GroupVideoCallSimple.tsx:272 [GroupVideoCallSimple] 🔍 Current user to filter out: 3
+GroupVideoCallSimple.tsx:275 [GroupVideoCallSimple] 🔍 After filtering participants: []
+GroupVideoCallSimple.tsx:298 [GroupVideoCallSimple] 📋 Final participants list: []
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_call_initiated', payload: {…}}
+CallContext.tsx:861 [CallContext] Group call initiated confirmation: {callId: 'group_call_1752584292223_38_3', groupId: 38, totalMembers: 3, onlineMembers: 3, invitationsSent: 2, …}
+CallContext.tsx:3337 [CallContext] Auto-joined group call as initiator: {type: 'join_group_call', payload: {…}}
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:819 [CallContext] 🔥 GROUP_CALL_PARTICIPANTS_UPDATE received: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1627 [CallContext] Group call participants update: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1632 [CallContext] Comparing callIds - message: group_call_1752584292223_38_3 activeCall: group_call_1752584292223_38_3
+CallContext.tsx:1633 [CallContext] ActiveCall groupId: 38
+CallContext.tsx:1672 [CallContext] Extracted groupIds - message: 38 active: 38
+CallContext.tsx:1673 [CallContext] CallId parts: (5) ['group', 'call', '1752584292223', '38', '3']
+CallContext.tsx:1676 [CallContext] Group IDs match, updating participants: [3]
+CallContext.tsx:1687 [CallContext] Unique participants after deduplication: [3]
+CallContext.tsx:1690 [CallContext] 🔍 Fetching user names for participants: [3]
+CallContext.tsx:717 [CallContext] Received message: {type: 'initiate_group_webrtc', payload: {…}}
+GroupVideoCallSimple.tsx:169 [GroupVideoCallSimple] ✅ Got media stream: {id: '639b0f44-3a0c-4839-a169-fd8e88371dcc', active: true, videoTracks: 1, audioTracks: 1}
+GroupVideoCallSimple.tsx:181 [GroupVideoCallSimple] ✅ Video enabled from start
+GroupVideoCallSimple.tsx:60 [GroupVideoCallSimple] 🔄 Attempting Local video attach (1/3)
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:1692 [CallContext] 📊 Got all users data: 8
+CallContext.tsx:1707 [CallContext] 📋 Created participant objects: [{…}]
+CallContext.tsx:1716 [CallContext] ✅ Updated participants with names: [{…}]
+CallContext.tsx:1728 [CallContext] 🚀 Dispatching group-participants-update event: [{…}]
+CallContext.tsx:1729 [CallContext] 🚀 Event details: {callId: 'group_call_1752584292223_38_3', groupId: 38}
+CallContext.tsx:3587 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:262 [GroupVideoCallSimple] Updating participants: [{…}]
+GroupVideoCallSimple.tsx:263 [GroupVideoCallSimple] Current user ID: 3
+GroupVideoCallSimple.tsx:264 [GroupVideoCallSimple] Available remote streams: Map(0) {size: 0}
+GroupVideoCallSimple.tsx:268 [GroupVideoCallSimple] Remote streams array: []
+GroupVideoCallSimple.tsx:271 [GroupVideoCallSimple] 🔍 Before filtering participants: ['aji(3)']
+GroupVideoCallSimple.tsx:272 [GroupVideoCallSimple] 🔍 Current user to filter out: 3
+GroupVideoCallSimple.tsx:275 [GroupVideoCallSimple] 🔍 After filtering participants: []
+GroupVideoCallSimple.tsx:298 [GroupVideoCallSimple] 📋 Final participants list: []
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:110 [GroupVideoCallSimple] ✅ Local video playing successfully (attempt 1)
+GroupVideoCallSimple.tsx:191 [GroupVideoCallSimple] 📊 Media stream set in state and marked as initialized
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:60 [GroupVideoCallSimple] 🔄 Attempting Local-Update video attach (1/3)
+GroupVideoCallSimple.tsx:249 [GroupVideoCallSimple] 📊 Stream initialized and ready for WebRTC
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:336 [GroupVideoCallSimple] Participants update received, triggerWebRTC: true
+CallContext.tsx:1741 [CallContext] ✅ group-participants-update event dispatched successfully
+GroupVideoCallSimple.tsx:110 [GroupVideoCallSimple] ✅ Local-Update video playing successfully (attempt 1)
+GroupVideoCallSimple.tsx:329 [GroupVideoCallSimple] Initiating WebRTC for group call: {callId: 'group_call_1752584292223_38_3', participants: Array(1), forceInit: true}
+GroupVideoCallSimple.tsx:751 [GroupVideoCallSimple] 🚀 Initiating WebRTC connections with participants: [{…}]
+GroupVideoCallSimple.tsx:765 [GroupVideoCallSimple] ⏳ Waiting for stream initialization... (attempt 1/10)
+GroupVideoCallSimple.tsx:773 [GroupVideoCallSimple] 📊 Stream status check: initialized=false, attempt=1
+GroupVideoCallSimple.tsx:765 [GroupVideoCallSimple] ⏳ Waiting for stream initialization... (attempt 2/10)
+GroupVideoCallSimple.tsx:773 [GroupVideoCallSimple] 📊 Stream status check: initialized=false, attempt=2
+GroupVideoCallSimple.tsx:765 [GroupVideoCallSimple] ⏳ Waiting for stream initialization... (attempt 3/10)
+GroupVideoCallSimple.tsx:751 [GroupVideoCallSimple] 🚀 Initiating WebRTC connections with participants: [{…}]
+GroupVideoCallSimple.tsx:765 [GroupVideoCallSimple] ⏳ Waiting for stream initialization... (attempt 1/10)
+GroupVideoCallSimple.tsx:773 [GroupVideoCallSimple] 📊 Stream status check: initialized=false, attempt=3
+GroupVideoCallSimple.tsx:765 [GroupVideoCallSimple] ⏳ Waiting for stream initialization... (attempt 4/10)
+GroupVideoCallSimple.tsx:773 [GroupVideoCallSimple] 📊 Stream status check: initialized=false, attempt=1
+GroupVideoCallSimple.tsx:765 [GroupVideoCallSimple] ⏳ Waiting for stream initialization... (attempt 2/10)
+GroupVideoCallSimple.tsx:773 [GroupVideoCallSimple] 📊 Stream status check: initialized=false, attempt=4
+GroupVideoCallSimple.tsx:765 [GroupVideoCallSimple] ⏳ Waiting for stream initialization... (attempt 5/10)
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_offer', payload: {…}}
+CallContext.tsx:841 [CallContext] Forwarding group WebRTC offer: {callId: 'group_call_1752584292223_38_3', offer: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:311 [GroupVideoCallSimple] Received group WebRTC offer: {callId: 'group_call_1752584292223_38_3', offer: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:361 [GroupVideoCallSimple] 📥 PROCESSING WEBRTC OFFER from user: 2
+GroupVideoCallSimple.tsx:362 [GroupVideoCallSimple] 📥 Offer data: {fromUserId: 2, hasOffer: true, offerType: 'offer', callId: 'group_call_1752584292223_38_3'}
+GroupVideoCallSimple.tsx:618 [GroupVideoCallSimple] Creating new peer connection for user: 2
+GroupVideoCallSimple.tsx:733 [GroupVideoCallSimple] ⚠️ No local stream available when creating peer connection for user 2
+GroupVideoCallSimple.tsx:741 [GroupVideoCallSimple] 📊 Updated peerConnections map, total connections: 1
+GroupVideoCallSimple.tsx:742 [GroupVideoCallSimple] 📊 Stored connection for users: [2]
+GroupVideoCallSimple.tsx:392 [GroupVideoCallSimple] ⏳ Waiting for existing stream... (attempt 1/5)
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_ice_candidate', payload: {…}}
+CallContext.tsx:855 [CallContext] Forwarding group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:323 [GroupVideoCallSimple] Received group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:536 [GroupVideoCallSimple] 🧊 Processing ICE candidate from user: 2
+GroupVideoCallSimple.tsx:566 [GroupVideoCallSimple] ⏳ Queuing ICE candidate (no remote description yet) for user: 2
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_ice_candidate', payload: {…}}
+CallContext.tsx:855 [CallContext] Forwarding group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:323 [GroupVideoCallSimple] Received group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:536 [GroupVideoCallSimple] 🧊 Processing ICE candidate from user: 2
+GroupVideoCallSimple.tsx:566 [GroupVideoCallSimple] ⏳ Queuing ICE candidate (no remote description yet) for user: 2
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_ice_candidate', payload: {…}}
+CallContext.tsx:855 [CallContext] Forwarding group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:323 [GroupVideoCallSimple] Received group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:536 [GroupVideoCallSimple] 🧊 Processing ICE candidate from user: 2
+GroupVideoCallSimple.tsx:566 [GroupVideoCallSimple] ⏳ Queuing ICE candidate (no remote description yet) for user: 2
+GroupVideoCallSimple.tsx:392 [GroupVideoCallSimple] ⏳ Waiting for existing stream... (attempt 2/5)
+GroupVideoCallSimple.tsx:773 [GroupVideoCallSimple] 📊 Stream status check: initialized=false, attempt=2
+GroupVideoCallSimple.tsx:765 [GroupVideoCallSimple] ⏳ Waiting for stream initialization... (attempt 3/10)
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_ice_candidate', payload: {…}}
+CallContext.tsx:855 [CallContext] Forwarding group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:323 [GroupVideoCallSimple] Received group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:536 [GroupVideoCallSimple] 🧊 Processing ICE candidate from user: 2
+GroupVideoCallSimple.tsx:566 [GroupVideoCallSimple] ⏳ Queuing ICE candidate (no remote description yet) for user: 2
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:773 [GroupVideoCallSimple] 📊 Stream status check: initialized=false, attempt=5
+GroupVideoCallSimple.tsx:781 [GroupVideoCallSimple] ⚠️ Stream wait timeout, forcing initialization...
+GroupVideoCallSimple.tsx:149 [GroupVideoCallSimple] Initializing media with video enabled from start...
+GroupVideoCallSimple.tsx:169 [GroupVideoCallSimple] ✅ Got media stream: {id: 'da44d4a8-5273-404b-8a22-8a48fe6b312e', active: true, videoTracks: 1, audioTracks: 1}
+GroupVideoCallSimple.tsx:181 [GroupVideoCallSimple] ✅ Video enabled from start
+GroupVideoCallSimple.tsx:60 [GroupVideoCallSimple] 🔄 Attempting Local video attach (1/3)
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:392 [GroupVideoCallSimple] ⏳ Waiting for existing stream... (attempt 3/5)
+GroupVideoCallSimple.tsx:110 [GroupVideoCallSimple] ✅ Local video playing successfully (attempt 1)
+GroupVideoCallSimple.tsx:191 [GroupVideoCallSimple] 📊 Media stream set in state and marked as initialized
+GroupVideoCallSimple.tsx:785 [GroupVideoCallSimple] ✅ Forced stream initialization successful
+GroupVideoCallSimple.tsx:806 [GroupVideoCallSimple] 📊 Local stream ready for offers: {streamId: 'da44d4a8-5273-404b-8a22-8a48fe6b312e', active: true, videoTracks: 1, audioTracks: 1, videoEnabled: true, …}
+GroupVideoCallSimple.tsx:773 [GroupVideoCallSimple] 📊 Stream status check: initialized=false, attempt=3
+GroupVideoCallSimple.tsx:765 [GroupVideoCallSimple] ⏳ Waiting for stream initialization... (attempt 4/10)
+GroupVideoCallSimple.tsx:392 [GroupVideoCallSimple] ⏳ Waiting for existing stream... (attempt 4/5)
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:60 [GroupVideoCallSimple] 🔄 Attempting Local-Update video attach (1/3)
+GroupVideoCallSimple.tsx:249 [GroupVideoCallSimple] 📊 Stream initialized and ready for WebRTC
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:392 [GroupVideoCallSimple] ⏳ Waiting for existing stream... (attempt 5/5)
+GroupVideoCallSimple.tsx:110 [GroupVideoCallSimple] ✅ Local-Update video playing successfully (attempt 1)
+GroupVideoCallSimple.tsx:773 [GroupVideoCallSimple] 📊 Stream status check: initialized=false, attempt=4
+GroupVideoCallSimple.tsx:765 [GroupVideoCallSimple] ⏳ Waiting for stream initialization... (attempt 5/10)
+GroupVideoCallSimple.tsx:399 [GroupVideoCallSimple] ⚠️ Local stream not ready, initializing...
+GroupVideoCallSimple.tsx:149 [GroupVideoCallSimple] Initializing media with video enabled from start...
+GroupVideoCallSimple.tsx:169 [GroupVideoCallSimple] ✅ Got media stream: {id: 'bbba7828-760d-4660-b4b6-12e9978bca41', active: true, videoTracks: 1, audioTracks: 1}
+GroupVideoCallSimple.tsx:181 [GroupVideoCallSimple] ✅ Video enabled from start
+GroupVideoCallSimple.tsx:60 [GroupVideoCallSimple] 🔄 Attempting Local video attach (1/3)
+GroupVideoCallSimple.tsx:773 [GroupVideoCallSimple] 📊 Stream status check: initialized=false, attempt=5
+GroupVideoCallSimple.tsx:781 [GroupVideoCallSimple] ⚠️ Stream wait timeout, forcing initialization...
+GroupVideoCallSimple.tsx:149 [GroupVideoCallSimple] Initializing media with video enabled from start...
+GroupVideoCallSimple.tsx:110 [GroupVideoCallSimple] ✅ Local video playing successfully (attempt 1)
+GroupVideoCallSimple.tsx:191 [GroupVideoCallSimple] 📊 Media stream set in state and marked as initialized
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:60 [GroupVideoCallSimple] 🔄 Attempting Local-Update video attach (1/3)
+GroupVideoCallSimple.tsx:249 [GroupVideoCallSimple] 📊 Stream initialized and ready for WebRTC
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:169 [GroupVideoCallSimple] ✅ Got media stream: {id: '04e96213-982b-44fe-be41-d3d30a19422a', active: true, videoTracks: 1, audioTracks: 1}
+GroupVideoCallSimple.tsx:181 [GroupVideoCallSimple] ✅ Video enabled from start
+GroupVideoCallSimple.tsx:60 [GroupVideoCallSimple] 🔄 Attempting Local video attach (1/3)
+GroupVideoCallSimple.tsx:110 [GroupVideoCallSimple] ✅ Local video playing successfully (attempt 1)
+GroupVideoCallSimple.tsx:191 [GroupVideoCallSimple] 📊 Media stream set in state and marked as initialized
+GroupVideoCallSimple.tsx:785 [GroupVideoCallSimple] ✅ Forced stream initialization successful
+GroupVideoCallSimple.tsx:806 [GroupVideoCallSimple] 📊 Local stream ready for offers: {streamId: '04e96213-982b-44fe-be41-d3d30a19422a', active: true, videoTracks: 1, audioTracks: 1, videoEnabled: true, …}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:60 [GroupVideoCallSimple] 🔄 Attempting Local-Update video attach (1/3)
+GroupVideoCallSimple.tsx:249 [GroupVideoCallSimple] 📊 Stream initialized and ready for WebRTC
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:110 [GroupVideoCallSimple] ✅ Local-Update video playing successfully (attempt 1)
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_offer', payload: {…}}
+CallContext.tsx:841 [CallContext] Forwarding group WebRTC offer: {callId: 'group_call_1752584292223_38_3', offer: {…}, fromUserId: 4}
+GroupVideoCallSimple.tsx:311 [GroupVideoCallSimple] Received group WebRTC offer: {callId: 'group_call_1752584292223_38_3', offer: {…}, fromUserId: 4}
+GroupVideoCallSimple.tsx:361 [GroupVideoCallSimple] 📥 PROCESSING WEBRTC OFFER from user: 4
+GroupVideoCallSimple.tsx:362 [GroupVideoCallSimple] 📥 Offer data: {fromUserId: 4, hasOffer: true, offerType: 'offer', callId: 'group_call_1752584292223_38_3'}
+GroupVideoCallSimple.tsx:618 [GroupVideoCallSimple] Creating new peer connection for user: 4
+GroupVideoCallSimple.tsx:733 [GroupVideoCallSimple] ⚠️ No local stream available when creating peer connection for user 4
+GroupVideoCallSimple.tsx:741 [GroupVideoCallSimple] 📊 Updated peerConnections map, total connections: 2
+GroupVideoCallSimple.tsx:742 [GroupVideoCallSimple] 📊 Stored connection for users: (2) [2, 4]
+GroupVideoCallSimple.tsx:392 [GroupVideoCallSimple] ⏳ Waiting for existing stream... (attempt 1/5)
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_ice_candidate', payload: {…}}
+CallContext.tsx:855 [CallContext] Forwarding group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 4}
+GroupVideoCallSimple.tsx:323 [GroupVideoCallSimple] Received group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 4}
+GroupVideoCallSimple.tsx:536 [GroupVideoCallSimple] 🧊 Processing ICE candidate from user: 4
+GroupVideoCallSimple.tsx:566 [GroupVideoCallSimple] ⏳ Queuing ICE candidate (no remote description yet) for user: 4
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_ice_candidate', payload: {…}}
+CallContext.tsx:855 [CallContext] Forwarding group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 4}
+GroupVideoCallSimple.tsx:323 [GroupVideoCallSimple] Received group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 4}
+GroupVideoCallSimple.tsx:536 [GroupVideoCallSimple] 🧊 Processing ICE candidate from user: 4
+GroupVideoCallSimple.tsx:566 [GroupVideoCallSimple] ⏳ Queuing ICE candidate (no remote description yet) for user: 4
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:110 [GroupVideoCallSimple] ✅ Local-Update video playing successfully (attempt 1)
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_ice_candidate', payload: {…}}
+CallContext.tsx:855 [CallContext] Forwarding group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 4}
+GroupVideoCallSimple.tsx:323 [GroupVideoCallSimple] Received group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 4}
+GroupVideoCallSimple.tsx:536 [GroupVideoCallSimple] 🧊 Processing ICE candidate from user: 4
+GroupVideoCallSimple.tsx:566 [GroupVideoCallSimple] ⏳ Queuing ICE candidate (no remote description yet) for user: 4
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_ice_candidate', payload: {…}}
+CallContext.tsx:855 [CallContext] Forwarding group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 4}
+GroupVideoCallSimple.tsx:323 [GroupVideoCallSimple] Received group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 4}
+GroupVideoCallSimple.tsx:536 [GroupVideoCallSimple] 🧊 Processing ICE candidate from user: 4
+GroupVideoCallSimple.tsx:566 [GroupVideoCallSimple] ⏳ Queuing ICE candidate (no remote description yet) for user: 4
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:407 [GroupVideoCallSimple] 📦 Using newly initialized stream directly
+GroupVideoCallSimple.tsx:426 [GroupVideoCallSimple] 📊 Current senders before answer for user 2: 0
+GroupVideoCallSimple.tsx:432 [GroupVideoCallSimple] ✅ Added local track for answer to user 2: {trackKind: 'audio', trackEnabled: true, senderId: 'created'}
+GroupVideoCallSimple.tsx:432 [GroupVideoCallSimple] ✅ Added local track for answer to user 2: {trackKind: 'video', trackEnabled: true, senderId: 'created'}
+GroupVideoCallSimple.tsx:445 [GroupVideoCallSimple] 🔗 Peer connection state before setting remote description: {connectionState: 'new', iceConnectionState: 'new', signalingState: 'stable'}
+GroupVideoCallSimple.tsx:628 [GroupVideoCallSimple] 🎥 RECEIVED REMOTE TRACK from user 2 : audio
+GroupVideoCallSimple.tsx:629 [GroupVideoCallSimple] 🎥 Event streams: [MediaStream]
+GroupVideoCallSimple.tsx:633 [GroupVideoCallSimple] 📦 STORING REMOTE STREAM for user 2 : {streamId: '6b9de6b1-cc25-4baa-8e04-0dbec61c6ac8', active: true, videoTracks: 1, audioTracks: 1}
+GroupVideoCallSimple.tsx:628 [GroupVideoCallSimple] 🎥 RECEIVED REMOTE TRACK from user 2 : video
+GroupVideoCallSimple.tsx:629 [GroupVideoCallSimple] 🎥 Event streams: [MediaStream]
+GroupVideoCallSimple.tsx:633 [GroupVideoCallSimple] 📦 STORING REMOTE STREAM for user 2 : {streamId: '6b9de6b1-cc25-4baa-8e04-0dbec61c6ac8', active: true, videoTracks: 1, audioTracks: 1}
+GroupVideoCallSimple.tsx:452 [GroupVideoCallSimple] ✅ Set remote description for offer from user: 2
+GroupVideoCallSimple.tsx:592 [GroupVideoCallSimple] 🧊 Processing 4 pending ICE candidates for user: 2
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+2GroupVideoCallSimple.tsx:645 [GroupVideoCallSimple] 📦 Updated remoteStreams map, total streams: 1
+GroupVideoCallSimple.tsx:262 [GroupVideoCallSimple] Updating participants: [{…}]
+GroupVideoCallSimple.tsx:263 [GroupVideoCallSimple] Current user ID: 3
+GroupVideoCallSimple.tsx:264 [GroupVideoCallSimple] Available remote streams: Map(1) {'user_2' => MediaStream}
+GroupVideoCallSimple.tsx:268 [GroupVideoCallSimple] Remote streams array: [MediaStream]
+GroupVideoCallSimple.tsx:271 [GroupVideoCallSimple] 🔍 Before filtering participants: ['aji(3)']
+GroupVideoCallSimple.tsx:272 [GroupVideoCallSimple] 🔍 Current user to filter out: 3
+GroupVideoCallSimple.tsx:275 [GroupVideoCallSimple] 🔍 After filtering participants: []
+GroupVideoCallSimple.tsx:298 [GroupVideoCallSimple] 📋 Final participants list: []
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+4GroupVideoCallSimple.tsx:597 [GroupVideoCallSimple] ✅ Added pending ICE candidate for user: 2
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:392 [GroupVideoCallSimple] ⏳ Waiting for existing stream... (attempt 2/5)
+GroupVideoCallSimple.tsx:460 [GroupVideoCallSimple] ✅ Created and set local answer for user: 2
+GroupVideoCallSimple.tsx:461 [GroupVideoCallSimple] 📤 Answer details: {type: 'answer', hasAnswer: true}
+GroupVideoCallSimple.tsx:477 [GroupVideoCallSimple] 📤 Sent WebRTC answer to user: 2
+GroupVideoCallSimple.tsx:482 [GroupVideoCallSimple] 🔗 Peer connection state after answer: {connectionState: 'new', iceConnectionState: 'new', signalingState: 'stable'}
+GroupVideoCallSimple.tsx:673 [GroupVideoCallSimple] Sent ICE candidate to user: 2
+GroupVideoCallSimple.tsx:679 [GroupVideoCallSimple] Connection state for user 2 : connecting
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+2GroupVideoCallSimple.tsx:652 [GroupVideoCallSimple] 🔄 FORCE RE-RENDER participants for user 2
+GroupVideoCallSimple.tsx:392 [GroupVideoCallSimple] ⏳ Waiting for existing stream... (attempt 3/5)
+GroupVideoCallSimple.tsx:673 [GroupVideoCallSimple] Sent ICE candidate to user: 2
+GroupVideoCallSimple.tsx:392 [GroupVideoCallSimple] ⏳ Waiting for existing stream... (attempt 4/5)
+GroupVideoCallSimple.tsx:392 [GroupVideoCallSimple] ⏳ Waiting for existing stream... (attempt 5/5)
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:819 [CallContext] 🔥 GROUP_CALL_PARTICIPANTS_UPDATE received: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1627 [CallContext] Group call participants update: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1632 [CallContext] Comparing callIds - message: group_call_1752584292223_38_3 activeCall: group_call_1752584292223_38_3
+CallContext.tsx:1633 [CallContext] ActiveCall groupId: 38
+CallContext.tsx:1672 [CallContext] Extracted groupIds - message: 38 active: 38
+CallContext.tsx:1673 [CallContext] CallId parts: (5) ['group', 'call', '1752584292223', '38', '3']
+CallContext.tsx:1676 [CallContext] Group IDs match, updating participants: (2) [3, 2]
+CallContext.tsx:1687 [CallContext] Unique participants after deduplication: (2) [3, 2]
+CallContext.tsx:1690 [CallContext] 🔍 Fetching user names for participants: (2) [3, 2]
+CallContext.tsx:717 [CallContext] Received message: {type: 'initiate_group_webrtc', payload: {…}}
+GroupVideoCallSimple.tsx:399 [GroupVideoCallSimple] ⚠️ Local stream not ready, initializing...
+GroupVideoCallSimple.tsx:149 [GroupVideoCallSimple] Initializing media with video enabled from start...
+GroupVideoCallSimple.tsx:169 [GroupVideoCallSimple] ✅ Got media stream: {id: 'a6d109e6-61dd-4464-9ed1-279a4616449b', active: true, videoTracks: 1, audioTracks: 1}
+GroupVideoCallSimple.tsx:181 [GroupVideoCallSimple] ✅ Video enabled from start
+GroupVideoCallSimple.tsx:60 [GroupVideoCallSimple] 🔄 Attempting Local video attach (1/3)
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:110 [GroupVideoCallSimple] ✅ Local video playing successfully (attempt 1)
+GroupVideoCallSimple.tsx:191 [GroupVideoCallSimple] 📊 Media stream set in state and marked as initialized
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:60 [GroupVideoCallSimple] 🔄 Attempting Local-Update video attach (1/3)
+GroupVideoCallSimple.tsx:249 [GroupVideoCallSimple] 📊 Stream initialized and ready for WebRTC
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:110 [GroupVideoCallSimple] ✅ Local-Update video playing successfully (attempt 1)
+GroupVideoCallSimple.tsx:407 [GroupVideoCallSimple] 📦 Using newly initialized stream directly
+GroupVideoCallSimple.tsx:426 [GroupVideoCallSimple] 📊 Current senders before answer for user 4: 0
+GroupVideoCallSimple.tsx:432 [GroupVideoCallSimple] ✅ Added local track for answer to user 4: {trackKind: 'audio', trackEnabled: true, senderId: 'created'}
+GroupVideoCallSimple.tsx:432 [GroupVideoCallSimple] ✅ Added local track for answer to user 4: {trackKind: 'video', trackEnabled: true, senderId: 'created'}
+GroupVideoCallSimple.tsx:445 [GroupVideoCallSimple] 🔗 Peer connection state before setting remote description: {connectionState: 'new', iceConnectionState: 'new', signalingState: 'stable'}
+GroupVideoCallSimple.tsx:628 [GroupVideoCallSimple] 🎥 RECEIVED REMOTE TRACK from user 4 : audio
+GroupVideoCallSimple.tsx:629 [GroupVideoCallSimple] 🎥 Event streams: [MediaStream]
+GroupVideoCallSimple.tsx:633 [GroupVideoCallSimple] 📦 STORING REMOTE STREAM for user 4 : {streamId: 'b0301ae8-ddbb-4014-871a-a54792fb3cfd', active: true, videoTracks: 1, audioTracks: 1}
+GroupVideoCallSimple.tsx:645 [GroupVideoCallSimple] 📦 Updated remoteStreams map, total streams: 2
+GroupVideoCallSimple.tsx:628 [GroupVideoCallSimple] 🎥 RECEIVED REMOTE TRACK from user 4 : video
+GroupVideoCallSimple.tsx:629 [GroupVideoCallSimple] 🎥 Event streams: [MediaStream]
+GroupVideoCallSimple.tsx:633 [GroupVideoCallSimple] 📦 STORING REMOTE STREAM for user 4 : {streamId: 'b0301ae8-ddbb-4014-871a-a54792fb3cfd', active: true, videoTracks: 1, audioTracks: 1}
+GroupVideoCallSimple.tsx:452 [GroupVideoCallSimple] ✅ Set remote description for offer from user: 4
+GroupVideoCallSimple.tsx:592 [GroupVideoCallSimple] 🧊 Processing 4 pending ICE candidates for user: 4
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:645 [GroupVideoCallSimple] 📦 Updated remoteStreams map, total streams: 2
+GroupVideoCallSimple.tsx:262 [GroupVideoCallSimple] Updating participants: [{…}]
+GroupVideoCallSimple.tsx:263 [GroupVideoCallSimple] Current user ID: 3
+GroupVideoCallSimple.tsx:264 [GroupVideoCallSimple] Available remote streams: Map(2) {'user_2' => MediaStream, 'user_4' => MediaStream}
+GroupVideoCallSimple.tsx:268 [GroupVideoCallSimple] Remote streams array: (2) [MediaStream, MediaStream]
+GroupVideoCallSimple.tsx:271 [GroupVideoCallSimple] 🔍 Before filtering participants: ['aji(3)']
+GroupVideoCallSimple.tsx:272 [GroupVideoCallSimple] 🔍 Current user to filter out: 3
+GroupVideoCallSimple.tsx:275 [GroupVideoCallSimple] 🔍 After filtering participants: []
+GroupVideoCallSimple.tsx:298 [GroupVideoCallSimple] 📋 Final participants list: []
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+4GroupVideoCallSimple.tsx:597 [GroupVideoCallSimple] ✅ Added pending ICE candidate for user: 4
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:460 [GroupVideoCallSimple] ✅ Created and set local answer for user: 4
+GroupVideoCallSimple.tsx:461 [GroupVideoCallSimple] 📤 Answer details: {type: 'answer', hasAnswer: true}
+GroupVideoCallSimple.tsx:477 [GroupVideoCallSimple] 📤 Sent WebRTC answer to user: 4
+GroupVideoCallSimple.tsx:482 [GroupVideoCallSimple] 🔗 Peer connection state after answer: {connectionState: 'new', iceConnectionState: 'new', signalingState: 'stable'}
+GroupVideoCallSimple.tsx:679 [GroupVideoCallSimple] Connection state for user 4 : connecting
+GroupVideoCallSimple.tsx:673 [GroupVideoCallSimple] Sent ICE candidate to user: 4
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:652 [GroupVideoCallSimple] 🔄 FORCE RE-RENDER participants for user 4
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:652 [GroupVideoCallSimple] 🔄 FORCE RE-RENDER participants for user 4
+CallContext.tsx:1692 [CallContext] 📊 Got all users data: 8
+CallContext.tsx:1707 [CallContext] 📋 Created participant objects: (2) [{…}, {…}]
+CallContext.tsx:1716 [CallContext] ✅ Updated participants with names: (2) [{…}, {…}]
+CallContext.tsx:1728 [CallContext] 🚀 Dispatching group-participants-update event: (2) [{…}, {…}]
+CallContext.tsx:1729 [CallContext] 🚀 Event details: {callId: 'group_call_1752584292223_38_3', groupId: 38}
+CallContext.tsx:3587 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:262 [GroupVideoCallSimple] Updating participants: (2) [{…}, {…}]
+GroupVideoCallSimple.tsx:263 [GroupVideoCallSimple] Current user ID: 3
+GroupVideoCallSimple.tsx:264 [GroupVideoCallSimple] Available remote streams: Map(2) {'user_2' => MediaStream, 'user_4' => MediaStream}
+GroupVideoCallSimple.tsx:268 [GroupVideoCallSimple] Remote streams array: (2) [MediaStream, MediaStream]
+GroupVideoCallSimple.tsx:271 [GroupVideoCallSimple] 🔍 Before filtering participants: (2) ['aji(3)', 'eko(2)']
+GroupVideoCallSimple.tsx:272 [GroupVideoCallSimple] 🔍 Current user to filter out: 3
+GroupVideoCallSimple.tsx:275 [GroupVideoCallSimple] 🔍 After filtering participants: ['eko(2)']
+GroupVideoCallSimple.tsx:281 [GroupVideoCallSimple] 🔍 Mapping participant eko (2): {streamKey: 'user_2', hasStream: true, streamId: '6b9de6b1-cc25-4baa-8e04-0dbec61c6ac8', streamActive: true, videoTracks: 1, …}
+GroupVideoCallSimple.tsx:298 [GroupVideoCallSimple] 📋 Final participants list: [{…}]
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: false, connectionStatus: 'loading', showRefreshButton: false, hasStream: true, shouldShowRefresh: false}
+GroupVideoCallSimple.tsx:1279 [ParticipantVideo] Effect triggered for eko: {hasVideoElement: false, hasStream: true, streamId: '6b9de6b1-cc25-4baa-8e04-0dbec61c6ac8', streamActive: true}
+GroupVideoCallSimple.tsx:1388 [ParticipantVideo] No stream or video element for eko
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: false, connectionStatus: 'loading', showRefreshButton: false, hasStream: true, shouldShowRefresh: false}
+GroupVideoCallSimple.tsx:1279 [ParticipantVideo] Effect triggered for eko: {hasVideoElement: true, hasStream: true, streamId: '6b9de6b1-cc25-4baa-8e04-0dbec61c6ac8', streamActive: true}
+GroupVideoCallSimple.tsx:1287 [ParticipantVideo] Attaching stream for eko
+GroupVideoCallSimple.tsx:1194 [ParticipantVideo] 🔄 Attempting eko video attach (1/3)
+GroupVideoCallSimple.tsx:1319 [ParticipantVideo] Stream details for eko: {streamId: '6b9de6b1-cc25-4baa-8e04-0dbec61c6ac8', active: true, videoTracks: 1, audioTracks: 1, videoEnabled: true, …}
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: false, connectionStatus: 'loading', showRefreshButton: false, hasStream: true, shouldShowRefresh: false}
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_offer', payload: {…}}
+CallContext.tsx:841 [CallContext] Forwarding group WebRTC offer: {callId: 'group_call_1752584292223_38_3', offer: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:311 [GroupVideoCallSimple] Received group WebRTC offer: {callId: 'group_call_1752584292223_38_3', offer: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:361 [GroupVideoCallSimple] 📥 PROCESSING WEBRTC OFFER from user: 2
+GroupVideoCallSimple.tsx:362 [GroupVideoCallSimple] 📥 Offer data: {fromUserId: 2, hasOffer: true, offerType: 'offer', callId: 'group_call_1752584292223_38_3'}
+GroupVideoCallSimple.tsx:426 [GroupVideoCallSimple] 📊 Current senders before answer for user 2: 2
+GroupVideoCallSimple.tsx:439 [GroupVideoCallSimple] ℹ️ Tracks already added for answer to user 2
+GroupVideoCallSimple.tsx:445 [GroupVideoCallSimple] 🔗 Peer connection state before setting remote description: {connectionState: 'connecting', iceConnectionState: 'checking', signalingState: 'stable'}
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_ice_candidate', payload: {…}}
+CallContext.tsx:855 [CallContext] Forwarding group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:323 [GroupVideoCallSimple] Received group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:536 [GroupVideoCallSimple] 🧊 Processing ICE candidate from user: 2
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_ice_candidate', payload: {…}}
+CallContext.tsx:855 [CallContext] Forwarding group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:323 [GroupVideoCallSimple] Received group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:536 [GroupVideoCallSimple] 🧊 Processing ICE candidate from user: 2
+GroupVideoCallSimple.tsx:628 [GroupVideoCallSimple] 🎥 RECEIVED REMOTE TRACK from user 2 : audio
+GroupVideoCallSimple.tsx:629 [GroupVideoCallSimple] 🎥 Event streams: [MediaStream]
+GroupVideoCallSimple.tsx:633 [GroupVideoCallSimple] 📦 STORING REMOTE STREAM for user 2 : {streamId: 'f3920075-1240-4fb1-9166-661d5bedb163', active: true, videoTracks: 1, audioTracks: 1}
+GroupVideoCallSimple.tsx:645 [GroupVideoCallSimple] 📦 Updated remoteStreams map, total streams: 2
+GroupVideoCallSimple.tsx:628 [GroupVideoCallSimple] 🎥 RECEIVED REMOTE TRACK from user 2 : video
+GroupVideoCallSimple.tsx:629 [GroupVideoCallSimple] 🎥 Event streams: [MediaStream]
+GroupVideoCallSimple.tsx:633 [GroupVideoCallSimple] 📦 STORING REMOTE STREAM for user 2 : {streamId: 'f3920075-1240-4fb1-9166-661d5bedb163', active: true, videoTracks: 1, audioTracks: 1}
+GroupVideoCallSimple.tsx:452 [GroupVideoCallSimple] ✅ Set remote description for offer from user: 2
+2GroupVideoCallSimple.tsx:564 [GroupVideoCallSimple] ✅ Added ICE candidate from user: 2
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:645 [GroupVideoCallSimple] 📦 Updated remoteStreams map, total streams: 2
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: false, connectionStatus: 'loading', showRefreshButton: false, hasStream: true, shouldShowRefresh: false}
+GroupVideoCallSimple.tsx:262 [GroupVideoCallSimple] Updating participants: (2) [{…}, {…}]
+GroupVideoCallSimple.tsx:263 [GroupVideoCallSimple] Current user ID: 3
+GroupVideoCallSimple.tsx:264 [GroupVideoCallSimple] Available remote streams: Map(2) {'user_2' => MediaStream, 'user_4' => MediaStream}
+GroupVideoCallSimple.tsx:268 [GroupVideoCallSimple] Remote streams array: (2) [MediaStream, MediaStream]
+GroupVideoCallSimple.tsx:271 [GroupVideoCallSimple] 🔍 Before filtering participants: (2) ['aji(3)', 'eko(2)']
+GroupVideoCallSimple.tsx:272 [GroupVideoCallSimple] 🔍 Current user to filter out: 3
+GroupVideoCallSimple.tsx:275 [GroupVideoCallSimple] 🔍 After filtering participants: ['eko(2)']
+GroupVideoCallSimple.tsx:281 [GroupVideoCallSimple] 🔍 Mapping participant eko (2): {streamKey: 'user_2', hasStream: true, streamId: 'f3920075-1240-4fb1-9166-661d5bedb163', streamActive: true, videoTracks: 1, …}
+GroupVideoCallSimple.tsx:298 [GroupVideoCallSimple] 📋 Final participants list: [{…}]
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: false, connectionStatus: 'loading', showRefreshButton: false, hasStream: true, shouldShowRefresh: false}
+GroupVideoCallSimple.tsx:1375 [ParticipantVideo] 🧹 Cleaning up timeout for eko
+GroupVideoCallSimple.tsx:1279 [ParticipantVideo] Effect triggered for eko: {hasVideoElement: true, hasStream: true, streamId: 'f3920075-1240-4fb1-9166-661d5bedb163', streamActive: true}
+GroupVideoCallSimple.tsx:1287 [ParticipantVideo] Attaching stream for eko
+GroupVideoCallSimple.tsx:1194 [ParticipantVideo] 🔄 Attempting eko video attach (1/3)
+GroupVideoCallSimple.tsx:1319 [ParticipantVideo] Stream details for eko: {streamId: 'f3920075-1240-4fb1-9166-661d5bedb163', active: true, videoTracks: 1, audioTracks: 1, videoEnabled: true, …}
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: false, connectionStatus: 'loading', showRefreshButton: false, hasStream: true, shouldShowRefresh: false}
+GroupVideoCallSimple.tsx:336 [GroupVideoCallSimple] Participants update received, triggerWebRTC: true
+CallContext.tsx:1741 [CallContext] ✅ group-participants-update event dispatched successfully
+GroupVideoCallSimple.tsx:460 [GroupVideoCallSimple] ✅ Created and set local answer for user: 2
+GroupVideoCallSimple.tsx:461 [GroupVideoCallSimple] 📤 Answer details: {type: 'answer', hasAnswer: true}
+GroupVideoCallSimple.tsx:477 [GroupVideoCallSimple] 📤 Sent WebRTC answer to user: 2
+GroupVideoCallSimple.tsx:482 [GroupVideoCallSimple] 🔗 Peer connection state after answer: {connectionState: 'connecting', iceConnectionState: 'checking', signalingState: 'stable'}
+GroupVideoCallSimple.tsx:673 [GroupVideoCallSimple] Sent ICE candidate to user: 2
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_ice_candidate', payload: {…}}
+CallContext.tsx:855 [CallContext] Forwarding group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:323 [GroupVideoCallSimple] Received group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:536 [GroupVideoCallSimple] 🧊 Processing ICE candidate from user: 2
+GroupVideoCallSimple.tsx:564 [GroupVideoCallSimple] ✅ Added ICE candidate from user: 2
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_ice_candidate', payload: {…}}
+CallContext.tsx:855 [CallContext] Forwarding group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:323 [GroupVideoCallSimple] Received group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:536 [GroupVideoCallSimple] 🧊 Processing ICE candidate from user: 2
+GroupVideoCallSimple.tsx:564 [GroupVideoCallSimple] ✅ Added ICE candidate from user: 2
+GroupVideoCallSimple.tsx:652 [GroupVideoCallSimple] 🔄 FORCE RE-RENDER participants for user 2
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:652 [GroupVideoCallSimple] 🔄 FORCE RE-RENDER participants for user 2
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: false, connectionStatus: 'loading', showRefreshButton: false, hasStream: true, shouldShowRefresh: false}
+GroupVideoCallSimple.tsx:679 [GroupVideoCallSimple] Connection state for user 4 : connected
+GroupVideoCallSimple.tsx:682 [GroupVideoCallSimple] ✅ Successfully connected to user 4
+GroupVideoCallSimple.tsx:329 [GroupVideoCallSimple] Initiating WebRTC for group call: {callId: 'group_call_1752584292223_38_3', participants: Array(2), forceInit: true}
+GroupVideoCallSimple.tsx:751 [GroupVideoCallSimple] 🚀 Initiating WebRTC connections with participants: (2) [{…}, {…}]
+GroupVideoCallSimple.tsx:806 [GroupVideoCallSimple] 📊 Local stream ready for offers: {streamId: 'a6d109e6-61dd-4464-9ed1-279a4616449b', active: true, videoTracks: 1, audioTracks: 1, videoEnabled: true, …}
+GroupVideoCallSimple.tsx:820 [GroupVideoCallSimple] 🔗 Creating offer for participant: eko (2)
+GroupVideoCallSimple.tsx:837 [GroupVideoCallSimple] 📊 Current senders for user 2: 2
+GroupVideoCallSimple.tsx:850 [GroupVideoCallSimple] ℹ️ Tracks already added for user 2
+GroupVideoCallSimple.tsx:857 [GroupVideoCallSimple] ✅ Created and set local offer for user: 2
+GroupVideoCallSimple.tsx:870 [GroupVideoCallSimple] Sent WebRTC offer to user: 2
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_offer', payload: {…}}
+CallContext.tsx:841 [CallContext] Forwarding group WebRTC offer: {callId: 'group_call_1752584292223_38_3', offer: {…}, fromUserId: 4}
+GroupVideoCallSimple.tsx:311 [GroupVideoCallSimple] Received group WebRTC offer: {callId: 'group_call_1752584292223_38_3', offer: {…}, fromUserId: 4}
+GroupVideoCallSimple.tsx:361 [GroupVideoCallSimple] 📥 PROCESSING WEBRTC OFFER from user: 4
+GroupVideoCallSimple.tsx:362 [GroupVideoCallSimple] 📥 Offer data: {fromUserId: 4, hasOffer: true, offerType: 'offer', callId: 'group_call_1752584292223_38_3'}
+GroupVideoCallSimple.tsx:426 [GroupVideoCallSimple] 📊 Current senders before answer for user 4: 2
+GroupVideoCallSimple.tsx:439 [GroupVideoCallSimple] ℹ️ Tracks already added for answer to user 4
+GroupVideoCallSimple.tsx:445 [GroupVideoCallSimple] 🔗 Peer connection state before setting remote description: {connectionState: 'connected', iceConnectionState: 'connected', signalingState: 'stable'}
+GroupVideoCallSimple.tsx:452 [GroupVideoCallSimple] ✅ Set remote description for offer from user: 4
+GroupVideoCallSimple.tsx:460 [GroupVideoCallSimple] ✅ Created and set local answer for user: 4
+GroupVideoCallSimple.tsx:461 [GroupVideoCallSimple] 📤 Answer details: {type: 'answer', hasAnswer: true}
+GroupVideoCallSimple.tsx:477 [GroupVideoCallSimple] 📤 Sent WebRTC answer to user: 4
+GroupVideoCallSimple.tsx:482 [GroupVideoCallSimple] 🔗 Peer connection state after answer: {connectionState: 'connected', iceConnectionState: 'connected', signalingState: 'stable'}
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_offer', payload: {…}}
+CallContext.tsx:841 [CallContext] Forwarding group WebRTC offer: {callId: 'group_call_1752584292223_38_3', offer: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:311 [GroupVideoCallSimple] Received group WebRTC offer: {callId: 'group_call_1752584292223_38_3', offer: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:361 [GroupVideoCallSimple] 📥 PROCESSING WEBRTC OFFER from user: 2
+GroupVideoCallSimple.tsx:362 [GroupVideoCallSimple] 📥 Offer data: {fromUserId: 2, hasOffer: true, offerType: 'offer', callId: 'group_call_1752584292223_38_3'}
+GroupVideoCallSimple.tsx:426 [GroupVideoCallSimple] 📊 Current senders before answer for user 2: 2
+GroupVideoCallSimple.tsx:439 [GroupVideoCallSimple] ℹ️ Tracks already added for answer to user 2
+GroupVideoCallSimple.tsx:445 [GroupVideoCallSimple] 🔗 Peer connection state before setting remote description: {connectionState: 'connecting', iceConnectionState: 'connected', signalingState: 'have-local-offer'}
+GroupVideoCallSimple.tsx:628 [GroupVideoCallSimple] 🎥 RECEIVED REMOTE TRACK from user 2 : audio
+GroupVideoCallSimple.tsx:629 [GroupVideoCallSimple] 🎥 Event streams: [MediaStream]
+GroupVideoCallSimple.tsx:633 [GroupVideoCallSimple] 📦 STORING REMOTE STREAM for user 2 : {streamId: 'e4b63519-eacc-4fbf-95d8-da15f0b8c774', active: true, videoTracks: 1, audioTracks: 1}
+GroupVideoCallSimple.tsx:628 [GroupVideoCallSimple] 🎥 RECEIVED REMOTE TRACK from user 2 : video
+GroupVideoCallSimple.tsx:629 [GroupVideoCallSimple] 🎥 Event streams: [MediaStream]
+GroupVideoCallSimple.tsx:633 [GroupVideoCallSimple] 📦 STORING REMOTE STREAM for user 2 : {streamId: 'e4b63519-eacc-4fbf-95d8-da15f0b8c774', active: true, videoTracks: 1, audioTracks: 1}
+GroupVideoCallSimple.tsx:452 [GroupVideoCallSimple] ✅ Set remote description for offer from user: 2
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+2GroupVideoCallSimple.tsx:645 [GroupVideoCallSimple] 📦 Updated remoteStreams map, total streams: 2
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: false, connectionStatus: 'loading', showRefreshButton: false, hasStream: true, shouldShowRefresh: false}
+GroupVideoCallSimple.tsx:262 [GroupVideoCallSimple] Updating participants: (2) [{…}, {…}]
+GroupVideoCallSimple.tsx:263 [GroupVideoCallSimple] Current user ID: 3
+GroupVideoCallSimple.tsx:264 [GroupVideoCallSimple] Available remote streams: Map(2) {'user_2' => MediaStream, 'user_4' => MediaStream}
+GroupVideoCallSimple.tsx:268 [GroupVideoCallSimple] Remote streams array: (2) [MediaStream, MediaStream]
+GroupVideoCallSimple.tsx:271 [GroupVideoCallSimple] 🔍 Before filtering participants: (2) ['aji(3)', 'eko(2)']
+GroupVideoCallSimple.tsx:272 [GroupVideoCallSimple] 🔍 Current user to filter out: 3
+GroupVideoCallSimple.tsx:275 [GroupVideoCallSimple] 🔍 After filtering participants: ['eko(2)']
+GroupVideoCallSimple.tsx:281 [GroupVideoCallSimple] 🔍 Mapping participant eko (2): {streamKey: 'user_2', hasStream: true, streamId: 'e4b63519-eacc-4fbf-95d8-da15f0b8c774', streamActive: true, videoTracks: 1, …}
+GroupVideoCallSimple.tsx:298 [GroupVideoCallSimple] 📋 Final participants list: [{…}]
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: false, connectionStatus: 'loading', showRefreshButton: false, hasStream: true, shouldShowRefresh: false}
+GroupVideoCallSimple.tsx:1279 [ParticipantVideo] Effect triggered for eko: {hasVideoElement: true, hasStream: true, streamId: 'e4b63519-eacc-4fbf-95d8-da15f0b8c774', streamActive: true}
+GroupVideoCallSimple.tsx:1287 [ParticipantVideo] Attaching stream for eko
+GroupVideoCallSimple.tsx:1194 [ParticipantVideo] 🔄 Attempting eko video attach (1/3)
+GroupVideoCallSimple.tsx:1319 [ParticipantVideo] Stream details for eko: {streamId: 'e4b63519-eacc-4fbf-95d8-da15f0b8c774', active: true, videoTracks: 1, audioTracks: 1, videoEnabled: true, …}
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: false, connectionStatus: 'loading', showRefreshButton: false, hasStream: true, shouldShowRefresh: false}
+GroupVideoCallSimple.tsx:460 [GroupVideoCallSimple] ✅ Created and set local answer for user: 2
+GroupVideoCallSimple.tsx:461 [GroupVideoCallSimple] 📤 Answer details: {type: 'answer', hasAnswer: true}
+GroupVideoCallSimple.tsx:477 [GroupVideoCallSimple] 📤 Sent WebRTC answer to user: 2
+GroupVideoCallSimple.tsx:482 [GroupVideoCallSimple] 🔗 Peer connection state after answer: {connectionState: 'connecting', iceConnectionState: 'connected', signalingState: 'stable'}
+GroupVideoCallSimple.tsx:673 [GroupVideoCallSimple] Sent ICE candidate to user: 2
+GroupVideoCallSimple.tsx:751 [GroupVideoCallSimple] 🚀 Initiating WebRTC connections with participants: (2) [{…}, {…}]
+GroupVideoCallSimple.tsx:806 [GroupVideoCallSimple] 📊 Local stream ready for offers: {streamId: 'a6d109e6-61dd-4464-9ed1-279a4616449b', active: true, videoTracks: 1, audioTracks: 1, videoEnabled: true, …}
+GroupVideoCallSimple.tsx:820 [GroupVideoCallSimple] 🔗 Creating offer for participant: eko (2)
+GroupVideoCallSimple.tsx:837 [GroupVideoCallSimple] 📊 Current senders for user 2: 2
+GroupVideoCallSimple.tsx:850 [GroupVideoCallSimple] ℹ️ Tracks already added for user 2
+GroupVideoCallSimple.tsx:857 [GroupVideoCallSimple] ✅ Created and set local offer for user: 2
+GroupVideoCallSimple.tsx:870 [GroupVideoCallSimple] Sent WebRTC offer to user: 2
+GroupVideoCallSimple.tsx:652 [GroupVideoCallSimple] 🔄 FORCE RE-RENDER participants for user 2
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: false, connectionStatus: 'loading', showRefreshButton: false, hasStream: true, shouldShowRefresh: false}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:652 [GroupVideoCallSimple] 🔄 FORCE RE-RENDER participants for user 2
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: false, connectionStatus: 'loading', showRefreshButton: false, hasStream: true, shouldShowRefresh: false}
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_answer', payload: {…}}
+CallContext.tsx:848 [CallContext] Forwarding group WebRTC answer: {callId: 'group_call_1752584292223_38_3', answer: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:317 [GroupVideoCallSimple] Received group WebRTC answer: {callId: 'group_call_1752584292223_38_3', answer: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:493 [GroupVideoCallSimple] 📥 PROCESSING WEBRTC ANSWER from user: 2
+GroupVideoCallSimple.tsx:494 [GroupVideoCallSimple] 📥 Answer data: {fromUserId: 2, hasAnswer: true, answerType: 'answer', callId: 'group_call_1752584292223_38_3'}
+GroupVideoCallSimple.tsx:509 [GroupVideoCallSimple] 🔗 Peer connection state before setting remote description: {connectionState: 'connecting', iceConnectionState: 'connected', signalingState: 'have-local-offer'}
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_ice_candidate', payload: {…}}
+CallContext.tsx:855 [CallContext] Forwarding group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:323 [GroupVideoCallSimple] Received group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:536 [GroupVideoCallSimple] 🧊 Processing ICE candidate from user: 2
+GroupVideoCallSimple.tsx:531 [GroupVideoCallSimple] ❌ Error processing WebRTC answer from user 2 : InvalidAccessError: Failed to execute 'setRemoteDescription' on 'RTCPeerConnection': Failed to set remote answer sdp: Failed to apply the description for m= section with mid='0': Failed to set SSL role for the transport.
+handleIncomingWebRTCAnswer @ GroupVideoCallSimple.tsx:531
+await in handleIncomingWebRTCAnswer
+handleGroupWebRTCAnswer @ GroupVideoCallSimple.tsx:319
+websocket.onmessage @ CallContext.tsx:849Understand this error
+GroupVideoCallSimple.tsx:564 [GroupVideoCallSimple] ✅ Added ICE candidate from user: 2
+GroupVideoCallSimple.tsx:673 [GroupVideoCallSimple] Sent ICE candidate to user: 2
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_ice_candidate', payload: {…}}
+CallContext.tsx:855 [CallContext] Forwarding group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:323 [GroupVideoCallSimple] Received group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:536 [GroupVideoCallSimple] 🧊 Processing ICE candidate from user: 2
+GroupVideoCallSimple.tsx:564 [GroupVideoCallSimple] ✅ Added ICE candidate from user: 2
+GroupVideoCallSimple.tsx:679 [GroupVideoCallSimple] Connection state for user 2 : failed
+GroupVideoCallSimple.tsx:689 [GroupVideoCallSimple] ❌ Connection failed for user 2 - attempting restart
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_offer', payload: {…}}
+CallContext.tsx:841 [CallContext] Forwarding group WebRTC offer: {callId: 'group_call_1752584292223_38_3', offer: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:311 [GroupVideoCallSimple] Received group WebRTC offer: {callId: 'group_call_1752584292223_38_3', offer: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:361 [GroupVideoCallSimple] 📥 PROCESSING WEBRTC OFFER from user: 2
+GroupVideoCallSimple.tsx:362 [GroupVideoCallSimple] 📥 Offer data: {fromUserId: 2, hasOffer: true, offerType: 'offer', callId: 'group_call_1752584292223_38_3'}
+GroupVideoCallSimple.tsx:426 [GroupVideoCallSimple] 📊 Current senders before answer for user 2: 2
+GroupVideoCallSimple.tsx:439 [GroupVideoCallSimple] ℹ️ Tracks already added for answer to user 2
+GroupVideoCallSimple.tsx:445 [GroupVideoCallSimple] 🔗 Peer connection state before setting remote description: {connectionState: 'failed', iceConnectionState: 'connected', signalingState: 'have-local-offer'}
+GroupVideoCallSimple.tsx:488 [GroupVideoCallSimple] ❌ Error processing WebRTC offer from user 2 : OperationError: Failed to execute 'setRemoteDescription' on 'RTCPeerConnection': Failed to set remote offer sdp: Session error code: ERROR_CONTENT. Session error description: Failed to apply the description for m= section with mid='0': Failed to set SSL role for the transport..
+handleIncomingWebRTCOffer @ GroupVideoCallSimple.tsx:488
+await in handleIncomingWebRTCOffer
+handleGroupWebRTCOffer @ GroupVideoCallSimple.tsx:313
+websocket.onmessage @ CallContext.tsx:842Understand this error
+GroupVideoCallSimple.tsx:1240 [ParticipantVideo] ⚠️ eko video attach attempt 1 failed: Timeout
+localAttachWithRetry @ GroupVideoCallSimple.tsx:1240
+await in localAttachWithRetry
+attachVideo @ GroupVideoCallSimple.tsx:1292
+(anonymous) @ GroupVideoCallSimple.tsx:1314
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+commitRootImpl @ chunk-WERSD76P.js?v=d7892680:19416
+commitRoot @ chunk-WERSD76P.js?v=d7892680:19277
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=d7892680:18895
+flushSyncCallbacks @ chunk-WERSD76P.js?v=d7892680:9119
+commitRootImpl @ chunk-WERSD76P.js?v=d7892680:19432
+commitRoot @ chunk-WERSD76P.js?v=d7892680:19277
+finishConcurrentRender @ chunk-WERSD76P.js?v=d7892680:18805
+performConcurrentWorkOnRoot @ chunk-WERSD76P.js?v=d7892680:18718
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this warning
+GroupVideoCallSimple.tsx:1240 [ParticipantVideo] ⚠️ eko video attach attempt 1 failed: Timeout
+localAttachWithRetry @ GroupVideoCallSimple.tsx:1240
+await in localAttachWithRetry
+attachVideo @ GroupVideoCallSimple.tsx:1292
+(anonymous) @ GroupVideoCallSimple.tsx:1314
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=d7892680:18868
+flushSyncCallbacks @ chunk-WERSD76P.js?v=d7892680:9119
+commitRootImpl @ chunk-WERSD76P.js?v=d7892680:19432
+commitRoot @ chunk-WERSD76P.js?v=d7892680:19277
+finishConcurrentRender @ chunk-WERSD76P.js?v=d7892680:18805
+performConcurrentWorkOnRoot @ chunk-WERSD76P.js?v=d7892680:18718
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this warning
+GroupVideoCallSimple.tsx:1194 [ParticipantVideo] 🔄 Attempting eko video attach (2/3)
+GroupVideoCallSimple.tsx:1197 [ParticipantVideo] ⚠️ eko stream is not active
+localAttachWithRetry @ GroupVideoCallSimple.tsx:1197
+await in localAttachWithRetry
+attachVideo @ GroupVideoCallSimple.tsx:1292
+(anonymous) @ GroupVideoCallSimple.tsx:1314
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+commitRootImpl @ chunk-WERSD76P.js?v=d7892680:19416
+commitRoot @ chunk-WERSD76P.js?v=d7892680:19277
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=d7892680:18895
+flushSyncCallbacks @ chunk-WERSD76P.js?v=d7892680:9119
+commitRootImpl @ chunk-WERSD76P.js?v=d7892680:19432
+commitRoot @ chunk-WERSD76P.js?v=d7892680:19277
+finishConcurrentRender @ chunk-WERSD76P.js?v=d7892680:18805
+performConcurrentWorkOnRoot @ chunk-WERSD76P.js?v=d7892680:18718
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this warning
+GroupVideoCallSimple.tsx:1302 [ParticipantVideo] ❌ Failed to attach video for eko - ENABLING REFRESH BUTTON
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: false, connectionStatus: 'failed', showRefreshButton: true, hasStream: true, shouldShowRefresh: true}
+GroupVideoCallSimple.tsx:1194 [ParticipantVideo] 🔄 Attempting eko video attach (2/3)
+GroupVideoCallSimple.tsx:1197 [ParticipantVideo] ⚠️ eko stream is not active
+localAttachWithRetry @ GroupVideoCallSimple.tsx:1197
+await in localAttachWithRetry
+attachVideo @ GroupVideoCallSimple.tsx:1292
+(anonymous) @ GroupVideoCallSimple.tsx:1314
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=d7892680:18868
+flushSyncCallbacks @ chunk-WERSD76P.js?v=d7892680:9119
+commitRootImpl @ chunk-WERSD76P.js?v=d7892680:19432
+commitRoot @ chunk-WERSD76P.js?v=d7892680:19277
+finishConcurrentRender @ chunk-WERSD76P.js?v=d7892680:18805
+performConcurrentWorkOnRoot @ chunk-WERSD76P.js?v=d7892680:18718
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this warning
+GroupVideoCallSimple.tsx:1302 [ParticipantVideo] ❌ Failed to attach video for eko - ENABLING REFRESH BUTTON
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: false, connectionStatus: 'failed', showRefreshButton: true, hasStream: true, shouldShowRefresh: true}
+GroupVideoCallSimple.tsx:1240 [ParticipantVideo] ⚠️ eko video attach attempt 1 failed: Timeout
+localAttachWithRetry @ GroupVideoCallSimple.tsx:1240
+await in localAttachWithRetry
+attachVideo @ GroupVideoCallSimple.tsx:1292
+(anonymous) @ GroupVideoCallSimple.tsx:1314
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=d7892680:18868
+flushSyncCallbacks @ chunk-WERSD76P.js?v=d7892680:9119
+commitRootImpl @ chunk-WERSD76P.js?v=d7892680:19432
+commitRoot @ chunk-WERSD76P.js?v=d7892680:19277
+finishConcurrentRender @ chunk-WERSD76P.js?v=d7892680:18805
+performConcurrentWorkOnRoot @ chunk-WERSD76P.js?v=d7892680:18718
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this warning
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_call_rejected', payload: {…}}
+CallContext.tsx:1548 [CallContext] 🚫 Group call rejected by user: {callId: 'group_call_1752584292223_38_3', groupId: 38, rejectedByUserId: 4, rejectedByUserName: 'dino'}
+CallContext.tsx:1552 [CallContext] User dino (4) rejected group call group_call_1752584292223_38_3
+CallContext.tsx:1567 [CallContext] ✅ Group call rejection handled - other participants can still join
+GroupVideoCallSimple.tsx:1194 [ParticipantVideo] 🔄 Attempting eko video attach (2/3)
+CallContext.tsx:717 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:776 [CallContext] Received user status update: {userId: 4, status: 'offline'}
+GroupVideoCallSimple.tsx:1240 [ParticipantVideo] ⚠️ eko video attach attempt 2 failed: Timeout
+localAttachWithRetry @ GroupVideoCallSimple.tsx:1240
+await in localAttachWithRetry
+attachVideo @ GroupVideoCallSimple.tsx:1292
+(anonymous) @ GroupVideoCallSimple.tsx:1314
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=d7892680:18868
+flushSyncCallbacks @ chunk-WERSD76P.js?v=d7892680:9119
+commitRootImpl @ chunk-WERSD76P.js?v=d7892680:19432
+commitRoot @ chunk-WERSD76P.js?v=d7892680:19277
+finishConcurrentRender @ chunk-WERSD76P.js?v=d7892680:18805
+performConcurrentWorkOnRoot @ chunk-WERSD76P.js?v=d7892680:18718
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this warning
+GroupVideoCallSimple.tsx:1194 [ParticipantVideo] 🔄 Attempting eko video attach (3/3)
+GroupVideoCallSimple.tsx:962 [GroupVideoCallSimple] 🔄 Refreshing connection for user 2
+GroupVideoCallSimple.tsx:976 [GroupVideoCallSimple] 🗑️ Closing existing connection for user 2
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: false, connectionStatus: 'failed', showRefreshButton: true, hasStream: true, shouldShowRefresh: true}
+GroupVideoCallSimple.tsx:262 [GroupVideoCallSimple] Updating participants: (2) [{…}, {…}]
+GroupVideoCallSimple.tsx:263 [GroupVideoCallSimple] Current user ID: 3
+GroupVideoCallSimple.tsx:264 [GroupVideoCallSimple] Available remote streams: Map(1) {'user_4' => MediaStream}
+GroupVideoCallSimple.tsx:268 [GroupVideoCallSimple] Remote streams array: [MediaStream]
+GroupVideoCallSimple.tsx:271 [GroupVideoCallSimple] 🔍 Before filtering participants: (2) ['aji(3)', 'eko(2)']
+GroupVideoCallSimple.tsx:272 [GroupVideoCallSimple] 🔍 Current user to filter out: 3
+GroupVideoCallSimple.tsx:275 [GroupVideoCallSimple] 🔍 After filtering participants: ['eko(2)']
+GroupVideoCallSimple.tsx:281 [GroupVideoCallSimple] 🔍 Mapping participant eko (2): {streamKey: 'user_2', hasStream: false, streamId: undefined, streamActive: undefined, videoTracks: 0, …}
+GroupVideoCallSimple.tsx:298 [GroupVideoCallSimple] 📋 Final participants list: [{…}]
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: false, connectionStatus: 'failed', showRefreshButton: true, hasStream: false, shouldShowRefresh: true}
+GroupVideoCallSimple.tsx:1279 [ParticipantVideo] Effect triggered for eko: {hasVideoElement: true, hasStream: false, streamId: undefined, streamActive: undefined}
+GroupVideoCallSimple.tsx:1388 [ParticipantVideo] No stream or video element for eko
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: false, connectionStatus: 'failed', showRefreshButton: true, hasStream: false, shouldShowRefresh: true}
+GroupVideoCallSimple.tsx:1279 [ParticipantVideo] Effect triggered for eko: {hasVideoElement: false, hasStream: false, streamId: undefined, streamActive: undefined}
+GroupVideoCallSimple.tsx:1388 [ParticipantVideo] No stream or video element for eko
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: false, connectionStatus: 'failed', showRefreshButton: true, hasStream: false, shouldShowRefresh: true}
+GroupVideoCallSimple.tsx:1231 [ParticipantVideo] ✅ eko video playing successfully (attempt 3)
+GroupVideoCallSimple.tsx:1297 [ParticipantVideo] ✅ Video playing successfully for eko - STATUS SET TO CONNECTED
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: true, connectionStatus: 'connected', showRefreshButton: false, hasStream: false, shouldShowRefresh: false}
+GroupVideoCallSimple.tsx:1000 [GroupVideoCallSimple] 🚀 Creating new offer for user 2
+GroupVideoCallSimple.tsx:618 [GroupVideoCallSimple] Creating new peer connection for user: 2
+GroupVideoCallSimple.tsx:717 [GroupVideoCallSimple] ✅ Added local track to peer connection for user 2 : {trackKind: 'audio', trackEnabled: true, trackReadyState: 'live', senderId: 'created'}
+GroupVideoCallSimple.tsx:717 [GroupVideoCallSimple] ✅ Added local track to peer connection for user 2 : {trackKind: 'video', trackEnabled: true, trackReadyState: 'live', senderId: 'created'}
+GroupVideoCallSimple.tsx:725 [GroupVideoCallSimple] 📊 Peer connection state for user 2 : {connectionState: 'new', iceConnectionState: 'new', iceGatheringState: 'new', signalingState: 'stable', localTracks: 2}
+GroupVideoCallSimple.tsx:741 [GroupVideoCallSimple] 📊 Updated peerConnections map, total connections: 2
+GroupVideoCallSimple.tsx:742 [GroupVideoCallSimple] 📊 Stored connection for users: (2) [2, 4]
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: true, connectionStatus: 'connected', showRefreshButton: false, hasStream: false, shouldShowRefresh: false}
+GroupVideoCallSimple.tsx:1008 [GroupVideoCallSimple] 📤 Sending refresh offer to user 2
+GroupVideoCallSimple.tsx:1021 [GroupVideoCallSimple] ✅ Refresh offer sent to user 2
+4GroupVideoCallSimple.tsx:673 [GroupVideoCallSimple] Sent ICE candidate to user: 2
+GroupVideoCallSimple.tsx:679 [GroupVideoCallSimple] Connection state for user 4 : disconnected
+GroupVideoCallSimple.tsx:689 [GroupVideoCallSimple] ❌ Connection failed for user 4 - attempting restart
+GroupVideoCallSimple.tsx:679 [GroupVideoCallSimple] Connection state for user 4 : failed
+GroupVideoCallSimple.tsx:689 [GroupVideoCallSimple] ❌ Connection failed for user 4 - attempting restart
+sw.js:194 [SW] Message received: {type: 'KEEP_ALIVE'}
+sw.js:201 Uncaught TypeError: Cannot read properties of undefined (reading 'postMessage')
+    at sw.js:201:22
+(anonymous) @ sw.js:201Understand this error
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_offer', payload: {…}}
+CallContext.tsx:841 [CallContext] Forwarding group WebRTC offer: {callId: 'group_call_1752584292223_38_3', offer: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:311 [GroupVideoCallSimple] Received group WebRTC offer: {callId: 'group_call_1752584292223_38_3', offer: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:361 [GroupVideoCallSimple] 📥 PROCESSING WEBRTC OFFER from user: 2
+GroupVideoCallSimple.tsx:362 [GroupVideoCallSimple] 📥 Offer data: {fromUserId: 2, hasOffer: true, offerType: 'offer', callId: 'group_call_1752584292223_38_3'}
+GroupVideoCallSimple.tsx:426 [GroupVideoCallSimple] 📊 Current senders before answer for user 2: 2
+GroupVideoCallSimple.tsx:439 [GroupVideoCallSimple] ℹ️ Tracks already added for answer to user 2
+GroupVideoCallSimple.tsx:445 [GroupVideoCallSimple] 🔗 Peer connection state before setting remote description: {connectionState: 'new', iceConnectionState: 'new', signalingState: 'have-local-offer'}
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_ice_candidate', payload: {…}}
+CallContext.tsx:855 [CallContext] Forwarding group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:323 [GroupVideoCallSimple] Received group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:536 [GroupVideoCallSimple] 🧊 Processing ICE candidate from user: 2
+GroupVideoCallSimple.tsx:566 [GroupVideoCallSimple] ⏳ Queuing ICE candidate (no remote description yet) for user: 2
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: true, connectionStatus: 'connected', showRefreshButton: false, hasStream: false, shouldShowRefresh: false}
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_ice_candidate', payload: {…}}
+CallContext.tsx:855 [CallContext] Forwarding group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:323 [GroupVideoCallSimple] Received group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:536 [GroupVideoCallSimple] 🧊 Processing ICE candidate from user: 2
+GroupVideoCallSimple.tsx:566 [GroupVideoCallSimple] ⏳ Queuing ICE candidate (no remote description yet) for user: 2
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: true, connectionStatus: 'connected', showRefreshButton: false, hasStream: false, shouldShowRefresh: false}
+GroupVideoCallSimple.tsx:628 [GroupVideoCallSimple] 🎥 RECEIVED REMOTE TRACK from user 2 : audio
+GroupVideoCallSimple.tsx:629 [GroupVideoCallSimple] 🎥 Event streams: [MediaStream]
+GroupVideoCallSimple.tsx:633 [GroupVideoCallSimple] 📦 STORING REMOTE STREAM for user 2 : {streamId: 'e4b63519-eacc-4fbf-95d8-da15f0b8c774', active: true, videoTracks: 1, audioTracks: 1}
+GroupVideoCallSimple.tsx:628 [GroupVideoCallSimple] 🎥 RECEIVED REMOTE TRACK from user 2 : video
+GroupVideoCallSimple.tsx:629 [GroupVideoCallSimple] 🎥 Event streams: [MediaStream]
+GroupVideoCallSimple.tsx:633 [GroupVideoCallSimple] 📦 STORING REMOTE STREAM for user 2 : {streamId: 'e4b63519-eacc-4fbf-95d8-da15f0b8c774', active: true, videoTracks: 1, audioTracks: 1}
+GroupVideoCallSimple.tsx:452 [GroupVideoCallSimple] ✅ Set remote description for offer from user: 2
+GroupVideoCallSimple.tsx:592 [GroupVideoCallSimple] 🧊 Processing 2 pending ICE candidates for user: 2
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+2GroupVideoCallSimple.tsx:645 [GroupVideoCallSimple] 📦 Updated remoteStreams map, total streams: 2
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: true, connectionStatus: 'connected', showRefreshButton: false, hasStream: false, shouldShowRefresh: false}
+GroupVideoCallSimple.tsx:262 [GroupVideoCallSimple] Updating participants: (2) [{…}, {…}]
+GroupVideoCallSimple.tsx:263 [GroupVideoCallSimple] Current user ID: 3
+GroupVideoCallSimple.tsx:264 [GroupVideoCallSimple] Available remote streams: Map(2) {'user_4' => MediaStream, 'user_2' => MediaStream}
+GroupVideoCallSimple.tsx:268 [GroupVideoCallSimple] Remote streams array: (2) [MediaStream, MediaStream]
+GroupVideoCallSimple.tsx:271 [GroupVideoCallSimple] 🔍 Before filtering participants: (2) ['aji(3)', 'eko(2)']
+GroupVideoCallSimple.tsx:272 [GroupVideoCallSimple] 🔍 Current user to filter out: 3
+GroupVideoCallSimple.tsx:275 [GroupVideoCallSimple] 🔍 After filtering participants: ['eko(2)']
+GroupVideoCallSimple.tsx:281 [GroupVideoCallSimple] 🔍 Mapping participant eko (2): {streamKey: 'user_2', hasStream: true, streamId: 'e4b63519-eacc-4fbf-95d8-da15f0b8c774', streamActive: true, videoTracks: 1, …}
+GroupVideoCallSimple.tsx:298 [GroupVideoCallSimple] 📋 Final participants list: [{…}]
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: true, connectionStatus: 'connected', showRefreshButton: false, hasStream: true, shouldShowRefresh: false}
+GroupVideoCallSimple.tsx:1279 [ParticipantVideo] Effect triggered for eko: {hasVideoElement: false, hasStream: true, streamId: 'e4b63519-eacc-4fbf-95d8-da15f0b8c774', streamActive: true}
+GroupVideoCallSimple.tsx:1388 [ParticipantVideo] No stream or video element for eko
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: true, connectionStatus: 'connected', showRefreshButton: false, hasStream: true, shouldShowRefresh: false}
+GroupVideoCallSimple.tsx:1279 [ParticipantVideo] Effect triggered for eko: {hasVideoElement: true, hasStream: true, streamId: 'e4b63519-eacc-4fbf-95d8-da15f0b8c774', streamActive: true}
+GroupVideoCallSimple.tsx:1287 [ParticipantVideo] Attaching stream for eko
+GroupVideoCallSimple.tsx:1194 [ParticipantVideo] 🔄 Attempting eko video attach (1/3)
+GroupVideoCallSimple.tsx:1319 [ParticipantVideo] Stream details for eko: {streamId: 'e4b63519-eacc-4fbf-95d8-da15f0b8c774', active: true, videoTracks: 1, audioTracks: 1, videoEnabled: true, …}
+GroupVideoCallSimple.tsx:597 [GroupVideoCallSimple] ✅ Added pending ICE candidate for user: 2
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: false, connectionStatus: 'loading', showRefreshButton: false, hasStream: true, shouldShowRefresh: false}
+GroupVideoCallSimple.tsx:597 [GroupVideoCallSimple] ✅ Added pending ICE candidate for user: 2
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: false, connectionStatus: 'loading', showRefreshButton: false, hasStream: true, shouldShowRefresh: false}
+GroupVideoCallSimple.tsx:460 [GroupVideoCallSimple] ✅ Created and set local answer for user: 2
+GroupVideoCallSimple.tsx:461 [GroupVideoCallSimple] 📤 Answer details: {type: 'answer', hasAnswer: true}
+GroupVideoCallSimple.tsx:477 [GroupVideoCallSimple] 📤 Sent WebRTC answer to user: 2
+GroupVideoCallSimple.tsx:482 [GroupVideoCallSimple] 🔗 Peer connection state after answer: {connectionState: 'new', iceConnectionState: 'new', signalingState: 'stable'}
+GroupVideoCallSimple.tsx:679 [GroupVideoCallSimple] Connection state for user 2 : connecting
+GroupVideoCallSimple.tsx:673 [GroupVideoCallSimple] Sent ICE candidate to user: 2
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+2GroupVideoCallSimple.tsx:652 [GroupVideoCallSimple] 🔄 FORCE RE-RENDER participants for user 2
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: false, connectionStatus: 'loading', showRefreshButton: false, hasStream: true, shouldShowRefresh: false}
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_ice_candidate', payload: {…}}
+CallContext.tsx:855 [CallContext] Forwarding group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:323 [GroupVideoCallSimple] Received group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:536 [GroupVideoCallSimple] 🧊 Processing ICE candidate from user: 2
+GroupVideoCallSimple.tsx:564 [GroupVideoCallSimple] ✅ Added ICE candidate from user: 2
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_webrtc_ice_candidate', payload: {…}}
+CallContext.tsx:855 [CallContext] Forwarding group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:323 [GroupVideoCallSimple] Received group WebRTC ICE candidate: {callId: 'group_call_1752584292223_38_3', candidate: {…}, fromUserId: 2}
+GroupVideoCallSimple.tsx:536 [GroupVideoCallSimple] 🧊 Processing ICE candidate from user: 2
+GroupVideoCallSimple.tsx:564 [GroupVideoCallSimple] ✅ Added ICE candidate from user: 2
+GroupVideoCallSimple.tsx:673 [GroupVideoCallSimple] Sent ICE candidate to user: 2
+GroupVideoCallSimple.tsx:679 [GroupVideoCallSimple] Connection state for user 2 : connected
+GroupVideoCallSimple.tsx:682 [GroupVideoCallSimple] ✅ Successfully connected to user 2
+GroupVideoCallSimple.tsx:1330 [ParticipantVideo] ✅ Video loaded for eko - UPDATING STATUS TO CONNECTED
+GroupVideoCallSimple.tsx:1334 [ParticipantVideo] 🚫 Clearing timeout for eko - video loaded successfully
+GroupVideoCallSimple.tsx:1353 [ParticipantVideo] ✅ Video PLAYING event for eko - CONFIRMING STATUS TO CONNECTED
+GroupVideoCallSimple.tsx:1231 [ParticipantVideo] ✅ eko video playing successfully (attempt 1)
+GroupVideoCallSimple.tsx:1330 [ParticipantVideo] ✅ Video loaded for eko - UPDATING STATUS TO CONNECTED
+GroupVideoCallSimple.tsx:1353 [ParticipantVideo] ✅ Video PLAYING event for eko - CONFIRMING STATUS TO CONNECTED
+GroupVideoCallSimple.tsx:1297 [ParticipantVideo] ✅ Video playing successfully for eko - STATUS SET TO CONNECTED
+GroupVideoCallSimple.tsx:1421 [ParticipantVideo] eko render state: {hasVideo: true, connectionStatus: 'connected', showRefreshButton: false, hasStream: true, shouldShowRefresh: false}
