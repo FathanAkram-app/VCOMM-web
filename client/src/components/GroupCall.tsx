@@ -473,28 +473,35 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#171717]">
-      {/* Header */}
-      <div className="bg-[#1a1a1a] border-b border-[#333333] p-4 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <Avatar className="h-10 w-10 bg-[#333333] border border-[#a6c455]">
-            <AvatarFallback className="bg-[#333333] text-[#a6c455] text-sm font-bold">
+    <div className="flex flex-col h-screen bg-gradient-to-br from-[#0a0a0a] via-[#171717] to-[#0a0a0a] relative overflow-hidden">
+      {/* Enhanced Background Pattern */}
+      <div className="absolute inset-0 opacity-[0.02] bg-gradient-to-r from-[#a6c455] to-transparent bg-[length:100px_100px] bg-[url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22 viewBox=%220 0 100 100%22%3E%3Cpath d=%22M0 0L50 50L100 0L100 100L50 50L0 100Z%22 fill=%22%23a6c455%22 opacity=%220.1%22/%3E%3C/svg%3E')]"></div>
+      
+      {/* Enhanced Header */}
+      <div className="bg-gradient-to-r from-[#1a1a1a] via-[#1e1e1e] to-[#1a1a1a] backdrop-blur-lg border-b border-[#a6c455]/20 p-4 flex items-center justify-between relative z-10 shadow-lg">
+        <div className="flex items-center space-x-4">
+          <Avatar className="h-12 w-12 bg-gradient-to-br from-[#a6c455] to-[#8ba944] border-2 border-[#a6c455]/50 shadow-lg shadow-[#a6c455]/20">
+            <AvatarFallback className="bg-gradient-to-br from-[#a6c455] to-[#8ba944] text-black text-sm font-bold">
               {groupName.substring(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div>
-            <h3 className="text-white font-semibold">
+            <h3 className="text-white font-bold text-lg tracking-wide">
               {groupName}
             </h3>
-            <p className="text-xs text-gray-400 flex items-center">
+            <p className="text-xs text-[#a6c455] flex items-center font-medium">
               <Users className="h-3 w-3 mr-1" />
               Panggilan Grup {callType === 'video' ? 'Video' : 'Audio'}
             </p>
           </div>
         </div>
         
-        <div className="text-white text-sm">
-          {participants.length} peserta
+        <div className="flex items-center space-x-3">
+          <div className="text-right">
+            <div className="text-white text-sm font-medium">{participants.length} peserta</div>
+            <div className="text-[#a6c455] text-xs">Terhubung</div>
+          </div>
+          <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
         </div>
       </div>
 
@@ -566,110 +573,143 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
         </div>
       )}
 
-      {/* Audio-only view */}
+      {/* Enhanced Audio-only view */}
       {callType === 'audio' && (
-        <div className="flex-1 p-4 flex flex-col items-center justify-center">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-4xl">
-
-
-
-
-            {/* Show current user first - always visible when in call */}
+        <div className="flex-1 p-6 flex flex-col items-center justify-center relative z-10">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 max-w-6xl">
+            {/* Enhanced current user display */}
             {user && activeCall && (
-              <div className="flex flex-col items-center space-y-2">
-                <Avatar className="h-20 w-20 bg-[#5fb85f] border-2 border-[#5fb85f]">
-                  <AvatarFallback className="bg-[#5fb85f] text-white text-xl font-bold">
-                    {user.callsign?.substring(0, 2).toUpperCase() || 'AN'}
-                  </AvatarFallback>
-                </Avatar>
+              <div className="flex flex-col items-center space-y-3 group">
+                <div className="relative">
+                  <Avatar className={`h-24 w-24 transition-all duration-300 shadow-2xl ${
+                    isAudioEnabled 
+                      ? 'bg-gradient-to-br from-[#a6c455] to-[#8ba944] border-4 border-[#a6c455]/70 shadow-[#a6c455]/40' 
+                      : 'bg-gradient-to-br from-gray-600 to-gray-700 border-4 border-gray-500/70 shadow-gray-500/30'
+                  }`}>
+                    <AvatarFallback className={`text-xl font-bold transition-colors duration-300 ${
+                      isAudioEnabled 
+                        ? 'bg-gradient-to-br from-[#a6c455] to-[#8ba944] text-black' 
+                        : 'bg-gradient-to-br from-gray-600 to-gray-700 text-white'
+                    }`}>
+                      {user.callsign?.substring(0, 2).toUpperCase() || 'AN'}
+                    </AvatarFallback>
+                  </Avatar>
+                  {isAudioEnabled && (
+                    <div className="absolute -inset-2 border-2 border-[#a6c455]/50 rounded-full animate-pulse"></div>
+                  )}
+                </div>
                 <div className="text-center">
-                  <p className="text-white text-sm font-medium">Anda</p>
-                  <p className="text-xs text-gray-400">
-                    {isAudioEnabled ? 'Speaking' : 'Muted'}
-                  </p>
+                  <p className="text-white text-sm font-bold">Anda</p>
+                  <div className={`text-xs font-medium px-3 py-1 rounded-full transition-all duration-300 ${
+                    isAudioEnabled 
+                      ? 'text-[#a6c455] bg-[#a6c455]/10 border border-[#a6c455]/30' 
+                      : 'text-red-400 bg-red-400/10 border border-red-400/30'
+                  }`}>
+                    {isAudioEnabled ? '🎤 Aktif' : '🔇 Muted'}
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Show other participants (excluding current user) */}
+            {/* Enhanced participant displays */}
             {participants
               .filter(participant => participant.userId !== user?.id)
               .map(participant => (
-                <div key={participant.userId} className="flex flex-col items-center space-y-2">
-                  <Avatar className="h-20 w-20 bg-[#4a9eff] border-2 border-[#4a9eff]">
-                    <AvatarFallback className="bg-[#4a9eff] text-white text-xl font-bold">
-                      {participant.userName.substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                <div key={participant.userId} className="flex flex-col items-center space-y-3 group">
+                  <div className="relative">
+                    <Avatar className={`h-24 w-24 transition-all duration-300 shadow-2xl ${
+                      participant.audioEnabled 
+                        ? 'bg-gradient-to-br from-blue-500 to-blue-600 border-4 border-blue-400/70 shadow-blue-400/40' 
+                        : 'bg-gradient-to-br from-gray-600 to-gray-700 border-4 border-gray-500/70 shadow-gray-500/30'
+                    }`}>
+                      <AvatarFallback className={`text-xl font-bold transition-colors duration-300 ${
+                        participant.audioEnabled 
+                          ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white' 
+                          : 'bg-gradient-to-br from-gray-600 to-gray-700 text-white'
+                      }`}>
+                        {participant.userName.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    {participant.audioEnabled && (
+                      <div className="absolute -inset-2 border-2 border-blue-400/50 rounded-full animate-pulse"></div>
+                    )}
+                  </div>
                   <div className="text-center">
-                    <p className="text-white text-sm font-medium">
+                    <p className="text-white text-sm font-bold">
                       {participant.userName}
                     </p>
-                    <p className="text-xs text-gray-400">
-                      {participant.audioEnabled ? 'Speaking' : 'Muted'}
-                    </p>
+                    <div className={`text-xs font-medium px-3 py-1 rounded-full transition-all duration-300 ${
+                      participant.audioEnabled 
+                        ? 'text-blue-400 bg-blue-400/10 border border-blue-400/30' 
+                        : 'text-red-400 bg-red-400/10 border border-red-400/30'
+                    }`}>
+                      {participant.audioEnabled ? '🎤 Aktif' : '🔇 Muted'}
+                    </div>
                   </div>
                 </div>
               ))}
 
-            {/* Empty slots */}
+            {/* Enhanced empty slots */}
             {Array.from({ length: Math.max(0, 8 - participants.length) }).map((_, index) => (
-              <div key={`empty-${index}`} className="flex flex-col items-center space-y-2 opacity-30">
-                <Avatar className="h-20 w-20 bg-[#2a2a2a] border-2 border-dashed border-gray-600">
-                  <AvatarFallback className="bg-[#2a2a2a] text-gray-600">
-                    <Users className="h-8 w-8" />
+              <div key={`empty-${index}`} className="flex flex-col items-center space-y-3 opacity-30 group">
+                <Avatar className="h-24 w-24 bg-gradient-to-br from-[#2a2a2a] to-[#1a1a1a] border-4 border-dashed border-gray-600/50 shadow-lg shadow-gray-600/20">
+                  <AvatarFallback className="bg-transparent text-gray-600">
+                    <Users className="h-10 w-10" />
                   </AvatarFallback>
                 </Avatar>
-                <p className="text-xs text-gray-600">Menunggu...</p>
+                <div className="text-center">
+                  <p className="text-xs text-gray-500 font-medium">Menunggu...</p>
+                  <div className="text-xs text-gray-600 px-2 py-1 rounded-full bg-gray-700/30">
+                    Kosong
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Controls */}
-      <div className="bg-[#1a1a1a] border-t border-[#333333] p-4">
-        <div className="flex items-center justify-center space-x-4">
-          {/* Microphone toggle */}
+      {/* Enhanced Controls */}
+      <div className="bg-gradient-to-t from-[#0a0a0a] to-[#1a1a1a] p-6 flex items-center justify-center gap-6 shadow-2xl relative z-10">
+        {/* Enhanced Microphone toggle */}
+        <Button
+          variant={isAudioEnabled ? "default" : "destructive"}
+          size="lg"
+          onClick={toggleAudio}
+          className={`w-16 h-16 rounded-full transition-all duration-300 transform hover:scale-105 ${
+            isAudioEnabled 
+              ? 'bg-[#333333] border-[#a6c455] text-[#a6c455] shadow-lg shadow-[#a6c455]/20' 
+              : 'bg-red-600 text-white border-red-600 shadow-lg shadow-red-600/30'
+          }`}
+        >
+          {isAudioEnabled ? <Mic size={22} /> : <MicOff size={22} />}
+        </Button>
+
+        {/* Enhanced Video toggle (only for video calls) */}
+        {callType === 'video' && (
           <Button
-            variant={isAudioEnabled ? "default" : "destructive"}
+            variant={isVideoEnabled ? "default" : "destructive"}
             size="lg"
-            className={`h-12 w-12 rounded-full ${
-              isAudioEnabled 
-                ? 'bg-[#333333] hover:bg-[#444444] text-white' 
-                : 'bg-red-600 hover:bg-red-700'
+            onClick={toggleVideo}
+            className={`w-16 h-16 rounded-full transition-all duration-300 transform hover:scale-105 ${
+              isVideoEnabled 
+                ? 'bg-[#333333] border-[#a6c455] text-[#a6c455] shadow-lg shadow-[#a6c455]/20' 
+                : 'bg-red-600 text-white border-red-600 shadow-lg shadow-red-600/30'
             }`}
-            onClick={toggleAudio}
           >
-            {isAudioEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+            {isVideoEnabled ? <Video size={22} /> : <VideoOff size={22} />}
           </Button>
+        )}
 
-          {/* Video toggle (only for video calls) */}
-          {callType === 'video' && (
-            <Button
-              variant={isVideoEnabled ? "default" : "destructive"}
-              size="lg"
-              className={`h-12 w-12 rounded-full ${
-                isVideoEnabled 
-                  ? 'bg-[#333333] hover:bg-[#444444] text-white' 
-                  : 'bg-red-600 hover:bg-red-700'
-              }`}
-              onClick={toggleVideo}
-            >
-              {isVideoEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
-            </Button>
-          )}
-
-          {/* Hang up */}
-          <Button
-            variant="destructive"
-            size="lg"
-            className="h-12 w-12 rounded-full bg-red-600 hover:bg-red-700"
-            onClick={leaveCall}
-          >
-            <PhoneOff className="h-5 w-5" />
-          </Button>
-        </div>
+        {/* Enhanced Hang up */}
+        <Button
+          variant="destructive"
+          size="lg"
+          onClick={leaveCall}
+          className="w-20 h-20 rounded-full bg-gradient-to-br from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 shadow-2xl shadow-red-600/40 transition-all duration-300 transform hover:scale-105 active:scale-95"
+        >
+          <PhoneOff size={24} />
+        </Button>
       </div>
 
       {/* Hidden audio elements for participants - mimicking AudioCall pattern */}
