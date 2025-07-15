@@ -54,6 +54,13 @@ export default function GroupVideoCallSimple() {
     lastAttempt: number, 
     attemptCount: number 
   }>());
+  
+  // Refresh tracking untuk prevent bidirectional refresh loops
+  const refreshTracker = useRef(new Map<number, { 
+    lastRefresh: number, 
+    isRefreshing: boolean,
+    refreshSource: 'manual' | 'bidirectional' | 'auto'
+  }>());
 
   // Enhanced video attachment with retry mechanism untuk mengatasi AbortError
   const attachVideoStreamWithRetry = async (
@@ -245,7 +252,10 @@ export default function GroupVideoCallSimple() {
       // Clear reconnection state
       reconnectionState.current.clear();
       
-      console.log('[GroupVideoCallSimple] 🧹 Connection timeouts and reconnection state cleaned up');
+      // Clear refresh tracking
+      refreshTracker.current.clear();
+      
+      console.log('[GroupVideoCallSimple] 🧹 Connection timeouts, reconnection state, and refresh tracking cleaned up');
     };
   }, []);
 
@@ -357,16 +367,16 @@ export default function GroupVideoCallSimple() {
       }
     };
 
-    // Handle participant refresh requests
+    // Handle participant refresh requests dengan anti-loop protection
     const handleParticipantRefresh = (event: CustomEvent) => {
       const data = event.detail;
       console.log(`[GroupVideoCallSimple] Received participant refresh request:`, data);
       
-      // If this is for us, refresh our connection back
+      // If this is for us, refresh our connection back (but mark as bidirectional)
       if (data.targetUserId === currentUser?.id) {
         console.log(`[GroupVideoCallSimple] 🔄 Responding to refresh request from user ${data.fromUserId}`);
-        // Refresh our connection to the requesting user
-        refreshParticipantConnection(data.fromUserId);
+        // Refresh our connection to the requesting user dengan bidirectional source
+        refreshParticipantConnection(data.fromUserId, 'bidirectional');
       }
     };
 
@@ -957,6 +967,7 @@ export default function GroupVideoCallSimple() {
     peerConnectionsRef.current.clear();
     remoteStreamsRef.current.clear();
     pendingICECandidatesRef.current.clear();
+    refreshTracker.current.clear(); // Clear refresh tracking
     
     setPeerConnections(new Map());
     setRemoteStreams(new Map());
@@ -975,9 +986,29 @@ export default function GroupVideoCallSimple() {
     };
   }, []); // Empty dependency array to prevent re-running
 
-  // Individual participant refresh function untuk re-request WebRTC connection
-  const refreshParticipantConnection = async (userId: number) => {
-    console.log(`[GroupVideoCallSimple] 🔄 Refreshing bidirectional connection for user ${userId}`);
+  // Individual participant refresh function dengan anti-loop protection
+  const refreshParticipantConnection = async (userId: number, source: 'manual' | 'bidirectional' = 'manual') => {
+    const now = Date.now();
+    const state = refreshTracker.current.get(userId) || { 
+      lastRefresh: 0, 
+      isRefreshing: false,
+      refreshSource: 'manual'
+    };
+    
+    // Prevent refresh loop - minimum 15 seconds between refreshes
+    if (state.isRefreshing || (now - state.lastRefresh) < 15000) {
+      console.log(`[GroupVideoCallSimple] ⏸️ Skipping refresh for user ${userId} - too soon or already refreshing (${Math.round((now - state.lastRefresh) / 1000)}s ago)`);
+      return;
+    }
+    
+    // Update refresh state
+    refreshTracker.current.set(userId, {
+      lastRefresh: now,
+      isRefreshing: true,
+      refreshSource: source
+    });
+    
+    console.log(`[GroupVideoCallSimple] 🔄 Refreshing ${source} connection for user ${userId}`);
     
     try {
       // Reset status untuk participant yang di-refresh
@@ -1052,6 +1083,14 @@ export default function GroupVideoCallSimple() {
       }
     } catch (error) {
       console.error(`[GroupVideoCallSimple] ❌ Error refreshing connection for user ${userId}:`, error);
+    } finally {
+      // Reset refresh state after completion
+      setTimeout(() => {
+        const currentState = refreshTracker.current.get(userId);
+        if (currentState) {
+          currentState.isRefreshing = false;
+        }
+      }, 3000); // Allow 3 seconds for refresh to complete
     }
   };
 

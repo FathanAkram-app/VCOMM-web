@@ -144,6 +144,11 @@ NXZZ-VComm is a military communications platform designed for intranet environme
     * Disabled automatic restartIce() calls that caused connection loops
     * Increased connection timeout from 15 to 30 seconds
     * Manual refresh button now the primary recovery mechanism
+  - ✅ ENHANCED: Anti-loop protection untuk bidirectional refresh mechanism
+    * Added refreshTracker dengan 15-second minimum interval between refreshes
+    * Prevented bidirectional refresh loops dengan tracking source ('manual' vs 'bidirectional')
+    * Added proper cleanup untuk refresh state on component unmount
+    * Reset refresh state after 3 seconds untuk allow proper completion
   - Asymmetric refresh issue permanently resolved - both directions now work automatically
   - Connection stability improved - no more infinite "connecting" loops pada video calls
 - July 15, 2025: 🔧 ENHANCED STABILITY IMPROVEMENTS - Triple-Layer Stream Management:
