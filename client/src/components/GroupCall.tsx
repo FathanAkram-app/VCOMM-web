@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Users } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Users, Radio, Shield, Zap } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useCall } from '@/hooks/useCall';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -568,107 +568,189 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
 
       {/* Audio-only view */}
       {callType === 'audio' && (
-        <div className="flex-1 p-4 flex flex-col items-center justify-center">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-4xl">
-
-
-
-
-            {/* Show current user first - always visible when in call */}
-            {user && activeCall && (
-              <div className="flex flex-col items-center space-y-2">
-                <Avatar className="h-20 w-20 bg-[#5fb85f] border-2 border-[#5fb85f]">
-                  <AvatarFallback className="bg-[#5fb85f] text-white text-xl font-bold">
-                    {user.callsign?.substring(0, 2).toUpperCase() || 'AN'}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="text-center">
-                  <p className="text-white text-sm font-medium">Anda</p>
-                  <p className="text-xs text-gray-400">
-                    {isAudioEnabled ? 'Speaking' : 'Muted'}
-                  </p>
+        <div className="flex-1 p-6 flex flex-col">
+          {/* Main display area */}
+          <div className="flex-1 flex flex-col items-center justify-center mb-6">
+            {/* Central communication status */}
+            <div className="text-center mb-8">
+              <div className="relative inline-flex items-center justify-center w-32 h-32 bg-gradient-to-br from-[#a6c455] to-[#8ca832] rounded-2xl mb-4 shadow-2xl">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#a6c455] to-[#8ca832] rounded-2xl animate-pulse opacity-20"></div>
+                <div className="relative">
+                  <Radio className="w-12 h-12 text-white" />
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
                 </div>
               </div>
-            )}
-
-            {/* Show other participants (excluding current user) */}
-            {participants
-              .filter(participant => participant.userId !== user?.id)
-              .map(participant => (
-                <div key={participant.userId} className="flex flex-col items-center space-y-2">
-                  <Avatar className="h-20 w-20 bg-[#4a9eff] border-2 border-[#4a9eff]">
-                    <AvatarFallback className="bg-[#4a9eff] text-white text-xl font-bold">
-                      {participant.userName.substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="text-center">
-                    <p className="text-white text-sm font-medium">
-                      {participant.userName}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      {participant.audioEnabled ? 'Speaking' : 'Muted'}
-                    </p>
-                  </div>
-                </div>
-              ))}
-
-            {/* Empty slots */}
-            {Array.from({ length: Math.max(0, 8 - participants.length) }).map((_, index) => (
-              <div key={`empty-${index}`} className="flex flex-col items-center space-y-2 opacity-30">
-                <Avatar className="h-20 w-20 bg-[#2a2a2a] border-2 border-dashed border-gray-600">
-                  <AvatarFallback className="bg-[#2a2a2a] text-gray-600">
-                    <Users className="h-8 w-8" />
-                  </AvatarFallback>
-                </Avatar>
-                <p className="text-xs text-gray-600">Menunggu...</p>
+              <h2 className="text-3xl font-bold text-white mb-2 tracking-wide">TACTICAL COMMS</h2>
+              <div className="flex items-center justify-center space-x-2 mb-2">
+                <Shield className="w-4 h-4 text-[#a6c455]" />
+                <span className="text-[#a6c455] text-sm font-semibold">SECURE CHANNEL</span>
+                <Zap className="w-4 h-4 text-[#a6c455]" />
               </div>
-            ))}
+              <p className="text-gray-400 text-sm">{participants.length} Personnel Connected</p>
+            </div>
+
+            {/* Modern participant list */}
+            <div className="w-full max-w-2xl">
+              <div className="bg-[#1a1a1a] rounded-xl border border-[#333333] overflow-hidden">
+                <div className="bg-[#2a2a2a] px-4 py-3 border-b border-[#333333]">
+                  <h3 className="text-sm font-semibold text-[#a6c455] uppercase tracking-wide">
+                    ACTIVE PERSONNEL
+                  </h3>
+                </div>
+                
+                <div className="divide-y divide-[#333333]">
+                  {/* Current user first */}
+                  {user && activeCall && (
+                    <div className="px-4 py-3 flex items-center justify-between bg-[#0f2027] border-l-4 border-[#a6c455]">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-[#a6c455] rounded-lg flex items-center justify-center">
+                          <span className="text-black font-bold text-sm">
+                            {user.callsign?.substring(0, 2).toUpperCase() || 'AN'}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-white font-medium">Anda</p>
+                          <p className="text-xs text-gray-400">
+                            {user.callsign || 'Unknown'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <div className={`w-2 h-2 rounded-full ${isAudioEnabled ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                        <span className="text-xs text-gray-400 uppercase">
+                          {isAudioEnabled ? 'ON AIR' : 'MUTED'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Other participants */}
+                  {participants
+                    .filter(participant => participant.userId !== user?.id)
+                    .map(participant => (
+                      <div key={participant.userId} className="px-4 py-3 flex items-center justify-between hover:bg-[#252525] transition-colors">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-[#4a9eff] rounded-lg flex items-center justify-center">
+                            <span className="text-white font-bold text-sm">
+                              {participant.userName.substring(0, 2).toUpperCase()}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="text-white font-medium">
+                              {participant.userName}
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              Personnel #{participant.userId}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-2 h-2 rounded-full ${participant.audioEnabled ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                          <span className="text-xs text-gray-400 uppercase">
+                            {participant.audioEnabled ? 'ON AIR' : 'MUTED'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+
+                  {/* Empty slots for waiting */}
+                  {participants.length < 8 && (
+                    <div className="px-4 py-3 flex items-center justify-between opacity-50">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-[#2a2a2a] rounded-lg border-2 border-dashed border-gray-600 flex items-center justify-center">
+                          <Users className="h-4 w-4 text-gray-600" />
+                        </div>
+                        <div>
+                          <p className="text-gray-500 font-medium">Menunggu personel...</p>
+                          <p className="text-xs text-gray-600">
+                            Slot tersedia: {8 - participants.length}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 rounded-full bg-gray-600"></div>
+                        <span className="text-xs text-gray-600 uppercase">STANDBY</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Controls */}
-      <div className="bg-[#1a1a1a] border-t border-[#333333] p-4">
-        <div className="flex items-center justify-center space-x-4">
+      {/* Enhanced Controls */}
+      <div className="bg-gradient-to-r from-[#1a1a1a] to-[#0f1419] border-t border-[#333333] p-6">
+        <div className="flex items-center justify-center space-x-6">
           {/* Microphone toggle */}
-          <Button
-            variant={isAudioEnabled ? "default" : "destructive"}
-            size="lg"
-            className={`h-12 w-12 rounded-full ${
-              isAudioEnabled 
-                ? 'bg-[#333333] hover:bg-[#444444] text-white' 
-                : 'bg-red-600 hover:bg-red-700'
-            }`}
-            onClick={toggleAudio}
-          >
-            {isAudioEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
-          </Button>
+          <div className="flex flex-col items-center space-y-2">
+            <Button
+              variant={isAudioEnabled ? "default" : "destructive"}
+              size="lg"
+              className={`h-16 w-16 rounded-xl shadow-lg transition-all duration-300 ${
+                isAudioEnabled 
+                  ? 'bg-[#a6c455] hover:bg-[#8ca832] text-black border-2 border-[#a6c455]' 
+                  : 'bg-red-600 hover:bg-red-700 text-white border-2 border-red-600'
+              }`}
+              onClick={toggleAudio}
+            >
+              {isAudioEnabled ? <Mic className="h-6 w-6" /> : <MicOff className="h-6 w-6" />}
+            </Button>
+            <span className="text-xs text-gray-400 uppercase tracking-wide">
+              {isAudioEnabled ? 'ON AIR' : 'MUTED'}
+            </span>
+          </div>
 
           {/* Video toggle (only for video calls) */}
           {callType === 'video' && (
-            <Button
-              variant={isVideoEnabled ? "default" : "destructive"}
-              size="lg"
-              className={`h-12 w-12 rounded-full ${
-                isVideoEnabled 
-                  ? 'bg-[#333333] hover:bg-[#444444] text-white' 
-                  : 'bg-red-600 hover:bg-red-700'
-              }`}
-              onClick={toggleVideo}
-            >
-              {isVideoEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
-            </Button>
+            <div className="flex flex-col items-center space-y-2">
+              <Button
+                variant={isVideoEnabled ? "default" : "destructive"}
+                size="lg"
+                className={`h-16 w-16 rounded-xl shadow-lg transition-all duration-300 ${
+                  isVideoEnabled 
+                    ? 'bg-[#4a9eff] hover:bg-[#357abd] text-white border-2 border-[#4a9eff]' 
+                    : 'bg-red-600 hover:bg-red-700 text-white border-2 border-red-600'
+                }`}
+                onClick={toggleVideo}
+              >
+                {isVideoEnabled ? <Video className="h-6 w-6" /> : <VideoOff className="h-6 w-6" />}
+              </Button>
+              <span className="text-xs text-gray-400 uppercase tracking-wide">
+                {isVideoEnabled ? 'VIDEO' : 'NO VIDEO'}
+              </span>
+            </div>
           )}
 
           {/* Hang up */}
-          <Button
-            variant="destructive"
-            size="lg"
-            className="h-12 w-12 rounded-full bg-red-600 hover:bg-red-700"
-            onClick={leaveCall}
-          >
-            <PhoneOff className="h-5 w-5" />
-          </Button>
+          <div className="flex flex-col items-center space-y-2">
+            <Button
+              variant="destructive"
+              size="lg"
+              className="h-16 w-16 rounded-xl bg-red-600 hover:bg-red-700 text-white border-2 border-red-600 shadow-lg transition-all duration-300"
+              onClick={leaveCall}
+            >
+              <PhoneOff className="h-6 w-6" />
+            </Button>
+            <span className="text-xs text-gray-400 uppercase tracking-wide">
+              DISCONNECT
+            </span>
+          </div>
+        </div>
+        
+        {/* Status bar */}
+        <div className="mt-4 pt-4 border-t border-[#333333]">
+          <div className="flex items-center justify-between text-xs text-gray-500">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span>SECURE CONNECTION</span>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span>GROUP: {groupName}</span>
+              <span>PARTICIPANTS: {participants.length}</span>
+            </div>
+          </div>
         </div>
       </div>
 
