@@ -957,6 +957,67 @@ export default function GroupVideoCallSimple() {
     };
   }, []); // Empty dependency array to prevent re-running
 
+  // Individual participant refresh function untuk re-request WebRTC connection
+  const refreshParticipantConnection = async (userId: number) => {
+    console.log(`[GroupVideoCallSimple] 🔄 Refreshing connection for user ${userId}`);
+    
+    try {
+      // Close existing peer connection for this user
+      const existingPc = peerConnectionsRef.current.get(userId);
+      if (existingPc) {
+        console.log(`[GroupVideoCallSimple] 🗑️ Closing existing connection for user ${userId}`);
+        existingPc.close();
+        peerConnectionsRef.current.delete(userId);
+      }
+      
+      // Remove existing remote stream
+      remoteStreamsRef.current.delete(`user_${userId}`);
+      setRemoteStreams(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(`user_${userId}`);
+        return newMap;
+      });
+      
+      // Clear any timeout for this user
+      if (connectionTimeouts.current.has(userId)) {
+        clearTimeout(connectionTimeouts.current.get(userId));
+        connectionTimeouts.current.delete(userId);
+      }
+      
+      // Wait a moment untuk cleanup
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Create new peer connection dan send new offer
+      if (currentUser && localStream) {
+        console.log(`[GroupVideoCallSimple] 🚀 Creating new offer for user ${userId}`);
+        
+        const pc = getOrCreatePeerConnection(userId);
+        
+        // Create and send new offer
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        
+        console.log(`[GroupVideoCallSimple] 📤 Sending refresh offer to user ${userId}`);
+        
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: 'group_webrtc_offer',
+            payload: {
+              callId: activeCall?.callId,
+              offer,
+              fromUserId: currentUser.id,
+              targetUserId: userId
+            }
+          }));
+          
+          console.log(`[GroupVideoCallSimple] ✅ Refresh offer sent to user ${userId}`);
+        }
+      }
+    } catch (error) {
+      console.error(`[GroupVideoCallSimple] ❌ Error refreshing connection for user ${userId}:`, error);
+    }
+  };
+
   // Handle hangup
   const handleHangup = () => {
     console.log('[GroupVideoCallSimple] Hanging up call...');
@@ -1030,7 +1091,11 @@ export default function GroupVideoCallSimple() {
 
         {/* Remote Participants */}
         {participants.map((participant) => (
-          <ParticipantVideo key={participant.userId} participant={participant} />
+          <ParticipantVideo 
+            key={participant.userId} 
+            participant={participant} 
+            onRefreshConnection={() => refreshParticipantConnection(participant.userId)}
+          />
         ))}
       </div>
 
@@ -1173,17 +1238,20 @@ const localAttachWithRetry = async (
   return false;
 };
 
-// Component untuk menampilkan video participant
-function ParticipantVideo({ participant }: { 
+// ParticipantVideo Component dengan enhanced stream handling dan individual refresh
+function ParticipantVideo({ participant, onRefreshConnection }: { 
   participant: {
     userId: number;
     userName: string;
     stream: MediaStream | null;
     videoRef: React.RefObject<HTMLVideoElement>;
-  }
+  };
+  onRefreshConnection: () => void;
 }) {
   const [hasVideo, setHasVideo] = useState(false);
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<'loading' | 'connected' | 'failed'>('loading');
+  const [showRefreshButton, setShowRefreshButton] = useState(false);
 
   // Callback ref untuk memastikan video element terdaftar
   const videoCallbackRef = useCallback((node: HTMLVideoElement | null) => {
@@ -1206,21 +1274,25 @@ function ParticipantVideo({ participant }: {
       
       // Use enhanced retry mechanism dari parent component
       const attachVideo = async () => {
-        // Get parent component's attachVideoStreamWithRetry function
-        const parentComponent = document.querySelector('[data-group-video-call="true"]');
-        if (parentComponent && (parentComponent as any).__attachVideoStreamWithRetry) {
-          const success = await (parentComponent as any).__attachVideoStreamWithRetry(
-            videoElement, 
-            participant.stream, 
-            `Participant-${participant.userName}`
-          );
-          setHasVideo(success);
-          return;
+        try {
+          const success = await localAttachWithRetry(videoElement, participant.stream, participant.userName);
+          if (success) {
+            setHasVideo(true);
+            setConnectionStatus('connected');
+            setShowRefreshButton(false);
+            console.log(`[ParticipantVideo] ✅ Video playing successfully for ${participant.userName}`);
+          } else {
+            setHasVideo(false);
+            setConnectionStatus('failed');
+            setShowRefreshButton(true);
+            console.log(`[ParticipantVideo] ❌ Failed to attach video for ${participant.userName}`);
+          }
+        } catch (error) {
+          console.error(`[ParticipantVideo] Error attaching video for ${participant.userName}:`, error);
+          setHasVideo(false);
+          setConnectionStatus('failed');
+          setShowRefreshButton(true);
         }
-        
-        // Fallback to local retry mechanism if parent function not available
-        const success = await localAttachWithRetry(videoElement, participant.stream, participant.userName);
-        setHasVideo(success);
       };
       
       // Start video attachment
@@ -1242,11 +1314,15 @@ function ParticipantVideo({ participant }: {
       const handleLoadedData = () => {
         console.log(`[ParticipantVideo] Video loaded for ${participant.userName}`);
         setHasVideo(true);
+        setConnectionStatus('connected');
+        setShowRefreshButton(false);
       };
       
       const handleError = (event: Event) => {
         console.warn(`[ParticipantVideo] Video error for ${participant.userName}:`, event);
         setHasVideo(false);
+        setConnectionStatus('failed');
+        setShowRefreshButton(true);
       };
       
       videoElement.addEventListener('loadeddata', handleLoadedData);
@@ -1263,6 +1339,14 @@ function ParticipantVideo({ participant }: {
     } else {
       console.log(`[ParticipantVideo] No stream or video element for ${participant.userName}`);
       setHasVideo(false);
+      setConnectionStatus(participant.stream ? 'loading' : 'failed');
+      
+      // Show refresh button after timeout if no stream
+      if (!participant.stream) {
+        setTimeout(() => {
+          setShowRefreshButton(true);
+        }, 5000); // Wait 5 seconds before showing refresh option
+      }
     }
   }, [participant.stream, participant.userName, videoElement]);
 
@@ -1286,19 +1370,50 @@ function ParticipantVideo({ participant }: {
               </span>
             </div>
             <p className="text-sm">{participant.userName}</p>
-            <p className="text-xs text-gray-400 mt-1">Connecting...</p>
+            <p className="text-xs text-gray-400 mt-1">
+              {connectionStatus === 'loading' ? 'Connecting...' : 'Video Off'}
+            </p>
+            {showRefreshButton && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onRefreshConnection}
+                className="mt-2"
+                title={`Refresh connection untuk ${participant.userName}`}
+              >
+                <RefreshCw size={16} className="mr-1" />
+                Refresh
+              </Button>
+            )}
           </div>
+        </div>
+      )}
+      
+      {/* Individual refresh button untuk video yang bermasalah */}
+      {hasVideo && showRefreshButton && (
+        <div className="absolute top-2 right-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRefreshConnection}
+            className="bg-black bg-opacity-50 hover:bg-opacity-70 text-white border-gray-600"
+            title={`Refresh connection untuk ${participant.userName}`}
+          >
+            <RefreshCw size={14} />
+          </Button>
         </div>
       )}
       
       <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 px-2 py-1 rounded text-xs">
         {participant.userName}
-        {hasVideo ? (
+        {connectionStatus === 'connected' && hasVideo && (
           <span className="ml-1 text-green-400" title="Video Active">● LIVE</span>
-        ) : participant.stream ? (
-          <span className="ml-1 text-yellow-400" title="Loading Video">⏳ Loading</span>
-        ) : (
-          <span className="ml-1 text-red-400" title="No Video Stream">● Offline</span>
+        )}
+        {connectionStatus === 'loading' && (
+          <span className="ml-1 text-yellow-400" title="Loading Video">⏳ Connecting</span>
+        )}
+        {connectionStatus === 'failed' && (
+          <span className="ml-1 text-red-400" title="Connection Failed">● Failed</span>
         )}
       </div>
     </div>
