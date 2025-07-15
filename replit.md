@@ -121,6 +121,21 @@ NXZZ-VComm is a military communications platform designed for intranet environme
 - Port configuration for different deployment targets
 
 # Changelog
+- July 15, 2025: 🎯 BIDIRECTIONAL REFRESH SUCCESS - Asymmetric WebRTC Issue Resolved:
+  - ✅ IMPLEMENTED: Bidirectional refresh mechanism untuk mengatasi asymmetric video refresh issue
+  - ✅ ADDED: group_participant_refresh message type di server untuk mutual refresh coordination
+  - ✅ ENHANCED: refreshParticipantConnection function dengan bidirectional request system
+  - ✅ ADDED: handleParticipantRefresh event handler di GroupVideoCallSimple component
+  - ✅ IMPLEMENTED: Server-side relay untuk group_participant_refresh messages
+  - ✅ INTEGRATED: CallContext forwarding untuk group-participant-refresh events
+  - ✅ VERIFIED: Bidirectional refresh working - when user A refreshes user B:
+    * User A sends group_participant_refresh to server
+    * Server relays message to user B
+    * User B automatically refreshes connection back to user A
+    * Result: Both users receive each other's video streams after refresh
+  - ✅ CONFIRMED: Remote tracks properly received (audio + video) with streamId verification
+  - ✅ SUCCESS: WebRTC connection states reach "connected" after bidirectional refresh
+  - Asymmetric refresh issue permanently resolved - both directions now work automatically
 - July 15, 2025: 🔧 ENHANCED STABILITY IMPROVEMENTS - Triple-Layer Stream Management:
   - ✅ IMPLEMENTED: Enhanced media initialization dengan 3 retry attempts dan exponential backoff
   - ✅ ADDED: Stream waiting mechanism dengan polling untuk prevent "No local stream" errors
