@@ -962,6 +962,14 @@ export default function GroupVideoCallSimple() {
     console.log(`[GroupVideoCallSimple] 🔄 Refreshing connection for user ${userId}`);
     
     try {
+      // Reset status untuk participant yang di-refresh
+      setParticipants(prev => prev.map(p => {
+        if (p.userId === userId) {
+          return { ...p, connectionStatus: 'loading' };
+        }
+        return p;
+      }));
+      
       // Close existing peer connection for this user
       const existingPc = peerConnectionsRef.current.get(userId);
       if (existingPc) {
@@ -1221,6 +1229,11 @@ const localAttachWithRetry = async (
       // Try to play
       await videoElement.play();
       console.log(`[ParticipantVideo] ✅ ${userName} video playing successfully (attempt ${attempt})`);
+      
+      // Force update after successful play - dispatch both events
+      videoElement.dispatchEvent(new Event('loadeddata'));
+      videoElement.dispatchEvent(new Event('playing'));
+      
       return true;
       
     } catch (error: any) {
@@ -1280,7 +1293,7 @@ function ParticipantVideo({ participant, onRefreshConnection }: {
             setHasVideo(true);
             setConnectionStatus('connected');
             setShowRefreshButton(false);
-            console.log(`[ParticipantVideo] ✅ Video playing successfully for ${participant.userName}`);
+            console.log(`[ParticipantVideo] ✅ Video playing successfully for ${participant.userName} - STATUS SET TO CONNECTED`);
           } else {
             setHasVideo(false);
             setConnectionStatus('failed');
@@ -1313,7 +1326,7 @@ function ParticipantVideo({ participant, onRefreshConnection }: {
       
       // Add event listeners for video events
       const handleLoadedData = () => {
-        console.log(`[ParticipantVideo] Video loaded for ${participant.userName}`);
+        console.log(`[ParticipantVideo] ✅ Video loaded for ${participant.userName} - UPDATING STATUS TO CONNECTED`);
         setHasVideo(true);
         setConnectionStatus('connected');
         setShowRefreshButton(false);
@@ -1326,14 +1339,23 @@ function ParticipantVideo({ participant, onRefreshConnection }: {
         setShowRefreshButton(true);
         console.log(`[ParticipantVideo] 🔄 Enabling refresh button for ${participant.userName} due to video error`);
       };
+
+      const handlePlaying = () => {
+        console.log(`[ParticipantVideo] ✅ Video PLAYING event for ${participant.userName} - CONFIRMING STATUS TO CONNECTED`);
+        setHasVideo(true);
+        setConnectionStatus('connected');
+        setShowRefreshButton(false);
+      };
       
       videoElement.addEventListener('loadeddata', handleLoadedData);
+      videoElement.addEventListener('playing', handlePlaying);
       videoElement.addEventListener('error', handleError);
       
       // Cleanup event listeners
       return () => {
         if (videoElement) {
           videoElement.removeEventListener('loadeddata', handleLoadedData);
+          videoElement.removeEventListener('playing', handlePlaying);
           videoElement.removeEventListener('error', handleError);
         }
       };
