@@ -1265,6 +1265,7 @@ function ParticipantVideo({ participant, onRefreshConnection }: {
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'loading' | 'connected' | 'failed'>('loading');
   const [showRefreshButton, setShowRefreshButton] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Callback ref untuk memastikan video element terdaftar
   const videoCallbackRef = useCallback((node: HTMLVideoElement | null) => {
@@ -1327,6 +1328,14 @@ function ParticipantVideo({ participant, onRefreshConnection }: {
       // Add event listeners for video events
       const handleLoadedData = () => {
         console.log(`[ParticipantVideo] ✅ Video loaded for ${participant.userName} - UPDATING STATUS TO CONNECTED`);
+        
+        // Clear any existing timeout yang bisa interfere
+        if (timeoutRef.current) {
+          console.log(`[ParticipantVideo] 🚫 Clearing timeout for ${participant.userName} - video loaded successfully`);
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
+        
         setHasVideo(true);
         setConnectionStatus('connected');
         setShowRefreshButton(false);
@@ -1342,6 +1351,14 @@ function ParticipantVideo({ participant, onRefreshConnection }: {
 
       const handlePlaying = () => {
         console.log(`[ParticipantVideo] ✅ Video PLAYING event for ${participant.userName} - CONFIRMING STATUS TO CONNECTED`);
+        
+        // Clear any timeout yang masih berjalan
+        if (timeoutRef.current) {
+          console.log(`[ParticipantVideo] 🚫 Clearing timeout for ${participant.userName} - video playing confirmed`);
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
+        
         setHasVideo(true);
         setConnectionStatus('connected');
         setShowRefreshButton(false);
@@ -1351,8 +1368,15 @@ function ParticipantVideo({ participant, onRefreshConnection }: {
       videoElement.addEventListener('playing', handlePlaying);
       videoElement.addEventListener('error', handleError);
       
-      // Cleanup event listeners
+      // Cleanup event listeners dan timeout
       return () => {
+        // Clear timeout jika ada
+        if (timeoutRef.current) {
+          console.log(`[ParticipantVideo] 🧹 Cleaning up timeout for ${participant.userName}`);
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
+        
         if (videoElement) {
           videoElement.removeEventListener('loadeddata', handleLoadedData);
           videoElement.removeEventListener('playing', handlePlaying);
@@ -1371,10 +1395,23 @@ function ParticipantVideo({ participant, onRefreshConnection }: {
         setConnectionStatus('failed');
       } else {
         // If there's a stream but no video element, wait a bit then show refresh
-        setTimeout(() => {
-          setShowRefreshButton(true);
-          setConnectionStatus('failed');
-          console.log(`[ParticipantVideo] ⏰ Timeout reached for ${participant.userName} - ENABLING REFRESH BUTTON`);
+        // Clear any existing timeout terlebih dahulu
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+        
+        timeoutRef.current = setTimeout(() => {
+          // Check jika status masih belum connected sebelum set failed
+          setConnectionStatus(prevStatus => {
+            if (prevStatus !== 'connected') {
+              console.log(`[ParticipantVideo] ⏰ Timeout reached for ${participant.userName} - ENABLING REFRESH BUTTON`);
+              setShowRefreshButton(true);
+              return 'failed';
+            } else {
+              console.log(`[ParticipantVideo] ⏰ Timeout reached but ${participant.userName} already connected - IGNORING`);
+              return prevStatus;
+            }
+          });
         }, 3000); // Reduced to 3 seconds
       }
     }
