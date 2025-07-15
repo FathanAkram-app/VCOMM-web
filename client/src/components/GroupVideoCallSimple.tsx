@@ -1094,21 +1094,97 @@ export default function GroupVideoCallSimple() {
     }
   };
 
-  // Handle hangup
+  // Handle hangup dengan comprehensive cleanup
   const handleHangup = () => {
     console.log('[GroupVideoCallSimple] Hanging up call...');
     
-    // Cleanup peer connections
-    cleanupPeerConnections();
-    
-    // Stop local stream
-    if (localStream) {
-      localStream.getTracks().forEach(track => track.stop());
-      setLocalStream(null);
+    try {
+      // Stop dan cleanup local stream PERTAMA dengan force cleanup
+      if (localStream) {
+        console.log('[GroupVideoCallSimple] 🛑 Force stopping local stream tracks...');
+        localStream.getTracks().forEach(track => {
+          console.log(`[GroupVideoCallSimple] 🛑 Stopping ${track.kind} track:`, track.label, 'readyState:', track.readyState);
+          try {
+            track.stop();
+            console.log(`[GroupVideoCallSimple] ✅ Successfully stopped ${track.kind} track`);
+          } catch (trackError) {
+            console.error(`[GroupVideoCallSimple] ❌ Error stopping ${track.kind} track:`, trackError);
+          }
+        });
+        
+        // Clear local video element dengan force cleanup
+        if (localVideoRef.current) {
+          const videoElement = localVideoRef.current;
+          console.log('[GroupVideoCallSimple] 🛑 Clearing local video element...');
+          
+          // Pause video first
+          try {
+            videoElement.pause();
+          } catch (e) {
+            console.log('[GroupVideoCallSimple] Video already paused');
+          }
+          
+          // Clear srcObject
+          videoElement.srcObject = null;
+          videoElement.src = '';
+          videoElement.load(); // Force reload to clear any cached streams
+          
+          console.log('[GroupVideoCallSimple] ✅ Local video element cleared');
+        }
+        
+        setLocalStream(null);
+        console.log('[GroupVideoCallSimple] ✅ Local stream stopped and state cleared');
+      }
+      
+      // Force cleanup semua video elements dengan srcObject
+      try {
+        console.log('[GroupVideoCallSimple] 🛑 Force cleanup semua video elements...');
+        const allVideoElements = document.querySelectorAll('video');
+        allVideoElements.forEach((video, index) => {
+          if (video.srcObject) {
+            console.log(`[GroupVideoCallSimple] 🛑 Cleaning video element ${index}:`, video.id || 'no-id');
+            const stream = video.srcObject as MediaStream;
+            if (stream && stream.getTracks) {
+              stream.getTracks().forEach(track => {
+                try {
+                  track.stop();
+                  console.log(`[GroupVideoCallSimple] ✅ Stopped track from video element ${index}`);
+                } catch (e) {
+                  console.log(`[GroupVideoCallSimple] ❌ Error stopping track from video element ${index}:`, e);
+                }
+              });
+            }
+            video.srcObject = null;
+            video.src = '';
+            video.load();
+          }
+        });
+        console.log('[GroupVideoCallSimple] ✅ All video elements cleaned');
+      } catch (elementError) {
+        console.error('[GroupVideoCallSimple] ❌ Error cleaning video elements:', elementError);
+      }
+      
+      // Cleanup peer connections
+      cleanupPeerConnections();
+      
+      // Clear all timeouts dan state
+      connectionTimeouts.current.forEach(timeout => clearTimeout(timeout));
+      connectionTimeouts.current.clear();
+      reconnectionState.current.clear();
+      refreshTracker.current.clear();
+      
+      console.log('[GroupVideoCallSimple] ✅ All resources cleaned up');
+      
+    } catch (error) {
+      console.error('[GroupVideoCallSimple] ❌ Error during hangup cleanup:', error);
+    } finally {
+      // Delay hangupCall untuk ensure cleanup selesai
+      console.log('[GroupVideoCallSimple] ⏱️ Delaying hangupCall untuk ensure complete cleanup...');
+      setTimeout(() => {
+        hangupCall();
+        setLocation('/chat');
+      }, 100); // 100ms delay untuk ensure cleanup completion
     }
-    
-    hangupCall();
-    setLocation('/chat');
   };
 
   if (!activeCall || !activeCall.isGroupCall) {

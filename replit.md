@@ -151,6 +151,16 @@ NXZZ-VComm is a military communications platform designed for intranet environme
     * Reset refresh state after 3 seconds untuk allow proper completion
   - Asymmetric refresh issue permanently resolved - both directions now work automatically
   - Connection stability improved - no more infinite "connecting" loops pada video calls
+- July 15, 2025: 🔧 CRITICAL CAMERA CLEANUP FIX - Stream Termination Issue Resolved:
+  - ✅ FIXED: Camera light staying on after ending calls - comprehensive stream cleanup
+  - ✅ ENHANCED: Force cleanup of all local stream tracks with individual error handling
+  - ✅ IMPROVED: Video element cleanup with pause(), srcObject clearing, and load() reset
+  - ✅ IMPLEMENTED: Global video element scanning dan cleanup untuk prevent leaked streams
+  - ✅ ADDED: 100ms delay between GroupVideoCallSimple cleanup and CallContext hangup
+  - ✅ ENHANCED: Track state monitoring dengan readyState logging untuk better debugging
+  - ✅ OPTIMIZED: Triple-layer cleanup: track level, element level, dan global scanning
+  - Camera light should now turn off immediately after ending video calls
+  - Comprehensive stream termination prevents any leaked video/audio tracks
 - July 15, 2025: 🔧 ENHANCED STABILITY IMPROVEMENTS - Triple-Layer Stream Management:
   - ✅ IMPLEMENTED: Enhanced media initialization dengan 3 retry attempts dan exponential backoff
   - ✅ ADDED: Stream waiting mechanism dengan polling untuk prevent "No local stream" errors
