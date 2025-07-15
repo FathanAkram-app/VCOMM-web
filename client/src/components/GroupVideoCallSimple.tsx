@@ -187,6 +187,8 @@ export default function GroupVideoCallSimple() {
         }
 
       setLocalStream(stream);
+      setStreamInitialized(true);
+      console.log('[GroupVideoCallSimple] 📊 Media stream set in state and marked as initialized');
       return stream;
 
     } catch (error) {
@@ -235,6 +237,16 @@ export default function GroupVideoCallSimple() {
   useEffect(() => {
     if (localVideoRef.current && localStream) {
       attachVideoStreamWithRetry(localVideoRef.current, localStream, 'Local-Update');
+    }
+  }, [localStream]);
+
+  // Enhanced stream state tracking untuk better timing
+  const [streamInitialized, setStreamInitialized] = useState(false);
+  
+  useEffect(() => {
+    if (localStream && localStream.active) {
+      setStreamInitialized(true);
+      console.log('[GroupVideoCallSimple] 📊 Stream initialized and ready for WebRTC');
     }
   }, [localStream]);
 
@@ -370,8 +382,19 @@ export default function GroupVideoCallSimple() {
       return;
     }
 
-    // Wait for local stream if not ready yet
+    // Enhanced stream availability check untuk incoming offers
     let streamToUse = localStream;
+    let streamWaitAttempts = 0;
+    
+    // Wait for existing stream first
+    while (!streamToUse && streamWaitAttempts < 5) {
+      streamWaitAttempts++;
+      console.log(`[GroupVideoCallSimple] ⏳ Waiting for existing stream... (attempt ${streamWaitAttempts}/5)`);
+      await new Promise(resolve => setTimeout(resolve, 100));
+      streamToUse = localStream;
+    }
+    
+    // If still no stream, try to initialize
     if (!streamToUse) {
       console.log('[GroupVideoCallSimple] ⚠️ Local stream not ready, initializing...');
       try {
@@ -732,36 +755,51 @@ export default function GroupVideoCallSimple() {
       return;
     }
 
-    // Enhanced local stream check with multiple retry attempts
+    // Enhanced stream waiting mechanism dengan timeout
     let currentStream = localStream;
-    if (!currentStream) {
-      console.log('[GroupVideoCallSimple] ⚠️ No local stream for WebRTC initiation, attempting recovery...');
+    let streamWaitAttempts = 0;
+    
+    // Wait for stream to be ready dengan polling
+    while (!currentStream && streamWaitAttempts < 10) {
+      streamWaitAttempts++;
+      console.log(`[GroupVideoCallSimple] ⏳ Waiting for stream initialization... (attempt ${streamWaitAttempts}/10)`);
       
-      // Multiple recovery attempts
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        try {
-          currentStream = await initializeMediaStream();
-          if (currentStream) {
-            console.log(`[GroupVideoCallSimple] ✅ Stream recovery successful on attempt ${attempt}`);
-            break;
-          }
-        } catch (error) {
-          console.warn(`[GroupVideoCallSimple] ⚠️ Stream recovery attempt ${attempt} failed:`, error);
-          if (attempt < 3) {
-            await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+      await new Promise(resolve => setTimeout(resolve, 200));
+      currentStream = localStream;
+      
+      if (!currentStream) {
+        // Check if stream is being initialized
+        const streamInitInProgress = !streamInitialized;
+        console.log(`[GroupVideoCallSimple] 📊 Stream status check: initialized=${streamInitialized}, attempt=${streamWaitAttempts}`);
+        
+        if (streamInitInProgress && streamWaitAttempts < 5) {
+          continue; // Keep waiting if initialization is in progress
+        }
+        
+        // Try to initialize if not already started
+        if (streamWaitAttempts === 5) {
+          console.log('[GroupVideoCallSimple] ⚠️ Stream wait timeout, forcing initialization...');
+          try {
+            currentStream = await initializeMediaStream();
+            if (currentStream) {
+              console.log('[GroupVideoCallSimple] ✅ Forced stream initialization successful');
+              break;
+            }
+          } catch (error) {
+            console.error('[GroupVideoCallSimple] ❌ Forced stream initialization failed:', error);
           }
         }
       }
     }
 
-    // Final check dengan fallback ke state stream
+    // Final fallback check
     if (!currentStream && localStream) {
       currentStream = localStream;
       console.log('[GroupVideoCallSimple] 🔄 Using fallback local stream from state');
     }
 
     if (!currentStream) {
-      console.log('[GroupVideoCallSimple] ❌ All stream recovery attempts failed');
+      console.log('[GroupVideoCallSimple] ❌ Stream not available after all attempts');
       return;
     }
 
