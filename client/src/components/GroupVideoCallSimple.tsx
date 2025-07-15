@@ -44,6 +44,9 @@ export default function GroupVideoCallSimple() {
   
   // Track offer creation state to prevent duplicates
   const offerCreationStateRef = useRef(new Map<number, 'creating' | 'created' | 'idle'>());
+  
+  // Connection timeout tracking for auto-recovery
+  const connectionTimeouts = useRef(new Map<number, NodeJS.Timeout>());
 
   // Enhanced video attachment with retry mechanism untuk mengatasi AbortError
   const attachVideoStreamWithRetry = async (
@@ -193,12 +196,34 @@ export default function GroupVideoCallSimple() {
     }
   };
 
-  // Initialize local media stream saat component mount
+  // Initialize local media stream saat component mount dengan enhanced stability
   useEffect(() => {
-    initializeMediaStream();
+    let mounted = true;
+    let retryCount = 0;
+    
+    const initWithRetry = async () => {
+      while (mounted && retryCount < 3) {
+        try {
+          await initializeMediaStream();
+          break; // Success
+        } catch (error) {
+          retryCount++;
+          console.warn(`[GroupVideoCallSimple] ⚠️ Media initialization attempt ${retryCount} failed:`, error);
+          
+          if (retryCount < 3) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // Exponential backoff
+          } else {
+            console.error('[GroupVideoCallSimple] ❌ Media initialization failed after 3 attempts');
+          }
+        }
+      }
+    };
+    
+    initWithRetry();
 
     // Cleanup saat component unmount
     return () => {
+      mounted = false;
       if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
         console.log('[GroupVideoCallSimple] 🧹 Local stream cleaned up');
@@ -626,20 +651,46 @@ export default function GroupVideoCallSimple() {
         }
       };
       
-      // Connection state monitoring
+      // Enhanced connection state monitoring dengan auto-recovery
       pc.onconnectionstatechange = () => {
         console.log('[GroupVideoCallSimple] Connection state for user', userId, ':', pc.connectionState);
-        if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
-          console.log('[GroupVideoCallSimple] Connection failed for user', userId, '- attempting restart');
-          // Restart ICE untuk recovery
-          pc.restartIce();
+        
+        if (pc.connectionState === 'connected') {
+          console.log('[GroupVideoCallSimple] ✅ Successfully connected to user', userId);
+          // Reset any recovery timers
+          if (connectionTimeouts.current.has(userId)) {
+            clearTimeout(connectionTimeouts.current.get(userId));
+            connectionTimeouts.current.delete(userId);
+          }
+        } else if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+          console.log('[GroupVideoCallSimple] ❌ Connection failed for user', userId, '- attempting restart');
+          try {
+            pc.restartIce();
+          } catch (error) {
+            console.error('[GroupVideoCallSimple] Error restarting ICE for user', userId, ':', error);
+          }
+        } else if (pc.connectionState === 'connecting') {
+          // Set timeout untuk stuck connections
+          const timeoutId = setTimeout(() => {
+            if (pc.connectionState === 'connecting') {
+              console.log('[GroupVideoCallSimple] ⏰ Connection timeout for user', userId, '- restarting');
+              try {
+                pc.restartIce();
+              } catch (error) {
+                console.error('[GroupVideoCallSimple] Error restarting stuck connection for user', userId, ':', error);
+              }
+            }
+          }, 15000); // 15 seconds timeout
+          
+          connectionTimeouts.current.set(userId, timeoutId);
         }
       };
       
-      // Add local tracks to this peer connection
-      if (localStream) {
-        localStream.getTracks().forEach(track => {
-          const sender = pc!.addTrack(track, localStream);
+      // Add local tracks to this peer connection dengan fallback stream detection
+      const availableStream = localStream;
+      if (availableStream) {
+        availableStream.getTracks().forEach(track => {
+          const sender = pc!.addTrack(track, availableStream);
           console.log('[GroupVideoCallSimple] ✅ Added local track to peer connection for user', userId, ':', {
             trackKind: track.kind,
             trackEnabled: track.enabled,
@@ -653,7 +704,7 @@ export default function GroupVideoCallSimple() {
           iceConnectionState: pc.iceConnectionState,
           iceGatheringState: pc.iceGatheringState,
           signalingState: pc.signalingState,
-          localTracks: localStream.getTracks().length
+          localTracks: availableStream.getTracks().length
         });
       } else {
         console.log('[GroupVideoCallSimple] ⚠️ No local stream available when creating peer connection for user', userId);
@@ -681,31 +732,46 @@ export default function GroupVideoCallSimple() {
       return;
     }
 
-    // Ensure we have local stream before creating connections
-    if (!localStream) {
-      console.log('[GroupVideoCallSimple] ⚠️ No local stream for WebRTC initiation, waiting...');
-      try {
-        await initializeMediaStream();
-        await new Promise(resolve => setTimeout(resolve, 500));
-      } catch (error) {
-        console.error('[GroupVideoCallSimple] ❌ Failed to get local stream for WebRTC initiation:', error);
-        return;
+    // Enhanced local stream check with multiple retry attempts
+    let currentStream = localStream;
+    if (!currentStream) {
+      console.log('[GroupVideoCallSimple] ⚠️ No local stream for WebRTC initiation, attempting recovery...');
+      
+      // Multiple recovery attempts
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          currentStream = await initializeMediaStream();
+          if (currentStream) {
+            console.log(`[GroupVideoCallSimple] ✅ Stream recovery successful on attempt ${attempt}`);
+            break;
+          }
+        } catch (error) {
+          console.warn(`[GroupVideoCallSimple] ⚠️ Stream recovery attempt ${attempt} failed:`, error);
+          if (attempt < 3) {
+            await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+          }
+        }
       }
     }
 
-    // Double check local stream is available
-    if (!localStream) {
-      console.log('[GroupVideoCallSimple] ❌ Still no local stream after initialization');
+    // Final check dengan fallback ke state stream
+    if (!currentStream && localStream) {
+      currentStream = localStream;
+      console.log('[GroupVideoCallSimple] 🔄 Using fallback local stream from state');
+    }
+
+    if (!currentStream) {
+      console.log('[GroupVideoCallSimple] ❌ All stream recovery attempts failed');
       return;
     }
 
     console.log('[GroupVideoCallSimple] 📊 Local stream ready for offers:', {
-      streamId: localStream.id,
-      active: localStream.active,
-      videoTracks: localStream.getVideoTracks().length,
-      audioTracks: localStream.getAudioTracks().length,
-      videoEnabled: localStream.getVideoTracks()[0]?.enabled,
-      audioEnabled: localStream.getAudioTracks()[0]?.enabled
+      streamId: currentStream.id,
+      active: currentStream.active,
+      videoTracks: currentStream.getVideoTracks().length,
+      audioTracks: currentStream.getAudioTracks().length,
+      videoEnabled: currentStream.getVideoTracks()[0]?.enabled,
+      audioEnabled: currentStream.getAudioTracks()[0]?.enabled
     });
 
     try {
@@ -728,14 +794,14 @@ export default function GroupVideoCallSimple() {
             offerCreationStateRef.current.set(participant.userId, 'creating');
             
             // Ensure local tracks are added before creating offer
-            if (localStream) {
+            if (currentStream) {
               const senders = pc.getSenders();
               console.log(`[GroupVideoCallSimple] 📊 Current senders for user ${participant.userId}:`, senders.length);
               
               // Only add tracks if they haven't been added yet
               if (senders.length === 0) {
-                localStream.getTracks().forEach(track => {
-                  const sender = pc.addTrack(track, localStream);
+                currentStream.getTracks().forEach(track => {
+                  const sender = pc.addTrack(track, currentStream);
                   console.log(`[GroupVideoCallSimple] ✅ Re-added local track for offer to user ${participant.userId}:`, {
                     trackKind: track.kind,
                     trackEnabled: track.enabled,
