@@ -20,6 +20,112 @@ import { CallProvider } from "@/context/CallContext";
 import { useServiceWorker } from "@/hooks/useServiceWorker";
 import { usePWA } from "@/hooks/usePWA";
 
+// Admin Guard Component
+function AdminGuard({ children }: { children: React.ReactNode }) {
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function checkAdminAuth() {
+      try {
+        const response = await fetch('/api/auth/user', {
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          alert('Anda belum login. Silakan login terlebih dahulu.');
+          window.location.href = '/login';
+          return;
+        }
+        
+        const userData = await response.json();
+        
+        if (!userData || (userData.role !== 'admin' && userData.role !== 'super_admin')) {
+          alert('Akses ditolak. Anda tidak memiliki hak akses Admin.');
+          window.location.href = '/';
+          return;
+        }
+        
+        setIsAuthorized(true);
+      } catch (error) {
+        console.error('Error checking admin auth:', error);
+        alert('Terjadi kesalahan saat memeriksa akses. Silakan login ulang.');
+        window.location.href = '/login';
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    checkAdminAuth();
+  }, []);
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#171717]">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-10 h-10 border-4 border-[#8d9c6b] border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-lg font-medium text-[#8d9c6b]">VERIFYING ADMIN ACCESS...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  return isAuthorized ? children : null;
+}
+
+// Super Admin Guard Component
+function SuperAdminGuard({ children }: { children: React.ReactNode }) {
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function checkSuperAdminAuth() {
+      try {
+        const response = await fetch('/api/auth/user', {
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          alert('Anda belum login. Silakan login terlebih dahulu.');
+          window.location.href = '/login';
+          return;
+        }
+        
+        const userData = await response.json();
+        
+        if (!userData || userData.role !== 'super_admin') {
+          alert('Akses ditolak. Anda tidak memiliki hak akses Super Admin.');
+          window.location.href = '/';
+          return;
+        }
+        
+        setIsAuthorized(true);
+      } catch (error) {
+        console.error('Error checking super admin auth:', error);
+        alert('Terjadi kesalahan saat memeriksa akses. Silakan login ulang.');
+        window.location.href = '/login';
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    checkSuperAdminAuth();
+  }, []);
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#171717]">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-10 h-10 border-4 border-[#8d9c6b] border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-lg font-medium text-[#8d9c6b]">VERIFYING SUPER ADMIN ACCESS...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  return isAuthorized ? children : null;
+}
+
 // Komponen sederhana untuk mengecek login
 function AuthCheck({ children }: { children: React.ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -124,12 +230,16 @@ function Router() {
       </Route>
       <Route path="/admin">
         <AuthCheck>
-          <Admin />
+          <AdminGuard>
+            <Admin />
+          </AdminGuard>
         </AuthCheck>
       </Route>
       <Route path="/superadmin">
         <AuthCheck>
-          <SuperAdmin />
+          <SuperAdminGuard>
+            <SuperAdmin />
+          </SuperAdminGuard>
         </AuthCheck>
       </Route>
       <Route path="/">

@@ -32,17 +32,73 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 
 export default function Admin() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [authChecked, setAuthChecked] = useState(false);
 
-  // Check if user is admin
+  useEffect(() => {
+    // Enhanced authentication check for admin access
+    const checkAdminAccess = async () => {
+      try {
+        const response = await fetch('/api/auth/user', {
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          // Not authenticated at all
+          alert('Anda belum login. Silakan login terlebih dahulu.');
+          window.location.href = '/login';
+          return;
+        }
+        
+        const userData = await response.json();
+        
+        if (!userData || (userData.role !== 'admin' && userData.role !== 'super_admin')) {
+          // Authenticated but not admin
+          alert('Akses ditolak. Anda tidak memiliki hak akses Admin.');
+          window.location.href = '/';
+          return;
+        }
+        
+        setAuthChecked(true);
+      } catch (error) {
+        console.error('Error checking admin access:', error);
+        alert('Terjadi kesalahan saat memeriksa akses. Silakan login ulang.');
+        window.location.href = '/login';
+      }
+    };
+
+    if (!isLoading) {
+      checkAdminAccess();
+    }
+  }, [isLoading]);
+
+  // Show loading until authentication is verified
+  if (isLoading || !authChecked) {
+    return (
+      <div className="min-h-screen bg-[#111] flex items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-10 h-10 border-4 border-[#8d9c6b] border-t-transparent rounded-full animate-spin"></div>
+          <div className="text-[#8d9c6b]">VERIFYING ADMIN ACCESS...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Double check user authentication
   if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
     return (
       <div className="flex items-center justify-center h-screen bg-[#111]">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">Access Denied</h1>
-          <p className="text-gray-400">You need admin privileges to access this page.</p>
+          <h1 className="text-2xl font-bold text-red-400 mb-4">ACCESS DENIED</h1>
+          <p className="text-gray-400 mb-4">Admin privileges required</p>
+          <button 
+            onClick={() => window.location.href = '/login'}
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Return to Login
+          </button>
         </div>
       </div>
     );
