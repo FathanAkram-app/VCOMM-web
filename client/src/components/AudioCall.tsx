@@ -483,13 +483,7 @@ export default function AudioCall() {
   };
   
   return (
-    <div className="h-full w-full flex flex-col bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 relative overflow-hidden">
-      {/* Background pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#a6c455] via-transparent to-[#a6c455]"></div>
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#a6c455] rounded-full blur-3xl opacity-10"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#a6c455] rounded-full blur-3xl opacity-10"></div>
-      </div>
+    <div className="h-full w-full flex flex-col bg-gray-900">
       {/* Hidden audio element for remote stream */}
       <audio 
         id="remoteAudio"
@@ -499,19 +493,19 @@ export default function AudioCall() {
       />
       
       {/* Audio Call UI */}
-      <div className="flex-1 flex flex-col relative z-10">
-        {/* Enhanced Call Info Header */}
-        <div className="bg-gradient-to-r from-gray-800/90 to-gray-700/90 backdrop-blur-sm border-b border-[#a6c455]/20 p-4 flex items-center shadow-lg">
+      <div className="flex-1 flex flex-col">
+        {/* Call Info Header */}
+        <div className="bg-gray-800 border-b border-gray-700 p-4 flex items-center">
           <Button 
             variant="ghost" 
             size="icon" 
-            className="mr-3 text-[#a6c455] hover:bg-[#333333]/50 transition-colors duration-200" 
+            className="mr-3 text-[#a6c455] hover:bg-[#333333]" 
             onClick={() => window.history.back()}
           >
             <ChevronDown className="h-5 w-5" />
           </Button>
           <div className="flex-1">
-            <h3 className="text-white font-bold text-lg uppercase tracking-wide drop-shadow-sm">
+            <h3 className="text-white font-bold text-lg uppercase tracking-wide">
               AUDIO TRANSMISSION
             </h3>
             <p className="text-xs text-[#a6c455] font-medium">
@@ -521,54 +515,23 @@ export default function AudioCall() {
         </div>
         
         {/* Main Call Area */}
-        <div className="flex-1 flex flex-col items-center justify-center p-6 space-y-6">
-          {/* Enhanced Contact Avatar dengan Glow Effect */}
-          <div className="relative">
-            {/* Glow ring untuk connected state */}
-            {activeCall.status === 'connected' && (
-              <div className="absolute inset-0 w-40 h-40 rounded-full bg-[#a6c455] opacity-20 animate-pulse scale-110"></div>
-            )}
-            {/* Main Avatar */}
-            <div className="relative w-36 h-36 rounded-full bg-gradient-to-br from-[#4a5d2a] to-[#2a3318] border-4 border-[#a6c455] flex items-center justify-center shadow-2xl">
-              <span className="text-5xl font-bold text-[#a6c455] drop-shadow-lg">
-                {activeCall.peerName ? activeCall.peerName.substring(0, 2).toUpperCase() : '??'}
-              </span>
-              {/* Active indicator ring */}
-              {activeCall.status === 'connected' && (
-                <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-green-500 border-2 border-white flex items-center justify-center">
-                  <div className="w-3 h-3 rounded-full bg-white animate-ping"></div>
-                </div>
-              )}
-            </div>
+        <div className="flex-1 flex flex-col items-center justify-center p-8 space-y-8">
+          {/* Contact Avatar */}
+          <div className="w-32 h-32 rounded-none bg-[#333333] border-4 border-[#a6c455] flex items-center justify-center mb-4">
+            <span className="text-4xl font-bold text-[#a6c455]">
+              {activeCall.peerName ? activeCall.peerName.substring(0, 2).toUpperCase() : '??'}
+            </span>
           </div>
           
-          {/* Enhanced Contact Info */}
-          <div className="text-center space-y-4">
-            <div className="relative">
-              <h2 className="text-3xl font-bold text-white uppercase tracking-wider mb-2 drop-shadow-md">
-                {activeCall.peerName || 'UNKNOWN OPERATOR'}
-              </h2>
-              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-gradient-to-r from-transparent via-[#a6c455] to-transparent"></div>
-            </div>
-            
-            {/* Status dengan desain yang lebih menarik */}
-            <div className="relative">
-              <div className="bg-gradient-to-r from-[#2a2a2a] via-[#3a3a3a] to-[#2a2a2a] px-6 py-3 border border-[#a6c455] rounded-lg shadow-lg">
-                <div className="flex items-center justify-center space-x-2">
-                  {activeCall.status === 'connected' && (
-                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                  )}
-                  {activeCall.status === 'calling' && (
-                    <div className="w-2 h-2 rounded-full bg-yellow-500 animate-bounce"></div>
-                  )}
-                  {activeCall.status === 'ringing' && (
-                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-                  )}
-                  <p className="text-[#a6c455] uppercase font-bold text-sm tracking-wider">
-                    {getStatusText()}
-                  </p>
-                </div>
-              </div>
+          {/* Contact Name */}
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-white uppercase tracking-wider mb-2">
+              {activeCall.peerName || 'UNKNOWN OPERATOR'}
+            </h2>
+            <div className="bg-[#2a2a2a] px-4 py-2 border border-[#a6c455] mb-3">
+              <p className="text-[#a6c455] uppercase font-bold text-sm">
+                {getStatusText()}
+              </p>
             </div>
             
             {/* Earphone Recommendation for Mobile */}
@@ -595,41 +558,28 @@ export default function AudioCall() {
             )}
           </div>
           
-          {/* Enhanced Call Status Indicators */}
-          <div className="flex space-x-8 text-center">
-            <div className="flex flex-col items-center space-y-2">
-              <div className={`relative w-5 h-5 rounded-full ${
+          {/* Call Status Indicators */}
+          <div className="flex space-x-4 text-center">
+            <div className="flex flex-col items-center">
+              <div className={`w-3 h-3 rounded-full ${
                 activeCall.audioEnabled ? 'bg-green-500' : 'bg-red-500'
-              } shadow-lg`}>
-                {activeCall.audioEnabled && (
-                  <div className="absolute inset-0 rounded-full bg-green-500 animate-ping opacity-75"></div>
-                )}
-              </div>
-              <span className="text-xs text-gray-300 font-medium uppercase tracking-wide">MIC</span>
+              } mb-1`}></div>
+              <span className="text-xs text-gray-400">MIC</span>
             </div>
-            <div className="flex flex-col items-center space-y-2">
-              <div className={`relative w-5 h-5 rounded-full ${
+            <div className="flex flex-col items-center">
+              <div className={`w-3 h-3 rounded-full ${
                 !activeCall.isMuted ? 'bg-green-500' : 'bg-red-500'
-              } shadow-lg`}>
-                {!activeCall.isMuted && (
-                  <div className="absolute inset-0 rounded-full bg-green-500 animate-ping opacity-75"></div>
-                )}
-              </div>
-              <span className="text-xs text-gray-300 font-medium uppercase tracking-wide">VOLUME</span>
+              } mb-1`}></div>
+              <span className="text-xs text-gray-400">VOLUME</span>
             </div>
-            {/* Enhanced Audio Output Indicator */}
+            {/* Audio Output Indicator */}
             {isMobileDevice && (
-              <div className="flex flex-col items-center space-y-2">
-                <div className={`relative w-5 h-5 rounded-full ${
+              <div className="flex flex-col items-center">
+                <div className={`w-3 h-3 rounded-full ${
                   isEarphoneDetected ? 'bg-purple-500' : 
                   isLoudspeaker ? 'bg-[#a6c455]' : 'bg-blue-500'
-                } shadow-lg`}>
-                  <div className={`absolute inset-0 rounded-full ${
-                    isEarphoneDetected ? 'bg-purple-500' : 
-                    isLoudspeaker ? 'bg-[#a6c455]' : 'bg-blue-500'
-                  } animate-ping opacity-75`}></div>
-                </div>
-                <span className="text-xs text-gray-300 font-medium uppercase tracking-wide">
+                } mb-1`}></div>
+                <span className="text-xs text-gray-400">
                   {isEarphoneDetected ? 'PHONE' : 
                    isLoudspeaker ? 'LOUD' : 'EAR'}
                 </span>
@@ -638,41 +588,41 @@ export default function AudioCall() {
           </div>
         </div>
         
-        {/* Enhanced Call Controls */}
-        <div className="bg-gradient-to-t from-[#0a0a0a] to-[#1a1a1a] px-6 py-10 flex justify-around items-center border-t border-[#333333] shadow-2xl">
+        {/* Call Controls */}
+        <div className="bg-[#1a1a1a] px-6 py-8 flex justify-around items-center border-t border-[#333333]">
           <Button 
             variant="outline" 
             size="icon" 
-            className={`w-20 h-20 rounded-full transition-all duration-300 transform hover:scale-105 ${
+            className={`w-16 h-16 rounded-sm ${
               activeCall.audioEnabled 
-                ? 'bg-[#333333] border-[#a6c455] text-[#a6c455] shadow-lg shadow-[#a6c455]/20' 
-                : 'bg-red-600 text-white border-red-600 shadow-lg shadow-red-600/30'
+                ? 'bg-[#333333] border-[#a6c455] text-[#a6c455]' 
+                : 'bg-red-600 text-white border-red-600'
             }`}
             onClick={toggleCallAudio}
           >
-            {activeCall.audioEnabled ? <Mic className="h-8 w-8" /> : <MicOff className="h-8 w-8" />}
+            {activeCall.audioEnabled ? <Mic className="h-7 w-7" /> : <MicOff className="h-7 w-7" />}
           </Button>
           
           <Button 
             variant="destructive" 
             size="icon" 
-            className="w-24 h-24 rounded-full bg-gradient-to-br from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 font-bold uppercase shadow-2xl shadow-red-600/40 transition-all duration-300 transform hover:scale-105 active:scale-95"
+            className="w-20 h-20 rounded-sm bg-red-600 hover:bg-red-700 font-bold uppercase"
             onClick={hangupCall}
           >
-            <Phone className="h-10 w-10 rotate-135" />
+            <Phone className="h-8 w-8 rotate-135" />
           </Button>
           
-          {/* Enhanced Audio Output Toggle - Only on mobile */}
+          {/* Audio Output Toggle - Only on mobile */}
           {isMobileDevice ? (
             <Button 
               variant="outline" 
               size="icon" 
-              className={`w-20 h-20 rounded-full transition-all duration-300 transform hover:scale-105 ${
+              className={`w-16 h-16 rounded-sm ${
                 isEarphoneDetected 
-                  ? 'bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-600/30' 
+                  ? 'bg-purple-600 border-purple-500 text-white' 
                   : isLoudspeaker 
-                    ? 'bg-[#a6c455] border-[#a6c455] text-black shadow-lg shadow-[#a6c455]/30' 
-                    : 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-600/30'
+                    ? 'bg-[#a6c455] border-[#a6c455] text-black' 
+                    : 'bg-blue-600 border-blue-500 text-white'
               }`}
               onClick={toggleSpeakerMode}
             >
@@ -688,14 +638,31 @@ export default function AudioCall() {
             <Button 
               variant="outline" 
               size="icon" 
-              className={`w-20 h-20 rounded-full transition-all duration-300 transform hover:scale-105 ${
+              className={`w-16 h-16 rounded-sm ${
                 !activeCall.isMuted 
-                  ? 'bg-[#333333] border-[#a6c455] text-[#a6c455] shadow-lg shadow-[#a6c455]/20' 
-                  : 'bg-red-600 text-white border-red-600 shadow-lg shadow-red-600/30'
+                  ? 'bg-[#333333] border-[#a6c455] text-[#a6c455]' 
+                  : 'bg-red-600 text-white border-red-600'
               }`}
               onClick={toggleMute}
             >
-              {!activeCall.isMuted ? <Volume2 className="h-8 w-8" /> : <VolumeX className="h-8 w-8" />}
+              {!activeCall.isMuted ? <Volume2 className="h-7 w-7" /> : <VolumeX className="h-7 w-7" />}
+            </Button>
+          )}
+
+          {/* Speaker Toggle Button - Only show on mobile */}
+          {isMobileDevice && (
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className={`w-16 h-16 rounded-sm ${
+                isLoudspeaker 
+                  ? 'bg-[#a6c455] border-[#a6c455] text-black' 
+                  : 'bg-[#333333] border-[#a6c455] text-[#a6c455]'
+              }`}
+              onClick={toggleLoudspeaker}
+              title={isLoudspeaker ? "Switch to Earpiece" : "Switch to Loudspeaker"}
+            >
+              <Speaker className="h-7 w-7" />
             </Button>
           )}
         </div>

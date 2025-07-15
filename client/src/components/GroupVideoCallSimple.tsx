@@ -1279,38 +1279,28 @@ export default function GroupVideoCallSimple() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white relative overflow-hidden">
-      {/* Background pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#a6c455] via-transparent to-[#a6c455]"></div>
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#a6c455] rounded-full blur-3xl opacity-10"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#a6c455] rounded-full blur-3xl opacity-10"></div>
-      </div>
-      
-      {/* Enhanced Header */}
-      <div className="bg-gradient-to-r from-gray-800/90 to-gray-700/90 backdrop-blur-sm border-b border-[#a6c455]/20 p-4 flex items-center justify-between shadow-lg relative z-10">
+    <div className="flex flex-col h-screen bg-gray-900 text-white">
+      {/* Header */}
+      <div className="bg-gray-800 p-4 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold drop-shadow-sm">{activeCall.groupName}</h2>
-          <p className="text-sm text-[#a6c455] font-medium">
+          <h2 className="text-lg font-semibold">{activeCall.groupName}</h2>
+          <p className="text-sm text-gray-400">
             Panggilan Grup • {participants.length + 1} peserta
           </p>
         </div>
-        <div className="text-sm">
-          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#a6c455]/20 text-[#a6c455] border border-[#a6c455]/30">
-            <span className="w-2 h-2 bg-[#a6c455] rounded-full mr-2 animate-pulse"></span>
-            {activeCall.status}
-          </span>
+        <div className="text-sm text-gray-400">
+          Status: {activeCall.status}
         </div>
       </div>
 
-      {/* Enhanced Video Grid */}
-      <div className="flex-1 p-4 grid gap-4 relative z-10" style={{ 
+      {/* Video Grid */}
+      <div className="flex-1 p-4 grid gap-4" style={{ 
         gridTemplateColumns: participants.length === 0 ? '1fr' : 
                             participants.length === 1 ? '1fr 1fr' :
                             participants.length <= 4 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)'
       }}>
-        {/* Enhanced Local Video */}
-        <div className="relative bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl overflow-hidden aspect-video border border-[#a6c455]/20 shadow-lg">
+        {/* Local Video */}
+        <div className="relative bg-gray-800 rounded-lg overflow-hidden aspect-video">
           <video
             ref={localVideoRef}
             autoPlay
@@ -1319,23 +1309,12 @@ export default function GroupVideoCallSimple() {
             className="w-full h-full object-cover"
             style={{ transform: 'scaleX(-1)' }} // Mirror effect
           />
-          <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium border border-[#a6c455]/30">
-            <span className="text-[#a6c455]">Anda</span> {isVideoEnabled ? '' : '(Video Off)'}
+          <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 px-2 py-1 rounded text-xs">
+            Anda {isVideoEnabled ? '' : '(Video Off)'}
           </div>
-          {isVideoEnabled && (
-            <div className="absolute top-2 right-2">
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#a6c455]/20 text-[#a6c455] border border-[#a6c455]/30">
-                <span className="w-2 h-2 bg-[#a6c455] rounded-full mr-1 animate-pulse"></span>
-                LIVE
-              </span>
-            </div>
-          )}
           {!isVideoEnabled && (
-            <div className="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
-              <div className="text-center">
-                <VideoOff size={48} className="text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-300">Video Dimatikan</p>
-              </div>
+            <div className="absolute inset-0 bg-gray-700 flex items-center justify-center">
+              <VideoOff size={32} className="text-gray-400" />
             </div>
           )}
         </div>
@@ -1350,32 +1329,24 @@ export default function GroupVideoCallSimple() {
         ))}
       </div>
 
-      {/* Enhanced Call Controls */}
-      <div className="bg-gradient-to-t from-[#0a0a0a] to-[#1a1a1a] p-6 flex items-center justify-center gap-6 shadow-2xl relative z-10">
+      {/* Controls */}
+      <div className="bg-gray-800 p-4 flex items-center justify-center gap-4">
         <Button
           variant={isAudioEnabled ? "default" : "destructive"}
           size="lg"
           onClick={handleAudioToggle}
-          className={`w-16 h-16 rounded-full transition-all duration-300 transform hover:scale-105 ${
-            isAudioEnabled 
-              ? 'bg-[#333333] border-[#a6c455] text-[#a6c455] shadow-lg shadow-[#a6c455]/20' 
-              : 'bg-red-600 text-white border-red-600 shadow-lg shadow-red-600/30'
-          }`}
+          className="rounded-full w-12 h-12 p-0"
         >
-          {isAudioEnabled ? <Mic size={22} /> : <MicOff size={22} />}
+          {isAudioEnabled ? <Mic size={20} /> : <MicOff size={20} />}
         </Button>
 
         <Button
           variant={isVideoEnabled ? "default" : "destructive"}
           size="lg"
           onClick={handleVideoToggle}
-          className={`w-16 h-16 rounded-full transition-all duration-300 transform hover:scale-105 ${
-            isVideoEnabled 
-              ? 'bg-[#333333] border-[#a6c455] text-[#a6c455] shadow-lg shadow-[#a6c455]/20' 
-              : 'bg-red-600 text-white border-red-600 shadow-lg shadow-red-600/30'
-          }`}
+          className="rounded-full w-12 h-12 p-0"
         >
-          {isVideoEnabled ? <Video size={22} /> : <VideoOff size={22} />}
+          {isVideoEnabled ? <Video size={20} /> : <VideoOff size={20} />}
         </Button>
 
         {isVideoEnabled && (
@@ -1383,10 +1354,10 @@ export default function GroupVideoCallSimple() {
             variant="outline"
             size="lg"
             onClick={handleCameraSwitch}
-            className="w-16 h-16 rounded-full bg-[#333333] border-[#a6c455] text-[#a6c455] shadow-lg shadow-[#a6c455]/20 transition-all duration-300 transform hover:scale-105"
+            className="rounded-full w-12 h-12 p-0"
             title="Ganti Kamera"
           >
-            <Camera size={22} />
+            <Camera size={20} />
           </Button>
         )}
 
@@ -1414,19 +1385,19 @@ export default function GroupVideoCallSimple() {
               await attachVideoStreamWithRetry(localVideoRef.current, localStream, 'Local-ManualRefresh');
             }
           }}
-          className="w-16 h-16 rounded-full bg-[#333333] border-[#a6c455] text-[#a6c455] shadow-lg shadow-[#a6c455]/20 transition-all duration-300 transform hover:scale-105"
+          className="rounded-full w-12 h-12 p-0"
           title="Refresh Video"
         >
-          <RefreshCw size={22} />
+          <RefreshCw size={20} />
         </Button>
 
         <Button
           variant="destructive"
           size="lg"
           onClick={handleHangup}
-          className="w-20 h-20 rounded-full bg-gradient-to-br from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 shadow-2xl shadow-red-600/40 transition-all duration-300 transform hover:scale-105 active:scale-95"
+          className="rounded-full w-12 h-12 p-0"
         >
-          <Phone size={24} />
+          <Phone size={20} />
         </Button>
       </div>
     </div>
@@ -1711,7 +1682,7 @@ function ParticipantVideo({ participant, onRefreshConnection }: {
   });
 
   return (
-    <div className="relative bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl overflow-hidden aspect-video border border-[#a6c455]/20 shadow-lg">
+    <div className="relative bg-gray-800 rounded-lg overflow-hidden aspect-video">
       {participant.stream ? (
         <video
           ref={videoCallbackRef}
@@ -1764,34 +1735,16 @@ function ParticipantVideo({ participant, onRefreshConnection }: {
         </div>
       )}
       
-      <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium border border-[#a6c455]/30">
-        <span className="text-[#a6c455]">{participant.userName}</span>
+      <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 px-2 py-1 rounded text-xs">
+        {participant.userName}
         {connectionStatus === 'connected' && hasVideo && (
-          <>
-            <span className="mx-1">•</span>
-            <span className="text-green-400" title="Video Active">
-              <span className="inline-block w-2 h-2 bg-green-400 rounded-full mr-1 animate-pulse"></span>
-              LIVE
-            </span>
-          </>
+          <span className="ml-1 text-green-400" title="Video Active">● LIVE</span>
         )}
         {connectionStatus === 'loading' && (
-          <>
-            <span className="mx-1">•</span>
-            <span className="text-yellow-400" title="Loading Video">
-              <span className="inline-block w-2 h-2 bg-yellow-400 rounded-full mr-1 animate-pulse"></span>
-              Connecting
-            </span>
-          </>
+          <span className="ml-1 text-yellow-400" title="Loading Video">⏳ Connecting</span>
         )}
         {connectionStatus === 'failed' && (
-          <>
-            <span className="mx-1">•</span>
-            <span className="text-red-400" title="Connection Failed">
-              <span className="inline-block w-2 h-2 bg-red-400 rounded-full mr-1"></span>
-              Failed
-            </span>
-          </>
+          <span className="ml-1 text-red-400" title="Connection Failed">● Failed</span>
         )}
       </div>
     </div>
