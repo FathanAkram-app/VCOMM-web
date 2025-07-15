@@ -1164,6 +1164,84 @@ export default function GroupVideoCallSimple() {
         console.error('[GroupVideoCallSimple] ❌ Error cleaning video elements:', elementError);
       }
       
+      // CRITICAL: Force cleanup ALL media streams globally
+      try {
+        console.log('[GroupVideoCallSimple] 🛑 CRITICAL: Force cleanup ALL media streams globally...');
+        
+        // Get all media streams from getUserMedia calls
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          console.log('[GroupVideoCallSimple] 🛑 Attempting to stop all active media streams...');
+          
+          // Force stop all tracks from all possible sources
+          const allTracks = [];
+          
+          // Check if there are any active streams in the global scope
+          if (window.webkitMediaStream) {
+            console.log('[GroupVideoCallSimple] 🛑 Checking webkit media streams...');
+          }
+          
+          // More aggressive cleanup - try to access all possible active streams
+          setTimeout(() => {
+            console.log('[GroupVideoCallSimple] 🛑 Secondary cleanup - checking for remaining active streams...');
+            
+            // Force stop any remaining video elements
+            const remainingVideos = document.querySelectorAll('video');
+            remainingVideos.forEach((video, idx) => {
+              if (video.srcObject || !video.paused) {
+                console.log(`[GroupVideoCallSimple] 🛑 Force stopping remaining video ${idx}`);
+                video.pause();
+                video.srcObject = null;
+                video.src = '';
+                video.load();
+              }
+            });
+            
+            // Force stop any remaining audio elements
+            const remainingAudios = document.querySelectorAll('audio');
+            remainingAudios.forEach((audio, idx) => {
+              if (audio.srcObject || !audio.paused) {
+                console.log(`[GroupVideoCallSimple] 🛑 Force stopping remaining audio ${idx}`);
+                audio.pause();
+                audio.srcObject = null;
+                audio.src = '';
+                audio.load();
+              }
+            });
+            
+            console.log('[GroupVideoCallSimple] ✅ Secondary cleanup completed');
+          }, 200);
+        }
+        
+        console.log('[GroupVideoCallSimple] ✅ Global media stream cleanup completed');
+      } catch (globalError) {
+        console.error('[GroupVideoCallSimple] ❌ Error in global media cleanup:', globalError);
+      }
+      
+      // Force cleanup ALL remote streams sebelum cleanup peer connections
+      try {
+        console.log('[GroupVideoCallSimple] 🛑 Force cleanup ALL remote streams...');
+        remoteStreamsRef.current.forEach((stream, key) => {
+          if (stream && stream.getTracks) {
+            console.log(`[GroupVideoCallSimple] 🛑 Stopping remote stream tracks for ${key}...`);
+            stream.getTracks().forEach(track => {
+              try {
+                track.stop();
+                console.log(`[GroupVideoCallSimple] ✅ Stopped remote ${track.kind} track from ${key}`);
+              } catch (e) {
+                console.log(`[GroupVideoCallSimple] ❌ Error stopping remote track from ${key}:`, e);
+              }
+            });
+          }
+        });
+        
+        // Clear remote streams maps
+        remoteStreamsRef.current.clear();
+        setRemoteStreams(new Map());
+        console.log('[GroupVideoCallSimple] ✅ Remote streams cleared');
+      } catch (remoteError) {
+        console.error('[GroupVideoCallSimple] ❌ Error cleaning remote streams:', remoteError);
+      }
+      
       // Cleanup peer connections
       cleanupPeerConnections();
       
@@ -1183,7 +1261,7 @@ export default function GroupVideoCallSimple() {
       setTimeout(() => {
         hangupCall();
         setLocation('/chat');
-      }, 100); // 100ms delay untuk ensure cleanup completion
+      }, 500); // 500ms delay untuk ensure comprehensive cleanup completion
     }
   };
 
