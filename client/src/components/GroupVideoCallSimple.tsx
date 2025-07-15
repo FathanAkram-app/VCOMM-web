@@ -45,6 +45,101 @@ export default function GroupVideoCallSimple() {
   // Track offer creation state to prevent duplicates
   const offerCreationStateRef = useRef(new Map<number, 'creating' | 'created' | 'idle'>());
 
+  // Enhanced video attachment with retry mechanism untuk mengatasi AbortError
+  const attachVideoStreamWithRetry = async (
+    videoElement: HTMLVideoElement, 
+    stream: MediaStream, 
+    label: string,
+    maxRetries: number = 3
+  ): Promise<boolean> => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`[GroupVideoCallSimple] 🔄 Attempting ${label} video attach (${attempt}/${maxRetries})`);
+        
+        // Validate stream dan element
+        if (!stream || !stream.active) {
+          console.warn(`[GroupVideoCallSimple] ⚠️ ${label} stream is not active`);
+          return false;
+        }
+        
+        if (!videoElement) {
+          console.warn(`[GroupVideoCallSimple] ⚠️ ${label} video element not available`);
+          return false;
+        }
+        
+        // Clear previous stream dengan proper cleanup
+        if (videoElement.srcObject) {
+          videoElement.srcObject = null;
+          videoElement.load();
+          // Wait for cleanup to complete
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        // Attach new stream
+        videoElement.srcObject = stream;
+        
+        // Wait for video to be ready
+        await new Promise((resolve, reject) => {
+          const timeoutId = setTimeout(() => reject(new Error('Timeout waiting for loadeddata')), 3000);
+          
+          const onLoadedData = () => {
+            clearTimeout(timeoutId);
+            videoElement.removeEventListener('loadeddata', onLoadedData);
+            resolve(void 0);
+          };
+          
+          videoElement.addEventListener('loadeddata', onLoadedData);
+          
+          // If already loaded, resolve immediately
+          if (videoElement.readyState >= 2) {
+            clearTimeout(timeoutId);
+            resolve(void 0);
+          }
+        });
+        
+        // Try to play with error handling
+        await new Promise((resolve, reject) => {
+          const playPromise = videoElement.play();
+          
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                console.log(`[GroupVideoCallSimple] ✅ ${label} video playing successfully (attempt ${attempt})`);
+                resolve(void 0);
+              })
+              .catch((error: Error) => {
+                console.warn(`[GroupVideoCallSimple] ⚠️ ${label} play failed (attempt ${attempt}):`, error.message);
+                
+                // For AbortError, wait and try again
+                if (error.name === 'AbortError') {
+                  setTimeout(() => reject(error), 200 * attempt); // Exponential backoff
+                } else {
+                  reject(error);
+                }
+              });
+          } else {
+            resolve(void 0);
+          }
+        });
+        
+        return true; // Success
+        
+      } catch (error: any) {
+        console.warn(`[GroupVideoCallSimple] ⚠️ ${label} video attach attempt ${attempt} failed:`, error.message);
+        
+        if (attempt === maxRetries) {
+          console.error(`[GroupVideoCallSimple] ❌ ${label} video attach failed after ${maxRetries} attempts`);
+          return false;
+        }
+        
+        // Wait before retry with exponential backoff
+        await new Promise(resolve => setTimeout(resolve, 300 * attempt));
+      }
+    }
+    
+    return false;
+  };
+
   // Reusable media initialization function  
   const initializeMediaStream = async () => {
     try {
@@ -83,11 +178,9 @@ export default function GroupVideoCallSimple() {
           console.log('[GroupVideoCallSimple] ✅ Video enabled from start');
         }
 
-        // Attach to local video element
+        // Attach to local video element dengan enhanced error handling
         if (localVideoRef.current) {
-          localVideoRef.current.srcObject = stream;
-          localVideoRef.current.play().catch(console.warn);
-          console.log('[GroupVideoCallSimple] ✅ Local video attached and playing');
+          await attachVideoStreamWithRetry(localVideoRef.current, stream, 'Local');
         }
 
       setLocalStream(stream);
@@ -113,11 +206,10 @@ export default function GroupVideoCallSimple() {
     };
   }, []);
 
-  // Update local video ref saat stream berubah
+  // Update local video ref saat stream berubah dengan retry mechanism
   useEffect(() => {
     if (localVideoRef.current && localStream) {
-      localVideoRef.current.srcObject = localStream;
-      localVideoRef.current.play().catch(console.warn);
+      attachVideoStreamWithRetry(localVideoRef.current, localStream, 'Local-Update');
     }
   }, [localStream]);
 
@@ -873,34 +965,25 @@ export default function GroupVideoCallSimple() {
         <Button
           variant="outline"
           size="lg"
-          onClick={() => {
-            console.log('[GroupVideoCallSimple] 🔄 Manual video refresh triggered');
-            // Force refresh all remote streams
-            participants.forEach(participant => {
-              if (participant.stream && participant.videoRef?.current) {
-                const videoElement = participant.videoRef.current;
-                console.log(`[GroupVideoCallSimple] 🔄 Refreshing video for ${participant.userName}`);
-                
-                // Reset srcObject and restart playback
-                videoElement.srcObject = null;
-                videoElement.load();
-                setTimeout(() => {
-                  videoElement.srcObject = participant.stream;
-                  videoElement.play().catch(console.warn);
-                }, 200);
-              }
-            });
+          onClick={async () => {
+            console.log('[GroupVideoCallSimple] 🔄 Enhanced manual video refresh initiated');
             
-            // Also refresh local video
+            // Enhanced refresh for all participant videos
+            for (const participant of participants) {
+              if (participant.stream && participant.videoRef?.current) {
+                console.log(`[GroupVideoCallSimple] 🔄 Enhanced refresh for ${participant.userName}`);
+                await localAttachWithRetry(
+                  participant.videoRef.current,
+                  participant.stream,
+                  `${participant.userName}-ManualRefresh`
+                );
+              }
+            }
+            
+            // Enhanced refresh for local video
             if (localStream && localVideoRef.current) {
-              console.log('[GroupVideoCallSimple] 🔄 Refreshing local video');
-              const localVideo = localVideoRef.current;
-              localVideo.srcObject = null;
-              localVideo.load();
-              setTimeout(() => {
-                localVideo.srcObject = localStream;
-                localVideo.play().catch(console.warn);
-              }, 200);
+              console.log('[GroupVideoCallSimple] 🔄 Enhanced refresh for local video');
+              await attachVideoStreamWithRetry(localVideoRef.current, localStream, 'Local-ManualRefresh');
             }
           }}
           className="rounded-full w-12 h-12 p-0"
@@ -921,6 +1004,70 @@ export default function GroupVideoCallSimple() {
     </div>
   );
 }
+
+// Local fallback retry function for ParticipantVideo
+const localAttachWithRetry = async (
+  videoElement: HTMLVideoElement,
+  stream: MediaStream,
+  userName: string,
+  maxRetries: number = 3
+): Promise<boolean> => {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`[ParticipantVideo] 🔄 Attempting ${userName} video attach (${attempt}/${maxRetries})`);
+      
+      if (!stream || !stream.active) {
+        console.warn(`[ParticipantVideo] ⚠️ ${userName} stream is not active`);
+        return false;
+      }
+      
+      // Clear previous stream
+      if (videoElement.srcObject) {
+        videoElement.srcObject = null;
+        videoElement.load();
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      // Attach new stream
+      videoElement.srcObject = stream;
+      
+      // Wait for video to be ready
+      await new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => reject(new Error('Timeout')), 3000);
+        
+        const onLoadedData = () => {
+          clearTimeout(timeoutId);
+          videoElement.removeEventListener('loadeddata', onLoadedData);
+          resolve(void 0);
+        };
+        
+        videoElement.addEventListener('loadeddata', onLoadedData);
+        
+        if (videoElement.readyState >= 2) {
+          clearTimeout(timeoutId);
+          resolve(void 0);
+        }
+      });
+      
+      // Try to play
+      await videoElement.play();
+      console.log(`[ParticipantVideo] ✅ ${userName} video playing successfully (attempt ${attempt})`);
+      return true;
+      
+    } catch (error: any) {
+      console.warn(`[ParticipantVideo] ⚠️ ${userName} video attach attempt ${attempt} failed:`, error.message);
+      
+      if (attempt === maxRetries) {
+        console.error(`[ParticipantVideo] ❌ ${userName} video attach failed after ${maxRetries} attempts`);
+        return false;
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 300 * attempt));
+    }
+  }
+  
+  return false;
+};
 
 // Component untuk menampilkan video participant
 function ParticipantVideo({ participant }: { 
@@ -953,46 +1100,27 @@ function ParticipantVideo({ participant }: {
     if (videoElement && participant.stream) {
       console.log(`[ParticipantVideo] Attaching stream for ${participant.userName}`);
       
-      // Clear any existing srcObject first to prevent conflicts
-      if (videoElement.srcObject && videoElement.srcObject !== participant.stream) {
-        videoElement.srcObject = null;
-        videoElement.load();
-      }
-      
-      // Set new stream
-      videoElement.srcObject = participant.stream;
-      
-      // Enhanced play strategy with multiple fallbacks
-      const playVideo = async (attempt = 1) => {
-        try {
-          // Wait for stream to be ready
-          await new Promise(resolve => setTimeout(resolve, 100 * attempt));
-          
-          // Check if element still exists and has the correct stream
-          if (!videoElement || videoElement.srcObject !== participant.stream) {
-            console.log(`[ParticipantVideo] Element or stream changed for ${participant.userName}, aborting play attempt ${attempt}`);
-            return;
-          }
-          
-          await videoElement.play();
-          console.log(`[ParticipantVideo] ✅ Video playing successfully for ${participant.userName} (attempt ${attempt})`);
-          setHasVideo(true);
-          
-        } catch (error) {
-          console.warn(`[ParticipantVideo] ❌ Video play failed for ${participant.userName} (attempt ${attempt}):`, error);
-          setHasVideo(false);
-          
-          // Retry with exponential backoff up to 3 attempts
-          if (attempt < 3 && videoElement && participant.stream) {
-            setTimeout(() => {
-              playVideo(attempt + 1);
-            }, 500 * attempt);
-          }
+      // Use enhanced retry mechanism dari parent component
+      const attachVideo = async () => {
+        // Get parent component's attachVideoStreamWithRetry function
+        const parentComponent = document.querySelector('[data-group-video-call="true"]');
+        if (parentComponent && (parentComponent as any).__attachVideoStreamWithRetry) {
+          const success = await (parentComponent as any).__attachVideoStreamWithRetry(
+            videoElement, 
+            participant.stream, 
+            `Participant-${participant.userName}`
+          );
+          setHasVideo(success);
+          return;
         }
+        
+        // Fallback to local retry mechanism if parent function not available
+        const success = await localAttachWithRetry(videoElement, participant.stream, participant.userName);
+        setHasVideo(success);
       };
       
-      // Start video playback
-      playVideo();
+      // Start video attachment
+      attachVideo();
       
       const videoTracks = participant.stream.getVideoTracks();
       const hasVideoEnabled = videoTracks.length > 0 && videoTracks[0].enabled;
