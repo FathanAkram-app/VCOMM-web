@@ -1378,6 +1378,12 @@ const localAttachWithRetry = async (
       videoElement.dispatchEvent(new Event('loadeddata'));
       videoElement.dispatchEvent(new Event('playing'));
       
+      // Additional force update for state synchronization
+      setTimeout(() => {
+        videoElement.dispatchEvent(new Event('loadeddata'));
+        console.log(`[ParticipantVideo] 🔄 Force dispatched loadeddata for ${userName}`);
+      }, 100);
+      
       return true;
       
     } catch (error: any) {
@@ -1435,10 +1441,22 @@ function ParticipantVideo({ participant, onRefreshConnection }: {
         try {
           const success = await localAttachWithRetry(videoElement, participant.stream, participant.userName);
           if (success) {
+            // Force immediate state update
             setHasVideo(true);
             setConnectionStatus('connected');
             setShowRefreshButton(false);
             console.log(`[ParticipantVideo] ✅ Video playing successfully for ${participant.userName} - STATUS SET TO CONNECTED`);
+            
+            // Additional verification after state update
+            setTimeout(() => {
+              console.log(`[ParticipantVideo] 🔍 State verification for ${participant.userName}:`, {
+                hasVideo: true,
+                connectionStatus: 'connected',
+                showRefreshButton: false,
+                elementSrc: videoElement.srcObject ? 'has-stream' : 'no-stream',
+                playbackState: videoElement.paused ? 'paused' : 'playing'
+              });
+            }, 100);
           } else {
             setHasVideo(false);
             setConnectionStatus('failed');
@@ -1469,6 +1487,17 @@ function ParticipantVideo({ participant, onRefreshConnection }: {
         hasVideo: hasVideoEnabled
       });
       
+      // Add immediate state check after attachment attempt
+      setTimeout(() => {
+        console.log(`[ParticipantVideo] State check for ${participant.userName} after attachment:`, {
+          hasVideo,
+          connectionStatus,
+          showRefreshButton,
+          videoElementReady: !!videoElement.srcObject,
+          currentTime: videoElement.currentTime
+        });
+      }, 500);
+      
       // Add event listeners for video events
       const handleLoadedData = () => {
         console.log(`[ParticipantVideo] ✅ Video loaded for ${participant.userName} - UPDATING STATUS TO CONNECTED`);
@@ -1480,9 +1509,13 @@ function ParticipantVideo({ participant, onRefreshConnection }: {
           timeoutRef.current = null;
         }
         
-        setHasVideo(true);
-        setConnectionStatus('connected');
-        setShowRefreshButton(false);
+        // Force state update dengan batch update
+        setTimeout(() => {
+          setHasVideo(true);
+          setConnectionStatus('connected');
+          setShowRefreshButton(false);
+          console.log(`[ParticipantVideo] 🔄 Force updated state for ${participant.userName}: hasVideo=true, status=connected`);
+        }, 0);
       };
       
       const handleError = (event: Event) => {
