@@ -719,67 +719,11 @@ export default function GroupVideoCallSimple() {
           // Clear reconnection state
           reconnectionState.current.delete(userId);
         } else if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
-          const now = Date.now();
-          const state = reconnectionState.current.get(userId) || { 
-            isReconnecting: false, 
-            lastAttempt: 0, 
-            attemptCount: 0 
-          };
-          
-          // Prevent rapid reconnection attempts (debounce 5 seconds)
-          if (state.isReconnecting || (now - state.lastAttempt) < 5000) {
-            console.log('[GroupVideoCallSimple] ⏸️ Skipping reconnection for user', userId, '- too soon or already reconnecting');
-            return;
-          }
-          
-          // Limit reconnection attempts (max 3 attempts)
-          if (state.attemptCount >= 3) {
-            console.log('[GroupVideoCallSimple] ❌ Max reconnection attempts reached for user', userId);
-            return;
-          }
-          
-          console.log('[GroupVideoCallSimple] ❌ Connection failed for user', userId, '- attempting restart (attempt', state.attemptCount + 1, '/3)');
-          
-          // Update reconnection state
-          reconnectionState.current.set(userId, {
-            isReconnecting: true,
-            lastAttempt: now,
-            attemptCount: state.attemptCount + 1
-          });
-          
-          try {
-            pc.restartIce();
-            // Reset reconnecting flag after 2 seconds
-            setTimeout(() => {
-              const currentState = reconnectionState.current.get(userId);
-              if (currentState) {
-                currentState.isReconnecting = false;
-              }
-            }, 2000);
-          } catch (error) {
-            console.error('[GroupVideoCallSimple] Error restarting ICE for user', userId, ':', error);
-            // Reset reconnecting flag on error
-            const currentState = reconnectionState.current.get(userId);
-            if (currentState) {
-              currentState.isReconnecting = false;
-            }
-          }
+          console.log('[GroupVideoCallSimple] ❌ Connection failed for user', userId, '- manual refresh required');
+          // No automatic reconnection - user must manually refresh
         } else if (pc.connectionState === 'connecting') {
-          // Only set timeout if no timeout already exists untuk user ini
-          if (!connectionTimeouts.current.has(userId)) {
-            const timeoutId = setTimeout(() => {
-              if (pc.connectionState === 'connecting') {
-                console.log('[GroupVideoCallSimple] ⏰ Connection timeout for user', userId, '- forcing restart');
-                try {
-                  pc.restartIce();
-                } catch (error) {
-                  console.error('[GroupVideoCallSimple] Error restarting stuck connection for user', userId, ':', error);
-                }
-              }
-            }, 15000); // 15 seconds timeout
-            
-            connectionTimeouts.current.set(userId, timeoutId);
-          }
+          console.log('[GroupVideoCallSimple] ⏳ Connecting to user', userId, '- please wait...');
+          // No automatic timeout restart - let connection attempt naturally
         }
       };
       
