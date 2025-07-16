@@ -2202,11 +2202,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             console.log(`[Group Call] Broadcasted participant update for call ${callId}`);
             
-            // 🔥 CRITICAL FIX: Send detailed participant data to new member
-            // This ensures the new member can see all existing participants
+            // 🚀 CRITICAL FIX: Force sync ALL participants with consistent data
+            // This ensures ALL users get the same participant data, preventing asymmetric visibility
             setTimeout(async () => {
               try {
-                console.log(`[Group Call] 🎯 Sending detailed participant data to new member ${userId}`);
+                console.log(`[Group Call] 🚀 FORCE SYNC - Sending consistent participant data to ALL users`);
                 
                 // Get user data for all participants
                 const participantData = [];
@@ -2230,20 +2230,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   }
                 }
                 
-                // Send detailed participant update to new member
-                const detailedUpdateMessage = {
-                  type: 'group_call_participants_update',
-                  payload: {
-                    callId,
-                    participants: participantData,
-                    isNewMember: true,
-                    fullSync: true // Flag to indicate this is a full sync for new member
-                  }
-                };
+                console.log(`[Group Call] 🚀 FORCE SYNC - Broadcasting same participant data to ALL ${participants.length} users`);
+                console.log(`[Group Call] 🚀 FORCE SYNC - Participant data to broadcast:`, participantData);
                 
-                console.log(`[Group Call] 📤 Sending detailed participant data to new member ${userId}:`, detailedUpdateMessage);
+                // Send identical participant data to ALL users (including new member)
+                for (const participantId of participants) {
+                  const client = clients.get(participantId);
+                  if (client && client.readyState === client.OPEN) {
+                    const forceUpdateMessage = {
+                      type: 'group_call_participants_update',
+                      payload: {
+                        callId,
+                        participants: participantData,
+                        isNewMember: participantId === userId,
+                        fullSync: true,
+                        forceSync: true, // Flag to indicate this is a force sync to all users
+                        timestamp: Date.now()
+                      }
+                    };
+                    
+                    console.log(`[Group Call] 🚀 FORCE SYNC - Sending to user ${participantId}:`, forceUpdateMessage);
+                    client.send(JSON.stringify(forceUpdateMessage));
+                  }
+                }
+                
+                // Send additional detailed participant update to new member
                 const newMemberClient = clients.get(userId);
                 if (newMemberClient && newMemberClient.readyState === newMemberClient.OPEN) {
+                  console.log(`[Group Call] 🎯 Sending additional detailed data to new member ${userId}`);
+                  const detailedUpdateMessage = {
+                    type: 'group_call_participants_update',
+                    payload: {
+                      callId,
+                      participants: participantData,
+                      isNewMember: true,
+                      fullSync: true,
+                      forceSync: true
+                    }
+                  };
                   newMemberClient.send(JSON.stringify(detailedUpdateMessage));
                   
                   // Also send force WebRTC initiation to new member

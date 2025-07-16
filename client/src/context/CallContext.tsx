@@ -1794,6 +1794,31 @@ export function CallProvider({ children }: { children: ReactNode }) {
           console.log('[CallContext] 🎯 Full sync complete - participant data updated for new member');
           return;
         }
+
+        // 🔥 CRITICAL FIX: Force sync for ALL participant updates to ensure consistency
+        console.log('[CallContext] 🚀 FORCE SYNC - Ensuring all participants get consistent data');
+        
+        // Always update active call with latest participant data
+        const updatedCall = {
+          ...groupCallToUpdate,
+          participants: uniqueParticipants
+        };
+        
+        setActiveCall(updatedCall);
+        activeCallRef.current = updatedCall;
+        
+        // Force dispatch event to GroupCall component for immediate refresh
+        window.dispatchEvent(new CustomEvent('participant-data-updated', {
+          detail: {
+            callId: callId,
+            participants: uniqueParticipants,
+            isNewMember: false,
+            fullSync: true,
+            forceSync: true
+          }
+        }));
+        
+        console.log('[CallContext] 🔥 FORCE SYNC complete - all participants should have consistent data');
         
         // Handle regular participant updates (not full sync)
         console.log('[CallContext] Processing regular participant update (not full sync)');

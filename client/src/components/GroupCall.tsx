@@ -101,6 +101,9 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
       } else if (updatedParticipants && Array.isArray(updatedParticipants)) {
         console.log('[GroupCall] 🔄 Regular participant update - force refreshing list');
         setParticipants(updatedParticipants);
+      } else if (event.detail.forceSync) {
+        console.log('[GroupCall] 🚀 FORCE SYNC - overriding participant list with server data');
+        setParticipants(updatedParticipants);
       }
     };
 
