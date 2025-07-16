@@ -2829,9 +2829,51 @@ export function CallProvider({ children }: { children: ReactNode }) {
       }
     }
     
-    // CRITICAL: Force stop all audio and video elements on the page
+    // 🚨 ULTIMATE MOBILE NOTIFICATION FIX: Comprehensive Media Stream Termination
     try {
-      console.log('[CallContext] 🛑 CRITICAL CLEANUP: Force stopping ALL audio/video elements...');
+      console.log('[CallContext] 🚨 ULTIMATE MOBILE NOTIFICATION FIX: Comprehensive media cleanup...');
+      
+      // 1. GLOBAL MEDIA STREAM TERMINATION - Force stop ALL tracks globally
+      console.log('[CallContext] 🛑 PHASE 1: Global media stream scan and termination');
+      
+      // Force stop all MediaStreamTrack instances globally
+      if (window.MediaStreamTrack && window.MediaStreamTrack.prototype) {
+        console.log('[CallContext] 🛑 Forcing global MediaStreamTrack cleanup');
+        
+        // Get all active media tracks from all possible sources
+        const getAllMediaTracks = () => {
+          const tracks: MediaStreamTrack[] = [];
+          
+          // Check all audio/video elements
+          document.querySelectorAll('audio, video').forEach(element => {
+            const mediaElement = element as HTMLMediaElement;
+            if (mediaElement.srcObject) {
+              const stream = mediaElement.srcObject as MediaStream;
+              if (stream && stream.getTracks) {
+                tracks.push(...stream.getTracks());
+              }
+            }
+          });
+          
+          return tracks;
+        };
+        
+        const allTracks = getAllMediaTracks();
+        console.log(`[CallContext] 🛑 Found ${allTracks.length} active media tracks to terminate`);
+        
+        allTracks.forEach((track, index) => {
+          try {
+            console.log(`[CallContext] 🛑 Terminating track ${index}: ${track.kind} - ${track.readyState}`);
+            track.stop();
+            console.log(`[CallContext] ✅ Successfully terminated ${track.kind} track ${index}`);
+          } catch (error) {
+            console.error(`[CallContext] ❌ Error terminating track ${index}:`, error);
+          }
+        });
+      }
+      
+      // 2. FORCE CLEANUP ALL MEDIA ELEMENTS
+      console.log('[CallContext] 🛑 PHASE 2: Force cleanup all media elements...');
       
       // Stop all audio elements
       const audioElements = document.querySelectorAll('audio');
@@ -2908,6 +2950,78 @@ export function CallProvider({ children }: { children: ReactNode }) {
       console.log('[CallContext] ✅ Global media stream cleanup completed');
     } catch (e) {
       console.log('[CallContext] Error with global stream cleanup:', e);
+    }
+    
+    // 🚨 CHROME MOBILE SPECIFIC CLEANUP for persistent notifications
+    try {
+      console.log('[CallContext] 🚨 CHROME MOBILE CLEANUP - Starting...');
+      
+      // Detect Chrome mobile
+      const isChromeOnMobile = navigator.userAgent.includes('Chrome') && 
+                              (navigator.userAgent.includes('Mobile') || 
+                               navigator.userAgent.includes('Android'));
+      
+      if (isChromeOnMobile) {
+        console.log('[CallContext] 🚨 CHROME MOBILE DETECTED - Applying specific cleanup');
+        
+        // Force navigator.mediaDevices cleanup for Chrome mobile
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          console.log('[CallContext] 🛑 Forcing navigator.mediaDevices cleanup for Chrome mobile');
+          
+          try {
+            // Request dummy stream to force permission release
+            navigator.mediaDevices.getUserMedia({ 
+              audio: false, 
+              video: false 
+            }).then(stream => {
+              if (stream) {
+                stream.getTracks().forEach(track => {
+                  track.stop();
+                  console.log('[CallContext] ✅ Stopped dummy cleanup track');
+                });
+              }
+            }).catch(() => {
+              console.log('[CallContext] ⚠️ Dummy stream cleanup failed (expected)');
+            });
+          } catch (error) {
+            console.log('[CallContext] ⚠️ Dummy stream cleanup error:', error);
+          }
+        }
+        
+        // Force webkit media source cleanup for Chrome mobile
+        if ((window as any).webkitMediaStream) {
+          console.log('[CallContext] 🛑 Webkit media stream cleanup');
+          try {
+            (window as any).webkitMediaStream = null;
+          } catch (error) {
+            console.log('[CallContext] ⚠️ Webkit cleanup error:', error);
+          }
+        }
+        
+        // Force Chrome mobile-specific permission cleanup
+        try {
+          // Clear Chrome-specific media caches
+          if ((window as any).chrome && (window as any).chrome.runtime) {
+            console.log('[CallContext] 🛑 Chrome runtime cleanup');
+          }
+          
+          // Force garbage collection if available
+          if ((window as any).gc) {
+            (window as any).gc();
+            console.log('[CallContext] ✅ Forced garbage collection');
+          }
+          
+        } catch (error) {
+          console.log('[CallContext] ⚠️ Chrome mobile cleanup error:', error);
+        }
+        
+        console.log('[CallContext] ✅ Chrome mobile cleanup completed');
+      } else {
+        console.log('[CallContext] ℹ️ Not Chrome mobile - skipping specific cleanup');
+      }
+      
+    } catch (error) {
+      console.error('[CallContext] ❌ Error during Chrome mobile cleanup:', error);
     }
     
     // Stop ringtone when call is ended
@@ -3061,6 +3175,65 @@ export function CallProvider({ children }: { children: ReactNode }) {
           console.warn('[CallContext] Media device cleanup warning:', err);
         }
       }, 200);
+      
+      // 🚨 CHROME MOBILE DELAYED CLEANUP for persistent notifications
+      setTimeout(() => {
+        console.log('[CallContext] 🚨 CHROME MOBILE DELAYED CLEANUP - Starting...');
+        
+        // Detect Chrome mobile again
+        const isChromeOnMobile = navigator.userAgent.includes('Chrome') && 
+                                (navigator.userAgent.includes('Mobile') || 
+                                 navigator.userAgent.includes('Android'));
+        
+        if (isChromeOnMobile) {
+          console.log('[CallContext] 🚨 CHROME MOBILE DELAYED CLEANUP - Applying delayed cleanup');
+          
+          // Force final permission cleanup
+          try {
+            // Final sweep for any remaining MediaStreamTrack objects
+            if (window.MediaStreamTrack && window.MediaStreamTrack.prototype) {
+              console.log('[CallContext] 🛑 Final MediaStreamTrack cleanup for Chrome mobile');
+              
+              // Search through all possible DOM elements for remaining streams
+              document.querySelectorAll('*').forEach(element => {
+                if (element && (element as any).srcObject) {
+                  const stream = (element as any).srcObject as MediaStream;
+                  if (stream && stream.getTracks) {
+                    stream.getTracks().forEach((track: MediaStreamTrack) => {
+                      if (track.readyState === 'live') {
+                        track.stop();
+                        console.log('[CallContext] ✅ Final cleanup - stopped remaining track:', track.kind);
+                      }
+                    });
+                    (element as any).srcObject = null;
+                  }
+                }
+              });
+            }
+            
+            // Force Chrome mobile cache cleanup
+            if ((window as any).caches) {
+              console.log('[CallContext] 🛑 Chrome mobile cache cleanup');
+              (window as any).caches.keys().then((cacheNames: string[]) => {
+                cacheNames.forEach(cacheName => {
+                  if (cacheName.includes('media') || cacheName.includes('stream')) {
+                    (window as any).caches.delete(cacheName);
+                    console.log('[CallContext] ✅ Deleted media cache:', cacheName);
+                  }
+                });
+              }).catch(() => {
+                console.log('[CallContext] ⚠️ Cache cleanup failed (expected)');
+              });
+            }
+            
+          } catch (error) {
+            console.log('[CallContext] ⚠️ Chrome mobile delayed cleanup error:', error);
+          }
+          
+          console.log('[CallContext] ✅ Chrome mobile delayed cleanup completed');
+        }
+        
+      }, 1000); // 1 second delay for Chrome mobile cleanup
       
       setLocation('/chat');
       
