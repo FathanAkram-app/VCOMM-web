@@ -2765,18 +2765,85 @@ export function CallProvider({ children }: { children: ReactNode }) {
       }
     }
     
-    // Force stop all audio elements on the page
+    // CRITICAL: Force stop all audio and video elements on the page
     try {
+      console.log('[CallContext] 🛑 CRITICAL CLEANUP: Force stopping ALL audio/video elements...');
+      
+      // Stop all audio elements
       const audioElements = document.querySelectorAll('audio');
-      audioElements.forEach((audio: HTMLAudioElement) => {
+      audioElements.forEach((audio: HTMLAudioElement, index) => {
+        console.log(`[CallContext] 🛑 Stopping audio element ${index}:`, audio.id || 'no-id');
         audio.pause();
         audio.currentTime = 0;
         audio.volume = 0;
         audio.muted = true;
+        if (audio.srcObject) {
+          const stream = audio.srcObject as MediaStream;
+          if (stream && stream.getTracks) {
+            stream.getTracks().forEach(track => {
+              track.stop();
+              console.log('[CallContext] ✅ Stopped audio track from audio element');
+            });
+          }
+          audio.srcObject = null;
+        }
+        audio.src = '';
+        audio.load();
       });
-      console.log('[CallContext] ✅ All page audio elements forcefully stopped on hangup');
+      
+      // Stop all video elements 
+      const videoElements = document.querySelectorAll('video');
+      videoElements.forEach((video: HTMLVideoElement, index) => {
+        console.log(`[CallContext] 🛑 Stopping video element ${index}:`, video.id || 'no-id');
+        video.pause();
+        video.currentTime = 0;
+        video.volume = 0;
+        video.muted = true;
+        if (video.srcObject) {
+          const stream = video.srcObject as MediaStream;
+          if (stream && stream.getTracks) {
+            stream.getTracks().forEach(track => {
+              track.stop();
+              console.log(`[CallContext] ✅ Stopped ${track.kind} track from video element`);
+            });
+          }
+          video.srcObject = null;
+        }
+        video.src = '';
+        video.load();
+      });
+      
+      console.log('[CallContext] ✅ ALL audio/video elements forcefully stopped');
     } catch (e) {
-      console.log('[CallContext] Error stopping all audio elements:', e);
+      console.log('[CallContext] Error stopping audio/video elements:', e);
+    }
+    
+    // FORCE STOP ALL GLOBAL MEDIA STREAMS
+    try {
+      console.log('[CallContext] 🛑 FORCE STOPPING ALL GLOBAL MEDIA STREAMS...');
+      
+      // Check for any MediaStream objects in global scope
+      if (typeof window !== 'undefined') {
+        // Stop any streams stored in window object
+        Object.keys(window).forEach(key => {
+          const value = (window as any)[key];
+          if (value && value.getTracks && typeof value.getTracks === 'function') {
+            console.log(`[CallContext] 🛑 Found global MediaStream: ${key}`);
+            value.getTracks().forEach((track: MediaStreamTrack) => {
+              try {
+                track.stop();
+                console.log(`[CallContext] ✅ Stopped global ${track.kind} track from ${key}`);
+              } catch (e) {
+                console.log(`[CallContext] ❌ Error stopping global track from ${key}:`, e);
+              }
+            });
+          }
+        });
+      }
+      
+      console.log('[CallContext] ✅ Global media stream cleanup completed');
+    } catch (e) {
+      console.log('[CallContext] Error with global stream cleanup:', e);
     }
     
     // Stop ringtone when call is ended

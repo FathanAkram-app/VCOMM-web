@@ -577,12 +577,157 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     }
   };
 
-  // Leave group call
+  // Leave group call dengan comprehensive audio cleanup
   const leaveCall = () => {
-    if (localStream) {
-      localStream.getTracks().forEach(track => track.stop());
+    console.log('[GroupCall] Leaving call dengan comprehensive cleanup...');
+    
+    try {
+      // Stop dan cleanup local stream PERTAMA dengan force cleanup
+      if (localStream) {
+        console.log('[GroupCall] 🛑 Force stopping local stream tracks...');
+        localStream.getTracks().forEach(track => {
+          console.log(`[GroupCall] 🛑 Stopping ${track.kind} track:`, track.label, 'readyState:', track.readyState);
+          try {
+            track.stop();
+            console.log(`[GroupCall] ✅ Successfully stopped ${track.kind} track`);
+          } catch (trackError) {
+            console.error(`[GroupCall] ❌ Error stopping ${track.kind} track:`, trackError);
+          }
+        });
+        setLocalStream(null);
+        console.log('[GroupCall] ✅ Local stream stopped and state cleared');
+      }
+      
+      // CRITICAL: Force cleanup ALL audio elements on page 
+      try {
+        console.log('[GroupCall] 🛑 CRITICAL: Force cleanup ALL audio elements...');
+        const allAudioElements = document.querySelectorAll('audio');
+        allAudioElements.forEach((audio, index) => {
+          console.log(`[GroupCall] 🛑 Cleaning audio element ${index}:`, audio.id || 'no-id');
+          audio.pause();
+          audio.currentTime = 0;
+          audio.volume = 0;
+          audio.muted = true;
+          if (audio.srcObject) {
+            const stream = audio.srcObject as MediaStream;
+            if (stream && stream.getTracks) {
+              stream.getTracks().forEach(track => {
+                try {
+                  track.stop();
+                  console.log(`[GroupCall] ✅ Stopped audio track from audio element ${index}`);
+                } catch (e) {
+                  console.log(`[GroupCall] ❌ Error stopping audio track:`, e);
+                }
+              });
+            }
+            audio.srcObject = null;
+          }
+          audio.src = '';
+          audio.load();
+        });
+        console.log('[GroupCall] ✅ All audio elements cleaned');
+      } catch (audioError) {
+        console.error('[GroupCall] ❌ Error cleaning audio elements:', audioError);
+      }
+
+      // Force cleanup semua video elements juga (untuk video group calls)
+      try {
+        console.log('[GroupCall] 🛑 Force cleanup semua video elements...');
+        const allVideoElements = document.querySelectorAll('video');
+        allVideoElements.forEach((video, index) => {
+          if (video.srcObject) {
+            console.log(`[GroupCall] 🛑 Cleaning video element ${index}:`, video.id || 'no-id');
+            const stream = video.srcObject as MediaStream;
+            if (stream && stream.getTracks) {
+              stream.getTracks().forEach(track => {
+                try {
+                  track.stop();
+                  console.log(`[GroupCall] ✅ Stopped track from video element ${index}`);
+                } catch (e) {
+                  console.log(`[GroupCall] ❌ Error stopping track from video element ${index}:`, e);
+                }
+              });
+            }
+            video.srcObject = null;
+            video.src = '';
+            video.load();
+          }
+        });
+        console.log('[GroupCall] ✅ All video elements cleaned');
+      } catch (elementError) {
+        console.error('[GroupCall] ❌ Error cleaning video elements:', elementError);
+      }
+
+      // FORCE STOP ALL GLOBAL MEDIA STREAMS
+      try {
+        console.log('[GroupCall] 🛑 FORCE STOPPING ALL GLOBAL MEDIA STREAMS...');
+        
+        // Check for any MediaStream objects in global scope
+        if (typeof window !== 'undefined') {
+          // Stop any streams stored in window object
+          Object.keys(window).forEach(key => {
+            const value = (window as any)[key];
+            if (value && value.getTracks && typeof value.getTracks === 'function') {
+              console.log(`[GroupCall] 🛑 Found global MediaStream: ${key}`);
+              value.getTracks().forEach((track: MediaStreamTrack) => {
+                try {
+                  track.stop();
+                  console.log(`[GroupCall] ✅ Stopped global ${track.kind} track from ${key}`);
+                } catch (e) {
+                  console.log(`[GroupCall] ❌ Error stopping global track from ${key}:`, e);
+                }
+              });
+            }
+          });
+        }
+        
+        console.log('[GroupCall] ✅ Global media stream cleanup completed');
+      } catch (e) {
+        console.log('[GroupCall] Error with global stream cleanup:', e);
+      }
+
+      // Secondary cleanup dengan delay untuk catch remaining streams
+      setTimeout(() => {
+        console.log('[GroupCall] 🛑 Secondary cleanup - checking for remaining active streams...');
+        
+        // Force stop any remaining audio elements
+        const remainingAudios = document.querySelectorAll('audio');
+        remainingAudios.forEach((audio, idx) => {
+          if (audio.srcObject || !audio.paused) {
+            console.log(`[GroupCall] 🛑 Force stopping remaining audio ${idx}`);
+            audio.pause();
+            audio.srcObject = null;
+            audio.src = '';
+            audio.load();
+          }
+        });
+        
+        // Force stop any remaining video elements
+        const remainingVideos = document.querySelectorAll('video');
+        remainingVideos.forEach((video, idx) => {
+          if (video.srcObject || !video.paused) {
+            console.log(`[GroupCall] 🛑 Force stopping remaining video ${idx}`);
+            video.pause();
+            video.srcObject = null;
+            video.src = '';
+            video.load();
+          }
+        });
+        
+        console.log('[GroupCall] ✅ Secondary cleanup completed');
+      }, 200);
+
+      console.log('[GroupCall] ✅ All resources cleaned up');
+      
+    } catch (error) {
+      console.error('[GroupCall] ❌ Error during leave call cleanup:', error);
+    } finally {
+      // Delay hangupCall untuk ensure cleanup selesai
+      console.log('[GroupCall] ⏱️ Delaying hangupCall untuk ensure complete cleanup...');
+      setTimeout(() => {
+        hangupCall();
+      }, 500); // 500ms delay untuk ensure comprehensive cleanup completion
     }
-    hangupCall();
   };
 
   return (

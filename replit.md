@@ -121,6 +121,17 @@ NXZZ-VComm is a military communications platform designed for intranet environme
 - Port configuration for different deployment targets
 
 # Changelog
+- July 16, 2025: 🔇 CRITICAL AUDIO TERMINATION FIX - Complete Media Stream Cleanup:
+  - ✅ RESOLVED: Audio masih terdengar setelah end call - implemented comprehensive stream cleanup
+  - ✅ ENHANCED: CallContext hangupCall dengan force stop ALL audio/video elements di halaman
+  - ✅ IMPROVED: GroupVideoCallSimple handleHangup dengan aggressive audio/video element cleanup
+  - ✅ ENHANCED: GroupCall.tsx leaveCall dengan comprehensive audio cleanup untuk audio group calls
+  - ✅ ADDED: Global media stream termination dengan force stop semua MediaStreamTrack
+  - ✅ IMPLEMENTED: Secondary cleanup dengan 200ms delay untuk catch remaining streams
+  - ✅ OPTIMIZED: 500ms delay sebelum hangupCall untuk ensure local cleanup completion
+  - ✅ FIXED: Audio leak protection - semua audio/video tracks dihentikan secara paksa
+  - ✅ APPLIED: Same comprehensive cleanup untuk both video dan audio group calls
+  - Audio dan video streams sekarang benar-benar berhenti setelah end call tanpa audio leak pada semua jenis panggilan
 - July 16, 2025: 🔧 CALL REJECTION REDIRECT ENHANCEMENT - Improved User Navigation:
   - ✅ ENHANCED: Call rejection now redirects users directly to /chat page instead of login
   - ✅ IMPROVED: Better user experience when declining incoming calls
