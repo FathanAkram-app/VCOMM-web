@@ -35,7 +35,7 @@ export default function IncomingCallModal() {
     
     // Navigate back to chat page after rejecting call
     setTimeout(() => {
-      setLocation('/chat');
+      setLocation('/');
     }, 100); // Small delay to ensure reject call is processed first
   };
   

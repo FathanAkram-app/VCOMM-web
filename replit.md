@@ -121,27 +121,6 @@ NXZZ-VComm is a military communications platform designed for intranet environme
 - Port configuration for different deployment targets
 
 # Changelog
-- July 16, 2025: 🔄 CRITICAL NAVIGATION FIX - Reject Call Button Redirect:
-  - ✅ FIXED: Reject call button now properly redirects to main chat page (/chat) instead of login page
-  - ✅ IDENTIFIED: Root cause - setLocation('/') was redirecting to login since root path routes to Login component
-  - ✅ CORRECTED: Changed navigation from setLocation('/') to setLocation('/chat') in handleRejectCall function
-  - ✅ RESOLVED: IncomingCallModal now properly navigates back to chat interface after rejecting calls
-  - Users no longer experience unexpected redirect to login page when rejecting incoming calls
-  - Navigation flow now correctly maintains user session and returns to main chat interface
-- July 16, 2025: 🎖️ MILITARY PARTICIPANT DISPLAY ENHANCEMENT - Rank and Branch Information Integration:
-  - ✅ ENHANCED: GroupCall.tsx component to display military rank and branch information instead of generic user numbers
-  - ✅ UPDATED: GroupParticipant interface to include rank and branch fields for comprehensive military personnel display
-  - ✅ IMPROVED: fetchParticipantData function to fetch rank and branch information from server user data
-  - ✅ INTEGRATED: Military information display in both audio and video call participant lists
-  - ✅ ENHANCED: GroupVideoCallSimple component participant interface with rank and branch support
-  - ✅ UPDATED: Participant data mapping functions to include military hierarchy information
-  - ✅ IMPROVED: UI rendering for both audio and video calls to show "Rank • Branch" format
-  - ✅ REFINED: Video overlay labels to display complete military personnel information
-  - ✅ ENHANCED: Current user display to show own rank and branch information
-  - ✅ OPTIMIZED: Consistent military-themed participant identification across all call types
-  - Group call participants now display authentic military information (e.g., "Sersan • TNI AD") instead of generic user IDs
-  - Enhanced military authenticity with proper rank and branch hierarchy display
-  - Improved user identification for military personnel during tactical communications
 - July 16, 2025: 🔥 CRITICAL ASYMMETRIC VISIBILITY FIX - Enhanced Participant Synchronization System:
   - ✅ DIAGNOSED: Asymmetric visibility root cause - group_call_participants_update received but activeCall undefined
   - ✅ ENHANCED: Pending participant update processing with better timing coordination
