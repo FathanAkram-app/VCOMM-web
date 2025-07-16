@@ -28,15 +28,11 @@ export default function IncomingCallModal() {
   const isGroupCall = incomingCall.isGroupCall;
   const isVideoCall = incomingCall.callType === 'video';
 
-  // Handle reject with navigation back to chat
+  // Handle reject without forced navigation - let the normal flow handle it
   const handleRejectCall = () => {
-    console.log("[IncomingCallModal] 🚫 Rejecting call and redirecting to chat");
+    console.log("[IncomingCallModal] 🚫 Rejecting call without forced redirect");
     rejectCall();
-    
-    // Navigate back to chat page after rejecting call
-    setTimeout(() => {
-      setLocation('/');
-    }, 100); // Small delay to ensure reject call is processed first
+    // Do not force navigation - let the user stay on current page
   };
   
   return (

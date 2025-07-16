@@ -126,10 +126,11 @@ function SuperAdminGuard({ children }: { children: React.ReactNode }) {
   return isAuthorized ? children : null;
 }
 
-// Komponen sederhana untuk mengecek login
+// Komponen sederhana untuk mengecek login dengan improved tolerance
 function AuthCheck({ children }: { children: React.ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
   
   useEffect(() => {
     async function checkLogin() {
@@ -141,26 +142,66 @@ function AuthCheck({ children }: { children: React.ReactNode }) {
         if (response.ok) {
           const userData = await response.json();
           setIsLoggedIn(true);
+          setRetryCount(0); // Reset retry count on success
           
           // Auto-redirect super admin to dashboard
           if (userData.role === 'super_admin' && window.location.pathname === '/') {
             window.location.href = '/superadmin';
           }
         } else {
+          console.log('Authentication check failed, status:', response.status);
+          
+          // If we get 401 but user might be temporarily disconnected, be more tolerant
+          if (response.status === 401 && retryCount < 2) {
+            console.log('Auth failed, will retry...');
+            setRetryCount(prev => prev + 1);
+            // Retry after 2 seconds
+            setTimeout(() => {
+              checkLogin();
+            }, 2000);
+            return;
+          }
+          
           setIsLoggedIn(false);
-          // Redirect to login if needed
-          window.location.href = '/login';
+          // Only redirect to login if we've tried multiple times and current path is not login/register
+          if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+            console.log('Authentication failed after retries, redirecting to login...');
+            window.location.href = '/login';
+          }
         }
       } catch (error) {
         console.error('Error checking login status:', error);
+        
+        // Network error - be even more tolerant
+        if (retryCount < 3) {
+          console.log('Network error, will retry...');
+          setRetryCount(prev => prev + 1);
+          setTimeout(() => {
+            checkLogin();
+          }, 3000);
+          return;
+        }
+        
         setIsLoggedIn(false);
+        // Only redirect on persistent network errors after multiple retries
+        if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+          console.log('Persistent network error, redirecting to login...');
+          window.location.href = '/login';
+        }
       } finally {
-        setIsLoading(false);
+        if (retryCount >= 2) {
+          setIsLoading(false);
+        }
       }
     }
     
-    checkLogin();
-  }, []);
+    // Add small delay before initial check to allow WebSocket to stabilize
+    const timeoutId = setTimeout(() => {
+      checkLogin();
+    }, 500);
+    
+    return () => clearTimeout(timeoutId);
+  }, [retryCount]);
   
   if (isLoading) {
     return (

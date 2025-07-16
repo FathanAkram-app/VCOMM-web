@@ -121,6 +121,17 @@ NXZZ-VComm is a military communications platform designed for intranet environme
 - Port configuration for different deployment targets
 
 # Changelog
+- July 16, 2025: 🛡️ CRITICAL FIX - Reject Call Navigation Issue Resolved:
+  - ✅ DIAGNOSED: Reject call causing unwanted redirect to login page
+  - ✅ FIXED: Removed forced navigation in IncomingCallModal handleRejectCall function
+  - ✅ ENHANCED: AuthCheck component with improved tolerance for temporary network issues
+  - ✅ ADDED: Retry mechanism for authentication checks (3 attempts with exponential backoff)
+  - ✅ IMPROVED: Network error handling with 2-3 second delays before retry
+  - ✅ SECURED: Better distinction between real auth failures and temporary network issues
+  - ✅ ADDED: Safeguards against redirect loops when already on login/register pages
+  - System now handles WebSocket disconnections during call rejection without redirecting to login
+  - Enhanced stability for temporary network interruptions during call operations
+  - Users can reject calls safely without being logged out or redirected unexpectedly
 - July 16, 2025: 🔥 CRITICAL ASYMMETRIC VISIBILITY FIX - Enhanced Participant Synchronization System:
   - ✅ DIAGNOSED: Asymmetric visibility root cause - group_call_participants_update received but activeCall undefined
   - ✅ ENHANCED: Pending participant update processing with better timing coordination
