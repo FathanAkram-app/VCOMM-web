@@ -677,9 +677,22 @@ export function CallProvider({ children }: { children: ReactNode }) {
     
     console.log('[CallContext] Constructing WebSocket URL:', wsUrl);
     
-    // Validate URL before creating WebSocket
-    if (!window.location.host || window.location.host.includes('undefined')) {
-      console.error('[CallContext] Invalid host detected, preventing WebSocket creation');
+    // Enhanced validation to prevent any invalid URLs
+    if (!window.location.host || 
+        window.location.host.includes('undefined') || 
+        window.location.host === 'localhost:undefined' ||
+        window.location.host === '') {
+      console.error('[CallContext] ❌ INVALID HOST DETECTED:', window.location.host);
+      console.error('[CallContext] Preventing WebSocket creation to avoid localhost:undefined error');
+      return;
+    }
+    
+    // Additional URL validation
+    try {
+      new URL(wsUrl);
+      console.log('[CallContext] ✅ WebSocket URL validation passed');
+    } catch (error) {
+      console.error('[CallContext] ❌ Invalid WebSocket URL format:', wsUrl, error);
       return;
     }
     

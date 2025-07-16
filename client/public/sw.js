@@ -198,7 +198,11 @@ self.addEventListener('message', (event) => {
   switch (type) {
     case 'KEEP_ALIVE':
       // Respond to keep connection alive
-      event.ports[0].postMessage({ type: 'KEEP_ALIVE_RESPONSE' });
+      if (event.ports && event.ports[0]) {
+        event.ports[0].postMessage({ type: 'KEEP_ALIVE_RESPONSE' });
+      } else if (event.source) {
+        event.source.postMessage({ type: 'KEEP_ALIVE_RESPONSE' });
+      }
       break;
       
     case 'REGISTER_FOR_CALLS':
