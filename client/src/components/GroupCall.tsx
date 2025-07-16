@@ -86,24 +86,75 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     return Array.from(participantMap.values());
   };
 
-  // Enhanced participant data event listener
+  // Enhanced participant data event listener dengan force refresh capability
   useEffect(() => {
     const handleParticipantDataUpdate = (event: CustomEvent) => {
       console.log('[GroupCall] 🔥 Participant data update event received:', event.detail);
       const { participants: updatedParticipants, isNewMember, fullSync } = event.detail;
       
+      console.log('[GroupCall] 🎯 Current user:', user?.callsign, 'ID:', user?.id);
+      console.log('[GroupCall] 🎯 Updated participants:', updatedParticipants);
+      
       if (fullSync && isNewMember) {
         console.log('[GroupCall] 🎯 Full sync for new member - updating participant list');
         setParticipants(updatedParticipants);
+      } else if (updatedParticipants && Array.isArray(updatedParticipants)) {
+        console.log('[GroupCall] 🔄 Regular participant update - force refreshing list');
+        setParticipants(updatedParticipants);
+      }
+    };
+
+    const handleParticipantForceRefresh = (event: CustomEvent) => {
+      console.log('[GroupCall] 🚀 FORCE REFRESH participant data triggered for user:', user?.callsign);
+      
+      // Force rebuild participant list from activeCall
+      if (activeCall?.participants && activeCall.participants.length > 0) {
+        console.log('[GroupCall] 🚀 Force rebuilding participants from activeCall');
+        
+        const uniqueParticipantIds = [...new Set(
+          activeCall.participants.map((p: any) => typeof p === 'object' ? p.userId : p)
+        )];
+        
+        console.log('[GroupCall] 🚀 Force refresh - unique IDs:', uniqueParticipantIds);
+        
+        const buildParticipantList = async () => {
+          const participantList: GroupParticipant[] = [];
+          
+          for (const userId of uniqueParticipantIds) {
+            try {
+              const response = await fetch(`/api/users/${userId}`);
+              if (response.ok) {
+                const userData = await response.json();
+                participantList.push({
+                  userId,
+                  userName: userData.callsign || userData.fullName || `User ${userId}`,
+                  audioEnabled: true,
+                  videoEnabled: callType === 'video',
+                  stream: undefined
+                });
+                console.log(`[GroupCall] 🚀 Force refresh - added participant: ${userData.callsign} (ID: ${userId})`);
+              }
+            } catch (error) {
+              console.error('[GroupCall] 🚀 Force refresh - error fetching user data:', error);
+            }
+          }
+          
+          console.log('[GroupCall] 🚀 Force refresh - final participant list:', participantList);
+          setParticipants(participantList);
+        };
+        
+        buildParticipantList();
       }
     };
     
     window.addEventListener('participant-data-updated', handleParticipantDataUpdate as EventListener);
+    window.addEventListener('force-participant-refresh', handleParticipantForceRefresh as EventListener);
     
     return () => {
       window.removeEventListener('participant-data-updated', handleParticipantDataUpdate as EventListener);
+      window.removeEventListener('force-participant-refresh', handleParticipantForceRefresh as EventListener);
     };
-  }, []);
+  }, [activeCall?.participants, user?.id, callType]);
 
   // Simple and direct participant processing
   useEffect(() => {

@@ -1610,7 +1610,34 @@ export function CallProvider({ children }: { children: ReactNode }) {
       };
       
       setActiveCall(updatedCall);
+      activeCallRef.current = updatedCall;
       console.log(`[CallContext] Updated participants after user ${userId} left:`, updatedParticipants);
+      
+      // 🚀 CRITICAL: Force participant refresh for GroupCall component when user leaves
+      console.log('[CallContext] 🚀 Triggering participant refresh after user left group call');
+      
+      // Dispatch event to update GroupCall component immediately
+      window.dispatchEvent(new CustomEvent('participant-data-updated', {
+        detail: {
+          callId: currentActiveCall.callId,
+          participants: updatedParticipants,
+          isNewMember: false,
+          fullSync: false,
+          userLeft: userId
+        }
+      }));
+      
+      // Also trigger force refresh to ensure UI updates
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('force-participant-refresh', {
+          detail: {
+            callId: currentActiveCall.callId,
+            participants: updatedParticipants,
+            triggerReason: 'user_left_call',
+            leftUserId: userId
+          }
+        }));
+      }, 100);
       
       // Don't end call if current user is still in it - let them decide when to hang up
       // Only end if there are literally no participants (shouldn't happen in normal flow)
@@ -1814,6 +1841,18 @@ export function CallProvider({ children }: { children: ReactNode }) {
                 fullSync: false
               }
             }));
+            
+            // 🚀 CRITICAL: Force refresh for GroupCall component to fix asymmetric visibility
+            console.log('[CallContext] 🚀 Triggering force participant refresh for GroupCall component');
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('force-participant-refresh', {
+                detail: {
+                  callId: callId,
+                  participants: participantObjects,
+                  triggerReason: 'asymmetric_visibility_fix'
+                }
+              }));
+            }, 100);
             
           }).catch(error => {
             console.error('[CallContext] Error in regular update:', error);

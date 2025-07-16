@@ -132,6 +132,15 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - ✅ FIXED: Audio leak protection - semua audio/video tracks dihentikan secara paksa
   - ✅ APPLIED: Same comprehensive cleanup untuk both video dan audio group calls
   - Audio dan video streams sekarang benar-benar berhenti setelah end call tanpa audio leak pada semua jenis panggilan
+- July 16, 2025: 🔧 PARTICIPANT SYNCHRONIZATION DEBUG ENHANCEMENT - Asymmetric Visibility Fix:
+  - ✅ DIAGNOSED: Issue where some users don't see all participants in group audio calls
+  - ✅ ENHANCED: GroupCall.tsx dengan force participant refresh mechanism
+  - ✅ ADDED: force-participant-refresh event listener untuk rebuild participant lists
+  - ✅ IMPROVED: CallContext participant update handling dengan force refresh triggers
+  - ✅ IMPLEMENTED: User left call handling dengan automatic participant refresh
+  - ✅ ENHANCED: Debug logging untuk track participant synchronization issues
+  - ✅ ADDED: Multiple fallback mechanisms untuk ensure participant visibility
+  - System now has enhanced participant synchronization untuk fix asymmetric visibility issues
 - July 16, 2025: 🔧 CALL REJECTION REDIRECT ENHANCEMENT - Improved User Navigation:
   - ✅ ENHANCED: Call rejection now redirects users directly to /chat page instead of login
   - ✅ IMPROVED: Better user experience when declining incoming calls
