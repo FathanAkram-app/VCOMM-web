@@ -2208,28 +2208,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
               try {
                 console.log(`[Group Call] 🎯 Sending detailed participant data to new member ${userId}`);
                 
-                // Get user data for all participants with rank and branch
+                // Get user data for all participants
                 const participantData = [];
                 for (const participantId of participants) {
                   try {
                     const userData = await storage.getUser(participantId.toString());
-                    // Display format: RANK CALLSIGN (BRANCH)
-                    const displayName = userData ? 
-                      `${userData.rank || 'PVT'} ${userData.callsign || userData.fullName || `User ${participantId}`} (${userData.branch || 'TNI AD'})` :
-                      `PVT User ${participantId} (TNI AD)`;
                     participantData.push({
                       userId: participantId,
-                      userName: displayName,
+                      userName: userData?.callsign || userData?.fullName || `User ${participantId}`,
                       audioEnabled: true,
                       videoEnabled: data.payload.callType === 'video'
                     });
                   } catch (error) {
                     console.error(`[Group Call] Error getting user data for ${participantId}:`, error);
-                    // Fallback format: PVT User ID (TNI AD)
-                    const displayName = `PVT User ${participantId} (TNI AD)`;
                     participantData.push({
                       userId: participantId,
-                      userName: displayName,
+                      userName: `User ${participantId}`,
                       audioEnabled: true,
                       videoEnabled: data.payload.callType === 'video'
                     });
@@ -2308,17 +2302,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           if (participants.length > 0) {
             try {
-              // Get participant names with rank and branch
+              // Get participant names
               const participantNames = await Promise.all(
                 participants.map(async (userId) => {
                   const user = await storage.getUser(userId.toString());
-                  // Display format: RANK CALLSIGN (BRANCH)
-                  const displayName = user ? 
-                    `${user.rank || 'PVT'} ${user.callsign || user.fullName || `User ${userId}`} (${user.branch || 'TNI AD'})` :
-                    `PVT User ${userId} (TNI AD)`;
                   return {
                     userId: userId,
-                    userName: displayName,
+                    userName: user?.callsign || user?.fullName || `User ${userId}`,
                     audioEnabled: true,
                     videoEnabled: true,
                     stream: null

@@ -41,11 +41,9 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
       }
       
       if (userId === user?.id) {
-        // Display format: RANK CALLSIGN (BRANCH)
-        const displayName = `${user.rank || 'PVT'} ${user.callsign || user.fullName || 'Anda'} (${user.branch || 'TNI AD'})`;
         participantMap.set(userId, {
           userId,
-          userName: displayName,
+          userName: user.callsign || user.fullName || 'Anda',
           audioEnabled: true,
           videoEnabled: callType === 'video',
           stream: null
@@ -55,21 +53,17 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
           const response = await fetch(`/api/users/${userId}`);
           if (response.ok) {
             const userData = await response.json();
-            // Display format: RANK CALLSIGN (BRANCH)
-            const displayName = `${userData.rank || 'PVT'} ${userData.callsign || userData.fullName || `User ${userId}`} (${userData.branch || 'TNI AD'})`;
             participantMap.set(userId, {
               userId,
-              userName: displayName,
+              userName: userData.callsign || userData.fullName || `User ${userId}`,
               audioEnabled: true,
               videoEnabled: callType === 'video',
               stream: null
             });
           } else {
-            // Fallback format: PVT User ID (TNI AD)
-            const displayName = `PVT User ${userId} (TNI AD)`;
             participantMap.set(userId, {
               userId,
-              userName: displayName,
+              userName: `User ${userId}`,
               audioEnabled: true,
               videoEnabled: callType === 'video',
               stream: null
@@ -77,11 +71,9 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
           }
         } catch (error) {
           console.error('[GroupCall] Error fetching user data:', error);
-          // Fallback format: PVT User ID (TNI AD)
-          const displayName = `PVT User ${userId} (TNI AD)`;
           participantMap.set(userId, {
             userId,
-            userName: displayName,
+            userName: `User ${userId}`,
             audioEnabled: true,
             videoEnabled: callType === 'video',
             stream: null
