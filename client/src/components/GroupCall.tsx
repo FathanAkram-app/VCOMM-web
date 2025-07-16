@@ -165,6 +165,100 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
       buildParticipantList();
     }
   }, [activeCall?.participants, user?.id, callType]);
+
+  // 🚀 CRITICAL FIX: Handle forced WebRTC reconnection for asymmetric visibility
+  useEffect(() => {
+    const handleForceWebRTCReconnect = (event: CustomEvent) => {
+      console.log('[GroupCall] 🔄 Force WebRTC reconnect triggered:', event.detail);
+      
+      // Force participant list refresh to fix asymmetric visibility
+      if (activeCall?.participants && activeCall.participants.length > 0) {
+        console.log('[GroupCall] 🔄 Forcing participant list refresh for asymmetric visibility fix');
+        
+        const uniqueParticipantIds = [...new Set(
+          activeCall.participants.map((p: any) => typeof p === 'object' ? p.userId : p)
+        )];
+        
+        const buildParticipantList = async () => {
+          const participantList: GroupParticipant[] = [];
+          
+          for (const userId of uniqueParticipantIds) {
+            try {
+              const response = await fetch(`/api/users/${userId}`);
+              if (response.ok) {
+                const userData = await response.json();
+                participantList.push({
+                  userId,
+                  userName: userData.callsign || userData.fullName || `User ${userId}`,
+                  audioEnabled: true,
+                  videoEnabled: callType === 'video',
+                  stream: undefined
+                });
+              }
+            } catch (error) {
+              console.error('[GroupCall] Error fetching user data:', error);
+            }
+          }
+          
+          console.log('[GroupCall] 🔄 Force-updated participant list:', participantList);
+          setParticipants(participantList);
+        };
+        
+        buildParticipantList();
+      }
+    };
+    
+    const handleAutoInitiateWebRTC = (event: CustomEvent) => {
+      console.log('[GroupCall] 🚀 Auto-initiate WebRTC triggered:', event.detail);
+      
+      // Same logic as force reconnect for consistency
+      if (activeCall?.participants && activeCall.participants.length > 0) {
+        console.log('[GroupCall] 🚀 Auto-initiating participant refresh for new member');
+        
+        const uniqueParticipantIds = [...new Set(
+          activeCall.participants.map((p: any) => typeof p === 'object' ? p.userId : p)
+        )];
+        
+        const buildParticipantList = async () => {
+          const participantList: GroupParticipant[] = [];
+          
+          for (const userId of uniqueParticipantIds) {
+            try {
+              const response = await fetch(`/api/users/${userId}`);
+              if (response.ok) {
+                const userData = await response.json();
+                participantList.push({
+                  userId,
+                  userName: userData.callsign || userData.fullName || `User ${userId}`,
+                  audioEnabled: true,
+                  videoEnabled: callType === 'video',
+                  stream: undefined
+                });
+              }
+            } catch (error) {
+              console.error('[GroupCall] Error fetching user data:', error);
+            }
+          }
+          
+          console.log('[GroupCall] 🚀 Auto-initiated participant list:', participantList);
+          setParticipants(participantList);
+        };
+        
+        buildParticipantList();
+      }
+    };
+    
+    // Add event listeners for server-forced WebRTC reconnection
+    window.addEventListener('force-webrtc-reconnect', handleForceWebRTCReconnect as EventListener);
+    window.addEventListener('auto-initiate-webrtc', handleAutoInitiateWebRTC as EventListener);
+    window.addEventListener('initiate-group-webrtc', handleAutoInitiateWebRTC as EventListener);
+    
+    return () => {
+      window.removeEventListener('force-webrtc-reconnect', handleForceWebRTCReconnect as EventListener);
+      window.removeEventListener('auto-initiate-webrtc', handleAutoInitiateWebRTC as EventListener);
+      window.removeEventListener('initiate-group-webrtc', handleAutoInitiateWebRTC as EventListener);
+    };
+  }, [activeCall?.participants, user?.id, callType]);
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const participantRefs = useRef<{ [userId: number]: HTMLVideoElement }>({});
