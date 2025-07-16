@@ -380,12 +380,39 @@ export default function GroupVideoCallSimple() {
       }
     };
 
+    // 🚀 CRITICAL FIX: Handle forced WebRTC reconnection for new members
+    const handleForceWebRTCReconnect = (event: CustomEvent) => {
+      const data = event.detail;
+      console.log(`[GroupVideoCallSimple] 🔄 Force WebRTC reconnect triggered for new member:`, data);
+      
+      if (data.newMember && data.newMember !== currentUser?.id) {
+        console.log(`[GroupVideoCallSimple] 🚀 Forcing WebRTC connection to new member ${data.newMember}`);
+        
+        // Force immediate WebRTC initiation for all participants
+        setTimeout(() => {
+          initiateWebRTCConnections(data);
+        }, 200);
+        
+        // Additional fallback trigger for reliability
+        setTimeout(() => {
+          console.log(`[GroupVideoCallSimple] 🔄 Secondary WebRTC trigger for new member visibility`);
+          initiateWebRTCConnections({
+            ...data,
+            forceInit: true,
+            timestamp: Date.now()
+          });
+        }, 1000);
+      }
+    };
+
     window.addEventListener('group-webrtc-offer', handleGroupWebRTCOffer as EventListener);
     window.addEventListener('group-webrtc-answer', handleGroupWebRTCAnswer as EventListener);
     window.addEventListener('group-webrtc-ice-candidate', handleGroupWebRTCIceCandidate as EventListener);
     window.addEventListener('initiate-group-webrtc', handleInitiateWebRTC as EventListener);
     window.addEventListener('group-participants-update', handleGroupParticipantsUpdate as EventListener);
     window.addEventListener('group-participant-refresh', handleParticipantRefresh as EventListener);
+    window.addEventListener('force-webrtc-reconnect', handleForceWebRTCReconnect as EventListener);
+    window.addEventListener('auto-initiate-webrtc', handleInitiateWebRTC as EventListener);
 
     return () => {
       window.removeEventListener('group-webrtc-offer', handleGroupWebRTCOffer as EventListener);
@@ -394,6 +421,8 @@ export default function GroupVideoCallSimple() {
       window.removeEventListener('initiate-group-webrtc', handleInitiateWebRTC as EventListener);
       window.removeEventListener('group-participants-update', handleGroupParticipantsUpdate as EventListener);
       window.removeEventListener('group-participant-refresh', handleParticipantRefresh as EventListener);
+      window.removeEventListener('force-webrtc-reconnect', handleForceWebRTCReconnect as EventListener);
+      window.removeEventListener('auto-initiate-webrtc', handleInitiateWebRTC as EventListener);
     };
   }, [activeCall]);
 

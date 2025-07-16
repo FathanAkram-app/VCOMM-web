@@ -1769,6 +1769,25 @@ export function CallProvider({ children }: { children: ReactNode }) {
               }
             }));
           }, 500);
+          
+          // 🚀 CRITICAL FIX: Enhanced WebRTC connection for new members
+          // This ensures existing members can see new members immediately
+          if (message.payload.newParticipant) {
+            console.log(`[CallContext] 🔄 New member ${message.payload.newParticipant} joined - forcing WebRTC reconnection`);
+            
+            // Force immediate WebRTC initiation for new member connectivity
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('force-webrtc-reconnect', {
+                detail: { 
+                  callId: callId,
+                  participants: participantObjects,
+                  newMember: message.payload.newParticipant,
+                  forceInit: true,
+                  timestamp: Date.now()
+                }
+              }));
+            }, 800);
+          }
         }).catch(error => {
           console.error('[CallContext] Error fetching user names:', error);
           
@@ -1810,7 +1829,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   const handleInitiateGroupWebRTC = (message: any) => {
     console.log('[CallContext] 🚀 Group WebRTC initiation received:', message);
-    const { callId, allParticipants, yourUserId } = message.payload;
+    const { callId, participants, forceInit, newMember } = message.payload;
     
     // Get current active call
     const currentActiveCall = activeCallRef.current || activeCall;
@@ -1820,17 +1839,36 @@ export function CallProvider({ children }: { children: ReactNode }) {
       return;
     }
     
-    console.log('[CallContext] 🎯 Auto-triggering WebRTC setup for group call participants:', allParticipants);
+    console.log('[CallContext] 🎯 Auto-triggering WebRTC setup for group call participants:', participants);
     
     // Dispatch event to GroupVideoCall to auto-start WebRTC connections
     window.dispatchEvent(new CustomEvent('auto-initiate-webrtc', {
       detail: {
         callId,
-        allParticipants,
-        yourUserId,
+        participants,
+        forceInit,
+        newMember,
         activeCall: currentActiveCall
       }
     }));
+    
+    // 🚀 CRITICAL FIX: Handle server-forced WebRTC initiation for new members
+    if (forceInit && newMember) {
+      console.log(`[CallContext] 🔄 Server forced WebRTC initiation for new member ${newMember}`);
+      
+      // Trigger immediate WebRTC reconnection
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('force-webrtc-reconnect', { 
+          detail: {
+            callId,
+            participants,
+            newMember,
+            forceInit: true,
+            fromServer: true
+          }
+        }));
+      }, 100);
+    }
     
     console.log('[CallContext] ✅ WebRTC auto-initiation event dispatched');
   };
