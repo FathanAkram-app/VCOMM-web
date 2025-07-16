@@ -1,0 +1,189 @@
+🔥 CHATROOM: Message payload: {userId: 3, status: 'online'}
+ChatRoom.tsx:270 🔥 CHATROOM: Direct WebSocket message (fallback): {type: 'user_status', payload: {…}}
+ChatRoom.tsx:1037 Starting group audio call for group: Ampera Grup
+CallContext.tsx:3149 [CallContext] Starting group call: {groupId: 38, groupName: 'Ampera Grup', callType: 'audio'}
+CallContext.tsx:11 [CallContext] Mobile compatibility check: {isMobile: false, isHTTPS: true, userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWeb…KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36', hasMediaDevices: ƒ}
+CallContext.tsx:3160 [CallContext] Mobile compatibility check for group call: {isMobile: false, isHTTPS: true, hasMediaDevices: ƒ}
+CallContext.tsx:3183 [CallContext] Requesting full media permissions for group call (audio + video enabled)...
+CallContext.tsx:3185 [CallContext] Got audio and video stream for group call - full media enabled from start
+CallContext.tsx:3293 [CallContext] Added local track to group call: audio
+CallContext.tsx:3293 [CallContext] Added local track to group call: video
+CallContext.tsx:3330 [CallContext] Group call invitation sent
+CallContext.tsx:3594 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+ChatRoom.tsx:828 Processing message data for grouping: (12) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:829 Total messages to process: 12
+ChatRoom.tsx:834 Messages with replies: [{…}]
+ChatRoom.tsx:901 Grouped messages: (2) [{…}, {…}]
+ChatRoom.tsx:902 Total date groups: 2
+ChatRoom.tsx:904 Total messages in first group: 8
+ChatRoom.tsx:1253 [Message Debug] Message ID: 197, replyToId: null, content: cek
+ChatRoom.tsx:1253 [Message Debug] Message ID: 198, replyToId: null, content: gmn
+ChatRoom.tsx:1253 [Message Debug] Message ID: 199, replyToId: null, content: coba
+ChatRoom.tsx:1253 [Message Debug] Message ID: 200, replyToId: null, content: kok
+ChatRoom.tsx:1253 [Message Debug] Message ID: 214, replyToId: null, content: Cek
+ChatRoom.tsx:1253 [Message Debug] Message ID: 215, replyToId: null, content: [User Deleted]
+ChatRoom.tsx:1253 [Message Debug] Message ID: 216, replyToId: null, content: [User Deleted]
+ChatRoom.tsx:1253 [Message Debug] Message ID: 217, replyToId: 216, content: cakep
+ChatRoom.tsx:1294 [Reply Debug] Message 217 has replyToId: 216
+ChatRoom.tsx:1295 [Reply Debug] All messages: (12) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:1298 [Reply Debug] Found replied message: {id: 216, senderId: 1, senderName: 'test123', content: '[User Deleted]', timestamp: '2025-06-05T12:27:36.691Z', …}
+ChatRoom.tsx:1253 [Message Debug] Message ID: 310, replyToId: null, content: [Diteruskan] Tess
+ChatRoom.tsx:1253 [Message Debug] Message ID: 311, replyToId: null, content: [File: 17521563299775275155729307715143.jpg]
+ChatRoom.tsx:1253 [Message Debug] Message ID: 312, replyToId: null, content: [File: 17521563531216073247134206960683.jpg]
+ChatRoom.tsx:1253 [Message Debug] Message ID: 315, replyToId: null, content: [Diteruskan] [Diteruskan] [File: 17521563531216073247134206960683.jpg]
+IncomingCallModal.tsx:6 [IncomingCallModal] 🔥 COMPONENT RENDERED - START
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+IncomingCallModal.tsx:11 [IncomingCallModal] 🔥 After useCall hook - incomingCall: null
+IncomingCallModal.tsx:12 [IncomingCallModal] 🔥 incomingCall type check: object
+IncomingCallModal.tsx:13 [IncomingCallModal] 🔥 incomingCall falsy check: true
+IncomingCallModal.tsx:16 [IncomingCallModal] No incoming call, returning null
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:91 [GroupCall] useEffect triggered
+GroupCall.tsx:92 [GroupCall] activeCall: {callId: 'group_call_1752658671393_38_3', callType: 'audio', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupCall.tsx:93 [GroupCall] activeCall?.participants: []
+GroupCall.tsx:94 [GroupCall] user?.id: 3
+GroupCall.tsx:97 [GroupCall] No participants in active call, setting empty array
+GroupCall.tsx:179 [GroupCall] Initializing media for desktop device
+CallContext.tsx:3594 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+ChatRoom.tsx:828 Processing message data for grouping: (12) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:829 Total messages to process: 12
+ChatRoom.tsx:834 Messages with replies: [{…}]
+ChatRoom.tsx:901 Grouped messages: (2) [{…}, {…}]
+ChatRoom.tsx:902 Total date groups: 2
+ChatRoom.tsx:904 Total messages in first group: 8
+ChatRoom.tsx:1253 [Message Debug] Message ID: 197, replyToId: null, content: cek
+ChatRoom.tsx:1253 [Message Debug] Message ID: 198, replyToId: null, content: gmn
+ChatRoom.tsx:1253 [Message Debug] Message ID: 199, replyToId: null, content: coba
+ChatRoom.tsx:1253 [Message Debug] Message ID: 200, replyToId: null, content: kok
+ChatRoom.tsx:1253 [Message Debug] Message ID: 214, replyToId: null, content: Cek
+ChatRoom.tsx:1253 [Message Debug] Message ID: 215, replyToId: null, content: [User Deleted]
+ChatRoom.tsx:1253 [Message Debug] Message ID: 216, replyToId: null, content: [User Deleted]
+ChatRoom.tsx:1253 [Message Debug] Message ID: 217, replyToId: 216, content: cakep
+ChatRoom.tsx:1294 [Reply Debug] Message 217 has replyToId: 216
+ChatRoom.tsx:1295 [Reply Debug] All messages: (12) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:1298 [Reply Debug] Found replied message: {id: 216, senderId: 1, senderName: 'test123', content: '[User Deleted]', timestamp: '2025-06-05T12:27:36.691Z', …}
+ChatRoom.tsx:1253 [Message Debug] Message ID: 310, replyToId: null, content: [Diteruskan] Tess
+ChatRoom.tsx:1253 [Message Debug] Message ID: 311, replyToId: null, content: [File: 17521563299775275155729307715143.jpg]
+ChatRoom.tsx:1253 [Message Debug] Message ID: 312, replyToId: null, content: [File: 17521563531216073247134206960683.jpg]
+ChatRoom.tsx:1253 [Message Debug] Message ID: 315, replyToId: null, content: [Diteruskan] [Diteruskan] [File: 17521563531216073247134206960683.jpg]
+IncomingCallModal.tsx:6 [IncomingCallModal] 🔥 COMPONENT RENDERED - START
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+IncomingCallModal.tsx:11 [IncomingCallModal] 🔥 After useCall hook - incomingCall: null
+IncomingCallModal.tsx:12 [IncomingCallModal] 🔥 incomingCall type check: object
+IncomingCallModal.tsx:13 [IncomingCallModal] 🔥 incomingCall falsy check: true
+IncomingCallModal.tsx:16 [IncomingCallModal] No incoming call, returning null
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:3594 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+ChatRoom.tsx:285 🔥 CHATROOM: Removing all event listeners
+GroupCall.tsx:91 [GroupCall] useEffect triggered
+GroupCall.tsx:92 [GroupCall] activeCall: {callId: 'group_call_1752658671393_38_3', callType: 'audio', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupCall.tsx:93 [GroupCall] activeCall?.participants: []
+GroupCall.tsx:94 [GroupCall] user?.id: 3
+GroupCall.tsx:97 [GroupCall] No participants in active call, setting empty array
+GroupCall.tsx:179 [GroupCall] Initializing media for desktop device
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+audioManager.ts:70 [AudioManager] Audio devices changed, re-detecting...
+GroupCall.tsx:243 [GroupCall] Local media initialized for group: Ampera Grup
+audioManager.ts:35 [AudioManager] Available audio outputs: (3) [MediaDeviceInfo, MediaDeviceInfo, MediaDeviceInfo]
+audioManager.ts:47 [AudioManager] Earphone connected: true
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_call_initiated', payload: {…}}
+CallContext.tsx:868 [CallContext] Group call initiated confirmation: {callId: 'group_call_1752658671393_38_3', groupId: 38, totalMembers: 3, onlineMembers: 2, invitationsSent: 1, …}
+CallContext.tsx:3344 [CallContext] Auto-joined group call as initiator: {type: 'join_group_call', payload: {…}}
+GroupCall.tsx:243 [GroupCall] Local media initialized for group: 
+CallContext.tsx:3594 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:667 [CallContext] Creating stable WebSocket for calls...
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:889 [CallContext] WebSocket disconnected
+CallContext.tsx:3594 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:674 [CallContext] WebSocket connected successfully for calls
+CallContext.tsx:698 [CallContext] Authenticated user 3 with WebSocket
+CallContext.tsx:3594 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:717 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:776 [CallContext] Received user status update: {userId: 3, status: 'online'}
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:819 [CallContext] 🔥 GROUP_CALL_PARTICIPANTS_UPDATE received: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1634 [CallContext] Group call participants update: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1639 [CallContext] Comparing callIds - message: group_call_1752658671393_38_3 activeCall: group_call_1752658671393_38_3
+CallContext.tsx:1640 [CallContext] ActiveCall groupId: 38
+CallContext.tsx:1679 [CallContext] Extracted groupIds - message: 38 active: 38
+CallContext.tsx:1680 [CallContext] CallId parts: (5) ['group', 'call', '1752658671393', '38', '3']
+CallContext.tsx:1683 [CallContext] Group IDs match, updating participants: (2) [3, 2]
+CallContext.tsx:1694 [CallContext] Unique participants after deduplication: (2) [3, 2]
+CallContext.tsx:1697 [CallContext] 🔍 Fetching user names for participants: (2) [3, 2]
+CallContext.tsx:717 [CallContext] Received message: {type: 'initiate_group_webrtc', payload: {…}}
+CallContext.tsx:717 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:776 [CallContext] Received user status update: {userId: 2, status: 'offline'}
+CallContext.tsx:1699 [CallContext] 📊 Got all users data: 8
+CallContext.tsx:1714 [CallContext] 📋 Created participant objects: (2) [{…}, {…}]
+CallContext.tsx:1723 [CallContext] ✅ Updated participants with names: (2) [{…}, {…}]
+CallContext.tsx:1735 [CallContext] 🚀 Dispatching group-participants-update event: (2) [{…}, {…}]
+CallContext.tsx:1736 [CallContext] 🚀 Event details: {callId: 'group_call_1752658671393_38_3', groupId: 38}
+CallContext.tsx:3594 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:91 [GroupCall] useEffect triggered
+GroupCall.tsx:92 [GroupCall] activeCall: {callId: 'group_call_1752658671393_38_3', callType: 'audio', status: 'calling', isIncoming: false, localStream: MediaStream, …}
+GroupCall.tsx:93 [GroupCall] activeCall?.participants: (2) [{…}, {…}]
+GroupCall.tsx:94 [GroupCall] user?.id: 3
+GroupCall.tsx:102 [GroupCall] Processing participants from activeCall: (2) [{…}, {…}]
+GroupCall.tsx:109 [GroupCall] Unique participant IDs: (2) [3, 2]
+GroupCall.tsx:117 [GroupCall] Participant list changed, updating...
+CallContext.tsx:1748 [CallContext] ✅ group-participants-update event dispatched successfully
+CallContext.tsx:717 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:776 [CallContext] Received user status update: {userId: 2, status: 'online'}
+GroupCall.tsx:156 [GroupCall] Final participant list: (2) [{…}, {…}]
+GroupCall.tsx:157 [GroupCall] Setting participants count: 2
+GroupCall.tsx:158 [GroupCall] Participant details:
+GroupCall.tsx:160 [GroupCall] 0: ID=2, Name="eko", IsCurrentUser=false
+GroupCall.tsx:160 [GroupCall] 1: ID=3, Name="aji", IsCurrentUser=true
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:264 [GroupCall] Setting up real microphone audio streaming for participants
+GroupCall.tsx:271 [GroupCall] Setting up real audio stream for participant eko (2)
+GroupCall.tsx:285 [GroupCall] Created audio element for participant 2
+GroupCall.tsx:290 [GroupCall] Creating microphone stream for participant 2
+GroupCall.tsx:420 [GroupCall] Managing participant audio status
+GroupCall.tsx:303 [GroupCall] Got microphone stream for participant 2
+GroupCall.tsx:344 [GroupCall] ✅ Real microphone audio playing for participant 2
+GroupCall.tsx:428 [GroupCall] Enabling audio for eko
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:385 [GroupCall] Cleaning up real audio streams
+GroupCall.tsx:264 [GroupCall] Setting up real microphone audio streaming for participants
+GroupCall.tsx:271 [GroupCall] Setting up real audio stream for participant eko (2)
+GroupCall.tsx:285 [GroupCall] Created audio element for participant 2
+GroupCall.tsx:290 [GroupCall] Creating microphone stream for participant 2
+GroupCall.tsx:303 [GroupCall] Got microphone stream for participant 2
+GroupCall.tsx:344 [GroupCall] ✅ Real microphone audio playing for participant 2
+sw.js:194 [SW] Message received: {type: 'KEEP_ALIVE'}
+sw.js:201 Uncaught TypeError: Cannot read properties of undefined (reading 'postMessage')
+    at sw.js:201:22
+(anonymous) @ sw.js:201Understand this error
+CallContext.tsx:2578 [CallContext] Hanging up call - start
+CallContext.tsx:2581 [CallContext] FORCE STOPPING ALL RINGTONES - hangup call
+CallContext.tsx:285 [CallContext] 🔇 STOPPING ALL RINGTONES - comprehensive cleanup
+CallContext.tsx:290 [CallContext] Stopping HTML5 ringtone audio
+CallContext.tsx:299 [CallContext] ✅ HTML5 ringtone stopped and cleared
+CallContext.tsx:329 [CallContext] Force stopping audio element 1: no src
+CallContext.tsx:340 [CallContext] ✅ Stopped 1 audio elements
+CallContext.tsx:384 [CallContext] ✅ RINGTONE CLEANUP COMPLETED
+CallContext.tsx:462 [CallContext] 🔇 AGGRESSIVE AUDIO CLEANUP - STOPPING ALL AUDIO
+CallContext.tsx:496 [CallContext] 💥 NUCLEAR AUDIO CLEANUP - Closing ALL AudioContext instances
+CallContext.tsx:512 [CallContext] ✅ Closed AudioContext
+CallContext.tsx:542 [CallContext] 💥 NUCLEAR INTERVAL CLEANUP - Clearing ALL intervals
+CallContext.tsx:555 [CallContext] ✅ Nuclear interval cleanup completed
+CallContext.tsx:560 [CallContext] ✅ AGGRESSIVE AUDIO CLEANUP COMPLETED
+CallContext.tsx:2619 [CallContext] ✅ All page audio elements forcefully stopped on hangup
+CallContext.tsx:2633 [CallContext] Stopping local media tracks
+CallContext.tsx:2637 [CallContext] Stopped local track: audio
+CallContext.tsx:2637 [CallContext] Stopped local track: video
+CallContext.tsx:2646 [CallContext] Cleaning up group call audio elements
+CallContext.tsx:2663 [CallContext] Removed audio element for participant: 2
+CallContext.tsx:2682 [CallContext] Cleaned up remaining group audio element
+CallContext.tsx:2733 [CallContext] Ending group call: group_call_1752658671393_38_3
+CallContext.tsx:2778 [CallContext] Call ended successfully, all audio streams stopped, navigated back to chat
