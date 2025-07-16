@@ -1,0 +1,61 @@
+[CallContext] Received message: {type: 'force_webrtc_reconnect', payload: {…}}
+sw.js:194 [SW] Message received: {type: 'KEEP_ALIVE'}
+sw.js:201 Uncaught TypeError: Cannot read properties of undefined (reading 'postMessage')
+    at sw.js:201:22
+(anonymous) @ sw.js:201Understand this error
+GroupCall.tsx:636 [GroupCall] Leaving call dengan comprehensive cleanup...
+GroupCall.tsx:641 [GroupCall] 🛑 Force stopping local stream tracks...
+GroupCall.tsx:643 [GroupCall] 🛑 Stopping audio track: Default - Microphone Array (Realtek(R) Audio) readyState: live
+GroupCall.tsx:646 [GroupCall] ✅ Successfully stopped audio track
+GroupCall.tsx:652 [GroupCall] ✅ Local stream stopped and state cleared
+GroupCall.tsx:657 [GroupCall] 🛑 CRITICAL: Force cleanup ALL audio elements...
+GroupCall.tsx:660 [GroupCall] 🛑 Cleaning audio element 0: groupAudio-3
+GroupCall.tsx:660 [GroupCall] 🛑 Cleaning audio element 1: groupAudio-4
+GroupCall.tsx:660 [GroupCall] 🛑 Cleaning audio element 2: groupAudio-3
+GroupCall.tsx:671 [GroupCall] ✅ Stopped audio track from audio element 2
+GroupCall.tsx:660 [GroupCall] 🛑 Cleaning audio element 3: groupAudio-4
+GroupCall.tsx:671 [GroupCall] ✅ Stopped audio track from audio element 3
+GroupCall.tsx:682 [GroupCall] ✅ All audio elements cleaned
+GroupCall.tsx:689 [GroupCall] 🛑 Force cleanup semua video elements...
+GroupCall.tsx:710 [GroupCall] ✅ All video elements cleaned
+GroupCall.tsx:717 [GroupCall] 🛑 FORCE STOPPING ALL GLOBAL MEDIA STREAMS...
+GroupCall.tsx:738 [GroupCall] ✅ Global media stream cleanup completed
+GroupCall.tsx:774 [GroupCall] ✅ All resources cleaned up
+GroupCall.tsx:780 [GroupCall] ⏱️ Delaying hangupCall untuk ensure complete cleanup...
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:552 [GroupCall] Cleaning up real audio streams
+GroupCall.tsx:745 [GroupCall] 🛑 Secondary cleanup - checking for remaining active streams...
+GroupCall.tsx:771 [GroupCall] ✅ Secondary cleanup completed
+CallContext.tsx:2800 [CallContext] Hanging up call - start
+CallContext.tsx:2803 [CallContext] FORCE STOPPING ALL RINGTONES - hangup call
+CallContext.tsx:285 [CallContext] 🔇 STOPPING ALL RINGTONES - comprehensive cleanup
+CallContext.tsx:290 [CallContext] Stopping HTML5 ringtone audio
+CallContext.tsx:299 [CallContext] ✅ HTML5 ringtone stopped and cleared
+CallContext.tsx:340 [CallContext] ✅ Stopped 0 audio elements
+CallContext.tsx:384 [CallContext] ✅ RINGTONE CLEANUP COMPLETED
+CallContext.tsx:462 [CallContext] 🔇 AGGRESSIVE AUDIO CLEANUP - STOPPING ALL AUDIO
+CallContext.tsx:496 [CallContext] 💥 NUCLEAR AUDIO CLEANUP - Closing ALL AudioContext instances
+CallContext.tsx:512 [CallContext] ✅ Closed AudioContext
+CallContext.tsx:542 [CallContext] 💥 NUCLEAR INTERVAL CLEANUP - Clearing ALL intervals
+CallContext.tsx:555 [CallContext] ✅ Nuclear interval cleanup completed
+CallContext.tsx:560 [CallContext] ✅ AGGRESSIVE AUDIO CLEANUP COMPLETED
+CallContext.tsx:2834 [CallContext] 🚨 ULTIMATE MOBILE NOTIFICATION FIX: Comprehensive media cleanup...
+CallContext.tsx:2837 [CallContext] 🛑 PHASE 1: Global media stream scan and termination
+CallContext.tsx:2841 [CallContext] 🛑 Forcing global MediaStreamTrack cleanup
+CallContext.tsx:2862 [CallContext] 🛑 Found 0 active media tracks to terminate
+CallContext.tsx:2876 [CallContext] 🛑 PHASE 2: Force cleanup all media elements...
+CallContext.tsx:2881 [CallContext] 🛑 Stopping audio element 0: groupAudio-3
+CallContext.tsx:2881 [CallContext] 🛑 Stopping audio element 1: groupAudio-4
+CallContext.tsx:2922 [CallContext] ✅ ALL audio/video elements forcefully stopped
+CallContext.tsx:2929 [CallContext] 🛑 FORCE STOPPING ALL GLOBAL MEDIA STREAMS...
+CallContext.tsx:2950 [CallContext] ✅ Global media stream cleanup completed
+CallContext.tsx:2957 [CallContext] 🚨 CHROME MOBILE CLEANUP - Starting...
+CallContext.tsx:3020 [CallContext] ℹ️ Not Chrome mobile - skipping specific cleanup
+CallContext.tsx:3036 [CallContext] Stopping local media tracks
+CallContext.tsx:3040 [CallContext] Stopped local track: audio
+CallContext.tsx:3040 [CallContext] Stopped local track: video
+CallContext.tsx:3049 [CallContext] Cleaning up group call audio elements
+CallContext.tsx:3066 [CallContext] Removed audio element for participant: 3
+CallContext.tsx:3066 [CallContext] Removed audio element for participant: 4
+CallContext.tsx:3136 [CallContext] Ending group call: group_call_1752669018859_38_3
+CallContext.tsx:3240 [CallContext] Call ended successfully, all audio streams stopped, navigated back to chat

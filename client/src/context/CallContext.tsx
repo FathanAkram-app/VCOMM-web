@@ -2952,17 +2952,16 @@ export function CallProvider({ children }: { children: ReactNode }) {
       console.log('[CallContext] Error with global stream cleanup:', e);
     }
     
-    // 🚨 CHROME MOBILE SPECIFIC CLEANUP for persistent notifications
+    // 🚨 CHROME BROWSER SPECIFIC CLEANUP for persistent notifications
     try {
-      console.log('[CallContext] 🚨 CHROME MOBILE CLEANUP - Starting...');
+      console.log('[CallContext] 🚨 CHROME BROWSER CLEANUP - Starting...');
       
-      // Detect Chrome mobile
-      const isChromeOnMobile = navigator.userAgent.includes('Chrome') && 
-                              (navigator.userAgent.includes('Mobile') || 
-                               navigator.userAgent.includes('Android'));
+      // Detect Chrome browser (both desktop and mobile)
+      const isChrome = navigator.userAgent.includes('Chrome');
+      const isMobile = navigator.userAgent.includes('Mobile') || navigator.userAgent.includes('Android');
       
-      if (isChromeOnMobile) {
-        console.log('[CallContext] 🚨 CHROME MOBILE DETECTED - Applying specific cleanup');
+      if (isChrome) {
+        console.log(`[CallContext] 🚨 CHROME DETECTED (${isMobile ? 'Mobile' : 'Desktop'}) - Applying specific cleanup`);
         
         // Force navigator.mediaDevices cleanup for Chrome mobile
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -3176,17 +3175,16 @@ export function CallProvider({ children }: { children: ReactNode }) {
         }
       }, 200);
       
-      // 🚨 CHROME MOBILE DELAYED CLEANUP for persistent notifications
+      // 🚨 CHROME BROWSER DELAYED CLEANUP for persistent notifications
       setTimeout(() => {
-        console.log('[CallContext] 🚨 CHROME MOBILE DELAYED CLEANUP - Starting...');
+        console.log('[CallContext] 🚨 CHROME BROWSER DELAYED CLEANUP - Starting...');
         
-        // Detect Chrome mobile again
-        const isChromeOnMobile = navigator.userAgent.includes('Chrome') && 
-                                (navigator.userAgent.includes('Mobile') || 
-                                 navigator.userAgent.includes('Android'));
+        // Detect Chrome browser again (both desktop and mobile)
+        const isChrome = navigator.userAgent.includes('Chrome');
+        const isMobile = navigator.userAgent.includes('Mobile') || navigator.userAgent.includes('Android');
         
-        if (isChromeOnMobile) {
-          console.log('[CallContext] 🚨 CHROME MOBILE DELAYED CLEANUP - Applying delayed cleanup');
+        if (isChrome) {
+          console.log(`[CallContext] 🚨 CHROME DELAYED CLEANUP (${isMobile ? 'Mobile' : 'Desktop'}) - Applying delayed cleanup`);
           
           // Force final permission cleanup
           try {
