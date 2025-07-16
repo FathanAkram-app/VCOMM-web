@@ -121,6 +121,12 @@ NXZZ-VComm is a military communications platform designed for intranet environme
 - Port configuration for different deployment targets
 
 # Changelog
+- July 16, 2025: 🔧 CALL REJECTION REDIRECT ENHANCEMENT - Improved User Navigation:
+  - ✅ ENHANCED: Call rejection now redirects users directly to /chat page instead of login
+  - ✅ IMPROVED: Better user experience when declining incoming calls
+  - ✅ ADDED: Enhanced logging for call rejection and navigation flow
+  - ✅ OPTIMIZED: handleRejectCall function with proper navigation timing
+  - Users no longer get stuck after rejecting calls - seamlessly return to chat interface
 - July 16, 2025: 🔥 CRITICAL ASYMMETRIC VISIBILITY FIX - Enhanced Participant Synchronization System COMPLETED:
   - ✅ DIAGNOSED: Asymmetric visibility root cause - group_call_participants_update received but activeCall undefined
   - ✅ ENHANCED: Pending participant update processing with better timing coordination
