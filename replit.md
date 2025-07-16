@@ -121,6 +121,20 @@ NXZZ-VComm is a military communications platform designed for intranet environme
 - Port configuration for different deployment targets
 
 # Changelog
+- July 16, 2025: 🔥 CRITICAL ASYMMETRIC VISIBILITY FIX - Enhanced Participant Synchronization System:
+  - ✅ DIAGNOSED: Asymmetric visibility root cause - group_call_participants_update received but activeCall undefined
+  - ✅ ENHANCED: Pending participant update processing with better timing coordination
+  - ✅ ADDED: request_group_participants server handler for force refresh participant data
+  - ✅ IMPROVED: handleGroupCallParticipantsUpdate with fullSync and participantData support
+  - ✅ IMPLEMENTED: Enhanced pending update storage with complete message payload
+  - ✅ OPTIMIZED: Force processing of pending updates immediately after activeCall creation
+  - ✅ ENHANCED: Server-side participant data delivery with detailed user information
+  - ✅ ADDED: participant-data-updated event for fullSync scenarios
+  - ✅ IMPROVED: Participant data synchronization with multiple fallback mechanisms
+  - ✅ ENHANCED: Logging system for better debugging of participant update flow
+  - System now processes pending participant updates correctly when activeCall becomes available
+  - Enhanced server-side participant request handler provides complete participant data
+  - Improved client-side processing handles both simple ID arrays and detailed participant objects
 - July 16, 2025: 🔥 CRITICAL CLIENT-SIDE PARTICIPANT DATA SYNC FIX - Enhanced Event-Driven Architecture:
   - ✅ FIXED: Client-side participant data synchronization issues for new members joining group calls
   - ✅ ENHANCED: Custom event system with 'participant-data-updated' event for real-time UI updates

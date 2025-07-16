@@ -2291,8 +2291,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
-        // Note: request_group_participants handler removed - participant detection now works 
-        // automatically through group_call_participants_update system
+        // Handle request for group participants - force refresh participant list
+        if (data.type === 'request_group_participants' && ws.userId) {
+          const { callId, groupId, requestingUserId } = data.payload;
+          console.log(`[Group Call] User ${requestingUserId} requesting participants for call ${callId}`);
+          
+          // Get current participants list
+          const participants = Array.from(activeGroupCalls.get(callId) || []);
+          console.log(`[Group Call] Current participants in ${callId}:`, participants);
+          
+          if (participants.length > 0) {
+            try {
+              // Get participant names
+              const participantNames = await Promise.all(
+                participants.map(async (userId) => {
+                  const user = await storage.getUser(userId.toString());
+                  return {
+                    userId: userId,
+                    userName: user?.callsign || user?.fullName || `User ${userId}`,
+                    audioEnabled: true,
+                    videoEnabled: true,
+                    stream: null
+                  };
+                })
+              );
+              
+              // Send participant update to requesting user
+              const requestingClient = clients.get(requestingUserId);
+              if (requestingClient && requestingClient.readyState === requestingClient.OPEN) {
+                const participantUpdateMessage = {
+                  type: 'group_call_participants_update',
+                  payload: {
+                    callId,
+                    participants: participants,
+                    participantData: participantNames,
+                    fullSync: true,
+                    timestamp: Date.now()
+                  }
+                };
+                
+                console.log(`[Group Call] 🔄 Sending participant update to user ${requestingUserId}:`, participantUpdateMessage);
+                requestingClient.send(JSON.stringify(participantUpdateMessage));
+              }
+              
+            } catch (error) {
+              console.error(`[Group Call] Error processing participant request:`, error);
+            }
+          } else {
+            console.log(`[Group Call] No participants found for call ${callId}`);
+          }
+        }
 
         // Handle call end
         if (data.type === 'end_call' && ws.userId) {

@@ -1647,7 +1647,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const handleGroupCallParticipantsUpdate = (message: any) => {
     console.log('[CallContext] 🔥 Group call participants update:', message);
     console.log('[CallContext] 🔥 Message payload:', message.payload);
-    const { callId, participants, newParticipant } = message.payload;
+    const { callId, participants, newParticipant, fullSync, participantData } = message.payload;
     
     // Use ref to get current activeCall state to avoid race conditions
     const currentActiveCall = activeCallRef.current;
@@ -1701,7 +1701,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
         let processedParticipants = participants;
         let isDetailedParticipantData = false;
         
-        if (participants && participants.length > 0 && typeof participants[0] === 'object' && participants[0].userId) {
+        console.log('[CallContext] 🎯 Processing participant update - fullSync:', fullSync, 'participantData:', participantData);
+        
+        // Check if we have detailed participant data from server
+        if (participantData && participantData.length > 0) {
+          // Use the detailed participant data provided by server
+          processedParticipants = participantData;
+          isDetailedParticipantData = true;
+          console.log('[CallContext] 🔥 Using detailed participant data from server:', participantData);
+        } else if (participants && participants.length > 0 && typeof participants[0] === 'object' && participants[0].userId) {
           // Already in participant object format with detailed data
           isDetailedParticipantData = true;
           console.log('[CallContext] Received detailed participant data:', participants);
@@ -1853,6 +1861,20 @@ export function CallProvider({ children }: { children: ReactNode }) {
         
         // Clear any pending updates since we processed this one
         localStorage.removeItem('pendingParticipantUpdate');
+        
+        // 🔥 ENHANCED: Dispatch detailed participant update event for fullSync
+        if (fullSync && participantData) {
+          console.log('[CallContext] 🔥 Dispatching participant-data-updated event for fullSync');
+          window.dispatchEvent(new CustomEvent('participant-data-updated', {
+            detail: {
+              callId: callId,
+              participants: processedParticipants,
+              isNewMember: false,
+              fullSync: true,
+              participantData: participantData
+            }
+          }));
+        }
       } else {
         console.log('[CallContext] Group IDs do not match');
       }
@@ -1860,9 +1882,14 @@ export function CallProvider({ children }: { children: ReactNode }) {
       console.log('[CallContext] No active group call found for participant update');
       // Store pending participant update for processing when activeCall becomes available
       localStorage.setItem('pendingParticipantUpdate', JSON.stringify({
-        callId,
-        participants,
-        timestamp: Date.now()
+        type: 'group_call_participants_update',
+        payload: {
+          callId,
+          participants,
+          participantData,
+          fullSync,
+          timestamp: Date.now()
+        }
       }));
       console.log('[CallContext] Stored pending participant update for later processing');
     }
@@ -3632,6 +3659,25 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
       // Process any pending participant updates that arrived before activeCall was created
       console.log('[CallContext] 📊 Processing pending participant updates after join...');
+      
+      // 🔥 CRITICAL FIX: Process pending participant updates immediately
+      const storedUpdate = localStorage.getItem('pendingParticipantUpdate');
+      if (storedUpdate) {
+        try {
+          const pendingUpdate = JSON.parse(storedUpdate);
+          console.log('[CallContext] 🔄 Processing stored pending participant update:', pendingUpdate);
+          
+          // Force process the pending update now that we have activeCall
+          setTimeout(() => {
+            console.log('[CallContext] 🎯 Force processing pending participant update with activeCall context');
+            handleGroupCallParticipantsUpdate(pendingUpdate);
+            localStorage.removeItem('pendingParticipantUpdate');
+          }, 100);
+        } catch (error) {
+          console.error('[CallContext] Error processing pending participant update:', error);
+        }
+      }
+      
       setTimeout(() => {
         // Force request participant update after joining
         const requestParticipantsMessage = {
