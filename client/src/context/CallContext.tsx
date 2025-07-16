@@ -1079,9 +1079,20 @@ export function CallProvider({ children }: { children: ReactNode }) {
       const remoteStream = event.streams[0];
       console.log('[CallContext] Remote stream tracks:', remoteStream.getTracks().length);
       
-      // Store remote stream for AudioCall component
-      console.log('[CallContext] 📡 Storing remote stream globally');
-      setRemoteAudioStream(remoteStream);
+      // ⚠️ PREVENT EARLY MEDIA LEAK - DO NOT store remote stream until call is answered
+      console.log('[CallContext] 🛡️ Early media protection - remote stream received but NOT stored until call answered');
+      
+      // Store stream in temporary variable for later use after answer
+      (window as any).__pendingRemoteStream = remoteStream;
+      
+      // Mute all audio tracks immediately to prevent early media
+      remoteStream.getAudioTracks().forEach(track => {
+        track.enabled = false;
+        console.log('[CallContext] 🔇 Audio track muted to prevent early media leak');
+      });
+      
+      // Do NOT set remote stream yet - wait for call to be answered
+      // setRemoteAudioStream(remoteStream); // REMOVED - akan di-set saat acceptCall
     };
 
     setIncomingCall({
@@ -1093,9 +1104,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
       peerName: message.fromUserName,
       remoteStreams: new Map(),
       peerConnection,
-      audioEnabled: true,
-      videoEnabled: message.callType === 'video',
-      isMuted: false,
+      audioEnabled: false, // ⚠️ PREVENT EARLY MEDIA - audio disabled until answered
+      videoEnabled: false, // ⚠️ PREVENT EARLY MEDIA - video disabled until answered
+      isMuted: true, // ⚠️ PREVENT EARLY MEDIA - muted until answered
     });
 
     // Process any pending WebRTC offers for this call
@@ -2417,12 +2428,36 @@ export function CallProvider({ children }: { children: ReactNode }) {
         }, 100);
       };
 
+      // 🎯 CRITICAL: Now that call is accepted, enable audio and activate pending remote stream
+      console.log('[CallContext] 🎯 Call accepted - enabling audio and activating remote stream');
+      
+      // Check if there's a pending remote stream from earlier ontrack event
+      if ((window as any).__pendingRemoteStream) {
+        const pendingStream = (window as any).__pendingRemoteStream;
+        console.log('[CallContext] 🎯 Activating pending remote stream with tracks:', pendingStream.getTracks().length);
+        
+        // Enable all audio tracks now that call is accepted
+        pendingStream.getAudioTracks().forEach(track => {
+          track.enabled = true;
+          console.log('[CallContext] 🔊 Audio track enabled after call accepted');
+        });
+        
+        // Now it's safe to store the remote stream
+        setRemoteAudioStream(pendingStream);
+        
+        // Clear pending stream
+        (window as any).__pendingRemoteStream = null;
+      }
+
       // Accept the call
       setActiveCall({
         ...incomingCall,
         status: 'connected',
         localStream,
         startTime: new Date(),
+        audioEnabled: true, // ✅ Audio enabled AFTER call accepted
+        videoEnabled: incomingCall.callType === 'video', // ✅ Video enabled AFTER call accepted
+        isMuted: false, // ✅ Unmuted AFTER call accepted
       });
 
       setIncomingCall(null);
@@ -2567,6 +2602,21 @@ export function CallProvider({ children }: { children: ReactNode }) {
           fromUserId: user.id,
         }
       }));
+    }
+
+    // Clear any pending remote stream to prevent early media leak
+    if ((window as any).__pendingRemoteStream) {
+      const pendingStream = (window as any).__pendingRemoteStream;
+      console.log('[CallContext] 🛡️ Clearing pending remote stream on reject to prevent early media');
+      
+      // Stop all tracks in pending stream
+      pendingStream.getTracks().forEach(track => {
+        track.stop();
+        console.log('[CallContext] 🛑 Stopped pending track on reject:', track.kind);
+      });
+      
+      // Clear pending stream
+      (window as any).__pendingRemoteStream = null;
     }
 
     // Clear the incoming call state

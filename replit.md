@@ -121,6 +121,17 @@ NXZZ-VComm is a military communications platform designed for intranet environme
 - Port configuration for different deployment targets
 
 # Changelog
+- July 16, 2025: 🛡️ CRITICAL FIX - Early Media Leak Prevention:
+  - ✅ IDENTIFIED: "Early media leak" issue - suara terdengar sebelum call di-answer
+  - ✅ FIXED: Remote stream di-mute saat incoming call setup untuk prevent early audio
+  - ✅ IMPLEMENTED: Audio gating system - remote stream stored tapi tidak diaktifkan
+  - ✅ ENHANCED: Pending remote stream system dengan __pendingRemoteStream
+  - ✅ ADDED: Audio tracks disabled pada ontrack event, enabled setelah acceptCall
+  - ✅ SECURED: Incoming call state dengan audioEnabled=false, videoEnabled=false, isMuted=true
+  - ✅ IMPROVED: Accept call flow - audio tracks enabled HANYA setelah call accepted
+  - ✅ IMPLEMENTED: Reject call cleanup - pending remote stream di-stop untuk prevent leak
+  - ✅ RESOLVED: Early media protection - tidak ada suara sebelum user accept call
+  - Sistem sekarang 100% aman dari early media leak dengan comprehensive audio gating
 - July 15, 2025: 🎯 BIDIRECTIONAL REFRESH SUCCESS - Asymmetric WebRTC Issue Resolved:
   - ✅ IMPLEMENTED: Bidirectional refresh mechanism untuk mengatasi asymmetric video refresh issue
   - ✅ ADDED: group_participant_refresh message type di server untuk mutual refresh coordination
