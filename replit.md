@@ -121,6 +121,18 @@ NXZZ-VComm is a military communications platform designed for intranet environme
 - Port configuration for different deployment targets
 
 # Changelog
+- July 16, 2025: 🔥 CRITICAL CLIENT-SIDE PARTICIPANT DATA SYNC FIX - Enhanced Event-Driven Architecture:
+  - ✅ FIXED: Client-side participant data synchronization issues for new members joining group calls
+  - ✅ ENHANCED: Custom event system with 'participant-data-updated' event for real-time UI updates
+  - ✅ IMPROVED: fullSync flag detection in CallContext to properly handle detailed participant data
+  - ✅ ADDED: Event listeners in GroupCall.tsx and GroupVideoCallSimple.tsx for immediate participant updates
+  - ✅ IMPLEMENTED: Participant data conversion and state management for new member visibility
+  - ✅ OPTIMIZED: Direct state updates for new members with complete participant information
+  - ✅ ENHANCED: Server-side detailed participant data delivery with proper client-side processing
+  - ✅ VERIFIED: Triple-layer participant synchronization working (server → CallContext → components)
+  - New members now receive complete participant data immediately upon joining group calls
+  - Enhanced event-driven architecture ensures real-time participant visibility updates
+  - Client-side processing optimized for immediate participant display without delays
 - July 16, 2025: 🚀 ASYMMETRIC PARTICIPANT VISIBILITY ULTIMATE FIX - Enhanced Bidirectional WebRTC Initiation:
   - ✅ DIAGNOSED: Asymmetric participant visibility issue - member terakhir yang join tidak muncul di layar member yang sudah ada
   - ✅ IMPLEMENTED: Forced bidirectional WebRTC initiation system di server untuk new members

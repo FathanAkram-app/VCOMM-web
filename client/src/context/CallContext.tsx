@@ -1693,16 +1693,79 @@ export function CallProvider({ children }: { children: ReactNode }) {
       if (messageGroupId === activeGroupId) {
         console.log('[CallContext] Group IDs match, updating participants:', participants);
         
-        // Handle both array of IDs and array of participant objects
+        // 🔥 ENHANCED: Handle detailed participant data for new members
         let processedParticipants = participants;
+        let isDetailedParticipantData = false;
+        
         if (participants && participants.length > 0 && typeof participants[0] === 'object' && participants[0].userId) {
-          // Already in participant object format, extract IDs for deduplication
-          processedParticipants = participants.map((p: any) => p.userId);
+          // Already in participant object format with detailed data
+          isDetailedParticipantData = true;
+          console.log('[CallContext] Received detailed participant data:', participants);
+          // Keep the detailed format for better participant info
+          processedParticipants = participants;
+        } else {
+          // Simple ID array, convert to participant objects
+          processedParticipants = participants.map((id: any) => ({
+            userId: id,
+            userName: `User ${id}`,
+            audioEnabled: true,
+            videoEnabled: groupCallToUpdate.callType === 'video'
+          }));
         }
         
-        // Remove duplicates from participants list
-        const uniqueParticipants = Array.from(new Set(processedParticipants));
+        // Remove duplicates from participants list (by userId)
+        const uniqueParticipants = [];
+        const seenIds = new Set();
+        
+        for (const participant of processedParticipants) {
+          const userId = typeof participant === 'object' ? participant.userId : participant;
+          if (!seenIds.has(userId)) {
+            seenIds.add(userId);
+            uniqueParticipants.push(participant);
+          }
+        }
+        
         console.log('[CallContext] Unique participants after deduplication:', uniqueParticipants);
+        
+        // 🚀 CRITICAL: For new members with fullSync, ensure they get complete participant data
+        if (message.payload.fullSync && message.payload.isNewMember) {
+          console.log('[CallContext] 🔥 Full sync for new member - ensuring complete participant data');
+          
+          // Update active call with complete participant data
+          const updatedCall = {
+            ...groupCallToUpdate,
+            participants: uniqueParticipants
+          };
+          
+          setActiveCall(updatedCall);
+          activeCallRef.current = updatedCall;
+          
+          // Also trigger custom event for GroupCall component to refresh
+          window.dispatchEvent(new CustomEvent('participant-data-updated', {
+            detail: {
+              callId: callId,
+              participants: uniqueParticipants,
+              isNewMember: true,
+              fullSync: true
+            }
+          }));
+          
+          console.log('[CallContext] 🎯 Full sync complete - participant data updated for new member');
+          return;
+        }
+        
+        // Handle regular participant updates (not full sync)
+        setActiveCall(prev => {
+          if (prev && prev.isGroupCall) {
+            const updatedCall = {
+              ...prev,
+              participants: uniqueParticipants
+            };
+            activeCallRef.current = updatedCall;
+            return updatedCall;
+          }
+          return prev;
+        });
         
         // Fetch user names for participants
         console.log('[CallContext] 🔍 Fetching user names for participants:', uniqueParticipants);

@@ -86,6 +86,25 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     return Array.from(participantMap.values());
   };
 
+  // Enhanced participant data event listener
+  useEffect(() => {
+    const handleParticipantDataUpdate = (event: CustomEvent) => {
+      console.log('[GroupCall] 🔥 Participant data update event received:', event.detail);
+      const { participants: updatedParticipants, isNewMember, fullSync } = event.detail;
+      
+      if (fullSync && isNewMember) {
+        console.log('[GroupCall] 🎯 Full sync for new member - updating participant list');
+        setParticipants(updatedParticipants);
+      }
+    };
+    
+    window.addEventListener('participant-data-updated', handleParticipantDataUpdate as EventListener);
+    
+    return () => {
+      window.removeEventListener('participant-data-updated', handleParticipantDataUpdate as EventListener);
+    };
+  }, []);
+
   // Simple and direct participant processing
   useEffect(() => {
     console.log('[GroupCall] useEffect triggered');

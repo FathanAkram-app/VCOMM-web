@@ -282,6 +282,32 @@ export default function GroupVideoCallSimple() {
     retry: false,
   });
 
+  // Enhanced participant data event listener
+  useEffect(() => {
+    const handleParticipantDataUpdate = (event: CustomEvent) => {
+      console.log('[GroupVideoCallSimple] 🔥 Participant data update event received:', event.detail);
+      const { participants: updatedParticipants, isNewMember, fullSync } = event.detail;
+      
+      if (fullSync && isNewMember) {
+        console.log('[GroupVideoCallSimple] 🎯 Full sync for new member - updating participant list');
+        // Convert to component-specific format
+        const newParticipants = updatedParticipants.map((p: any) => ({
+          userId: p.userId,
+          userName: p.userName,
+          stream: null,
+          videoRef: React.createRef<HTMLVideoElement>()
+        }));
+        setParticipants(newParticipants);
+      }
+    };
+    
+    window.addEventListener('participant-data-updated', handleParticipantDataUpdate as EventListener);
+    
+    return () => {
+      window.removeEventListener('participant-data-updated', handleParticipantDataUpdate as EventListener);
+    };
+  }, []);
+
   // Update participants dari activeCall dan remoteStreams state
   useEffect(() => {
     if (activeCall?.participants && currentUser) {
