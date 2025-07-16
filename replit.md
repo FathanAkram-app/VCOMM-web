@@ -121,6 +121,17 @@ NXZZ-VComm is a military communications platform designed for intranet environme
 - Port configuration for different deployment targets
 
 # Changelog
+- July 16, 2025: 🎖️ MILITARY PARTICIPANT DISPLAY ENHANCEMENT - Rank and Branch Integration:
+  - ✅ IMPLEMENTED: Professional military participant display format: "RANK CALLSIGN (BRANCH)"
+  - ✅ ENHANCED: GroupCall.tsx fetchParticipantData with rank and branch display
+  - ✅ IMPROVED: CallContext.tsx fetchParticipantNames with military format
+  - ✅ UPDATED: Server-side participant data formatting in routes.ts
+  - ✅ STANDARDIZED: All participant displays now show rank, callsign, and branch
+  - ✅ FALLBACK: Default format "PVT User ID (TNI AD)" for missing data
+  - ✅ CONSISTENT: Same format applies to current user, other participants, and new members
+  - Examples: "SPC aji (TNI AD)", "PVT eko (TNI AL)", "SGT dino (TNI AU)"
+  - Professional military communication display eliminates generic "User 2" format
+  - Enhanced participant identification for tactical operations and formal communications
 - July 16, 2025: 🔥 CRITICAL ASYMMETRIC VISIBILITY FIX - Enhanced Participant Synchronization System:
   - ✅ DIAGNOSED: Asymmetric visibility root cause - group_call_participants_update received but activeCall undefined
   - ✅ ENHANCED: Pending participant update processing with better timing coordination
