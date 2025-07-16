@@ -121,20 +121,17 @@ NXZZ-VComm is a military communications platform designed for intranet environme
 - Port configuration for different deployment targets
 
 # Changelog
-- July 16, 2025: 🎖️ MILITARY PARTICIPANT DISPLAY ENHANCEMENT - Rank and Branch Information Integration:
-  - ✅ ENHANCED: GroupCall.tsx component to display military rank and branch information instead of generic user numbers
-  - ✅ UPDATED: GroupParticipant interface to include rank and branch fields for comprehensive military personnel display
-  - ✅ IMPROVED: fetchParticipantData function to fetch rank and branch information from server user data
-  - ✅ INTEGRATED: Military information display in both audio and video call participant lists
-  - ✅ ENHANCED: GroupVideoCallSimple component participant interface with rank and branch support
-  - ✅ UPDATED: Participant data mapping functions to include military hierarchy information
-  - ✅ IMPROVED: UI rendering for both audio and video calls to show "Rank • Branch" format
-  - ✅ REFINED: Video overlay labels to display complete military personnel information
-  - ✅ ENHANCED: Current user display to show own rank and branch information
-  - ✅ OPTIMIZED: Consistent military-themed participant identification across all call types
-  - Group call participants now display authentic military information (e.g., "Sersan • TNI AD") instead of generic user IDs
-  - Enhanced military authenticity with proper rank and branch hierarchy display
-  - Improved user identification for military personnel during tactical communications
+- July 16, 2025: 🎖️ MILITARY PARTICIPANT DISPLAY ENHANCEMENT - Rank and Branch Integration:
+  - ✅ IMPLEMENTED: Professional military participant display format: "RANK CALLSIGN (BRANCH)"
+  - ✅ ENHANCED: GroupCall.tsx fetchParticipantData with rank and branch display
+  - ✅ IMPROVED: CallContext.tsx fetchParticipantNames with military format
+  - ✅ UPDATED: Server-side participant data formatting in routes.ts
+  - ✅ STANDARDIZED: All participant displays now show rank, callsign, and branch
+  - ✅ FALLBACK: Default format "PVT User ID (TNI AD)" for missing data
+  - ✅ CONSISTENT: Same format applies to current user, other participants, and new members
+  - Examples: "SPC aji (TNI AD)", "PVT eko (TNI AL)", "SGT dino (TNI AU)"
+  - Professional military communication display eliminates generic "User 2" format
+  - Enhanced participant identification for tactical operations and formal communications
 - July 16, 2025: 🔥 CRITICAL ASYMMETRIC VISIBILITY FIX - Enhanced Participant Synchronization System:
   - ✅ DIAGNOSED: Asymmetric visibility root cause - group_call_participants_update received but activeCall undefined
   - ✅ ENHANCED: Pending participant update processing with better timing coordination
