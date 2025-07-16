@@ -2373,29 +2373,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     // If it's a group call, use joinGroupCall instead
     if (incomingCall.isGroupCall && incomingCall.callId) {
-      console.log('[CallContext] 🚀 Accepting group call - immediate WebRTC initiation enabled');
+      console.log('[CallContext] Accepting group call - redirecting to joinGroupCall');
       setIncomingCall(null); // Clear the modal first
-      
-      // 🚀 OPTIMIZED: Gentle WebRTC preparation (removed aggressive pre-init)
-      // This prepares system for WebRTC without causing failures
-      setTimeout(() => {
-        console.log('[CallContext] 📋 Preparing for group call WebRTC initialization');
-        
-        // Single preparation event instead of multiple aggressive events
-        window.dispatchEvent(new CustomEvent('prepare-webrtc-init', {
-          detail: {
-            callId: incomingCall.callId,
-            groupId: incomingCall.groupId,
-            groupName: incomingCall.groupName,
-            callType: incomingCall.callType,
-            prepareOnly: true, // Just prepare, don't initiate immediately
-            timestamp: Date.now()
-          }
-        }));
-        
-        console.log('[CallContext] 📋 WebRTC preparation event dispatched');
-      }, 200);
-      
       await joinGroupCall(
         incomingCall.callId,
         incomingCall.groupId!,
@@ -3629,36 +3608,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
         }
       }, 500); // Wait for join to complete
       
-      // 🚀 CRITICAL FIX: Wait for proper stream and participant sync before WebRTC
-      // This ensures video streams are established with proper timing
+      // Also immediately trigger WebRTC setup for current participants
       setTimeout(async () => {
         try {
-          // Wait for local stream to be fully ready
-          let streamReady = false;
-          let streamCheckAttempts = 0;
-          
-          while (!streamReady && streamCheckAttempts < 20) {
-            streamCheckAttempts++;
-            
-            if (groupCallState.localStream && groupCallState.localStream.active) {
-              const videoTrack = groupCallState.localStream.getVideoTracks()[0];
-              const audioTrack = groupCallState.localStream.getAudioTracks()[0];
-              
-              if (videoTrack && audioTrack && videoTrack.readyState === 'live' && audioTrack.readyState === 'live') {
-                streamReady = true;
-                console.log('[CallContext] ✅ Local stream ready for WebRTC initiation');
-                break;
-              }
-            }
-            
-            console.log(`[CallContext] ⏳ Waiting for stream to be ready... (attempt ${streamCheckAttempts}/20)`);
-            await new Promise(resolve => setTimeout(resolve, 100));
-          }
-          
-          if (!streamReady) {
-            console.log('[CallContext] ⚠️ Stream readiness timeout, proceeding anyway');
-          }
-          
           // Get updated participant names from server
           const response = await fetch('/api/all-users');
           const allUsers = await response.json();
@@ -3669,27 +3621,21 @@ export function CallProvider({ children }: { children: ReactNode }) {
             userMap.set(user.id, user.callsign || user.fullName || `User ${user.id}`);
           });
           
-          // Single well-timed WebRTC initiation (instead of multiple rapid events)
-          console.log('[CallContext] 🚀 Initiating WebRTC with proper timing');
+          // Dispatch event to GroupVideoCall to start WebRTC connections
           window.dispatchEvent(new CustomEvent('force-webrtc-init', {
             detail: {
               callId: groupCallState.callId,
               groupId: groupCallState.groupId,
               currentUserId: user.id,
-              userMap,
-              participants: [], // Will be populated by server
-              forceInit: true,
-              immediateInit: false, // Use normal timing to prevent failures
-              streamReady: streamReady,
-              timestamp: Date.now()
+              userMap
             }
           }));
           
-          console.log('[CallContext] 🚀 WebRTC initialization trigger dispatched with proper timing');
+          console.log('[CallContext] 🚀 Triggered WebRTC initialization for group call');
         } catch (error) {
           console.error('[CallContext] Error triggering WebRTC init:', error);
         }
-      }, 800); // Increased delay to ensure proper stream/participant sync
+      }, 1000);
 
       // Store the call state in localStorage to persist through navigation
       localStorage.setItem('activeGroupCall', JSON.stringify({

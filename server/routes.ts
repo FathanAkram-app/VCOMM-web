@@ -2140,7 +2140,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 targetClient.send(JSON.stringify(updateMessage));
                 console.log(`[Group Call] ✅ Participants update sent to user ${member.userId}`);
                 
-                // 🚀 CRITICAL FIX: IMMEDIATE WebRTC initiation for new members
+                // 🚀 CRITICAL FIX: Force bidirectional WebRTC initiation for new members
                 // This ensures all existing members can see the new member that just joined
                 setTimeout(() => {
                   const webrtcMessage = {
@@ -2150,12 +2150,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       participants: participants.map(p => ({ userId: p, userName: `User ${p}` })),
                       forceInit: true,
                       newMember: userId, // Mark who is the new member
-                      immediateInit: false, // Use normal timing to prevent failures
                       timestamp: Date.now()
                     }
                   };
                   
-                  console.log(`[Group Call] 🚀 IMMEDIATE WebRTC initiation for user ${member.userId} due to new member ${userId}`);
+                  console.log(`[Group Call] 🔄 Forcing WebRTC initiation for user ${member.userId} due to new member ${userId}`);
                   targetClient.send(JSON.stringify(webrtcMessage));
                 }, 500); // Small delay to ensure participant update is processed first
               } else {
