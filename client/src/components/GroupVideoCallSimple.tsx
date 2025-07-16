@@ -1219,38 +1219,6 @@ export default function GroupVideoCallSimple() {
         console.error('[GroupVideoCallSimple] ❌ Error cleaning video elements:', elementError);
       }
       
-      // CRITICAL: Force cleanup ALL audio elements on page 
-      try {
-        console.log('[GroupVideoCallSimple] 🛑 CRITICAL: Force cleanup ALL audio elements...');
-        const allAudioElements = document.querySelectorAll('audio');
-        allAudioElements.forEach((audio, index) => {
-          console.log(`[GroupVideoCallSimple] 🛑 Cleaning audio element ${index}:`, audio.id || 'no-id');
-          audio.pause();
-          audio.currentTime = 0;
-          audio.volume = 0;
-          audio.muted = true;
-          if (audio.srcObject) {
-            const stream = audio.srcObject as MediaStream;
-            if (stream && stream.getTracks) {
-              stream.getTracks().forEach(track => {
-                try {
-                  track.stop();
-                  console.log(`[GroupVideoCallSimple] ✅ Stopped audio track from audio element ${index}`);
-                } catch (e) {
-                  console.log(`[GroupVideoCallSimple] ❌ Error stopping audio track:`, e);
-                }
-              });
-            }
-            audio.srcObject = null;
-          }
-          audio.src = '';
-          audio.load();
-        });
-        console.log('[GroupVideoCallSimple] ✅ All audio elements cleaned');
-      } catch (audioError) {
-        console.error('[GroupVideoCallSimple] ❌ Error cleaning audio elements:', audioError);
-      }
-      
       // CRITICAL: Force cleanup ALL media streams globally
       try {
         console.log('[GroupVideoCallSimple] 🛑 CRITICAL: Force cleanup ALL media streams globally...');
