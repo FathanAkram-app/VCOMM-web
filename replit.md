@@ -121,6 +121,13 @@ NXZZ-VComm is a military communications platform designed for intranet environme
 - Port configuration for different deployment targets
 
 # Changelog
+- July 16, 2025: 🔄 CRITICAL NAVIGATION FIX - Reject Call Button Redirect:
+  - ✅ FIXED: Reject call button now properly redirects to main chat page (/chat) instead of login page
+  - ✅ IDENTIFIED: Root cause - setLocation('/') was redirecting to login since root path routes to Login component
+  - ✅ CORRECTED: Changed navigation from setLocation('/') to setLocation('/chat') in handleRejectCall function
+  - ✅ RESOLVED: IncomingCallModal now properly navigates back to chat interface after rejecting calls
+  - Users no longer experience unexpected redirect to login page when rejecting incoming calls
+  - Navigation flow now correctly maintains user session and returns to main chat interface
 - July 16, 2025: 🎖️ MILITARY PARTICIPANT DISPLAY ENHANCEMENT - Rank and Branch Information Integration:
   - ✅ ENHANCED: GroupCall.tsx component to display military rank and branch information instead of generic user numbers
   - ✅ UPDATED: GroupParticipant interface to include rank and branch fields for comprehensive military personnel display
