@@ -237,9 +237,37 @@ export default function GroupVideoCallSimple() {
     
     initWithRetry();
 
+    // 🚀 CRITICAL FIX: Smart stream monitoring untuk auto-retry failed connections
+    // Monitor participant streams setiap 15 detik untuk detect dan auto-fix streaming issues
+    const streamMonitor = setInterval(() => {
+      if (participants.length > 0) {
+        console.log('[GroupVideoCallSimple] 📊 Monitoring participant streams for auto-retry...');
+        
+        participants.forEach(participant => {
+          const videoElement = document.getElementById(`remoteVideo_${participant.userId}`) as HTMLVideoElement;
+          const peerConnection = peerConnectionsRef.current.get(participant.userId);
+          
+          if (videoElement && peerConnection) {
+            const hasStream = videoElement.srcObject !== null;
+            const connectionState = peerConnection.connectionState;
+            
+            if (!hasStream && connectionState !== 'connecting') {
+              console.log(`[GroupVideoCallSimple] 🔄 Auto-retry: Participant ${participant.userId} not streaming, triggering refresh`);
+              refreshParticipantConnection(participant.userId);
+            } else if (connectionState === 'failed' || connectionState === 'disconnected') {
+              console.log(`[GroupVideoCallSimple] 🔄 Auto-retry: Participant ${participant.userId} connection failed, triggering refresh`);
+              refreshParticipantConnection(participant.userId);
+            }
+          }
+        });
+      }
+    }, 15000); // Check every 15 seconds
+
     // Cleanup saat component unmount
     return () => {
       mounted = false;
+      clearInterval(streamMonitor);
+      
       if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
         console.log('[GroupVideoCallSimple] 🧹 Local stream cleaned up');
@@ -776,11 +804,35 @@ export default function GroupVideoCallSimple() {
           // Clear reconnection state
           reconnectionState.current.delete(userId);
         } else if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
-          console.log('[GroupVideoCallSimple] ❌ Connection failed for user', userId, '- manual refresh required');
-          // No automatic reconnection - user must manually refresh
+          console.log('[GroupVideoCallSimple] ❌ Connection failed for user', userId, '- triggering automatic retry');
+          
+          // 🚀 CRITICAL FIX: Automatic retry untuk failed connections
+          // This eliminates the need for manual refresh button clicking
+          setTimeout(() => {
+            console.log('[GroupVideoCallSimple] 🔄 Auto-retry: Refreshing connection for user', userId);
+            refreshParticipantConnection(userId);
+          }, 2000);
+          
+          // Additional fallback retry after 5 seconds
+          setTimeout(() => {
+            const currentPc = peerConnectionsRef.current.get(userId);
+            if (currentPc && (currentPc.connectionState === 'failed' || currentPc.connectionState === 'disconnected')) {
+              console.log('[GroupVideoCallSimple] 🔄 Secondary auto-retry for user', userId);
+              refreshParticipantConnection(userId);
+            }
+          }, 5000);
+          
         } else if (pc.connectionState === 'connecting') {
-          console.log('[GroupVideoCallSimple] ⏳ Connecting to user', userId, '- please wait...');
-          // No automatic timeout restart - let connection attempt naturally
+          console.log('[GroupVideoCallSimple] ⏳ Connecting to user', userId, '- monitoring for timeout...');
+          
+          // Monitor for stuck connections dan auto-retry
+          setTimeout(() => {
+            const currentPc = peerConnectionsRef.current.get(userId);
+            if (currentPc && currentPc.connectionState === 'connecting') {
+              console.log('[GroupVideoCallSimple] ⚠️ Connection stuck in connecting state for user', userId, '- triggering auto-retry');
+              refreshParticipantConnection(userId);
+            }
+          }, 10000); // 10 second timeout for stuck connections
         }
       };
       
@@ -830,16 +882,16 @@ export default function GroupVideoCallSimple() {
       return;
     }
 
-    // Enhanced stream waiting mechanism dengan timeout
+    // Enhanced stream waiting mechanism dengan timeout dan retry
     let currentStream = localStream;
     let streamWaitAttempts = 0;
     
     // Wait for stream to be ready dengan polling
-    while (!currentStream && streamWaitAttempts < 10) {
+    while (!currentStream && streamWaitAttempts < 15) {
       streamWaitAttempts++;
-      console.log(`[GroupVideoCallSimple] ⏳ Waiting for stream initialization... (attempt ${streamWaitAttempts}/10)`);
+      console.log(`[GroupVideoCallSimple] ⏳ Waiting for stream initialization... (attempt ${streamWaitAttempts}/15)`);
       
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 150));
       currentStream = localStream;
       
       if (!currentStream) {
@@ -847,12 +899,12 @@ export default function GroupVideoCallSimple() {
         const streamInitInProgress = !streamInitialized;
         console.log(`[GroupVideoCallSimple] 📊 Stream status check: initialized=${streamInitialized}, attempt=${streamWaitAttempts}`);
         
-        if (streamInitInProgress && streamWaitAttempts < 5) {
+        if (streamInitInProgress && streamWaitAttempts < 8) {
           continue; // Keep waiting if initialization is in progress
         }
         
         // Try to initialize if not already started
-        if (streamWaitAttempts === 5) {
+        if (streamWaitAttempts === 8) {
           console.log('[GroupVideoCallSimple] ⚠️ Stream wait timeout, forcing initialization...');
           try {
             currentStream = await initializeMediaStream();
@@ -874,7 +926,14 @@ export default function GroupVideoCallSimple() {
     }
 
     if (!currentStream) {
-      console.log('[GroupVideoCallSimple] ❌ Stream not available after all attempts');
+      console.log('[GroupVideoCallSimple] ❌ Stream not available after all attempts - triggering automatic retry');
+      
+      // 🚀 CRITICAL FIX: Automatic retry mechanism untuk inconsistent streaming
+      setTimeout(() => {
+        console.log('[GroupVideoCallSimple] 🔄 Automatic retry - attempting WebRTC initiation again');
+        initiateWebRTCConnections(data);
+      }, 1000);
+      
       return;
     }
 
