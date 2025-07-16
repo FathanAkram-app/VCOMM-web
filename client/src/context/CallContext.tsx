@@ -566,11 +566,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
       const updatedParticipants = await Promise.all(
         participantIds.map(async (userId: number) => {
           if (userId === user?.id) {
-            // Display format: RANK CALLSIGN (BRANCH)
-            const displayName = `${user?.rank || 'PVT'} ${user?.callsign || user?.fullName || 'You'} (${user?.branch || 'TNI AD'})`;
             return {
               userId,
-              userName: displayName,
+              userName: user?.callsign || user?.fullName || 'You',
               audioEnabled: true,
               videoEnabled: false,
               stream: null
@@ -580,11 +578,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
               const response = await fetch(`/api/users/${userId}`);
               if (response.ok) {
                 const userData = await response.json();
-                // Display format: RANK CALLSIGN (BRANCH)
-                const displayName = `${userData.rank || 'PVT'} ${userData.callsign || userData.fullName || `User ${userId}`} (${userData.branch || 'TNI AD'})`;
                 return {
                   userId,
-                  userName: displayName,
+                  userName: userData.callsign || userData.fullName || `User ${userId}`,
                   audioEnabled: true,
                   videoEnabled: false,
                   stream: null
@@ -593,11 +589,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
             } catch (error) {
               console.error('[CallContext] Error fetching user data:', error);
             }
-            // Fallback format: PVT User ID (TNI AD)
-            const displayName = `PVT User ${userId} (TNI AD)`;
             return {
               userId,
-              userName: displayName,
+              userName: `User ${userId}`,
               audioEnabled: true,
               videoEnabled: false,
               stream: null
