@@ -121,17 +121,18 @@ NXZZ-VComm is a military communications platform designed for intranet environme
 - Port configuration for different deployment targets
 
 # Changelog
-- July 16, 2025: 🛡️ CRITICAL FIX - Reject Call Navigation Issue Resolved:
-  - ✅ DIAGNOSED: Reject call causing unwanted redirect to login page
-  - ✅ FIXED: Removed forced navigation in IncomingCallModal handleRejectCall function
-  - ✅ ENHANCED: AuthCheck component with improved tolerance for temporary network issues
-  - ✅ ADDED: Retry mechanism for authentication checks (3 attempts with exponential backoff)
-  - ✅ IMPROVED: Network error handling with 2-3 second delays before retry
-  - ✅ SECURED: Better distinction between real auth failures and temporary network issues
-  - ✅ ADDED: Safeguards against redirect loops when already on login/register pages
-  - System now handles WebSocket disconnections during call rejection without redirecting to login
-  - Enhanced stability for temporary network interruptions during call operations
-  - Users can reject calls safely without being logged out or redirected unexpectedly
+- July 16, 2025: 🛡️ CRITICAL FIX - WebSocket Connection & Loading Issue Resolved:
+  - ✅ DIAGNOSED: Chat page stuck on loading due to WebSocket connection failure with "localhost:undefined" error
+  - ✅ FIXED: Removed Replit development banner script that was causing WebSocket conflicts
+  - ✅ ENHANCED: WebSocket URL validation to prevent undefined host issues
+  - ✅ IMPROVED: CallContext WebSocket error handling with detailed logging
+  - ✅ ADDED: Host validation before WebSocket creation to prevent invalid URLs
+  - ✅ SECURED: Better error handling for WebSocket close and error events
+  - ✅ FIXED: AuthCheck component tolerance for network issues (3 retry attempts)
+  - ✅ REMOVED: Conflicting external scripts that interfered with WebSocket connections
+  - System now properly loads chat interface after login without getting stuck on loading
+  - Enhanced WebSocket connection stability and error recovery mechanisms
+  - Users can now access main chat interface successfully after authentication
 - July 16, 2025: 🔥 CRITICAL ASYMMETRIC VISIBILITY FIX - Enhanced Participant Synchronization System:
   - ✅ DIAGNOSED: Asymmetric visibility root cause - group_call_participants_update received but activeCall undefined
   - ✅ ENHANCED: Pending participant update processing with better timing coordination

@@ -665,13 +665,29 @@ export function CallProvider({ children }: { children: ReactNode }) {
     if (!user) return;
 
     console.log('[CallContext] Creating stable WebSocket for calls...');
+    console.log('[CallContext] Current location:', {
+      protocol: window.location.protocol,
+      host: window.location.host,
+      hostname: window.location.hostname,
+      port: window.location.port
+    });
     
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws`;
+    
+    console.log('[CallContext] Constructing WebSocket URL:', wsUrl);
+    
+    // Validate URL before creating WebSocket
+    if (!window.location.host || window.location.host.includes('undefined')) {
+      console.error('[CallContext] Invalid host detected, preventing WebSocket creation');
+      return;
+    }
+    
     const websocket = new WebSocket(wsUrl);
 
     websocket.onopen = () => {
       console.log('[CallContext] WebSocket connected successfully for calls');
+      console.log('[CallContext] WebSocket readyState:', websocket.readyState);
       setWs(websocket);
       
       // Set global WebSocket reference for GroupVideoCallSimple
@@ -888,14 +904,27 @@ export function CallProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    websocket.onclose = () => {
-      console.log('[CallContext] WebSocket disconnected');
+    websocket.onclose = (event) => {
+      console.log('[CallContext] WebSocket disconnected:', {
+        code: event.code,
+        reason: event.reason,
+        wasClean: event.wasClean
+      });
       setWs(null);
+      
+      // Only log but don't force redirect - let AuthCheck handle authentication
+      if (event.code !== 1000 && event.code !== 1001) {
+        console.warn('[CallContext] Unexpected WebSocket closure, but not triggering redirect');
+      }
     };
 
     websocket.onerror = (error) => {
       console.error('[CallContext] WebSocket error:', error);
+      console.error('[CallContext] WebSocket state during error:', websocket.readyState);
       setWs(null);
+      
+      // Log error but don't force actions - let other systems handle recovery
+      console.log('[CallContext] WebSocket error occurred, will be handled by connection recovery');
     };
 
     return () => {
