@@ -3619,25 +3619,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       setActiveCall(groupCallState);
       console.log('[CallContext] Active call state set for group:', groupId, 'callId:', callId);
       
-      // Check for pending participant updates that arrived before activeCall was set
-      setTimeout(() => {
-        const pendingUpdate = localStorage.getItem('pendingParticipantUpdate');
-        if (pendingUpdate) {
-          try {
-            const updateData = JSON.parse(pendingUpdate);
-            const updateParts = updateData.callId.split('_');
-            const updateGroupId = updateParts[2];
-            
-            if (updateGroupId === String(groupId)) {
-              console.log('[CallContext] Processing pending participant update:', updateData);
-              handleGroupCallParticipantsUpdate({ payload: updateData });
-              localStorage.removeItem('pendingParticipantUpdate');
-            }
-          } catch (error) {
-            console.error('[CallContext] Error processing pending participant update:', error);
-          }
-        }
-      }, 100);
+      // This part is now handled by the enhanced processing below, removing duplicate
 
       // Send join message to server
       setTimeout(() => {
@@ -3670,7 +3652,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
           // Force process the pending update now that we have activeCall
           setTimeout(() => {
             console.log('[CallContext] 🎯 Force processing pending participant update with activeCall context');
-            handleGroupCallParticipantsUpdate(pendingUpdate);
+            // Ensure the pending update has the correct structure
+            if (pendingUpdate && pendingUpdate.payload) {
+              handleGroupCallParticipantsUpdate(pendingUpdate);
+            } else if (pendingUpdate && pendingUpdate.callId) {
+              // Handle old format without wrapper
+              handleGroupCallParticipantsUpdate({ payload: pendingUpdate });
+            }
             localStorage.removeItem('pendingParticipantUpdate');
           }, 100);
         } catch (error) {
