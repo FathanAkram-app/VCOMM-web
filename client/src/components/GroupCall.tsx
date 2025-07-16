@@ -14,8 +14,6 @@ interface GroupCallProps {
 interface GroupParticipant {
   userId: number;
   userName: string;
-  rank?: string;
-  branch?: string;
   audioEnabled: boolean;
   videoEnabled: boolean;
   stream?: MediaStream;
@@ -46,8 +44,6 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
         participantMap.set(userId, {
           userId,
           userName: user.callsign || user.fullName || 'Anda',
-          rank: user.rank || 'N/A',
-          branch: user.branch || 'N/A',
           audioEnabled: true,
           videoEnabled: callType === 'video',
           stream: null
@@ -60,8 +56,6 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
             participantMap.set(userId, {
               userId,
               userName: userData.callsign || userData.fullName || `User ${userId}`,
-              rank: userData.rank || 'N/A',
-              branch: userData.branch || 'N/A',
               audioEnabled: true,
               videoEnabled: callType === 'video',
               stream: null
@@ -70,8 +64,6 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
             participantMap.set(userId, {
               userId,
               userName: `User ${userId}`,
-              rank: 'N/A',
-              branch: 'N/A',
               audioEnabled: true,
               videoEnabled: callType === 'video',
               stream: null
@@ -82,8 +74,6 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
           participantMap.set(userId, {
             userId,
             userName: `User ${userId}`,
-            rank: 'N/A',
-            branch: 'N/A',
             audioEnabled: true,
             videoEnabled: callType === 'video',
             stream: null
@@ -157,8 +147,6 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
               participantList.push({
                 userId,
                 userName: userData.callsign || userData.fullName || `User ${userId}`,
-                rank: userData.rank || 'N/A',
-                branch: userData.branch || 'N/A',
                 audioEnabled: true,
                 videoEnabled: callType === 'video',
                 stream: undefined
@@ -167,8 +155,6 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
               participantList.push({
                 userId,
                 userName: `User ${userId}`,
-                rank: 'N/A',
-                branch: 'N/A',
                 audioEnabled: true,
                 videoEnabled: callType === 'video',
                 stream: undefined
@@ -179,8 +165,6 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
             participantList.push({
               userId,
               userName: `User ${userId}`,
-              rank: 'N/A',
-              branch: 'N/A',
               audioEnabled: true,
               videoEnabled: callType === 'video',
               stream: undefined
@@ -225,8 +209,6 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
                 participantList.push({
                   userId,
                   userName: userData.callsign || userData.fullName || `User ${userId}`,
-                  rank: userData.rank || 'N/A',
-                  branch: userData.branch || 'N/A',
                   audioEnabled: true,
                   videoEnabled: callType === 'video',
                   stream: undefined
@@ -267,8 +249,6 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
                 participantList.push({
                   userId,
                   userName: userData.callsign || userData.fullName || `User ${userId}`,
-                  rank: userData.rank || 'N/A',
-                  branch: userData.branch || 'N/A',
                   audioEnabled: true,
                   videoEnabled: callType === 'video',
                   stream: undefined
@@ -655,9 +635,7 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
                 </div>
               )}
               <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-                <div className="font-medium">Anda ({user?.callsign || 'Unknown'})</div>
-                <div className="text-xs opacity-80">{user?.rank || 'N/A'} • {user?.branch || 'N/A'}</div>
-                {!isAudioEnabled && <div className="text-xs text-red-400">(Muted)</div>}
+                Anda {!isAudioEnabled && '(Muted)'}
               </div>
             </div>
 
@@ -683,9 +661,7 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
                   </div>
                 )}
                 <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-                  <div className="font-medium">{participant.userName}</div>
-                  <div className="text-xs opacity-80">{participant.rank || 'N/A'} • {participant.branch || 'N/A'}</div>
-                  {!participant.audioEnabled && <div className="text-xs text-red-400">(Muted)</div>}
+                  {participant.userName} {!participant.audioEnabled && '(Muted)'}
                 </div>
               </div>
             ))}
@@ -748,7 +724,7 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
                         <div>
                           <p className="text-white font-medium">Anda</p>
                           <p className="text-xs text-gray-400">
-                            {user.rank || 'N/A'} • {user.branch || 'N/A'}
+                            {user.callsign || 'Unknown'}
                           </p>
                         </div>
                       </div>
@@ -777,7 +753,7 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
                               {participant.userName}
                             </p>
                             <p className="text-xs text-gray-400">
-                              {participant.rank || 'N/A'} • {participant.branch || 'N/A'}
+                              Personnel #{participant.userId}
                             </p>
                           </div>
                         </div>
