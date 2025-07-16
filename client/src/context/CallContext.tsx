@@ -817,6 +817,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
             break;
           case 'group_call_participants_update':
             console.log('[CallContext] 🔥 GROUP_CALL_PARTICIPANTS_UPDATE received:', message);
+            console.log('[CallContext] 🎯 Participants in message:', message.payload?.participants);
+            console.log('[CallContext] 🎯 CallId in message:', message.payload?.callId);
+            console.log('[CallContext] 🎯 Full sync flag:', message.payload?.fullSync);
             handleGroupCallParticipantsUpdate(message);
             break;
           case 'group_update':
@@ -1642,7 +1645,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
   };
 
   const handleGroupCallParticipantsUpdate = (message: any) => {
-    console.log('[CallContext] Group call participants update:', message);
+    console.log('[CallContext] 🔥 Group call participants update:', message);
+    console.log('[CallContext] 🔥 Message payload:', message.payload);
     const { callId, participants, newParticipant } = message.payload;
     
     // Use ref to get current activeCall state to avoid race conditions
@@ -1755,123 +1759,97 @@ export function CallProvider({ children }: { children: ReactNode }) {
         }
         
         // Handle regular participant updates (not full sync)
-        setActiveCall(prev => {
-          if (prev && prev.isGroupCall) {
-            const updatedCall = {
-              ...prev,
-              participants: uniqueParticipants
-            };
-            activeCallRef.current = updatedCall;
-            return updatedCall;
-          }
-          return prev;
-        });
+        console.log('[CallContext] Processing regular participant update (not full sync)');
         
-        // Fetch user names for participants
-        console.log('[CallContext] 🔍 Fetching user names for participants:', uniqueParticipants);
-        fetch('/api/all-users').then(response => response.json()).then(allUsers => {
-          console.log('[CallContext] 📊 Got all users data:', allUsers.length);
-          const userMap = new Map();
-          allUsers.forEach((user: any) => {
-            userMap.set(user.id, user.callsign || user.fullName || `User ${user.id}`);
+        // Still need to process participant names for regular updates
+        if (typeof uniqueParticipants[0] === 'number' || typeof uniqueParticipants[0] === 'string') {
+          console.log('[CallContext] Converting participant IDs to objects for regular update');
+          
+          // Call the same user names processing for regular updates
+          fetch('/api/all-users').then(response => response.json()).then(allUsers => {
+            const userMap = new Map();
+            allUsers.forEach((user: any) => {
+              userMap.set(user.id, user.callsign || user.fullName || `User ${user.id}`);
+            });
+            
+            // Convert participant IDs to participant objects
+            const participantObjects = uniqueParticipants.map((participantId: any) => ({
+              userId: Number(participantId),
+              userName: userMap.get(Number(participantId)) || `User ${participantId}`,
+              audioEnabled: true,
+              videoEnabled: groupCallToUpdate.callType === 'video',
+              stream: null
+            }));
+            
+            console.log('[CallContext] 📋 Regular update - created participant objects:', participantObjects);
+            
+            setActiveCall(prev => {
+              if (prev && prev.isGroupCall) {
+                const updatedCall = {
+                  ...prev,
+                  participants: participantObjects
+                };
+                activeCallRef.current = updatedCall;
+                return updatedCall;
+              }
+              return prev;
+            });
+            
+            // Also dispatch event for immediate UI updates
+            window.dispatchEvent(new CustomEvent('participant-data-updated', {
+              detail: {
+                callId: callId,
+                participants: participantObjects,
+                isNewMember: false,
+                fullSync: false
+              }
+            }));
+            
+          }).catch(error => {
+            console.error('[CallContext] Error in regular update:', error);
+            // Fallback without names
+            setActiveCall(prev => {
+              if (prev && prev.isGroupCall) {
+                const updatedCall = {
+                  ...prev,
+                  participants: uniqueParticipants.map((id: any) => ({
+                    userId: Number(id),
+                    userName: `User ${id}`,
+                    audioEnabled: true,
+                    videoEnabled: groupCallToUpdate.callType === 'video',
+                    stream: null
+                  }))
+                };
+                activeCallRef.current = updatedCall;
+                return updatedCall;
+              }
+              return prev;
+            });
+          });
+        } else {
+          // Participants are already in object format
+          setActiveCall(prev => {
+            if (prev && prev.isGroupCall) {
+              const updatedCall = {
+                ...prev,
+                participants: uniqueParticipants
+              };
+              activeCallRef.current = updatedCall;
+              return updatedCall;
+            }
+            return prev;
           });
           
-          // Convert participant IDs to participant objects with real names
-          const participantObjects = uniqueParticipants.map((participantId: any) => ({
-            userId: Number(participantId),
-            userName: userMap.get(Number(participantId)) || `User ${participantId}`,
-            audioEnabled: true,
-            videoEnabled: groupCallToUpdate.callType === 'video',
-            stream: null
-          }));
-          
-          console.log('[CallContext] 📋 Created participant objects:', participantObjects);
-          
-          const updatedCall = {
-            ...groupCallToUpdate,
-            participants: participantObjects,
-            callId: callId // Update to the server's active callId
-          };
-          
-          setActiveCall(updatedCall);
-          console.log('[CallContext] ✅ Updated participants with names:', participantObjects);
-          
-          // Trigger WebRTC setup in GroupVideoCall component with multiple event types for reliability
-          window.dispatchEvent(new CustomEvent('participants-updated', {
+          // Also dispatch event for immediate UI updates
+          window.dispatchEvent(new CustomEvent('participant-data-updated', {
             detail: {
               callId: callId,
-              participants: participantObjects,
-              userMap
+              participants: uniqueParticipants,
+              isNewMember: false,
+              fullSync: false
             }
           }));
-          
-          // Enhanced trigger for WebRTC initiation with immediate dispatch
-          console.log('[CallContext] 🚀 Dispatching group-participants-update event:', participantObjects);
-          console.log('[CallContext] 🚀 Event details:', { callId, groupId: groupCallToUpdate.groupId });
-          
-          // Use setTimeout to ensure event is dispatched after component is ready
-          setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('group-participants-update', {
-              detail: { 
-                callId: callId,
-                participants: participantObjects,
-                triggerWebRTC: true,
-                groupId: groupCallToUpdate.groupId
-              }
-            }));
-            console.log('[CallContext] ✅ group-participants-update event dispatched successfully');
-          }, 100);
-          
-          // Direct WebRTC initiation trigger
-          setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('initiate-group-webrtc', {
-              detail: { 
-                callId: callId,
-                participants: participantObjects,
-                forceInit: true
-              }
-            }));
-          }, 500);
-          
-          // 🚀 CRITICAL FIX: Enhanced WebRTC connection for new members
-          // This ensures existing members can see new members immediately
-          if (message.payload.newParticipant) {
-            console.log(`[CallContext] 🔄 New member ${message.payload.newParticipant} joined - forcing WebRTC reconnection`);
-            
-            // Force immediate WebRTC initiation for new member connectivity
-            setTimeout(() => {
-              window.dispatchEvent(new CustomEvent('force-webrtc-reconnect', {
-                detail: { 
-                  callId: callId,
-                  participants: participantObjects,
-                  newMember: message.payload.newParticipant,
-                  forceInit: true,
-                  timestamp: Date.now()
-                }
-              }));
-            }, 800);
-          }
-        }).catch(error => {
-          console.error('[CallContext] Error fetching user names:', error);
-          
-          // Fallback without names
-          const participantObjects = uniqueParticipants.map((participantId: any) => ({
-            userId: Number(participantId),
-            userName: `User ${participantId}`,
-            audioEnabled: true,
-            videoEnabled: groupCallToUpdate.callType === 'video',
-            stream: null
-          }));
-          
-          const updatedCall = {
-            ...groupCallToUpdate,
-            participants: participantObjects,
-            callId: callId
-          };
-          
-          setActiveCall(updatedCall);
-          console.log('[CallContext] Updated participants without names:', uniqueParticipants);
-        });
+        }
         
         // Clear any pending updates since we processed this one
         localStorage.removeItem('pendingParticipantUpdate');
