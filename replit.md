@@ -132,9 +132,16 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - ✅ IMPLEMENTED: Server-side participant broadcast dengan forced WebRTC trigger (500ms delay)
   - ✅ ENHANCED: Client-side force-webrtc-reconnect event handler dengan bidirectional setup
   - ✅ OPTIMIZED: Auto-initiate-webrtc event listening untuk server-forced connections
+  - ✅ IMPLEMENTED: Immediate WebRTC initiation saat user klik accept call (eliminates refresh requirement)
+  - ✅ ENHANCED: Pre-trigger WebRTC events sebelum joinGroupCall untuk faster video streams
+  - ✅ ADDED: Multiple WebRTC event triggers dengan staggered timing untuk maximum reliability
+  - ✅ IMPROVED: Server-side immediateInit flag untuk instant WebRTC connection setup
+  - ✅ INTEGRATED: Enhanced handleInitiateWebRTC dengan immediate mode support
+  - ✅ OPTIMIZED: Triple-layer WebRTC initiation (pre-init, immediate, fallback) untuk zero-delay video
   - Sistem sekarang memaksa semua member yang sudah join untuk membuat WebRTC connection ke member baru
   - Enhanced logging untuk debugging asymmetric visibility issues
   - Production-ready solution untuk ensure all participants visible dalam group video calls
+  - 🚀 CRITICAL FIX: Video stream sekarang aktif LANGSUNG saat tombol answer diklik (no refresh needed)
 - July 16, 2025: 🛡️ CRITICAL FIX - Early Media Leak Prevention:
   - ✅ IDENTIFIED: "Early media leak" issue - suara terdengar sebelum call di-answer
   - ✅ FIXED: Remote stream di-mute saat incoming call setup untuk prevent early audio

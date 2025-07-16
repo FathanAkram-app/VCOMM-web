@@ -352,9 +352,38 @@ export default function GroupVideoCallSimple() {
     };
 
     const handleInitiateWebRTC = (event: CustomEvent) => {
-      console.log('[GroupVideoCallSimple] Initiating WebRTC for group call:', event.detail);
-      // Start WebRTC connection with other participants
-      initiateWebRTCConnections(event.detail);
+      console.log('[GroupVideoCallSimple] 🚀 IMMEDIATE WebRTC initiation triggered:', event.detail);
+      
+      // 🚀 CRITICAL FIX: Immediate WebRTC initiation without delay
+      // This ensures video streams start immediately when user clicks accept
+      if (event.detail.immediateInit) {
+        console.log('[GroupVideoCallSimple] 🔥 IMMEDIATE MODE: Starting WebRTC connections now');
+        initiateWebRTCConnections(event.detail);
+        
+        // Also trigger multiple fallback attempts for reliability
+        setTimeout(() => {
+          console.log('[GroupVideoCallSimple] 🔄 Secondary immediate WebRTC trigger (500ms)');
+          initiateWebRTCConnections({
+            ...event.detail,
+            forcedTrigger: true,
+            timestamp: Date.now()
+          });
+        }, 500);
+        
+        setTimeout(() => {
+          console.log('[GroupVideoCallSimple] 🔄 Tertiary immediate WebRTC trigger (1000ms)');
+          initiateWebRTCConnections({
+            ...event.detail,
+            forcedTrigger: true,
+            finalAttempt: true,
+            timestamp: Date.now()
+          });
+        }, 1000);
+      } else {
+        // Normal WebRTC initiation
+        console.log('[GroupVideoCallSimple] 🔄 Normal WebRTC initiation');
+        initiateWebRTCConnections(event.detail);
+      }
     };
 
     // Add listeners for participant updates yang trigger WebRTC initiation
@@ -413,6 +442,7 @@ export default function GroupVideoCallSimple() {
     window.addEventListener('group-participant-refresh', handleParticipantRefresh as EventListener);
     window.addEventListener('force-webrtc-reconnect', handleForceWebRTCReconnect as EventListener);
     window.addEventListener('auto-initiate-webrtc', handleInitiateWebRTC as EventListener);
+    window.addEventListener('force-webrtc-init', handleInitiateWebRTC as EventListener);
 
     return () => {
       window.removeEventListener('group-webrtc-offer', handleGroupWebRTCOffer as EventListener);
@@ -423,6 +453,7 @@ export default function GroupVideoCallSimple() {
       window.removeEventListener('group-participant-refresh', handleParticipantRefresh as EventListener);
       window.removeEventListener('force-webrtc-reconnect', handleForceWebRTCReconnect as EventListener);
       window.removeEventListener('auto-initiate-webrtc', handleInitiateWebRTC as EventListener);
+      window.removeEventListener('force-webrtc-init', handleInitiateWebRTC as EventListener);
     };
   }, [activeCall]);
 

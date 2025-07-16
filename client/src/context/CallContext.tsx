@@ -2373,8 +2373,36 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     // If it's a group call, use joinGroupCall instead
     if (incomingCall.isGroupCall && incomingCall.callId) {
-      console.log('[CallContext] Accepting group call - redirecting to joinGroupCall');
+      console.log('[CallContext] 🚀 Accepting group call - immediate WebRTC initiation enabled');
       setIncomingCall(null); // Clear the modal first
+      
+      // 🚀 CRITICAL FIX: Pre-trigger WebRTC initiation for faster video streams
+      // This ensures participants are ready for immediate connection
+      setTimeout(() => {
+        const preInitEvents = [
+          'force-webrtc-init',
+          'auto-initiate-webrtc',
+          'initiate-group-webrtc'
+        ];
+        
+        preInitEvents.forEach((eventName, index) => {
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent(eventName, {
+              detail: {
+                callId: incomingCall.callId,
+                groupId: incomingCall.groupId,
+                groupName: incomingCall.groupName,
+                callType: incomingCall.callType,
+                immediateInit: true,
+                preInit: true,
+                timestamp: Date.now()
+              }
+            }));
+            console.log(`[CallContext] 🚀 Pre-triggered ${eventName} for accept call`);
+          }, index * 50);
+        });
+      }, 100);
+      
       await joinGroupCall(
         incomingCall.callId,
         incomingCall.groupId!,
@@ -3608,7 +3636,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
         }
       }, 500); // Wait for join to complete
       
-      // Also immediately trigger WebRTC setup for current participants
+      // 🚀 CRITICAL FIX: Immediate WebRTC initiation after joining group call
+      // This ensures video streams are established immediately when user clicks accept
       setTimeout(async () => {
         try {
           // Get updated participant names from server
@@ -3621,21 +3650,37 @@ export function CallProvider({ children }: { children: ReactNode }) {
             userMap.set(user.id, user.callsign || user.fullName || `User ${user.id}`);
           });
           
-          // Dispatch event to GroupVideoCall to start WebRTC connections
-          window.dispatchEvent(new CustomEvent('force-webrtc-init', {
-            detail: {
-              callId: groupCallState.callId,
-              groupId: groupCallState.groupId,
-              currentUserId: user.id,
-              userMap
-            }
-          }));
+          // Multiple immediate WebRTC initiation triggers for instant connection
+          const webrtcInitEvents = [
+            'force-webrtc-init',
+            'initiate-group-webrtc',
+            'force-webrtc-reconnect',
+            'auto-initiate-webrtc'
+          ];
           
-          console.log('[CallContext] 🚀 Triggered WebRTC initialization for group call');
+          webrtcInitEvents.forEach((eventName, index) => {
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent(eventName, {
+                detail: {
+                  callId: groupCallState.callId,
+                  groupId: groupCallState.groupId,
+                  currentUserId: user.id,
+                  userMap,
+                  participants: [], // Will be populated by server
+                  forceInit: true,
+                  immediateInit: true,
+                  timestamp: Date.now()
+                }
+              }));
+              console.log(`[CallContext] 🚀 Triggered ${eventName} for immediate WebRTC`);
+            }, index * 100); // Stagger events by 100ms
+          });
+          
+          console.log('[CallContext] 🚀 Multiple WebRTC initialization triggers dispatched');
         } catch (error) {
           console.error('[CallContext] Error triggering WebRTC init:', error);
         }
-      }, 1000);
+      }, 200); // Reduced delay for faster initiation
 
       // Store the call state in localStorage to persist through navigation
       localStorage.setItem('activeGroupCall', JSON.stringify({
