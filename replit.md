@@ -121,7 +121,7 @@ NXZZ-VComm is a military communications platform designed for intranet environme
 - Port configuration for different deployment targets
 
 # Changelog
-- July 16, 2025: 🚀 ASYMMETRIC PARTICIPANT VISIBILITY FIX - Enhanced Bidirectional WebRTC Initiation:
+- July 16, 2025: 🚀 ASYMMETRIC PARTICIPANT VISIBILITY ULTIMATE FIX - Enhanced Bidirectional WebRTC Initiation:
   - ✅ DIAGNOSED: Asymmetric participant visibility issue - member terakhir yang join tidak muncul di layar member yang sudah ada
   - ✅ IMPLEMENTED: Forced bidirectional WebRTC initiation system di server untuk new members
   - ✅ ENHANCED: Server-side forced WebRTC reconnection dengan initiate_group_webrtc message
@@ -132,9 +132,16 @@ NXZZ-VComm is a military communications platform designed for intranet environme
   - ✅ IMPLEMENTED: Server-side participant broadcast dengan forced WebRTC trigger (500ms delay)
   - ✅ ENHANCED: Client-side force-webrtc-reconnect event handler dengan bidirectional setup
   - ✅ OPTIMIZED: Auto-initiate-webrtc event listening untuk server-forced connections
+  - ✅ APPLIED: Same fixes to GroupCall.tsx untuk audio group calls
+  - ✅ ADDED: Event listeners untuk force-webrtc-reconnect, auto-initiate-webrtc, dan initiate-group-webrtc
+  - ✅ IMPLEMENTED: Enhanced participant list refresh untuk new member visibility
+  - ✅ CRITICAL FIX: Detailed participant data synchronization untuk new members
+  - ✅ ENHANCED: Server sends complete participant data to new member dengan fullSync flag
+  - ✅ IMPROVED: Triple-layer reconnection system (500ms, 1000ms, 1500ms delays)
+  - ✅ RESOLVED: New member now receives all existing participant data immediately
   - Sistem sekarang memaksa semua member yang sudah join untuk membuat WebRTC connection ke member baru
   - Enhanced logging untuk debugging asymmetric visibility issues
-  - Production-ready solution untuk ensure all participants visible dalam group video calls
+  - Production-ready solution untuk ensure all participants visible dalam group video calls dan audio calls
 - July 16, 2025: 🛡️ CRITICAL FIX - Early Media Leak Prevention:
   - ✅ IDENTIFIED: "Early media leak" issue - suara terdengar sebelum call di-answer
   - ✅ FIXED: Remote stream di-mute saat incoming call setup untuk prevent early audio

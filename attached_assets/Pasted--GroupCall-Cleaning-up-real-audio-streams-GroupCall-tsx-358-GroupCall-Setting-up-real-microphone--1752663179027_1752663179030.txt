@@ -1,0 +1,196 @@
+[GroupCall] Cleaning up real audio streams
+GroupCall.tsx:358 [GroupCall] Setting up real microphone audio streaming for participants
+GroupCall.tsx:365 [GroupCall] Setting up real audio stream for participant aji (3)
+GroupCall.tsx:379 [GroupCall] Created audio element for participant 3
+GroupCall.tsx:384 [GroupCall] Creating microphone stream for participant 3
+GroupCall.tsx:397 [GroupCall] Got microphone stream for participant 3
+GroupCall.tsx:438 [GroupCall] ✅ Real microphone audio playing for participant 3
+CallContext.tsx:717 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:776 [CallContext] Received user status update: {userId: 4, status: 'offline'}
+ChatList.tsx:101 📋 CHATLIST: Received WebSocket message: {type: 'user_status', payload: {…}}
+CallContext.tsx:717 [CallContext] Received message: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:819 [CallContext] 🔥 GROUP_CALL_PARTICIPANTS_UPDATE received: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1645 [CallContext] Group call participants update: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1650 [CallContext] Comparing callIds - message: group_call_1752663012656_38_3 activeCall: group_call_1752663070470_38_3
+CallContext.tsx:1651 [CallContext] ActiveCall groupId: 38
+CallContext.tsx:1690 [CallContext] Extracted groupIds - message: 38 active: 38
+CallContext.tsx:1691 [CallContext] CallId parts: (5) ['group', 'call', '1752663012656', '38', '3']
+CallContext.tsx:1694 [CallContext] Group IDs match, updating participants: (2) [3, 4]
+CallContext.tsx:1705 [CallContext] Unique participants after deduplication: (2) [3, 4]
+CallContext.tsx:1708 [CallContext] 🔍 Fetching user names for participants: (2) [3, 4]
+CallContext.tsx:1710 [CallContext] 📊 Got all users data: 8
+CallContext.tsx:1725 [CallContext] 📋 Created participant objects: (2) [{…}, {…}]
+CallContext.tsx:1734 [CallContext] ✅ Updated participants with names: (2) [{…}, {…}]
+CallContext.tsx:1746 [CallContext] 🚀 Dispatching group-participants-update event: (2) [{…}, {…}]
+CallContext.tsx:1747 [CallContext] 🚀 Event details: {callId: 'group_call_1752663012656_38_3', groupId: 38}
+CallContext.tsx:1776 [CallContext] 🔄 New member 4 joined - forcing WebRTC reconnection
+CallContext.tsx:3682 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: {…}, activeCall: {…}, hasIncomingCall: true, incomingCallId: 'group_call_1752663012656_38_3'}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: {…}, activeCall: {…}, hasIncomingCall: true}
+IncomingCallModal.tsx:6 [IncomingCallModal] 🔥 COMPONENT RENDERED - START
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: {…}, activeCall: {…}, hasIncomingCall: true}
+IncomingCallModal.tsx:11 [IncomingCallModal] 🔥 After useCall hook - incomingCall: {callId: 'group_call_1752663012656_38_3', callType: 'audio', status: 'ringing', isIncoming: true, peerUserId: 3, …}
+IncomingCallModal.tsx:12 [IncomingCallModal] 🔥 incomingCall type check: object
+IncomingCallModal.tsx:13 [IncomingCallModal] 🔥 incomingCall falsy check: false
+IncomingCallModal.tsx:20 [IncomingCallModal] ✅ SHOWING MODAL for call: group_call_1752663012656_38_3
+IncomingCallModal.tsx:21 [IncomingCallModal] Modal details: {isGroupCall: true, groupName: 'Ampera Grup', callType: 'audio', fromUser: 'aji'}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: {…}, activeCall: {…}, hasIncomingCall: true}
+GroupCall.tsx:91 [GroupCall] useEffect triggered
+GroupCall.tsx:92 [GroupCall] activeCall: {callId: 'group_call_1752663012656_38_3', callType: 'audio', status: 'connected', isIncoming: false, groupId: 38, …}
+GroupCall.tsx:93 [GroupCall] activeCall?.participants: (2) [{…}, {…}]
+GroupCall.tsx:94 [GroupCall] user?.id: 2
+GroupCall.tsx:102 [GroupCall] Processing participants from activeCall: (2) [{…}, {…}]
+GroupCall.tsx:109 [GroupCall] Unique participant IDs: (2) [3, 4]
+GroupCall.tsx:117 [GroupCall] Participant list changed, updating...
+CallContext.tsx:1759 [CallContext] ✅ group-participants-update event dispatched successfully
+CallContext.tsx:717 [CallContext] Received message: {type: 'initiate_group_webrtc', payload: {…}}
+GroupCall.tsx:212 [GroupCall] 🚀 Auto-initiate WebRTC triggered: {callId: 'group_call_1752663012656_38_3', participants: Array(2), forceInit: true}
+GroupCall.tsx:216 [GroupCall] 🚀 Auto-initiating participant refresh for new member
+CallContext.tsx:717 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:776 [CallContext] Received user status update: {userId: 4, status: 'online'}
+ChatList.tsx:101 📋 CHATLIST: Received WebSocket message: {type: 'user_status', payload: {…}}
+GroupCall.tsx:172 [GroupCall] 🔄 Force WebRTC reconnect triggered: {callId: 'group_call_1752663012656_38_3', participants: Array(2), newMember: 4, forceInit: true, timestamp: 1752663150501}
+GroupCall.tsx:176 [GroupCall] 🔄 Forcing participant list refresh for asymmetric visibility fix
+GroupCall.tsx:156 [GroupCall] Final participant list: (2) [{…}, {…}]
+GroupCall.tsx:157 [GroupCall] Setting participants count: 2
+GroupCall.tsx:158 [GroupCall] Participant details:
+GroupCall.tsx:160 [GroupCall] 0: ID=3, Name="aji", IsCurrentUser=false
+GroupCall.tsx:160 [GroupCall] 1: ID=4, Name="dino", IsCurrentUser=false
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: {…}, activeCall: {…}, hasIncomingCall: true}
+GroupCall.tsx:479 [GroupCall] Cleaning up real audio streams
+GroupCall.tsx:358 [GroupCall] Setting up real microphone audio streaming for participants
+GroupCall.tsx:365 [GroupCall] Setting up real audio stream for participant aji (3)
+GroupCall.tsx:379 [GroupCall] Created audio element for participant 3
+GroupCall.tsx:384 [GroupCall] Creating microphone stream for participant 3
+GroupCall.tsx:365 [GroupCall] Setting up real audio stream for participant dino (4)
+GroupCall.tsx:379 [GroupCall] Created audio element for participant 4
+GroupCall.tsx:384 [GroupCall] Creating microphone stream for participant 4
+GroupCall.tsx:514 [GroupCall] Managing participant audio status
+GroupCall.tsx:397 [GroupCall] Got microphone stream for participant 3
+GroupCall.tsx:438 [GroupCall] ✅ Real microphone audio playing for participant 3
+GroupCall.tsx:397 [GroupCall] Got microphone stream for participant 4
+GroupCall.tsx:438 [GroupCall] ✅ Real microphone audio playing for participant 4
+GroupCall.tsx:243 [GroupCall] 🚀 Auto-initiated participant list: (2) [{…}, {…}]
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: {…}, activeCall: {…}, hasIncomingCall: true}
+GroupCall.tsx:479 [GroupCall] Cleaning up real audio streams
+GroupCall.tsx:358 [GroupCall] Setting up real microphone audio streaming for participants
+GroupCall.tsx:365 [GroupCall] Setting up real audio stream for participant aji (3)
+GroupCall.tsx:379 [GroupCall] Created audio element for participant 3
+GroupCall.tsx:384 [GroupCall] Creating microphone stream for participant 3
+GroupCall.tsx:365 [GroupCall] Setting up real audio stream for participant dino (4)
+GroupCall.tsx:379 [GroupCall] Created audio element for participant 4
+GroupCall.tsx:384 [GroupCall] Creating microphone stream for participant 4
+GroupCall.tsx:397 [GroupCall] Got microphone stream for participant 3
+GroupCall.tsx:438 [GroupCall] ✅ Real microphone audio playing for participant 3
+GroupCall.tsx:522 [GroupCall] Enabling audio for aji
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: {…}, activeCall: {…}, hasIncomingCall: true}
+GroupCall.tsx:479 [GroupCall] Cleaning up real audio streams
+GroupCall.tsx:358 [GroupCall] Setting up real microphone audio streaming for participants
+GroupCall.tsx:365 [GroupCall] Setting up real audio stream for participant aji (3)
+GroupCall.tsx:379 [GroupCall] Created audio element for participant 3
+GroupCall.tsx:384 [GroupCall] Creating microphone stream for participant 3
+GroupCall.tsx:365 [GroupCall] Setting up real audio stream for participant dino (4)
+GroupCall.tsx:379 [GroupCall] Created audio element for participant 4
+GroupCall.tsx:384 [GroupCall] Creating microphone stream for participant 4
+GroupCall.tsx:397 [GroupCall] Got microphone stream for participant 4
+GroupCall.tsx:438 [GroupCall] ✅ Real microphone audio playing for participant 4
+GroupCall.tsx:397 [GroupCall] Got microphone stream for participant 3
+GroupCall.tsx:438 [GroupCall] ✅ Real microphone audio playing for participant 3
+GroupCall.tsx:397 [GroupCall] Got microphone stream for participant 4
+GroupCall.tsx:438 [GroupCall] ✅ Real microphone audio playing for participant 4
+GroupCall.tsx:522 [GroupCall] Enabling audio for dino
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: {…}, activeCall: {…}, hasIncomingCall: true}
+GroupCall.tsx:479 [GroupCall] Cleaning up real audio streams
+GroupCall.tsx:358 [GroupCall] Setting up real microphone audio streaming for participants
+GroupCall.tsx:365 [GroupCall] Setting up real audio stream for participant aji (3)
+GroupCall.tsx:379 [GroupCall] Created audio element for participant 3
+GroupCall.tsx:384 [GroupCall] Creating microphone stream for participant 3
+GroupCall.tsx:365 [GroupCall] Setting up real audio stream for participant dino (4)
+GroupCall.tsx:379 [GroupCall] Created audio element for participant 4
+GroupCall.tsx:384 [GroupCall] Creating microphone stream for participant 4
+GroupCall.tsx:397 [GroupCall] Got microphone stream for participant 3
+GroupCall.tsx:438 [GroupCall] ✅ Real microphone audio playing for participant 3
+GroupCall.tsx:203 [GroupCall] 🔄 Force-updated participant list: (2) [{…}, {…}]
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: {…}, activeCall: {…}, hasIncomingCall: true}
+GroupCall.tsx:479 [GroupCall] Cleaning up real audio streams
+GroupCall.tsx:358 [GroupCall] Setting up real microphone audio streaming for participants
+GroupCall.tsx:365 [GroupCall] Setting up real audio stream for participant aji (3)
+GroupCall.tsx:379 [GroupCall] Created audio element for participant 3
+GroupCall.tsx:384 [GroupCall] Creating microphone stream for participant 3
+GroupCall.tsx:365 [GroupCall] Setting up real audio stream for participant dino (4)
+GroupCall.tsx:379 [GroupCall] Created audio element for participant 4
+GroupCall.tsx:384 [GroupCall] Creating microphone stream for participant 4
+GroupCall.tsx:397 [GroupCall] Got microphone stream for participant 4
+GroupCall.tsx:438 [GroupCall] ✅ Real microphone audio playing for participant 4
+GroupCall.tsx:397 [GroupCall] Got microphone stream for participant 3
+GroupCall.tsx:438 [GroupCall] ✅ Real microphone audio playing for participant 3
+GroupCall.tsx:397 [GroupCall] Got microphone stream for participant 4
+GroupCall.tsx:438 [GroupCall] ✅ Real microphone audio playing for participant 4
+CallContext.tsx:2364 [CallContext] acceptCall function called
+CallContext.tsx:2365 [CallContext] incomingCall: {callId: 'group_call_1752663012656_38_3', callType: 'audio', status: 'ringing', isIncoming: true, peerUserId: 3, …}
+CallContext.tsx:2366 [CallContext] ws connected: true
+CallContext.tsx:2367 [CallContext] user: {id: 2, callsign: 'eko', nrp: '12345', fullName: 'eko a', rank: 'SPC', …}
+CallContext.tsx:2376 [CallContext] Accepting group call - redirecting to joinGroupCall
+CallContext.tsx:3456 [CallContext] Joining existing group call: {callId: 'group_call_1752663012656_38_3', groupId: 38, groupName: 'Ampera Grup', callType: 'audio'}
+CallContext.tsx:3493 [CallContext] Creating new stream for joining group call (audio + video enabled)...
+CallContext.tsx:3682 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+IncomingCallModal.tsx:6 [IncomingCallModal] 🔥 COMPONENT RENDERED - START
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+IncomingCallModal.tsx:11 [IncomingCallModal] 🔥 After useCall hook - incomingCall: null
+IncomingCallModal.tsx:12 [IncomingCallModal] 🔥 incomingCall type check: object
+IncomingCallModal.tsx:13 [IncomingCallModal] 🔥 incomingCall falsy check: true
+IncomingCallModal.tsx:16 [IncomingCallModal] No incoming call, returning null
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:3670 [CallContext] 🔥 INCOMING CALL STATE CHANGED: null
+CallContext.tsx:3495 [CallContext] Got new audio and video stream for joining group call - full media enabled from start
+CallContext.tsx:3528 [CallContext] Added local track for joining group call: audio
+CallContext.tsx:3528 [CallContext] Added local track for joining group call: video
+CallContext.tsx:3552 [CallContext] Active call state set for group: 38 callId: group_call_1752663012656_38_3
+CallContext.tsx:3589 [CallContext] Joined group call successfully
+CallContext.tsx:3590 [CallContext] Active call state after joining: {callId: 'group_call_1752663012656_38_3', callType: 'audio', status: 'connected', isIncoming: false, localStream: MediaStream, …}
+CallContext.tsx:3593 [CallContext] 📊 Processing pending participant updates after join...
+CallContext.tsx:3682 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+IncomingCallModal.tsx:6 [IncomingCallModal] 🔥 COMPONENT RENDERED - START
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+IncomingCallModal.tsx:11 [IncomingCallModal] 🔥 After useCall hook - incomingCall: null
+IncomingCallModal.tsx:12 [IncomingCallModal] 🔥 incomingCall type check: object
+IncomingCallModal.tsx:13 [IncomingCallModal] 🔥 incomingCall falsy check: true
+IncomingCallModal.tsx:16 [IncomingCallModal] No incoming call, returning null
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:91 [GroupCall] useEffect triggered
+GroupCall.tsx:92 [GroupCall] activeCall: {callId: 'group_call_1752663012656_38_3', callType: 'audio', status: 'connected', isIncoming: false, localStream: MediaStream, …}
+GroupCall.tsx:93 [GroupCall] activeCall?.participants: []
+GroupCall.tsx:94 [GroupCall] user?.id: 2
+GroupCall.tsx:97 [GroupCall] No participants in active call, setting empty array
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:479 [GroupCall] Cleaning up real audio streams
+CallContext.tsx:3682 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+ChatList.tsx:149 📋 CHATLIST: Removing WebSocket event listeners
+GroupCall.tsx:91 [GroupCall] useEffect triggered
+GroupCall.tsx:92 [GroupCall] activeCall: {callId: 'group_call_1752663012656_38_3', callType: 'audio', status: 'connected', isIncoming: false, localStream: MediaStream, …}
+GroupCall.tsx:93 [GroupCall] activeCall?.participants: []
+GroupCall.tsx:94 [GroupCall] user?.id: 2
+GroupCall.tsx:97 [GroupCall] No participants in active call, setting empty array
+GroupCall.tsx:273 [GroupCall] Initializing media for desktop device
+CallContext.tsx:3682 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:3586 [CallContext] Sent join group call message for recipient: {type: 'join_group_call', payload: {…}}
+CallContext.tsx:3607 [CallContext] 📊 Requested updated participant list: {type: 'request_group_participants', payload: {…}}
+GroupCall.tsx:337 [GroupCall] Local media initialized for group: 
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:3682 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:667 [CallContext] Creating stable WebSocket for calls...
+CallContext.tsx:3634 [CallContext] 🚀 Triggered WebRTC initialization for group call
+CallContext.tsx:889 [CallContext] WebSocket disconnected
+CallContext.tsx:3682 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:674 [CallContext] WebSocket connected successfully for calls
+CallContext.tsx:698 [CallContext] Authenticated user 2 with WebSocket
+CallContext.tsx:3682 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:717 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:776 [CallContext] Received user status update: {userId: 2, status: 'online'}

@@ -2157,6 +2157,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   console.log(`[Group Call] 🔄 Forcing WebRTC initiation for user ${member.userId} due to new member ${userId}`);
                   targetClient.send(JSON.stringify(webrtcMessage));
                 }, 500); // Small delay to ensure participant update is processed first
+                
+                // 🔥 NEW: Additional force reconnect for better synchronization
+                setTimeout(() => {
+                  const forceReconnectMessage = {
+                    type: 'force_webrtc_reconnect',
+                    payload: {
+                      callId,
+                      participants: participants.map(p => ({ userId: p, userName: `User ${p}` })),
+                      newMember: userId,
+                      forceInit: true,
+                      timestamp: Date.now()
+                    }
+                  };
+                  
+                  console.log(`[Group Call] 🔥 Sending force reconnect to user ${member.userId} for new member ${userId}`);
+                  targetClient.send(JSON.stringify(forceReconnectMessage));
+                }, 1000); // 1 second delay
               } else {
                 console.log(`[Group Call] ❌ Cannot send participants update to user ${member.userId}: client=${!!targetClient}, readyState=${targetClient?.readyState || 'N/A'}`);
               }
@@ -2184,6 +2201,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }
             console.log(`[Group Call] Broadcasted participant update for call ${callId}`);
+            
+            // 🔥 CRITICAL FIX: Send detailed participant data to new member
+            // This ensures the new member can see all existing participants
+            setTimeout(async () => {
+              try {
+                console.log(`[Group Call] 🎯 Sending detailed participant data to new member ${userId}`);
+                
+                // Get user data for all participants
+                const participantData = [];
+                for (const participantId of participants) {
+                  try {
+                    const userData = await storage.getUser(participantId.toString());
+                    participantData.push({
+                      userId: participantId,
+                      userName: userData?.callsign || userData?.fullName || `User ${participantId}`,
+                      audioEnabled: true,
+                      videoEnabled: data.payload.callType === 'video'
+                    });
+                  } catch (error) {
+                    console.error(`[Group Call] Error getting user data for ${participantId}:`, error);
+                    participantData.push({
+                      userId: participantId,
+                      userName: `User ${participantId}`,
+                      audioEnabled: true,
+                      videoEnabled: data.payload.callType === 'video'
+                    });
+                  }
+                }
+                
+                // Send detailed participant update to new member
+                const detailedUpdateMessage = {
+                  type: 'group_call_participants_update',
+                  payload: {
+                    callId,
+                    participants: participantData,
+                    isNewMember: true,
+                    fullSync: true // Flag to indicate this is a full sync for new member
+                  }
+                };
+                
+                console.log(`[Group Call] 📤 Sending detailed participant data to new member ${userId}:`, detailedUpdateMessage);
+                const newMemberClient = clients.get(userId);
+                if (newMemberClient && newMemberClient.readyState === newMemberClient.OPEN) {
+                  newMemberClient.send(JSON.stringify(detailedUpdateMessage));
+                  
+                  // Also send force WebRTC initiation to new member
+                  setTimeout(() => {
+                    const webrtcMessage = {
+                      type: 'initiate_group_webrtc',
+                      payload: {
+                        callId,
+                        participants: participantData,
+                        forceInit: true,
+                        isNewMember: true,
+                        timestamp: Date.now()
+                      }
+                    };
+                    
+                    console.log(`[Group Call] 🚀 Forcing WebRTC initiation for new member ${userId}`);
+                    newMemberClient.send(JSON.stringify(webrtcMessage));
+                  }, 500);
+                  
+                  // Additional force reconnect for new member
+                  setTimeout(() => {
+                    const forceReconnectMessage = {
+                      type: 'force_webrtc_reconnect',
+                      payload: {
+                        callId,
+                        participants: participantData,
+                        isNewMember: true,
+                        forceInit: true,
+                        timestamp: Date.now()
+                      }
+                    };
+                    
+                    console.log(`[Group Call] 🔥 Sending force reconnect to new member ${userId}`);
+                    newMemberClient.send(JSON.stringify(forceReconnectMessage));
+                  }, 1500);
+                }
+                
+              } catch (error) {
+                console.error(`[Group Call] Error sending detailed participant data to new member:`, error);
+              }
+            }, 1000); // 1 second delay to ensure everything is set up
+            
           } catch (error) {
             console.error(`[Group Call] Error broadcasting participant update:`, error);
           }
