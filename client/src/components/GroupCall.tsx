@@ -753,7 +753,7 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
                         <div className="flex items-center space-x-3">
                           <div className="w-10 h-10 bg-[#4a9eff] rounded-lg flex items-center justify-center">
                             <span className="text-white font-bold text-sm">
-                              {participant.userName.substring(0, 2).toUpperCase()}
+                              {participant.userName.split(' ')[1]?.substring(0, 2).toUpperCase() || participant.userName.substring(0, 2).toUpperCase()}
                             </span>
                           </div>
                           <div>
@@ -761,7 +761,7 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
                               {participant.userName}
                             </p>
                             <p className="text-xs text-gray-400">
-                              Personnel #{participant.userId}
+                              ACTIVE PERSONNEL
                             </p>
                           </div>
                         </div>
