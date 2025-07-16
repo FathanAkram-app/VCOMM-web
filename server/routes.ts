@@ -2150,7 +2150,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       participants: participants.map(p => ({ userId: p, userName: `User ${p}` })),
                       forceInit: true,
                       newMember: userId, // Mark who is the new member
-                      immediateInit: true, // Flag for immediate WebRTC initiation
+                      immediateInit: false, // Use normal timing to prevent failures
                       timestamp: Date.now()
                     }
                   };

@@ -352,35 +352,22 @@ export default function GroupVideoCallSimple() {
     };
 
     const handleInitiateWebRTC = (event: CustomEvent) => {
-      console.log('[GroupVideoCallSimple] 🚀 IMMEDIATE WebRTC initiation triggered:', event.detail);
+      console.log('[GroupVideoCallSimple] 🚀 WebRTC initiation triggered:', event.detail);
       
-      // 🚀 CRITICAL FIX: Immediate WebRTC initiation without delay
-      // This ensures video streams start immediately when user clicks accept
+      // Check if this is just a preparation event
+      if (event.detail.prepareOnly) {
+        console.log('[GroupVideoCallSimple] 📋 WebRTC preparation event - no immediate action');
+        return;
+      }
+      
+      // 🚀 OPTIMIZED: Controlled WebRTC initiation with proper timing
+      // This ensures video streams start reliably without failures
       if (event.detail.immediateInit) {
-        console.log('[GroupVideoCallSimple] 🔥 IMMEDIATE MODE: Starting WebRTC connections now');
+        console.log('[GroupVideoCallSimple] 🔥 IMMEDIATE MODE: Starting WebRTC connections (single attempt)');
+        // Single attempt instead of multiple rapid attempts
         initiateWebRTCConnections(event.detail);
-        
-        // Also trigger multiple fallback attempts for reliability
-        setTimeout(() => {
-          console.log('[GroupVideoCallSimple] 🔄 Secondary immediate WebRTC trigger (500ms)');
-          initiateWebRTCConnections({
-            ...event.detail,
-            forcedTrigger: true,
-            timestamp: Date.now()
-          });
-        }, 500);
-        
-        setTimeout(() => {
-          console.log('[GroupVideoCallSimple] 🔄 Tertiary immediate WebRTC trigger (1000ms)');
-          initiateWebRTCConnections({
-            ...event.detail,
-            forcedTrigger: true,
-            finalAttempt: true,
-            timestamp: Date.now()
-          });
-        }, 1000);
       } else {
-        // Normal WebRTC initiation
+        // Normal WebRTC initiation with proper timing
         console.log('[GroupVideoCallSimple] 🔄 Normal WebRTC initiation');
         initiateWebRTCConnections(event.detail);
       }
