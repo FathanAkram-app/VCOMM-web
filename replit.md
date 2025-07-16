@@ -121,18 +121,20 @@ NXZZ-VComm is a military communications platform designed for intranet environme
 - Port configuration for different deployment targets
 
 # Changelog
-- July 16, 2025: 🛡️ CRITICAL FIX - WebSocket Connection & Loading Issue Resolved:
-  - ✅ DIAGNOSED: Chat page stuck on loading due to WebSocket connection failure with "localhost:undefined" error
-  - ✅ FIXED: Removed Replit development banner script that was causing WebSocket conflicts
-  - ✅ ENHANCED: WebSocket URL validation to prevent undefined host issues
-  - ✅ IMPROVED: CallContext WebSocket error handling with detailed logging
-  - ✅ ADDED: Host validation before WebSocket creation to prevent invalid URLs
-  - ✅ SECURED: Better error handling for WebSocket close and error events
-  - ✅ FIXED: AuthCheck component tolerance for network issues (3 retry attempts)
-  - ✅ REMOVED: Conflicting external scripts that interfered with WebSocket connections
-  - System now properly loads chat interface after login without getting stuck on loading
-  - Enhanced WebSocket connection stability and error recovery mechanisms
-  - Users can now access main chat interface successfully after authentication
+- July 16, 2025: 🎖️ MILITARY PARTICIPANT DISPLAY ENHANCEMENT - Rank and Branch Information Integration:
+  - ✅ ENHANCED: GroupCall.tsx component to display military rank and branch information instead of generic user numbers
+  - ✅ UPDATED: GroupParticipant interface to include rank and branch fields for comprehensive military personnel display
+  - ✅ IMPROVED: fetchParticipantData function to fetch rank and branch information from server user data
+  - ✅ INTEGRATED: Military information display in both audio and video call participant lists
+  - ✅ ENHANCED: GroupVideoCallSimple component participant interface with rank and branch support
+  - ✅ UPDATED: Participant data mapping functions to include military hierarchy information
+  - ✅ IMPROVED: UI rendering for both audio and video calls to show "Rank • Branch" format
+  - ✅ REFINED: Video overlay labels to display complete military personnel information
+  - ✅ ENHANCED: Current user display to show own rank and branch information
+  - ✅ OPTIMIZED: Consistent military-themed participant identification across all call types
+  - Group call participants now display authentic military information (e.g., "Sersan • TNI AD") instead of generic user IDs
+  - Enhanced military authenticity with proper rank and branch hierarchy display
+  - Improved user identification for military personnel during tactical communications
 - July 16, 2025: 🔥 CRITICAL ASYMMETRIC VISIBILITY FIX - Enhanced Participant Synchronization System:
   - ✅ DIAGNOSED: Asymmetric visibility root cause - group_call_participants_update received but activeCall undefined
   - ✅ ENHANCED: Pending participant update processing with better timing coordination

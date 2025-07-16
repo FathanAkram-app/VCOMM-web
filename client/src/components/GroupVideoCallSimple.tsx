@@ -28,6 +28,8 @@ export default function GroupVideoCallSimple() {
   const [participants, setParticipants] = useState<Array<{
     userId: number;
     userName: string;
+    rank?: string;
+    branch?: string;
     stream: MediaStream | null;
     videoRef: React.RefObject<HTMLVideoElement>;
   }>>([]);
@@ -290,10 +292,12 @@ export default function GroupVideoCallSimple() {
       
       if (fullSync && isNewMember) {
         console.log('[GroupVideoCallSimple] 🎯 Full sync for new member - updating participant list');
-        // Convert to component-specific format
+        // Convert to component-specific format with rank and branch
         const newParticipants = updatedParticipants.map((p: any) => ({
           userId: p.userId,
           userName: p.userName,
+          rank: p.rank || 'N/A',
+          branch: p.branch || 'N/A',
           stream: null,
           videoRef: React.createRef<HTMLVideoElement>()
         }));
@@ -342,6 +346,8 @@ export default function GroupVideoCallSimple() {
           return {
             userId: p.userId,
             userName: p.userName,
+            rank: p.rank || 'N/A',
+            branch: p.branch || 'N/A',
             stream: userStream || null,
             videoRef: React.createRef<HTMLVideoElement>()
           };
@@ -1365,7 +1371,9 @@ export default function GroupVideoCallSimple() {
             style={{ transform: 'scaleX(-1)' }} // Mirror effect
           />
           <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 px-2 py-1 rounded text-xs">
-            Anda {isVideoEnabled ? '' : '(Video Off)'}
+            <div className="font-medium">Anda ({currentUser?.callsign || 'Unknown'})</div>
+            <div className="text-xs opacity-80">{currentUser?.rank || 'N/A'} • {currentUser?.branch || 'N/A'}</div>
+            {!isVideoEnabled && <div className="text-xs text-red-400">(Video Off)</div>}
           </div>
           {!isVideoEnabled && (
             <div className="absolute inset-0 bg-gray-700 flex items-center justify-center">
@@ -1791,7 +1799,8 @@ function ParticipantVideo({ participant, onRefreshConnection }: {
       )}
       
       <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 px-2 py-1 rounded text-xs">
-        {participant.userName}
+        <div className="font-medium">{participant.userName}</div>
+        <div className="text-xs opacity-80">{participant.rank || 'N/A'} • {participant.branch || 'N/A'}</div>
         {connectionStatus === 'connected' && hasVideo && (
           <span className="ml-1 text-green-400" title="Video Active">● LIVE</span>
         )}
