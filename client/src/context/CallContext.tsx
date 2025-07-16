@@ -1702,6 +1702,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         let isDetailedParticipantData = false;
         
         console.log('[CallContext] 🎯 Processing participant update - fullSync:', fullSync, 'participantData:', participantData);
+        console.log('[CallContext] 🎯 Participants array length:', participants?.length, 'ParticipantData array length:', participantData?.length);
         
         // Check if we have detailed participant data from server
         if (participantData && participantData.length > 0) {
@@ -1709,6 +1710,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
           processedParticipants = participantData;
           isDetailedParticipantData = true;
           console.log('[CallContext] 🔥 Using detailed participant data from server:', participantData);
+          console.log('[CallContext] 🔥 Detailed participant sample:', participantData[0]);
         } else if (participants && participants.length > 0 && typeof participants[0] === 'object' && participants[0].userId) {
           // Already in participant object format with detailed data
           isDetailedParticipantData = true;
@@ -3663,8 +3665,46 @@ export function CallProvider({ children }: { children: ReactNode }) {
           }, 100);
         } catch (error) {
           console.error('[CallContext] Error processing pending participant update:', error);
+          localStorage.removeItem('pendingParticipantUpdate');
         }
       }
+      
+      // 🔥 ENHANCED: Request fresh participant data from server as backup
+      setTimeout(() => {
+        console.log('[CallContext] 🔄 Requesting fresh participant data as backup...');
+        const requestMessage = {
+          type: 'request_group_participants',
+          payload: {
+            callId,
+            groupId,
+            requestingUserId: user.id,
+            forceRefresh: true
+          }
+        };
+        
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify(requestMessage));
+          console.log('[CallContext] 📊 Sent backup participant request:', requestMessage);
+        }
+      }, 200);
+      
+      // 🔥 ENHANCED: Request fresh participant data from server as backup
+      setTimeout(() => {
+        console.log('[CallContext] 🔄 Requesting fresh participant data as backup...');
+        const requestMessage = {
+          type: 'request_group_participants',
+          payload: {
+            callId,
+            groupId,
+            requestingUserId: user.id
+          }
+        };
+        
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify(requestMessage));
+          console.log('[CallContext] 📊 Sent fresh participant request:', requestMessage);
+        }
+      }, 500);
       
       setTimeout(() => {
         // Force request participant update after joining
