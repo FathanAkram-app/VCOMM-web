@@ -1,6 +1,29 @@
 # NXZZ-VComm Messenger
 
-Aplikasi komunikasi militer untuk jaringan intranet dengan fitur chat teks yang aman dan efisien.
+Aplikasi komunikasi militer untuk jaringan intranet dengan fitur chat teks, video call, dan manajemen situasi yang aman dan efisien.
+
+## 🚀 Quick Deployment
+
+### Linux (Ubuntu, CentOS, Debian, Fedora, Arch)
+```bash
+# Universal Linux installer
+curl -sSL https://raw.githubusercontent.com/your-repo/install-linux-universal.sh | sudo bash
+```
+📖 **Panduan lengkap**: [LINUX-COMPATIBILITY-GUIDE.md](LINUX-COMPATIBILITY-GUIDE.md)
+
+### Proxmox VE (Enterprise)
+```bash
+# Proxmox-optimized installer
+curl -sSL https://raw.githubusercontent.com/your-repo/install-proxmox.sh | sudo bash
+```
+📖 **Panduan lengkap**: [PROXMOX-INSTALLATION-GUIDE.md](PROXMOX-INSTALLATION-GUIDE.md)
+
+### Windows Server/Desktop
+```cmd
+# Download setup-windows.bat dan jalankan sebagai Administrator
+setup-windows.bat
+```
+📖 **Panduan lengkap**: [WINDOWS-INSTALLATION-GUIDE.md](WINDOWS-INSTALLATION-GUIDE.md)
 
 ## Langkah Penginstalan di Windows
 
