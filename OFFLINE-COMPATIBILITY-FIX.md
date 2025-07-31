@@ -151,8 +151,9 @@ npm run dev
 ### Mobile Device Setup
 - ✅ Connect to intranet WiFi
 - ✅ Access via `http://[server-ip]:5000`
-- ✅ Install PWA (optional)
+- ✅ Install PWA (optional) - Logo NXXZ akan muncul di home screen
 - ✅ Camera/microphone permissions for video calls
+- ✅ All logo assets served locally - tidak perlu internet untuk icon
 
 ### Security Validation
 - ✅ No data transmission outside network
