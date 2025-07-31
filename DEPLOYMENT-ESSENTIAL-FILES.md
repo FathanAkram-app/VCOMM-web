@@ -25,7 +25,7 @@ LOGO-ASSETS-SAFETY-GUIDE.md        ← Logo deployment guide
 PROXMOX-INSTALLATION-GUIDE.md      ← Proxmox setup (most popular)
 WINDOWS-INSTALLATION-GUIDE.md      ← Windows setup  
 LINUX-COMPATIBILITY-GUIDE.md       ← Linux setup
-replit.md                          ← Project history & architecture
+nxzz-project-documentation.md      ← Project history & architecture
 ```
 
 ### Logo Assets (Keep)
@@ -79,7 +79,7 @@ nxzz-vcomm/
 ├── PROXMOX-INSTALLATION-GUIDE.md
 ├── WINDOWS-INSTALLATION-GUIDE.md
 ├── LINUX-COMPATIBILITY-GUIDE.md
-└── replit.md              # Project context
+└── nxzz-project-documentation.md  # Project context
 ```
 
 ## 💽 ACTUAL SIZE REDUCTION ACHIEVED
