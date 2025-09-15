@@ -82,27 +82,56 @@ export default function VideoCall() {
     }
   }, [remoteAudioStream]);
   
-  // Update call duration timer - FIXED for consistent timing
+  // Update call duration timer - ENHANCED DEBUG VERSION
   useEffect(() => {
+    console.log("[VideoCall] 🕐 Timer effect triggered:", {
+      hasActiveCall: !!activeCall,
+      callStatus: activeCall?.status,
+      startTime: activeCall?.startTime,
+      startTimeMs: activeCall?.startTime?.getTime()
+    });
+    
     if (!activeCall || activeCall.status !== 'connected') {
+      console.log("[VideoCall] 🕐 Timer NOT starting - call not connected");
       setCallDuration("00:00:00");
       return;
     }
     
-    // 🚀 FIXED: Use consistent start time reference
+    // 🚀 ENHANCED: Use consistent start time reference with debug
     const callStartTime = activeCall.startTime?.getTime() || Date.now();
-    console.log("[VideoCall] Setting up call duration timer with startTime:", new Date(callStartTime));
+    console.log("[VideoCall] 🕐 Starting timer with:", {
+      startTime: new Date(callStartTime),
+      startTimeMs: callStartTime,
+      currentTime: new Date(),
+      initialDuration: Date.now() - callStartTime
+    });
     
-    const interval = setInterval(() => {
-      const duration = Date.now() - callStartTime;
+    // 🚀 Immediate first update
+    const updateDuration = () => {
+      const now = Date.now();
+      const duration = now - callStartTime;
       const hours = Math.floor(duration / 3600000).toString().padStart(2, '0');
       const minutes = Math.floor((duration % 3600000) / 60000).toString().padStart(2, '0');
       const seconds = Math.floor((duration % 60000) / 1000).toString().padStart(2, '0');
-      setCallDuration(`${hours}:${minutes}:${seconds}`);
-    }, 1000);
+      const newDuration = `${hours}:${minutes}:${seconds}`;
+      
+      console.log("[VideoCall] 🕐 Timer update:", {
+        now: new Date(now),
+        duration: duration,
+        durationFormatted: newDuration
+      });
+      
+      setCallDuration(newDuration);
+    };
+    
+    // Update immediately
+    updateDuration();
+    
+    const interval = setInterval(updateDuration, 1000);
+    console.log("[VideoCall] 🕐 Timer interval created:", interval);
     
     return () => {
-      console.log("[VideoCall] Cleaning up call duration timer");
+      console.log("[VideoCall] 🕐 Cleaning up timer interval:", interval);
       clearInterval(interval);
     };
   }, [activeCall?.status, activeCall?.startTime]); // 🚀 FIXED: More specific dependencies
