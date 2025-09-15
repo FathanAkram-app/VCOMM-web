@@ -2648,14 +2648,17 @@ export function CallProvider({ children }: { children: ReactNode }) {
       
       // 🚀 CRITICAL FIX: Navigate back to chat even if activeCall is undefined
       // This handles case where call state was cleared but user still on call page
-      console.log('[CallContext] 🔍 DEBUG: Current location:', location);
+      const actualCurrentPath = window.location.pathname;
+      console.log('[CallContext] 🔍 DEBUG: Wouter location:', location);
+      console.log('[CallContext] 🔍 DEBUG: Actual URL pathname:', actualCurrentPath);
       console.log('[CallContext] 🔍 DEBUG: Checking if on call page for navigation...');
       
-      if (location === '/video-call' || location === '/audio-call' || location === '/group-call') {
+      // Use actual URL pathname instead of potentially stale wouter location
+      if (actualCurrentPath === '/video-call' || actualCurrentPath === '/audio-call' || actualCurrentPath === '/group-call') {
         console.log('[CallContext] 🔄 NAVIGATION: Auto-navigating back to chat from call page (activeCall undefined)');
         setLocation('/chat');
       } else {
-        console.log('[CallContext] 🔍 DEBUG: Not on call page, current location:', location);
+        console.log('[CallContext] 🔍 DEBUG: Not on call page, actual path:', actualCurrentPath);
       }
     }
     

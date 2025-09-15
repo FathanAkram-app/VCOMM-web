@@ -1,0 +1,315 @@
+[CallContext] 🔥 INCOMING CALL STATE CHANGED: {callId: 'call_1757926296450_3_2', callType: 'video', status: 'ringing', isIncoming: true, peerUserId: 3, …}
+CallContext.tsx:4623 [CallContext] 🔥 INCOMING CALL DETAILS: {callId: 'call_1757926296450_3_2', groupName: undefined, callType: 'video', isGroupCall: undefined}
+CallContext.tsx:3272 [CallContext] acceptCall function called
+CallContext.tsx:3273 [CallContext] incomingCall: {callId: 'call_1757926296450_3_2', callType: 'video', status: 'ringing', isIncoming: true, peerUserId: 3, …}
+CallContext.tsx:3274 [CallContext] ws connected: true
+CallContext.tsx:3275 [CallContext] user: {id: 2, callsign: 'eko', nrp: '12345', fullName: 'eko a', rank: 'SPC', …}
+CallContext.tsx:3295 [CallContext] Accepting call
+CallContext.tsx:3298 [CallContext] 🔇 FORCE STOPPING ALL RINGTONES - Call accepted
+CallContext.tsx:734 [CallContext] 🔇 STOPPING ALL RINGTONES - comprehensive cleanup
+CallContext.tsx:739 [CallContext] Stopping HTML5 ringtone audio
+CallContext.tsx:748 [CallContext] ✅ HTML5 ringtone stopped and cleared
+CallContext.tsx:757 [CallContext] Force stopping current global ringtone
+CallContext.tsx:765 [CallContext] ✅ Global ringtone reference stopped
+CallContext.tsx:789 [CallContext] ✅ Stopped 0 audio elements
+CallContext.tsx:833 [CallContext] ✅ RINGTONE CLEANUP COMPLETED
+CallContext.tsx:3324 [CallContext] Requesting media permissions for mobile (accept call)...
+CallContext.tsx:4633 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: {…}, activeCall: null, hasIncomingCall: true, incomingCallId: 'call_1757926296450_3_2'}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: {…}, activeCall: null, hasIncomingCall: true}
+IncomingCallModal.tsx:6 [IncomingCallModal] 🔥 COMPONENT RENDERED - START
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: {…}, activeCall: null, hasIncomingCall: true}
+IncomingCallModal.tsx:11 [IncomingCallModal] 🔥 After useCall hook - incomingCall: {callId: 'call_1757926296450_3_2', callType: 'video', status: 'ringing', isIncoming: true, peerUserId: 3, …}
+IncomingCallModal.tsx:12 [IncomingCallModal] 🔥 incomingCall type check: object
+IncomingCallModal.tsx:13 [IncomingCallModal] 🔥 incomingCall falsy check: false
+IncomingCallModal.tsx:20 [IncomingCallModal] ✅ SHOWING MODAL for call: call_1757926296450_3_2
+IncomingCallModal.tsx:21 [IncomingCallModal] Modal details: {isGroupCall: undefined, groupName: undefined, callType: 'video', fromUser: 'aji'}
+CallContext.tsx:3326 [CallContext] Got local media stream for incoming call
+CallContext.tsx:3339 [CallContext] Added local stream to existing peerConnection
+CallContext.tsx:3378 [CallContext] 🎯 Call accepted - enabling audio and activating remote stream
+CallContext.tsx:4633 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+IncomingCallModal.tsx:6 [IncomingCallModal] 🔥 COMPONENT RENDERED - START
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+IncomingCallModal.tsx:11 [IncomingCallModal] 🔥 After useCall hook - incomingCall: null
+IncomingCallModal.tsx:12 [IncomingCallModal] 🔥 incomingCall type check: object
+IncomingCallModal.tsx:13 [IncomingCallModal] 🔥 incomingCall falsy check: true
+IncomingCallModal.tsx:16 [IncomingCallModal] No incoming call, returning null
+CallContext.tsx:4621 [CallContext] 🔥 INCOMING CALL STATE CHANGED: null
+CallContext.tsx:4633 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:19 [VideoCall] Component rendering with activeCall: {callId: 'call_1757926296450_3_2', callType: 'video', status: 'connected', isIncoming: true, peerUserId: 3, …}
+ChatList.tsx:149 📋 CHATLIST: Removing WebSocket event listeners
+VideoCall.tsx:23 [VideoCall] Local stream changed: MediaStream {id: '21834987-6711-4e01-af96-268bcc67bdd9', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+VideoCall.tsx:26 [VideoCall] Local stream attached to video element
+VideoCall.tsx:32 [VideoCall] Remote stream changed: null
+VideoCall.tsx:84 [VideoCall] ⏳ Waiting for remote stream...
+VideoCall.tsx:92 [VideoCall] 🕐 Resilient timer check - activeCall: true status: connected startTime: Mon Sep 15 2025 15:51:46 GMT+0700 (Western Indonesia Time)
+VideoCall.tsx:103 [VideoCall] 🕐 STARTING RESILIENT TIMER for callId: call_1757926296450_3_2 startTime: Mon Sep 15 2025 15:51:46 GMT+0700 (Western Indonesia Time)
+VideoCall.tsx:117 [VideoCall] 🕐 RESILIENT TICK: 00:00:00 elapsed ms: 112
+VideoCall.tsx:129 [VideoCall] 🕐 Resilient timer interval created: 25
+CallContext.tsx:17 [ProtectedIntervals] 🛡️ Protected interval: 25 Set size: 1
+VideoCall.tsx:153 [VideoCall] 🐕 WATCHDOG: Starting timer health monitor
+CallContext.tsx:3444 [CallContext] 📤 Sending WebRTC ready signal to caller: 3
+CallContext.tsx:3452 [CallContext] ✅ WebRTC ready signal sent successfully
+VideoCall.tsx:117 [VideoCall] 🕐 RESILIENT TICK: 00:00:01 elapsed ms: 1119
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:19 [VideoCall] Component rendering with activeCall: {callId: 'call_1757926296450_3_2', callType: 'video', status: 'connected', isIncoming: true, peerUserId: 3, …}
+CallContext.tsx:1156 [CallContext] Received message: {type: 'webrtc_offer', callId: 'call_1757926296450_3_2', offer: {…}}
+CallContext.tsx:1159 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'webrtc_offer', hasPayload: false, messageKeys: Array(3), routingToCase: 'webrtc_offer'}
+CallContext.tsx:1287 [CallContext] 🎯 Processing webrtc_offer message: {type: 'webrtc_offer', callId: 'call_1757926296450_3_2', offer: {…}}
+CallContext.tsx:2686 [CallContext] 🔄 ENHANCED: Received WebRTC offer for callId: call_1757926296450_3_2
+CallContext.tsx:2693 [CallContext] Current activeCall: call_1757926296450_3_2
+CallContext.tsx:2694 [CallContext] Current incomingCall: undefined
+CallContext.tsx:2695 [CallContext] Looking for callId: call_1757926296450_3_2
+CallContext.tsx:2713 [CallContext] 🔄 ENHANCED: Processing WebRTC offer with improved validation...
+CallContext.tsx:2716 [CallContext] 📊 Pre-offer transceiver validation:
+CallContext.tsx:2719 [CallContext] Transceiver 0: {direction: 'sendrecv', currentDirection: null, mid: null, sender: {…}, receiver: {…}}
+CallContext.tsx:2719 [CallContext] Transceiver 1: {direction: 'sendrecv', currentDirection: null, mid: null, sender: {…}, receiver: {…}}
+CallContext.tsx:3343 [CallContext] 📡 RECEIVER: Received remote stream
+CallContext.tsx:3345 [CallContext] 📡 RECEIVER: Remote stream details: {id: 'c917793f-a7fc-4061-9fd3-89be2cb51f50', active: true, audioTracks: 1, videoTracks: 1}
+CallContext.tsx:3353 [CallContext] 📡 RECEIVER: Storing remote stream globally
+CallContext.tsx:3357 [CallContext] Remote audio received - stopping waiting tone
+CallContext.tsx:911 [CallContext] 🔇 AGGRESSIVE AUDIO CLEANUP - STOPPING ALL AUDIO
+CallContext.tsx:945 [CallContext] 💥 NUCLEAR AUDIO CLEANUP - Closing ALL AudioContext instances
+CallContext.tsx:961 [CallContext] ✅ Closed AudioContext
+CallContext.tsx:992 [CallContext] 🛡️ SKIPPING nuclear cleanup - call is connected, preserving timers
+CallContext.tsx:3343 [CallContext] 📡 RECEIVER: Received remote stream
+CallContext.tsx:3345 [CallContext] 📡 RECEIVER: Remote stream details: {id: 'c917793f-a7fc-4061-9fd3-89be2cb51f50', active: true, audioTracks: 1, videoTracks: 1}
+CallContext.tsx:3353 [CallContext] 📡 RECEIVER: Storing remote stream globally
+CallContext.tsx:3357 [CallContext] Remote audio received - stopping waiting tone
+CallContext.tsx:911 [CallContext] 🔇 AGGRESSIVE AUDIO CLEANUP - STOPPING ALL AUDIO
+CallContext.tsx:945 [CallContext] 💥 NUCLEAR AUDIO CLEANUP - Closing ALL AudioContext instances
+CallContext.tsx:961 [CallContext] ✅ Closed AudioContext
+CallContext.tsx:992 [CallContext] 🛡️ SKIPPING nuclear cleanup - call is connected, preserving timers
+CallContext.tsx:2755 [CallContext] ✅ ENHANCED: Remote description set successfully
+CallContext.tsx:2758 [CallContext] 📊 RECEIVER: Post-offer transceiver validation with direction enforcement:
+CallContext.tsx:2767 [CallContext] RECEIVER: Transceiver 0: {direction: 'sendrecv', currentDirection: null, mid: '0', kind: 'audio', receiverTrack: {…}}
+CallContext.tsx:2798 [CallContext] ✅ RECEIVER: Proper audio receiver transceiver validated
+CallContext.tsx:2767 [CallContext] RECEIVER: Transceiver 1: {direction: 'sendrecv', currentDirection: null, mid: '1', kind: 'video', receiverTrack: {…}}
+CallContext.tsx:2809 [CallContext] 🔧 RECEIVER: Implementing receiver track validation and auto-repair...
+CallContext.tsx:2814 [CallContext] 📊 RECEIVER: Audio receiver track state: {id: '4ff45f00-6411-4a22-8696-5d268171ed28', enabled: true, muted: false, readyState: 'live'}
+CallContext.tsx:2856 [CallContext] ✅ RECEIVER: Audio receiver track force-enabled for RTP processing
+CallContext.tsx:2862 [CallContext] Processing 2 pending ICE candidates for callId: call_1757926296450_3_2
+CallContext.tsx:4633 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:19 [VideoCall] Component rendering with activeCall: {callId: 'call_1757926296450_3_2', callType: 'video', status: 'connected', isIncoming: true, peerUserId: 3, …}
+VideoCall.tsx:32 [VideoCall] Remote stream changed: MediaStream {id: 'c917793f-a7fc-4061-9fd3-89be2cb51f50', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+VideoCall.tsx:34 [VideoCall] ✅ Setting remote stream to video element
+VideoCall.tsx:35 [VideoCall] Remote stream details: {id: 'c917793f-a7fc-4061-9fd3-89be2cb51f50', active: true, audioTracks: 1, videoTracks: 1}
+VideoCall.tsx:44 [VideoCall] Track 0: {kind: 'audio', enabled: true, muted: false, readyState: 'live', id: '4ff45f00-6411-4a22-8696-5d268171ed28'}
+VideoCall.tsx:44 [VideoCall] Track 1: {kind: 'video', enabled: true, muted: false, readyState: 'live', id: '064effb9-52e3-423f-84ec-ec6cca515fbe'}
+2CallContext.tsx:2866 [CallContext] ✅ Added pending ICE candidate
+CallContext.tsx:2876 [CallContext] 🔄 RECEIVER: Starting enhanced RTP flow monitoring for receiver side
+CallContext.tsx:359 [CallContext] 🔄 RECEIVER: Starting enhanced receiver-side RTP monitoring for callId: call_1757926296450_3_2
+CallContext.tsx:459 [CallContext] ⚠️ RECEIVER: Issues detected: ['No RTP data flow (warning count: 1)']
+checkReceiverRTPFlow @ CallContext.tsx:459
+await in checkReceiverRTPFlow
+startReceiverRTPMonitoring @ CallContext.tsx:476
+handleWebRTCOffer @ CallContext.tsx:2877
+await in handleWebRTCOffer
+websocket.onmessage @ CallContext.tsx:1288Understand this warning
+CallContext.tsx:460 [CallContext] 🔧 RECEIVER: Transport state: {connectionState: 'new', iceConnectionState: 'new', signalingState: 'have-remote-offer'}
+checkReceiverRTPFlow @ CallContext.tsx:460
+await in checkReceiverRTPFlow
+startReceiverRTPMonitoring @ CallContext.tsx:476
+handleWebRTCOffer @ CallContext.tsx:2877
+await in handleWebRTCOffer
+websocket.onmessage @ CallContext.tsx:1288Understand this warning
+CallContext.tsx:2881 [CallContext] ✅ ENHANCED: Local description (answer) set successfully
+CallContext.tsx:2892 [CallContext] ⚠️ WebSocket not ready for answer, using HTTP API fallback
+2CallContext.tsx:3372 [CallContext] ❌ RECEIVER: Remote audio element not found
+CallContext.tsx:2909 [CallContext] ✅ Sent WebRTC answer via HTTP API fallback
+VideoCall.tsx:63 [VideoCall] ✅ Remote video playing successfully with audio
+VideoCall.tsx:117 [VideoCall] 🕐 RESILIENT TICK: 00:00:02 elapsed ms: 2113
+VideoCall.tsx:159 [VideoCall] 🐕 WATCHDOG: Check - timeSinceLastTick: 0ms
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:19 [VideoCall] Component rendering with activeCall: {callId: 'call_1757926296450_3_2', callType: 'video', status: 'connected', isIncoming: true, peerUserId: 3, …}
+VideoCall.tsx:117 [VideoCall] 🕐 RESILIENT TICK: 00:00:03 elapsed ms: 3113
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:19 [VideoCall] Component rendering with activeCall: {callId: 'call_1757926296450_3_2', callType: 'video', status: 'connected', isIncoming: true, peerUserId: 3, …}
+CallContext.tsx:1156 [CallContext] Received message: {type: 'call_ended', payload: {…}}
+CallContext.tsx:1159 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'call_ended', hasPayload: true, messageKeys: Array(2), routingToCase: 'call_ended'}
+CallContext.tsx:2547 [CallContext] ❌ Call ended unexpectedly, payload: {callId: 'call_1757926296450_3_2'}
+CallContext.tsx:2548 [CallContext] Current activeCall status: undefined
+CallContext.tsx:2549 [CallContext] Current incomingCall status: undefined
+CallContext.tsx:2553 [CallContext] 🔍 Extracted callId: call_1757926296450_3_2
+CallContext.tsx:2561 [CallContext] FORCE STOPPING ALL RINGTONES - call ended
+CallContext.tsx:911 [CallContext] 🔇 AGGRESSIVE AUDIO CLEANUP - STOPPING ALL AUDIO
+CallContext.tsx:945 [CallContext] 💥 NUCLEAR AUDIO CLEANUP - Closing ALL AudioContext instances
+CallContext.tsx:961 [CallContext] ✅ Closed AudioContext
+CallContext.tsx:992 [CallContext] 🛡️ SKIPPING nuclear cleanup - call is connected, preserving timers
+CallContext.tsx:2583 [CallContext] Stopping ALL ringtone sources - call ended
+CallContext.tsx:2647 [CallContext] ⚠️ Call ended event for non-active call: call_1757926296450_3_2 current activeCall: undefined
+CallContext.tsx:2651 [CallContext] 🔍 DEBUG: Current location: /chat
+CallContext.tsx:2652 [CallContext] 🔍 DEBUG: Checking if on call page for navigation...
+CallContext.tsx:2658 [CallContext] 🔍 DEBUG: Not on call page, current location: /chat
+CallContext.tsx:2681 [CallContext] ⚠️ Call ended event does not match incoming call, or no incoming call exists
+CallContext.tsx:390 [CallContext] 📊 RECEIVER: Inbound RTP monitoring: {callId: 'call_1757926296450_3_2', bytesReceived: 4619, bytesDelta: 4619, packetsReceived: 65, packetsDelta: 65, …}
+CallContext.tsx:409 [CallContext] ✅ RECEIVER: RTP data flow detected - receiver working correctly!
+CallContext.tsx:1156 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:1159 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'user_status', hasPayload: true, messageKeys: Array(2), routingToCase: 'user_status'}
+CallContext.tsx:1223 [CallContext] Received user status update: {userId: 3, status: 'offline'}
+VideoCall.tsx:117 [VideoCall] 🕐 RESILIENT TICK: 00:00:04 elapsed ms: 4114
+VideoCall.tsx:159 [VideoCall] 🐕 WATCHDOG: Check - timeSinceLastTick: 0ms
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:19 [VideoCall] Component rendering with activeCall: {callId: 'call_1757926296450_3_2', callType: 'video', status: 'connected', isIncoming: true, peerUserId: 3, …}
+CallContext.tsx:1156 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:1159 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'user_status', hasPayload: true, messageKeys: Array(2), routingToCase: 'user_status'}
+CallContext.tsx:1223 [CallContext] Received user status update: {userId: 3, status: 'online'}
+VideoCall.tsx:117 [VideoCall] 🕐 RESILIENT TICK: 00:00:05 elapsed ms: 5121
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:19 [VideoCall] Component rendering with activeCall: {callId: 'call_1757926296450_3_2', callType: 'video', status: 'connected', isIncoming: true, peerUserId: 3, …}
+CallContext.tsx:390 [CallContext] 📊 RECEIVER: Inbound RTP monitoring: {callId: 'call_1757926296450_3_2', bytesReceived: 4619, bytesDelta: 0, packetsReceived: 65, packetsDelta: 0, …}
+CallContext.tsx:459 [CallContext] ⚠️ RECEIVER: Issues detected: ['No RTP data flow (warning count: 1)']
+checkReceiverRTPFlow @ CallContext.tsx:459
+setInterval
+startReceiverRTPMonitoring @ CallContext.tsx:473
+handleWebRTCOffer @ CallContext.tsx:2877
+await in handleWebRTCOffer
+websocket.onmessage @ CallContext.tsx:1288Understand this warning
+CallContext.tsx:460 [CallContext] 🔧 RECEIVER: Transport state: {connectionState: 'connected', iceConnectionState: 'connected', signalingState: 'stable'}
+checkReceiverRTPFlow @ CallContext.tsx:460
+setInterval
+startReceiverRTPMonitoring @ CallContext.tsx:473
+handleWebRTCOffer @ CallContext.tsx:2877
+await in handleWebRTCOffer
+websocket.onmessage @ CallContext.tsx:1288Understand this warning
+VideoCall.tsx:117 [VideoCall] 🕐 RESILIENT TICK: 00:00:06 elapsed ms: 6114
+VideoCall.tsx:159 [VideoCall] 🐕 WATCHDOG: Check - timeSinceLastTick: 0ms
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:19 [VideoCall] Component rendering with activeCall: {callId: 'call_1757926296450_3_2', callType: 'video', status: 'connected', isIncoming: true, peerUserId: 3, …}
+VideoCall.tsx:117 [VideoCall] 🕐 RESILIENT TICK: 00:00:07 elapsed ms: 7120
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:19 [VideoCall] Component rendering with activeCall: {callId: 'call_1757926296450_3_2', callType: 'video', status: 'connected', isIncoming: true, peerUserId: 3, …}
+CallContext.tsx:390 [CallContext] 📊 RECEIVER: Inbound RTP monitoring: {callId: 'call_1757926296450_3_2', bytesReceived: 4619, bytesDelta: 0, packetsReceived: 65, packetsDelta: 0, …}
+CallContext.tsx:459 [CallContext] ⚠️ RECEIVER: Issues detected: ['No RTP data flow (warning count: 2)']
+checkReceiverRTPFlow @ CallContext.tsx:459
+setInterval
+startReceiverRTPMonitoring @ CallContext.tsx:473
+handleWebRTCOffer @ CallContext.tsx:2877
+await in handleWebRTCOffer
+websocket.onmessage @ CallContext.tsx:1288Understand this warning
+CallContext.tsx:460 [CallContext] 🔧 RECEIVER: Transport state: {connectionState: 'connected', iceConnectionState: 'connected', signalingState: 'stable'}
+checkReceiverRTPFlow @ CallContext.tsx:460
+setInterval
+startReceiverRTPMonitoring @ CallContext.tsx:473
+handleWebRTCOffer @ CallContext.tsx:2877
+await in handleWebRTCOffer
+websocket.onmessage @ CallContext.tsx:1288Understand this warning
+VideoCall.tsx:117 [VideoCall] 🕐 RESILIENT TICK: 00:00:08 elapsed ms: 8117
+VideoCall.tsx:159 [VideoCall] 🐕 WATCHDOG: Check - timeSinceLastTick: 0ms
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:19 [VideoCall] Component rendering with activeCall: {callId: 'call_1757926296450_3_2', callType: 'video', status: 'connected', isIncoming: true, peerUserId: 3, …}
+VideoCall.tsx:117 [VideoCall] 🕐 RESILIENT TICK: 00:00:09 elapsed ms: 9119
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:19 [VideoCall] Component rendering with activeCall: {callId: 'call_1757926296450_3_2', callType: 'video', status: 'connected', isIncoming: true, peerUserId: 3, …}
+CallContext.tsx:390 [CallContext] 📊 RECEIVER: Inbound RTP monitoring: {callId: 'call_1757926296450_3_2', bytesReceived: 4619, bytesDelta: 0, packetsReceived: 65, packetsDelta: 0, …}
+CallContext.tsx:417 [CallContext] ⚠️ RECEIVER: RTP flow has stopped - may need recovery
+(anonymous) @ CallContext.tsx:417
+checkReceiverRTPFlow @ CallContext.tsx:378
+setInterval
+startReceiverRTPMonitoring @ CallContext.tsx:473
+handleWebRTCOffer @ CallContext.tsx:2877
+await in handleWebRTCOffer
+websocket.onmessage @ CallContext.tsx:1288Understand this warning
+CallContext.tsx:459 [CallContext] ⚠️ RECEIVER: Issues detected: ['No RTP data flow (warning count: 3)']
+checkReceiverRTPFlow @ CallContext.tsx:459
+setInterval
+startReceiverRTPMonitoring @ CallContext.tsx:473
+handleWebRTCOffer @ CallContext.tsx:2877
+await in handleWebRTCOffer
+websocket.onmessage @ CallContext.tsx:1288Understand this warning
+CallContext.tsx:460 [CallContext] 🔧 RECEIVER: Transport state: {connectionState: 'connected', iceConnectionState: 'connected', signalingState: 'stable'}
+checkReceiverRTPFlow @ CallContext.tsx:460
+setInterval
+startReceiverRTPMonitoring @ CallContext.tsx:473
+handleWebRTCOffer @ CallContext.tsx:2877
+await in handleWebRTCOffer
+websocket.onmessage @ CallContext.tsx:1288Understand this warning
+VideoCall.tsx:117 [VideoCall] 🕐 RESILIENT TICK: 00:00:10 elapsed ms: 10122
+VideoCall.tsx:159 [VideoCall] 🐕 WATCHDOG: Check - timeSinceLastTick: 0ms
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:19 [VideoCall] Component rendering with activeCall: {callId: 'call_1757926296450_3_2', callType: 'video', status: 'connected', isIncoming: true, peerUserId: 3, …}
+VideoCall.tsx:117 [VideoCall] 🕐 RESILIENT TICK: 00:00:11 elapsed ms: 11113
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:19 [VideoCall] Component rendering with activeCall: {callId: 'call_1757926296450_3_2', callType: 'video', status: 'connected', isIncoming: true, peerUserId: 3, …}
+CallContext.tsx:390 [CallContext] 📊 RECEIVER: Inbound RTP monitoring: {callId: 'call_1757926296450_3_2', bytesReceived: 4619, bytesDelta: 0, packetsReceived: 65, packetsDelta: 0, …}
+CallContext.tsx:459 [CallContext] ⚠️ RECEIVER: Issues detected: ['No RTP data flow (warning count: 4)']
+checkReceiverRTPFlow @ CallContext.tsx:459
+setInterval
+startReceiverRTPMonitoring @ CallContext.tsx:473
+handleWebRTCOffer @ CallContext.tsx:2877
+await in handleWebRTCOffer
+websocket.onmessage @ CallContext.tsx:1288Understand this warning
+CallContext.tsx:460 [CallContext] 🔧 RECEIVER: Transport state: {connectionState: 'connected', iceConnectionState: 'connected', signalingState: 'stable'}
+checkReceiverRTPFlow @ CallContext.tsx:460
+setInterval
+startReceiverRTPMonitoring @ CallContext.tsx:473
+handleWebRTCOffer @ CallContext.tsx:2877
+await in handleWebRTCOffer
+websocket.onmessage @ CallContext.tsx:1288Understand this warning
+VideoCall.tsx:117 [VideoCall] 🕐 RESILIENT TICK: 00:00:12 elapsed ms: 12114
+VideoCall.tsx:159 [VideoCall] 🐕 WATCHDOG: Check - timeSinceLastTick: 0ms
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:19 [VideoCall] Component rendering with activeCall: {callId: 'call_1757926296450_3_2', callType: 'video', status: 'connected', isIncoming: true, peerUserId: 3, …}
+sw.js:194 [SW] Message received: {type: 'KEEP_ALIVE'}
+sw.js:201 Uncaught TypeError: Cannot read properties of undefined (reading 'postMessage')
+    at sw.js:201:22
+(anonymous) @ sw.js:201Understand this error
+VideoCall.tsx:117 [VideoCall] 🕐 RESILIENT TICK: 00:00:13 elapsed ms: 13119
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:19 [VideoCall] Component rendering with activeCall: {callId: 'call_1757926296450_3_2', callType: 'video', status: 'connected', isIncoming: true, peerUserId: 3, …}
+CallContext.tsx:390 [CallContext] 📊 RECEIVER: Inbound RTP monitoring: {callId: 'call_1757926296450_3_2', bytesReceived: 4619, bytesDelta: 0, packetsReceived: 65, packetsDelta: 0, …}
+CallContext.tsx:449 [CallContext] 🔧 RECEIVER: CRITICAL AUTO-REPAIR - No RTP data for 10 seconds
+checkReceiverRTPFlow @ CallContext.tsx:449
+setInterval
+startReceiverRTPMonitoring @ CallContext.tsx:473
+handleWebRTCOffer @ CallContext.tsx:2877
+await in handleWebRTCOffer
+websocket.onmessage @ CallContext.tsx:1288Understand this error
+CallContext.tsx:494 [CallContext] 🔧 RECEIVER: Attempting receiver track recovery for callId: call_1757926296450_3_2
+CallContext.tsx:508 [CallContext] 🔧 RECEIVER: Found audio receiver transceiver, attempting recovery
+CallContext.tsx:517 [CallContext] 🔧 RECEIVER: Cycling receiver track enable state
+CallContext.tsx:539 [CallContext] ✅ RECEIVER: Recovery attempt completed
+CallContext.tsx:459 [CallContext] ⚠️ RECEIVER: Issues detected: ['No RTP data flow (warning count: 5)']
+checkReceiverRTPFlow @ CallContext.tsx:459
+setInterval
+startReceiverRTPMonitoring @ CallContext.tsx:473
+handleWebRTCOffer @ CallContext.tsx:2877
+await in handleWebRTCOffer
+websocket.onmessage @ CallContext.tsx:1288Understand this warning
+CallContext.tsx:460 [CallContext] 🔧 RECEIVER: Transport state: {connectionState: 'connected', iceConnectionState: 'connected', signalingState: 'stable'}
+checkReceiverRTPFlow @ CallContext.tsx:460
+setInterval
+startReceiverRTPMonitoring @ CallContext.tsx:473
+handleWebRTCOffer @ CallContext.tsx:2877
+await in handleWebRTCOffer
+websocket.onmessage @ CallContext.tsx:1288Understand this warning
+CallContext.tsx:522 [CallContext] 🔧 RECEIVER: Receiver track re-enabled
+CallContext.tsx:527 [CallContext] 🔧 RECEIVER: Direction restored to: sendrecv
+VideoCall.tsx:117 [VideoCall] 🕐 RESILIENT TICK: 00:00:14 elapsed ms: 14118
+VideoCall.tsx:159 [VideoCall] 🐕 WATCHDOG: Check - timeSinceLastTick: 0ms
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:19 [VideoCall] Component rendering with activeCall: {callId: 'call_1757926296450_3_2', callType: 'video', status: 'connected', isIncoming: true, peerUserId: 3, …}
+VideoCall.tsx:117 [VideoCall] 🕐 RESILIENT TICK: 00:00:15 elapsed ms: 15117
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:19 [VideoCall] Component rendering with activeCall: {callId: 'call_1757926296450_3_2', callType: 'video', status: 'connected', isIncoming: true, peerUserId: 3, …}
+CallContext.tsx:390 [CallContext] 📊 RECEIVER: Inbound RTP monitoring: {callId: 'call_1757926296450_3_2', bytesReceived: 4619, bytesDelta: 0, packetsReceived: 65, packetsDelta: 0, …}
+CallContext.tsx:459 [CallContext] ⚠️ RECEIVER: Issues detected: ['No RTP data flow (warning count: 1)']
+checkReceiverRTPFlow @ CallContext.tsx:459
+setInterval
+startReceiverRTPMonitoring @ CallContext.tsx:473
+handleWebRTCOffer @ CallContext.tsx:2877
+await in handleWebRTCOffer
+websocket.onmessage @ CallContext.tsx:1288Understand this warning
+CallContext.tsx:460 [CallContext] 🔧 RECEIVER: Transport state: {connectionState: 'connected', iceConnectionState: 'connected', signalingState: 'stable'}
+checkReceiverRTPFlow @ CallContext.tsx:460
+setInterval
+startReceiverRTPMonitoring @ CallContext.tsx:473
+handleWebRTCOffer @ CallContext.tsx:2877
+await in handleWebRTCOffer
+websocket.onmessage @ CallContext.tsx:1288Understand this warning
+VideoCall.tsx:117 [VideoCall] 🕐 RESILIENT TICK: 00:00:16 elapsed ms: 16114
+VideoCall.tsx:159 [VideoCall] 🐕 WATCHDOG: Check - timeSinceLastTick: 0ms
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:19 [VideoCall] Component rendering with activeCall: {callId: 'call_1757926296450_3_2', callType: 'video', status: 'connected', isIncoming: true, peerUserId: 3, …}
