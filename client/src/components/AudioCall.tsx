@@ -4,6 +4,70 @@ import { Button } from "./ui/button";
 import { ChevronDown, Mic, MicOff, Phone, Volume2, VolumeX, MessageSquare, Speaker, Headphones } from "lucide-react";
 import { audioManager, isEarphoneConnected, getCurrentAudioOutput } from '@/utils/audioManager';
 
+// Helper functions for audio management
+const forceUnlockAudio = (audioElement: HTMLAudioElement) => {
+  console.log("[AudioCall] 🔓 Force unlocking audio...");
+  
+  // Set maximum volume
+  audioElement.volume = 1.0;
+  audioElement.muted = false;
+  
+  // Try to resume any suspended audio context
+  if (window.AudioContext || (window as any).webkitAudioContext) {
+    try {
+      const audioContext = new ((window as any).AudioContext || (window as any).webkitAudioContext)();
+      if (audioContext.state === 'suspended') {
+        audioContext.resume().then(() => {
+          console.log("[AudioCall] ✅ Audio context resumed");
+        }).catch((err: any) => {
+          console.log("[AudioCall] ⚠️ Could not resume audio context:", err);
+        });
+      }
+    } catch (e) {
+      console.log("[AudioCall] ⚠️ Audio context creation failed:", e);
+    }
+  }
+  
+  // Force play with user gesture simulation
+  setTimeout(() => {
+    audioElement.play().catch(err => {
+      console.log("[AudioCall] ⚠️ Force play failed:", err);
+    });
+  }, 100);
+};
+
+const checkAudioOutput = (audioElement: HTMLAudioElement) => {
+  console.log("[AudioCall] 🔍 Checking audio output...");
+  
+  // Check system volume (if available)
+  if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+    navigator.mediaDevices.enumerateDevices().then(devices => {
+      const audioOutputs = devices.filter(device => device.kind === 'audiooutput');
+      console.log("[AudioCall] 🔊 Available audio outputs:", audioOutputs.length);
+      audioOutputs.forEach((device, index) => {
+        console.log(`[AudioCall] Output ${index}:`, {
+          deviceId: device.deviceId,
+          label: device.label,
+          groupId: device.groupId
+        });
+      });
+    }).catch(err => {
+      console.log("[AudioCall] ⚠️ Could not enumerate audio devices:", err);
+    });
+  }
+  
+  // Log current audio element state
+  console.log("[AudioCall] 📊 Current audio state:", {
+    paused: audioElement.paused,
+    muted: audioElement.muted,
+    volume: audioElement.volume,
+    currentTime: audioElement.currentTime,
+    duration: audioElement.duration,
+    readyState: audioElement.readyState,
+    networkState: audioElement.networkState
+  });
+};
+
 export default function AudioCall() {
   const { activeCall, remoteAudioStream, hangupCall, toggleCallAudio, toggleMute } = useCall();
   const [callDuration, setCallDuration] = useState("00:00:00");
@@ -219,6 +283,9 @@ export default function AudioCall() {
           // Check for browser audio policy restrictions
           console.log(`[AudioCall] 🎮 Checking autoplay policy...`);
           
+          // Force audio context resume and volume max
+          forceUnlockAudio(audioElement);
+          
           // Test user interaction requirement
           let userInteractionRequired = false;
           try {
@@ -237,6 +304,7 @@ export default function AudioCall() {
                 console.log(`[AudioCall] 🖱️ User interaction detected, attempting audio play...`);
                 audioElement.play().then(() => {
                   console.log(`[AudioCall] ✅ Audio started after user interaction`);
+                  forceUnlockAudio(audioElement);
                 }).catch(err => {
                   console.error(`[AudioCall] ❌ Audio still failed after user interaction:`, err);
                 });
@@ -264,14 +332,16 @@ export default function AudioCall() {
               volume: audioElement.volume
             });
             
-            // Check if audio is actually playing
+            // Check if audio is actually playing and fix volume issues
             if (audioElement.currentTime === 0 && !audioElement.paused) {
-              console.log('[AudioCall] ⚠️ Audio element shows playing but currentTime is 0 - potential stream issue');
-              // Don't switch to Web Audio API, just log the issue
-              console.log('[AudioCall] 🔧 Keeping HTML5 audio - Web Audio API causes more issues on mobile');
+              console.log('[AudioCall] ⚠️ Audio element shows playing but currentTime is 0 - trying audio fix');
+              forceUnlockAudio(audioElement);
             } else {
               console.log('[AudioCall] ✅ HTML5 audio working correctly, currentTime:', audioElement.currentTime);
             }
+            
+            // Additional volume and audio output checks
+            checkAudioOutput(audioElement);
           }, 1000);
           
         } catch (e) {
