@@ -129,16 +129,16 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     console.log(`[GroupCall] 🔊 Volume increased to: ${newVolume}`);
   }, [audioVolume, participants]);
 
-  // 🎯 PROVEN AUDIO LOGIC: Use same simple approach as AudioCall (working)
-  const attachAudioStreamSimple = (audioElement: HTMLAudioElement, stream: MediaStream, label: string) => {
-    console.log(`[GroupCall] ✅ Setting ${label} stream to audio element - SIMPLE METHOD`);
+  // 🎯 EXACT SAME AUDIO LOGIC AS WORKING AUDIOCALL - No custom functions
+  const attachAudioStreamExact = (audioElement: HTMLAudioElement, stream: MediaStream, label: string) => {
+    console.log(`[GroupCall] ✅ Setting ${label} stream to audio element - EXACT SAME AS AUDIOCALL`);
     console.log(`[GroupCall] ${label} stream details:`, {
       id: stream.id,
       active: stream.active,
       audioTracks: stream.getAudioTracks().length
     });
     
-    // Log track details
+    // Log track details - EXACT SAME AS AUDIOCALL
     stream.getTracks().forEach((track, index) => {
       console.log(`[GroupCall] ${label} Track ${index}:`, {
         kind: track.kind,
@@ -152,12 +152,12 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     // EXACT SAME AS WORKING AUDIOCALL - Direct assignment
     audioElement.srcObject = stream;
     
-    // EXACT SAME AS WORKING AUDIOCALL - Simple settings  
+    // EXACT SAME AS WORKING AUDIOCALL - Enable autoplay and set volume
     audioElement.autoplay = true;
     audioElement.muted = false; // Don't mute - we want audio!
-    audioElement.volume = 1.0; // SIMPLE: Full volume like working AudioCall
+    audioElement.volume = 1.0;
     
-    // EXACT SAME AS WORKING AUDIOCALL - Simple retry logic
+    // EXACT SAME AS WORKING AUDIOCALL - Attempt to play the audio
     audioElement.play().then(() => {
       console.log(`[GroupCall] ✅ ${label} audio playing successfully`);
     }).catch(error => {
@@ -817,16 +817,65 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     }
   };
 
-  // Attach audio streams untuk remote participants - PROVEN SIMPLE METHOD
+  // EXACT SAME AUDIO ATTACHMENT AS WORKING AUDIOCALL
   useEffect(() => {
     participants.forEach((participant) => {
       if (participant.stream && participant.audioRef.current) {
-        console.log(`[GroupCall] 🎯 Using SIMPLE audio attachment for ${participant.userName}`);
-        attachAudioStreamSimple(
-          participant.audioRef.current,
-          participant.stream,
-          `Participant-${participant.userName}`
-        );
+        console.log(`[GroupCall] 🎯 Using EXACT SAME audio attachment as AudioCall for ${participant.userName}`);
+        
+        // EXACT SAME AS WORKING AUDIOCALL - Check audio element and stream
+        console.log(`[GroupCall] Remote stream changed for ${participant.userName}:`, participant.stream);
+        if (participant.audioRef.current && participant.stream) {
+          console.log(`[GroupCall] ✅ Setting remote stream to audio element for ${participant.userName}`);
+          console.log(`[GroupCall] Remote stream details for ${participant.userName}:`, {
+            id: participant.stream.id,
+            active: participant.stream.active,
+            audioTracks: participant.stream.getAudioTracks().length,
+            videoTracks: participant.stream.getVideoTracks().length
+          });
+          
+          // Log track details - EXACT SAME AS AUDIOCALL
+          participant.stream.getTracks().forEach((track, index) => {
+            console.log(`[GroupCall] ${participant.userName} Track ${index}:`, {
+              kind: track.kind,
+              enabled: track.enabled,
+              muted: track.muted,
+              readyState: track.readyState,
+              id: track.id
+            });
+          });
+          
+          // EXACT SAME AS WORKING AUDIOCALL
+          participant.audioRef.current.srcObject = participant.stream;
+          
+          // EXACT SAME AS WORKING AUDIOCALL - Enable autoplay and set volume
+          participant.audioRef.current.autoplay = true;
+          participant.audioRef.current.muted = false; // Don't mute - we want audio!
+          participant.audioRef.current.volume = 1.0;
+          
+          // EXACT SAME AS WORKING AUDIOCALL - Attempt to play the audio
+          participant.audioRef.current.play().then(() => {
+            console.log(`[GroupCall] ✅ ${participant.userName} audio playing successfully`);
+          }).catch(error => {
+            console.error(`[GroupCall] ❌ ${participant.userName} audio play failed:`, error);
+            // EXACT SAME AS WORKING AUDIOCALL - Try muted autoplay as fallback
+            if (participant.audioRef.current) {
+              participant.audioRef.current.muted = true;
+              participant.audioRef.current.play().then(() => {
+                console.log(`[GroupCall] ✅ ${participant.userName} audio playing (muted fallback)`);
+                // EXACT SAME AS WORKING AUDIOCALL - Unmute after starting
+                setTimeout(() => {
+                  if (participant.audioRef.current) {
+                    participant.audioRef.current.muted = false;
+                    console.log(`[GroupCall] 🔊 Unmuted ${participant.userName} audio after autoplay`);
+                  }
+                }, 100);
+              }).catch(err => {
+                console.error(`[GroupCall] ❌ Even muted autoplay failed for ${participant.userName}:`, err);
+              });
+            }
+          });
+        }
       }
     });
   }, [participants]);
