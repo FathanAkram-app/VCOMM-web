@@ -923,9 +923,17 @@ export function CallProvider({ children }: { children: ReactNode }) {
       
       // Get protected timer intervals to skip them
       const protectedTimers = [];
+      if ((window as any).__videoCallTimer) {
+        protectedTimers.push((window as any).__videoCallTimer);
+        console.log('[CallContext] 🛡️ Protecting robust video call timer:', (window as any).__videoCallTimer);
+      }
       if ((window as any).__videoCallTimerInterval) {
         protectedTimers.push((window as any).__videoCallTimerInterval);
         console.log('[CallContext] 🛡️ Protecting video call timer interval:', (window as any).__videoCallTimerInterval);
+      }
+      if ((window as any).__audioCallTimer) {
+        protectedTimers.push((window as any).__audioCallTimer);
+        console.log('[CallContext] 🛡️ Protecting robust audio call timer:', (window as any).__audioCallTimer);
       }
       if ((window as any).__audioCallTimerInterval) {
         protectedTimers.push((window as any).__audioCallTimerInterval);
@@ -2504,6 +2512,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
     console.log('[CallContext] Current activeCall status:', activeCall?.status);
     console.log('[CallContext] Current incomingCall status:', incomingCall?.status);
     
+    // 🚀 FIX: Normalize message payload handling for consistent callId
+    const callId = message.callId || message?.payload?.callId;
+    console.log('[CallContext] 🔍 Extracted callId:', callId);
+    
+    if (!callId) {
+      console.error('[CallContext] ❌ No callId found in call_ended message:', message);
+      return;
+    }
+    
     // FORCE STOP ALL WAITING TONES AND RINGTONES IMMEDIATELY
     console.log('[CallContext] FORCE STOPPING ALL RINGTONES - call ended');
     stopWaitingTone();
@@ -2550,18 +2567,42 @@ export function CallProvider({ children }: { children: ReactNode }) {
       console.log('[CallContext] Error stopping audio sources:', error);
     }
     
-    // CRITICAL FIX: Only clear states for actual ongoing calls, NOT incoming calls
-    // Check if this call ended event is for the current active call
-    const callId = message.callId;
-    
+    // 🚀 ENHANCED: Complete teardown for matching calls
     if (activeCall && activeCall.callId === callId) {
-      console.log('[CallContext] ✅ Ending active call:', callId);
-      setActiveCall(null);
+      console.log('[CallContext] ✅ Performing complete teardown for active call:', callId);
       
       // Clean up media streams
       if (activeCall.localStream) {
-        activeCall.localStream.getTracks().forEach(track => track.stop());
+        activeCall.localStream.getTracks().forEach(track => {
+          track.stop();
+          console.log('[CallContext] 🔇 Stopped local track:', track.kind);
+        });
       }
+      
+      // 🚀 NEW: Clean up remote streams
+      if (remoteAudioStream) {
+        remoteAudioStream.getTracks().forEach(track => {
+          track.stop();
+          console.log('[CallContext] 🔇 Stopped remote track:', track.kind);
+        });
+        setRemoteAudioStream(null);
+      }
+      
+      // 🚀 NEW: Close peer connection
+      if (peerConnection) {
+        try {
+          peerConnection.close();
+          console.log('[CallContext] 🔌 Closed peer connection');
+        } catch (e) {
+          console.log('[CallContext] Error closing peer connection:', e);
+        }
+        setPeerConnection(null);
+      }
+      
+      // Clear active call
+      setActiveCall(null);
+      console.log('[CallContext] ✅ Active call cleared');
+      
     } else {
       console.log('[CallContext] ⚠️ Call ended event for non-active call:', callId, 'current activeCall:', activeCall?.callId);
     }

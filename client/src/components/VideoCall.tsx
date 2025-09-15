@@ -82,66 +82,61 @@ export default function VideoCall() {
     }
   }, [remoteAudioStream]);
   
-  // Update call duration timer - ENHANCED DEBUG VERSION
+  // ROBUST TIMER - Simplified and guaranteed to work
   useEffect(() => {
-    console.log("[VideoCall] 🕐 Timer effect triggered:", {
+    console.log("[VideoCall] 🕐 Timer check:", {
       hasActiveCall: !!activeCall,
-      callStatus: activeCall?.status,
-      startTime: activeCall?.startTime,
-      startTimeMs: activeCall?.startTime?.getTime()
+      status: activeCall?.status,
+      startTime: activeCall?.startTime
     });
     
     if (!activeCall || activeCall.status !== 'connected') {
-      console.log("[VideoCall] 🕐 Timer NOT starting - call not connected");
       setCallDuration("00:00:00");
       return;
     }
     
-    // 🚀 ENHANCED: Use consistent start time reference with debug
-    const callStartTime = activeCall.startTime?.getTime() || Date.now();
-    console.log("[VideoCall] 🕐 Starting timer with:", {
-      startTime: new Date(callStartTime),
-      startTimeMs: callStartTime,
-      currentTime: new Date(),
-      initialDuration: Date.now() - callStartTime
-    });
+    // 🚀 ROBUST: Always use current time as start reference
+    const startTimeMs = activeCall.startTime?.getTime() || Date.now();
+    console.log("[VideoCall] 🕐 STARTING robust timer, startTime:", new Date(startTimeMs));
     
-    // 🚀 Immediate first update
-    const updateDuration = () => {
-      const now = Date.now();
-      const duration = now - callStartTime;
-      const hours = Math.floor(duration / 3600000).toString().padStart(2, '0');
-      const minutes = Math.floor((duration % 3600000) / 60000).toString().padStart(2, '0');
-      const seconds = Math.floor((duration % 60000) / 1000).toString().padStart(2, '0');
-      const newDuration = `${hours}:${minutes}:${seconds}`;
+    let intervalId: NodeJS.Timeout | null = null;
+    let isActive = true;
+    
+    const updateTimer = () => {
+      if (!isActive) return;
       
-      console.log("[VideoCall] 🕐 Timer update:", {
-        now: new Date(now),
-        duration: duration,
-        durationFormatted: newDuration
-      });
+      const elapsed = Date.now() - startTimeMs;
+      const hours = Math.floor(elapsed / 3600000).toString().padStart(2, '0');
+      const minutes = Math.floor((elapsed % 3600000) / 60000).toString().padStart(2, '0');
+      const seconds = Math.floor((elapsed % 60000) / 1000).toString().padStart(2, '0');
+      const formatted = `${hours}:${minutes}:${seconds}`;
       
-      setCallDuration(newDuration);
+      console.log("[VideoCall] 🕐 Timer tick:", formatted, "elapsed:", elapsed);
+      setCallDuration(formatted);
     };
     
-    // Update immediately
-    updateDuration();
+    // Immediate update
+    updateTimer();
     
-    const interval = setInterval(updateDuration, 1000);
-    console.log("[VideoCall] 🕐 Timer interval created:", interval);
+    // Start interval
+    intervalId = setInterval(updateTimer, 1000);
+    console.log("[VideoCall] 🕐 Robust timer started, interval:", intervalId);
     
-    // 🚀 PROTECT timer interval from nuclear cleanup
-    (window as any).__videoCallTimerInterval = interval;
+    // DOUBLE PROTECTION: Both global reference and scope reference
+    (window as any).__videoCallTimer = intervalId;
     
     return () => {
-      console.log("[VideoCall] 🕐 Cleaning up timer interval:", interval);
-      clearInterval(interval);
-      // Clear the protected reference
-      if ((window as any).__videoCallTimerInterval === interval) {
-        (window as any).__videoCallTimerInterval = null;
+      console.log("[VideoCall] 🕐 Cleaning up robust timer");
+      isActive = false;
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+      if ((window as any).__videoCallTimer) {
+        clearInterval((window as any).__videoCallTimer);
+        (window as any).__videoCallTimer = null;
       }
     };
-  }, [activeCall?.status, activeCall?.startTime]); // 🚀 FIXED: More specific dependencies
+  }, [activeCall?.status, activeCall?.startTime]);
   
   // Cleanup on component unmount
   useEffect(() => {

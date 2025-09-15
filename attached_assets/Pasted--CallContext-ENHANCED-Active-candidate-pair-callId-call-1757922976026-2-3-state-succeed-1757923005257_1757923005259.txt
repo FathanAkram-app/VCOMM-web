@@ -1,0 +1,126 @@
+[CallContext] 🧪 ENHANCED: Active candidate pair: {callId: 'call_1757922976026_2_3', state: 'succeeded', priority: 7962116751024340000, bytesSent: 72862, bytesReceived: 3568, …}
+CallContext.tsx:546 [CallContext] 📤 ENHANCED: Audio sender stats: {callId: 'call_1757922976026_2_3', bytesSent: 15424, bytesDelta: 8408, packetsSent: 199, packetsDelta: 100, …}
+CallContext.tsx:565 [CallContext] 🌐 ENHANCED: Transport stats: {callId: 'call_1757922976026_2_3', dtlsState: 'connected', iceState: 'connected', selectedCandidatePairId: 'CPxGSJiOpw_KNd59Vl8'}
+CallContext.tsx:579 [CallContext] 🧪 ENHANCED: Active candidate pair: {callId: 'call_1757922976026_2_3', state: 'succeeded', priority: 7962116751024340000, bytesSent: 92656, bytesReceived: 4980, …}
+CallContext.tsx:546 [CallContext] 📤 ENHANCED: Audio sender stats: {callId: 'call_1757922976026_2_3', bytesSent: 22174, bytesDelta: 6750, packetsSent: 299, packetsDelta: 100, …}
+CallContext.tsx:565 [CallContext] 🌐 ENHANCED: Transport stats: {callId: 'call_1757922976026_2_3', dtlsState: 'connected', iceState: 'connected', selectedCandidatePairId: 'CPxGSJiOpw_KNd59Vl8'}
+CallContext.tsx:810 [CallContext] Playing waiting tone - tuuutt
+CallContext.tsx:4529 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:14 [VideoCall] Component rendering with activeCall: {callId: 'call_1757922976026_2_3', callType: 'video', status: 'calling', isIncoming: false, peerUserId: 3, …}
+sw.js:194 [SW] Message received: {type: 'KEEP_ALIVE'}
+sw.js:201 Uncaught TypeError: Cannot read properties of undefined (reading 'postMessage')
+    at sw.js:201:22
+(anonymous) @ sw.js:201Understand this error
+CallContext.tsx:579 [CallContext] 🧪 ENHANCED: Active candidate pair: {callId: 'call_1757922976026_2_3', state: 'succeeded', priority: 7962116751024340000, bytesSent: 114017, bytesReceived: 6438, …}
+CallContext.tsx:546 [CallContext] 📤 ENHANCED: Audio sender stats: {callId: 'call_1757922976026_2_3', bytesSent: 30042, bytesDelta: 7868, packetsSent: 399, packetsDelta: 100, …}
+CallContext.tsx:565 [CallContext] 🌐 ENHANCED: Transport stats: {callId: 'call_1757922976026_2_3', dtlsState: 'connected', iceState: 'connected', selectedCandidatePairId: 'CPxGSJiOpw_KNd59Vl8'}
+CallContext.tsx:1112 [CallContext] Received message: {type: 'call_accepted', payload: {…}}
+CallContext.tsx:1115 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'call_accepted', hasPayload: true, messageKeys: Array(2), routingToCase: 'call_accepted'}
+CallContext.tsx:1548 [CallContext] Call accepted, payload: {callId: 'call_1757922976026_2_3'}
+CallContext.tsx:1549 [CallContext] Current activeCall (state): null
+CallContext.tsx:1550 [CallContext] Current activeCall (ref): {callId: 'call_1757922976026_2_3', callType: 'video', status: 'calling', isIncoming: false, peerUserId: 3, …}
+CallContext.tsx:1551 [CallContext] Current incomingCall: null
+CallContext.tsx:1554 [CallContext] FORCE STOPPING ALL RINGTONES - call accepted
+CallContext.tsx:665 [CallContext] 🔇 STOPPING ALL RINGTONES - comprehensive cleanup
+CallContext.tsx:670 [CallContext] Stopping HTML5 ringtone audio
+CallContext.tsx:679 [CallContext] ✅ HTML5 ringtone stopped and cleared
+CallContext.tsx:720 [CallContext] ✅ Stopped 0 audio elements
+CallContext.tsx:764 [CallContext] ✅ RINGTONE CLEANUP COMPLETED
+CallContext.tsx:842 [CallContext] 🔇 AGGRESSIVE AUDIO CLEANUP - STOPPING ALL AUDIO
+CallContext.tsx:876 [CallContext] 💥 NUCLEAR AUDIO CLEANUP - Closing ALL AudioContext instances
+CallContext.tsx:892 [CallContext] ✅ Closed AudioContext
+CallContext.tsx:915 [CallContext] Clearing stored waiting tone interval
+CallContext.tsx:922 [CallContext] 💥 NUCLEAR INTERVAL CLEANUP - Clearing ALL intervals (except protected timers)
+CallContext.tsx:950 [CallContext] ✅ Nuclear interval cleanup completed (protected timers preserved)
+CallContext.tsx:955 [CallContext] ✅ AGGRESSIVE AUDIO CLEANUP COMPLETED
+CallContext.tsx:1580 [CallContext] Updating call status to connected
+CallContext.tsx:1583 [CallContext] Stopping ALL ringtone sources - call accepted
+CallContext.tsx:1593 [CallContext] ✅ HTML5 ringtone force stopped
+CallContext.tsx:1644 [CallContext] Waiting for receiver to be ready for WebRTC...
+CallContext.tsx:4529 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:14 [VideoCall] Component rendering with activeCall: {callId: 'call_1757922976026_2_3', callType: 'video', status: 'connected', isIncoming: false, peerUserId: 3, …}
+VideoCall.tsx:87 [VideoCall] 🕐 Timer effect triggered: {hasActiveCall: true, callStatus: 'connected', startTime: Mon Sep 15 2025 14:56:25 GMT+0700 (Western Indonesia Time), startTimeMs: 1757922985339}
+VideoCall.tsx:102 [VideoCall] 🕐 Starting timer with: {startTime: Mon Sep 15 2025 14:56:25 GMT+0700 (Western Indonesia Time), startTimeMs: 1757922985339, currentTime: Mon Sep 15 2025 14:56:25 GMT+0700 (Western Indonesia Time), initialDuration: 1}
+VideoCall.tsx:118 [VideoCall] 🕐 Timer update: {now: Mon Sep 15 2025 14:56:25 GMT+0700 (Western Indonesia Time), duration: 1, durationFormatted: '00:00:00'}
+VideoCall.tsx:131 [VideoCall] 🕐 Timer interval created: 43
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:14 [VideoCall] Component rendering with activeCall: {callId: 'call_1757922976026_2_3', callType: 'video', status: 'connected', isIncoming: false, peerUserId: 3, …}
+CallContext.tsx:1112 [CallContext] Received message: {type: 'webrtc_ready', payload: {…}}
+CallContext.tsx:1115 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'webrtc_ready', hasPayload: true, messageKeys: Array(2), routingToCase: 'webrtc_ready'}
+CallContext.tsx:1680 [CallContext] Received WebRTC ready signal, payload: {callId: 'call_1757922976026_2_3'}
+CallContext.tsx:1681 [CallContext] Current activeCall (state): null
+CallContext.tsx:1682 [CallContext] Current activeCall (ref): {callId: 'call_1757922976026_2_3', callType: 'video', status: 'connected', isIncoming: false, peerUserId: 3, …}
+CallContext.tsx:1688 [CallContext] ✅ Found activeCall and peerConnection for WebRTC ready
+CallContext.tsx:1694 [CallContext] ✅ Cleared fallback timeout - received ready signal
+CallContext.tsx:1699 [CallContext] 🔄 ENHANCED: Preparing WebRTC offer with proper track validation...
+CallContext.tsx:1702 [CallContext] 🎤 ENHANCED: Validating local track attachment before offer...
+CallContext.tsx:1704 [CallContext] 📊 Current senders before offer: 2
+CallContext.tsx:1709 [CallContext] Sender 0: {hasTrack: true, kind: 'audio', enabled: true, readyState: 'live', id: 'f69e9a09-6910-400e-bb62-3ccf79d44d3e'}
+CallContext.tsx:1709 [CallContext] Sender 1: {hasTrack: true, kind: 'video', enabled: true, readyState: 'live', id: 'da03c65e-9fc3-4e27-86ef-bb0f82567ae0'}
+CallContext.tsx:1744 [CallContext] ✅ ENHANCED: Audio track properly attached before offer creation
+CallContext.tsx:1748 [CallContext] 🔄 ENHANCED: Creating offer with proper constraints...
+CallContext.tsx:1758 [CallContext] 📋 ENHANCED: Validating offer SDP...
+CallContext.tsx:1766 [CallContext] ✅ Found audio media section in offer
+2CallContext.tsx:1770 [CallContext] ✅ Found proper audio direction in offer: a=sendrecv
+CallContext.tsx:1784 [CallContext] ✅ ENHANCED: Local description set successfully with proper validation
+CallContext.tsx:1797 [CallContext] ⚠️ WebSocket not ready, using HTTP API fallback
+VideoCall.tsx:118 [VideoCall] 🕐 Timer update: {now: Mon Sep 15 2025 14:56:26 GMT+0700 (Western Indonesia Time), duration: 1007, durationFormatted: '00:00:01'}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:14 [VideoCall] Component rendering with activeCall: {callId: 'call_1757922976026_2_3', callType: 'video', status: 'connected', isIncoming: false, peerUserId: 3, …}
+CallContext.tsx:1814 [CallContext] ✅ Sent WebRTC offer via HTTP API fallback
+CallContext.tsx:1112 [CallContext] Received message: {type: 'webrtc_answer', callId: 'call_1757922976026_2_3', answer: {…}}
+CallContext.tsx:1115 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'webrtc_answer', hasPayload: false, messageKeys: Array(3), routingToCase: 'webrtc_answer'}
+CallContext.tsx:1247 [CallContext] 🎯 Processing webrtc_answer message: {type: 'webrtc_answer', callId: 'call_1757922976026_2_3', answer: {…}}
+CallContext.tsx:2819 [CallContext] 📡 ENHANCED: Received WebRTC answer for callId: call_1757922976026_2_3
+CallContext.tsx:2823 [CallContext] Current activeCall for answer: call_1757922976026_2_3
+CallContext.tsx:2836 [CallContext] 📡 ENHANCED: Setting remote description (answer) with validation
+CallContext.tsx:2840 [CallContext] 📊 Current signaling state: have-local-offer
+CallContext.tsx:3064 [CallContext] 📡 CALLER: Received remote stream in startCall
+CallContext.tsx:3066 [CallContext] 📡 CALLER: Remote stream details: {id: '6f86b7c5-08d6-4b6a-ab19-62b7318b67a1', active: true, audioTracks: 1, videoTracks: 1}
+CallContext.tsx:3074 [CallContext] 📡 CALLER: Storing remote stream globally
+CallContext.tsx:3078 [CallContext] Remote audio received - stopping waiting tone
+CallContext.tsx:842 [CallContext] 🔇 AGGRESSIVE AUDIO CLEANUP - STOPPING ALL AUDIO
+CallContext.tsx:876 [CallContext] 💥 NUCLEAR AUDIO CLEANUP - Closing ALL AudioContext instances
+CallContext.tsx:892 [CallContext] ✅ Closed AudioContext
+CallContext.tsx:922 [CallContext] 💥 NUCLEAR INTERVAL CLEANUP - Clearing ALL intervals (except protected timers)
+CallContext.tsx:928 [CallContext] 🛡️ Protecting video call timer interval: 43
+CallContext.tsx:950 [CallContext] ✅ Nuclear interval cleanup completed (protected timers preserved)
+CallContext.tsx:955 [CallContext] ✅ AGGRESSIVE AUDIO CLEANUP COMPLETED
+CallContext.tsx:3064 [CallContext] 📡 CALLER: Received remote stream in startCall
+CallContext.tsx:3066 [CallContext] 📡 CALLER: Remote stream details: {id: '6f86b7c5-08d6-4b6a-ab19-62b7318b67a1', active: true, audioTracks: 1, videoTracks: 1}
+CallContext.tsx:3074 [CallContext] 📡 CALLER: Storing remote stream globally
+CallContext.tsx:3078 [CallContext] Remote audio received - stopping waiting tone
+CallContext.tsx:842 [CallContext] 🔇 AGGRESSIVE AUDIO CLEANUP - STOPPING ALL AUDIO
+CallContext.tsx:876 [CallContext] 💥 NUCLEAR AUDIO CLEANUP - Closing ALL AudioContext instances
+CallContext.tsx:892 [CallContext] ✅ Closed AudioContext
+CallContext.tsx:922 [CallContext] 💥 NUCLEAR INTERVAL CLEANUP - Clearing ALL intervals (except protected timers)
+CallContext.tsx:928 [CallContext] 🛡️ Protecting video call timer interval: 43
+CallContext.tsx:950 [CallContext] ✅ Nuclear interval cleanup completed (protected timers preserved)
+CallContext.tsx:955 [CallContext] ✅ AGGRESSIVE AUDIO CLEANUP COMPLETED
+CallContext.tsx:2848 [CallContext] ✅ ENHANCED: Remote description (answer) set successfully on caller side
+CallContext.tsx:2851 [CallContext] 🔄 ENHANCED: Starting transport connectivity monitoring
+CallContext.tsx:483 [CallContext] 🔄 ENHANCED: Starting comprehensive transport state monitoring for callId: call_1757922976026_2_3
+CallContext.tsx:2855 [CallContext] 📊 Post-answer transceiver validation:
+CallContext.tsx:2858 [CallContext] Final Transceiver 0: {direction: 'sendrecv', currentDirection: 'sendrecv', mid: '0', kind: 'audio', senderTrack: {…}}
+CallContext.tsx:2858 [CallContext] Final Transceiver 1: {direction: 'sendrecv', currentDirection: 'sendrecv', mid: '1', kind: 'video', senderTrack: {…}}
+CallContext.tsx:2877 [CallContext] 🎯 ENHANCED: Waiting for ontrack event to provide remote stream to caller...
+CallContext.tsx:4529 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+VideoCall.tsx:14 [VideoCall] Component rendering with activeCall: {callId: 'call_1757922976026_2_3', callType: 'video', status: 'connected', isIncoming: false, peerUserId: 3, …}
+VideoCall.tsx:27 [VideoCall] Remote stream changed: MediaStream {id: '6f86b7c5-08d6-4b6a-ab19-62b7318b67a1', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+VideoCall.tsx:29 [VideoCall] ✅ Setting remote stream to video element
+VideoCall.tsx:30 [VideoCall] Remote stream details: {id: '6f86b7c5-08d6-4b6a-ab19-62b7318b67a1', active: true, audioTracks: 1, videoTracks: 1}
+VideoCall.tsx:39 [VideoCall] Track 0: {kind: 'audio', enabled: true, muted: false, readyState: 'live', id: '8c6a6748-07be-48db-9599-4781eaae11f7'}
+VideoCall.tsx:39 [VideoCall] Track 1: {kind: 'video', enabled: true, muted: false, readyState: 'live', id: 'cf874afc-9869-4c6e-86da-0f4e770eeba4'}
+CallContext.tsx:579 [CallContext] 🧪 ENHANCED: Active candidate pair: {callId: 'call_1757922976026_2_3', state: 'succeeded', priority: 9115038255631187000, bytesSent: 133687, bytesReceived: 20132, …}
+CallContext.tsx:565 [CallContext] 🌐 ENHANCED: Transport stats: {callId: 'call_1757922976026_2_3', dtlsState: 'connected', iceState: 'connected', selectedCandidatePairId: 'CPxGSJiOpw_qHKsAYQx'}
+CallContext.tsx:3093 [CallContext] ❌ CALLER: Remote audio element not found in startCall
+VideoCall.tsx:58 [VideoCall] ✅ Remote video playing successfully with audio
+CallContext.tsx:579 [CallContext] 🧪 ENHANCED: Active candidate pair: {callId: 'call_1757922976026_2_3', state: 'succeeded', priority: 9115038255631187000, bytesSent: 157094, bytesReceived: 334050, …}
+CallContext.tsx:511 [CallContext] 📊 ENHANCED: Audio RTP flow stats: {callId: 'call_1757922976026_2_3', bytesReceived: 9021, bytesDelta: 8014, packetsReceived: 115, packetsDelta: 100, …}
+CallContext.tsx:525 [CallContext] ✅ ENHANCED: Audio RTP flow detected - call is truly connected!
+CallContext.tsx:546 [CallContext] 📤 ENHANCED: Audio sender stats: {callId: 'call_1757922976026_2_3', bytesSent: 45091, bytesDelta: 7818, packetsSent: 587, packetsDelta: 100, …}
+CallContext.tsx:565 [CallContext] 🌐 ENHANCED: Transport stats: {callId: 'call_1757922976026_2_3', dtlsState: 'connected', iceState: 'connected', selectedCandidatePairId: 'CPxGSJiOpw_qHKsAYQx'}
+sw.js:194 [SW] Message received: {type: 'KEEP_ALIVE'}

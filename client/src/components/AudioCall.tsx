@@ -74,37 +74,61 @@ export default function AudioCall() {
     }
   }, [remoteAudioStream]);
   
-  // Update call duration timer - FIXED for consistent timing
+  // ROBUST TIMER - Same logic as VideoCall for consistency
   useEffect(() => {
+    console.log("[AudioCall] 🕐 Timer check:", {
+      hasActiveCall: !!activeCall,
+      status: activeCall?.status,
+      startTime: activeCall?.startTime
+    });
+    
     if (!activeCall || activeCall.status !== 'connected') {
       setCallDuration("00:00:00");
       return;
     }
     
-    // 🚀 FIXED: Use consistent start time reference
-    const callStartTime = activeCall.startTime?.getTime() || Date.now();
-    console.log("[AudioCall] Setting up call duration timer with startTime:", new Date(callStartTime));
+    // 🚀 ROBUST: Always use current time as start reference
+    const startTimeMs = activeCall.startTime?.getTime() || Date.now();
+    console.log("[AudioCall] 🕐 STARTING robust timer, startTime:", new Date(startTimeMs));
     
-    const interval = setInterval(() => {
-      const duration = Date.now() - callStartTime;
-      const hours = Math.floor(duration / 3600000).toString().padStart(2, '0');
-      const minutes = Math.floor((duration % 3600000) / 60000).toString().padStart(2, '0');
-      const seconds = Math.floor((duration % 60000) / 1000).toString().padStart(2, '0');
-      setCallDuration(`${hours}:${minutes}:${seconds}`);
-    }, 1000);
+    let intervalId: NodeJS.Timeout | null = null;
+    let isActive = true;
     
-    // 🚀 PROTECT timer interval from nuclear cleanup
-    (window as any).__audioCallTimerInterval = interval;
+    const updateTimer = () => {
+      if (!isActive) return;
+      
+      const elapsed = Date.now() - startTimeMs;
+      const hours = Math.floor(elapsed / 3600000).toString().padStart(2, '0');
+      const minutes = Math.floor((elapsed % 3600000) / 60000).toString().padStart(2, '0');
+      const seconds = Math.floor((elapsed % 60000) / 1000).toString().padStart(2, '0');
+      const formatted = `${hours}:${minutes}:${seconds}`;
+      
+      console.log("[AudioCall] 🕐 Timer tick:", formatted, "elapsed:", elapsed);
+      setCallDuration(formatted);
+    };
+    
+    // Immediate update
+    updateTimer();
+    
+    // Start interval
+    intervalId = setInterval(updateTimer, 1000);
+    console.log("[AudioCall] 🕐 Robust timer started, interval:", intervalId);
+    
+    // DOUBLE PROTECTION: Both global reference and scope reference
+    (window as any).__audioCallTimer = intervalId;
     
     return () => {
-      console.log("[AudioCall] Cleaning up call duration timer");
-      clearInterval(interval);
-      // Clear the protected reference
-      if ((window as any).__audioCallTimerInterval === interval) {
-        (window as any).__audioCallTimerInterval = null;
+      console.log("[AudioCall] 🕐 Cleaning up robust timer");
+      isActive = false;
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+      if ((window as any).__audioCallTimer) {
+        clearInterval((window as any).__audioCallTimer);
+        (window as any).__audioCallTimer = null;
       }
     };
-  }, [activeCall?.status, activeCall?.startTime]); // 🚀 FIXED: More specific dependencies
+  }, [activeCall?.status, activeCall?.startTime]);
   
   // Cleanup on component unmount - SAME AS VIDEO CALL
   useEffect(() => {
