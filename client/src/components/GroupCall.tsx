@@ -24,11 +24,14 @@ interface GroupCallProps {
  * 5. Proper cleanup dan connection management
  */
 export default function GroupCall({ groupId, groupName, callType = 'audio' }: GroupCallProps) {
-  const { activeCall, hangupCall, toggleCallAudio, ws, user: currentUser, remoteStreams, remoteAudioStream } = useCall();
+  const { activeCall, hangupCall, toggleCallAudio, ws } = useCall();
   const [, setLocation] = useLocation();
   
-  // 🎯 CRITICAL FIX: Add dedicated audio ref for remoteAudioStream (same as AudioCall)
-  const remoteAudioRef = useRef<HTMLAudioElement>(null);
+  // Get current user ID for filtering
+  const { data: currentUser } = useQuery<any>({
+    queryKey: ['/api/auth/user'],
+    retry: false,
+  });
   
   // Local audio state
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
@@ -53,7 +56,8 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
   const pendingICECandidatesRef = useRef(new Map<number, RTCIceCandidate[]>());
   const remoteStreamsRef = useRef(new Map<string, MediaStream>());
   
-  // State untuk trigger re-renders (removed remoteStreams - using from useCall now)
+  // State untuk trigger re-renders
+  const [remoteStreams, setRemoteStreams] = useState<Map<string, MediaStream>>(new Map());
   const [peerConnections, setPeerConnections] = useState<Map<number, RTCPeerConnection>>(new Map());
   const [pendingICECandidates, setPendingICECandidates] = useState<Map<number, RTCIceCandidate[]>>(new Map());
   
@@ -100,65 +104,6 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     detectAudioDevices();
   }, []);
 
-  // 🎯 CRITICAL FIX: Add EXACT SAME remoteAudioStream handling as AudioCall
-  useEffect(() => {
-    console.log("[GroupCall] 🎯 USING AUDIOCALL LOGIC: Remote stream changed:", remoteAudioStream);
-    if (remoteAudioRef.current && remoteAudioStream) {
-      console.log("[GroupCall] ✅ AUDIOCALL APPROACH: Setting remote stream to audio element");
-      console.log("[GroupCall] AUDIOCALL APPROACH: Remote stream details:", {
-        id: remoteAudioStream.id,
-        active: remoteAudioStream.active,
-        audioTracks: remoteAudioStream.getAudioTracks().length,
-        videoTracks: remoteAudioStream.getVideoTracks().length
-      });
-      
-      // Log track details - EXACT SAME AS AUDIOCALL
-      remoteAudioStream.getTracks().forEach((track, index) => {
-        console.log(`[GroupCall] AUDIOCALL APPROACH: Track ${index}:`, {
-          kind: track.kind,
-          enabled: track.enabled,
-          muted: track.muted,
-          readyState: track.readyState,
-          id: track.id
-        });
-      });
-      
-      // EXACT SAME AS AUDIOCALL - Direct assignment
-      remoteAudioRef.current.srcObject = remoteAudioStream;
-      
-      // EXACT SAME AS AUDIOCALL - Enable autoplay and set volume
-      remoteAudioRef.current.autoplay = true;
-      remoteAudioRef.current.muted = false; // Don't mute - we want audio!
-      remoteAudioRef.current.volume = 1.0;
-      
-      // EXACT SAME AS AUDIOCALL - Attempt to play the audio
-      remoteAudioRef.current.play().then(() => {
-        console.log("[GroupCall] ✅ AUDIOCALL APPROACH: Remote audio playing successfully");
-      }).catch(error => {
-        console.error("[GroupCall] ❌ AUDIOCALL APPROACH: Remote audio play failed:", error);
-        // EXACT SAME AS AUDIOCALL - Try muted autoplay as fallback
-        if (remoteAudioRef.current) {
-          remoteAudioRef.current.muted = true;
-          remoteAudioRef.current.play().then(() => {
-            console.log("[GroupCall] ✅ AUDIOCALL APPROACH: Remote audio playing (muted fallback)");
-            // EXACT SAME AS AUDIOCALL - Unmute after starting
-            setTimeout(() => {
-              if (remoteAudioRef.current) {
-                remoteAudioRef.current.muted = false;
-                console.log("[GroupCall] 🔊 AUDIOCALL APPROACH: Unmuted remote audio after autoplay");
-              }
-            }, 100);
-          }).catch(err => {
-            console.error("[GroupCall] ❌ AUDIOCALL APPROACH: Even muted autoplay failed:", err);
-          });
-        }
-      });
-    } else if (!remoteAudioStream) {
-      console.log("[GroupCall] ⏳ AUDIOCALL APPROACH: Waiting for remote stream...");
-    } else if (!remoteAudioRef.current) {
-      console.log("[GroupCall] ⏳ AUDIOCALL APPROACH: Waiting for audio element...");
-    }
-  }, [remoteAudioStream]);
 
   // Function untuk switch audio output
   const switchAudioOutput = useCallback(() => {
@@ -875,65 +820,49 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     }
   };
 
-  // EXACT SAME AUDIO ATTACHMENT AS WORKING AUDIOCALL
+  // 🎯 REVERT: Use WORKING audio attachment (remove remoteAudioStream approach)
   useEffect(() => {
     participants.forEach((participant) => {
       if (participant.stream && participant.audioRef.current) {
-        console.log(`[GroupCall] 🎯 Using EXACT SAME audio attachment as AudioCall for ${participant.userName}`);
+        console.log(`[GroupCall] 🔊 Attaching audio stream for ${participant.userName}`);
         
-        // EXACT SAME AS WORKING AUDIOCALL - Check audio element and stream
-        console.log(`[GroupCall] Remote stream changed for ${participant.userName}:`, participant.stream);
-        if (participant.audioRef.current && participant.stream) {
-          console.log(`[GroupCall] ✅ Setting remote stream to audio element for ${participant.userName}`);
-          console.log(`[GroupCall] Remote stream details for ${participant.userName}:`, {
-            id: participant.stream.id,
-            active: participant.stream.active,
-            audioTracks: participant.stream.getAudioTracks().length,
-            videoTracks: participant.stream.getVideoTracks().length
-          });
-          
-          // Log track details - EXACT SAME AS AUDIOCALL
-          participant.stream.getTracks().forEach((track, index) => {
-            console.log(`[GroupCall] ${participant.userName} Track ${index}:`, {
-              kind: track.kind,
-              enabled: track.enabled,
-              muted: track.muted,
-              readyState: track.readyState,
-              id: track.id
+        // Log stream details
+        console.log(`[GroupCall] Stream details for ${participant.userName}:`, {
+          id: participant.stream.id,
+          active: participant.stream.active,
+          audioTracks: participant.stream.getAudioTracks().length
+        });
+        
+        // Attach stream to audio element
+        participant.audioRef.current.srcObject = participant.stream;
+        
+        // Enable autoplay and set volume
+        participant.audioRef.current.autoplay = true;
+        participant.audioRef.current.muted = false;
+        participant.audioRef.current.volume = 1.0;
+        
+        // Attempt to play the audio
+        participant.audioRef.current.play().then(() => {
+          console.log(`[GroupCall] ✅ ${participant.userName} audio playing successfully`);
+        }).catch(error => {
+          console.error(`[GroupCall] ❌ ${participant.userName} audio play failed:`, error);
+          // Try muted autoplay as fallback
+          if (participant.audioRef.current) {
+            participant.audioRef.current.muted = true;
+            participant.audioRef.current.play().then(() => {
+              console.log(`[GroupCall] ✅ ${participant.userName} audio playing (muted fallback)`);
+              // Unmute after starting
+              setTimeout(() => {
+                if (participant.audioRef.current) {
+                  participant.audioRef.current.muted = false;
+                  console.log(`[GroupCall] 🔊 Unmuted ${participant.userName} audio after autoplay`);
+                }
+              }, 100);
+            }).catch(err => {
+              console.error(`[GroupCall] ❌ Even muted autoplay failed for ${participant.userName}:`, err);
             });
-          });
-          
-          // EXACT SAME AS WORKING AUDIOCALL
-          participant.audioRef.current.srcObject = participant.stream;
-          
-          // EXACT SAME AS WORKING AUDIOCALL - Enable autoplay and set volume
-          participant.audioRef.current.autoplay = true;
-          participant.audioRef.current.muted = false; // Don't mute - we want audio!
-          participant.audioRef.current.volume = 1.0;
-          
-          // EXACT SAME AS WORKING AUDIOCALL - Attempt to play the audio
-          participant.audioRef.current.play().then(() => {
-            console.log(`[GroupCall] ✅ ${participant.userName} audio playing successfully`);
-          }).catch(error => {
-            console.error(`[GroupCall] ❌ ${participant.userName} audio play failed:`, error);
-            // EXACT SAME AS WORKING AUDIOCALL - Try muted autoplay as fallback
-            if (participant.audioRef.current) {
-              participant.audioRef.current.muted = true;
-              participant.audioRef.current.play().then(() => {
-                console.log(`[GroupCall] ✅ ${participant.userName} audio playing (muted fallback)`);
-                // EXACT SAME AS WORKING AUDIOCALL - Unmute after starting
-                setTimeout(() => {
-                  if (participant.audioRef.current) {
-                    participant.audioRef.current.muted = false;
-                    console.log(`[GroupCall] 🔊 Unmuted ${participant.userName} audio after autoplay`);
-                  }
-                }, 100);
-              }).catch(err => {
-                console.error(`[GroupCall] ❌ Even muted autoplay failed for ${participant.userName}:`, err);
-              });
-            }
-          });
-        }
+          }
+        });
       }
     });
   }, [participants]);
@@ -1075,14 +1004,6 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
           ))}
         </div>
 
-        {/* 🎯 CRITICAL FIX: Add hidden audio element for remoteAudioStream (same as AudioCall) */}
-        <audio
-          ref={remoteAudioRef}
-          autoPlay
-          playsInline
-          className="hidden"
-          data-testid="remote-audio-stream"
-        />
 
         {/* Connection Status */}
         <div className="mt-6 text-center">

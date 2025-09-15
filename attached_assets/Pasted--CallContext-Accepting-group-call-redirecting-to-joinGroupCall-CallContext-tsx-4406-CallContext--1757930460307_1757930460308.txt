@@ -1,0 +1,69 @@
+[CallContext] Accepting group call - redirecting to joinGroupCall
+CallContext.tsx:4406 [CallContext] Joining existing group call: {callId: 'group_call_1757930380014_38_3', groupId: 38, groupName: 'Ampera Grup', callType: 'audio'}
+CallContext.tsx:4443 [CallContext] Creating new stream for joining group call (audio + video enabled)...
+CallContext.tsx:4676 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: null, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: null, hasIncomingCall: false}
+IncomingCallModal.tsx:6 [IncomingCallModal] 🔥 COMPONENT RENDERED - START
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: null, hasIncomingCall: false}
+IncomingCallModal.tsx:11 [IncomingCallModal] 🔥 After useCall hook - incomingCall: null
+IncomingCallModal.tsx:12 [IncomingCallModal] 🔥 incomingCall type check: object
+IncomingCallModal.tsx:13 [IncomingCallModal] 🔥 incomingCall falsy check: true
+IncomingCallModal.tsx:16 [IncomingCallModal] No incoming call, returning null
+CallContext.tsx:4664 [CallContext] 🔥 INCOMING CALL STATE CHANGED: null
+CallContext.tsx:1156 [CallContext] Received message: {type: 'force_webrtc_reconnect', payload: {…}}
+CallContext.tsx:1159 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'force_webrtc_reconnect', hasPayload: true, messageKeys: Array(2), routingToCase: 'force_webrtc_reconnect'}
+CallContext.tsx:1277 [CallContext] 🔥 ROUTING: force_webrtc_reconnect case matched, calling handleInitiateGroupWebRTC
+CallContext.tsx:2462 [CallContext] 🚀 Group WebRTC initiation received: {type: 'force_webrtc_reconnect', payload: {…}}
+CallContext.tsx:2469 [CallContext] 🔍 DEBUG handleInitiateGroupWebRTC: {currentActiveCall: null, activeCallFromState: null, messageCallId: 'group_call_1757930380014_38_3', messageParticipants: Array(1)}
+CallContext.tsx:2486 [CallContext] ❌ No active group call found for WebRTC initiation
+CallContext.tsx:2487 [CallContext] ❌ DEBUG: currentActiveCall exists: false
+CallContext.tsx:2488 [CallContext] ❌ DEBUG: isGroupCall: undefined
+CallContext.tsx:2492 [CallContext] 🔄 Received server WebRTC initiation for ended/empty group call - ignoring gracefully
+CallContext.tsx:2493 [CallContext] 🔄 This typically happens when server cleanup and client state are out of sync
+CallContext.tsx:2497 [CallContext] 🔄 Group call has participants, but no local active call - may need to rejoin
+CallContext.tsx:4445 [CallContext] Got new audio and video stream for joining group call - full media enabled from start
+CallContext.tsx:4477 [CallContext] Added local track for joining group call: audio
+CallContext.tsx:4477 [CallContext] Added local track for joining group call: video
+CallContext.tsx:4501 [CallContext] Active call state set for group: 38 callId: group_call_1757930380014_38_3
+CallContext.tsx:4520 [CallContext] Joined group call successfully
+CallContext.tsx:4521 [CallContext] Active call state after joining: {callId: 'group_call_1757930380014_38_3', callType: 'audio', status: 'connected', isIncoming: false, localStream: MediaStream, …}
+CallContext.tsx:4524 [CallContext] 📊 Processing pending participant updates after join...
+CallContext.tsx:4676 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+IncomingCallModal.tsx:6 [IncomingCallModal] 🔥 COMPONENT RENDERED - START
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+IncomingCallModal.tsx:11 [IncomingCallModal] 🔥 After useCall hook - incomingCall: null
+IncomingCallModal.tsx:12 [IncomingCallModal] 🔥 incomingCall type check: object
+IncomingCallModal.tsx:13 [IncomingCallModal] 🔥 incomingCall falsy check: true
+IncomingCallModal.tsx:16 [IncomingCallModal] No incoming call, returning null
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:89 [GroupCall] 🎧 Audio device detection: {hasEarphones: false, currentOutput: 'speaker'}
+GroupCall.tsx:105 [GroupCall] 🎯 USING AUDIOCALL LOGIC: Remote stream changed: null
+GroupCall.tsx:157 [GroupCall] ⏳ AUDIOCALL APPROACH: Waiting for remote stream...
+GroupCall.tsx:245 [GroupCall] Initializing media with audio-only from start...
+GroupCall.tsx:249 [GroupCall] Initializing media for desktop device
+GroupCall.tsx:266 [GroupCall] ✅ Got media stream: {id: 'ce6a3b24-b769-440b-9bfb-8201397fb9cc', active: true, audioTracks: 1}
+GroupCall.tsx:277 [GroupCall] ✅ Audio enabled from start
+GroupCall.tsx:282 [GroupCall] 📊 Media stream set in state and marked as initialized
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:345 [GroupCall] 📊 Stream initialized and ready for WebRTC
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:4553 [CallContext] 🔄 Requesting fresh participant data as backup...
+CallContext.tsx:4566 [CallContext] 📊 Sent backup participant request: {type: 'request_group_participants', payload: {…}}
+CallContext.tsx:4676 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+ChatList.tsx:149 📋 CHATLIST: Removing WebSocket event listeners
+GroupCall.tsx:335 [GroupCall] 🧹 Connection timeouts, reconnection state, and refresh tracking cleaned up
+GroupCall.tsx:89 [GroupCall] 🎧 Audio device detection: {hasEarphones: false, currentOutput: 'speaker'}
+GroupCall.tsx:105 [GroupCall] 🎯 USING AUDIOCALL LOGIC: Remote stream changed: null
+GroupCall.tsx:157 [GroupCall] ⏳ AUDIOCALL APPROACH: Waiting for remote stream...
+GroupCall.tsx:245 [GroupCall] Initializing media with audio-only from start...
+GroupCall.tsx:249 [GroupCall] Initializing media for desktop device
+GroupCall.tsx:266 [GroupCall] ✅ Got media stream: {id: '0870b45c-a3d1-45ee-828e-b72f71619c30', active: true, audioTracks: 1}
+GroupCall.tsx:277 [GroupCall] ✅ Audio enabled from start
+GroupCall.tsx:282 [GroupCall] 📊 Media stream set in state and marked as initialized
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:345 [GroupCall] 📊 Stream initialized and ready for WebRTC
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:4517 [CallContext] Sent join group call message for recipient: {type: 'join_group_call', payload: {…}}
+CallContext.tsx:1156 [CallContext] Received message: {type: 'group_call_participants_update', payload: {…}}
