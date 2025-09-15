@@ -956,9 +956,11 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
                 </span>
               </div>
               
-              {/* Audio element untuk participant (hidden) - SIMPLE LIKE WORKING AUDIOCALL */}
+              {/* Audio element untuk participant (hidden) - EXACT SAME AS WORKING AUDIOCALL */}
               <audio
                 ref={participant.audioRef}
+                autoPlay
+                playsInline
                 className="hidden"
                 data-testid={`participant-audio-${participant.userId}`}
               />
