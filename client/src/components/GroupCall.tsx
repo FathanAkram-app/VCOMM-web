@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, PhoneOff, Users, Radio, Shield, Zap } from 'lucide-react';
+import { Mic, MicOff, PhoneOff, Users, Radio, Shield, Zap, Headphones, Speaker, Volume2 } from 'lucide-react';
 import { useCall } from '@/hooks/useCall';
 import { useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { audioManager, setPreferredAudioOutput, isEarphoneConnected, getCurrentAudioOutput } from '@/utils/audioManager';
 
 interface GroupCallProps {
   groupId: number;
@@ -29,6 +30,11 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
   // Local audio state
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+  
+  // Audio output management state
+  const [currentAudioOutput, setCurrentAudioOutput] = useState<'earpiece' | 'speaker' | 'earphone'>('speaker');
+  const [isEarphoneDetected, setIsEarphoneDetected] = useState(false);
+  const [audioVolume, setAudioVolume] = useState(1.0);
   
   // Remote participants state dengan audio-only focus
   const [participants, setParticipants] = useState<Array<{
@@ -68,6 +74,60 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     isRefreshing: boolean,
     refreshSource: 'manual' | 'bidirectional' | 'auto'
   }>());
+
+  // Audio device detection pada mount
+  useEffect(() => {
+    const detectAudioDevices = async () => {
+      const hasEarphones = isEarphoneConnected();
+      const currentOutput = getCurrentAudioOutput() as 'earpiece' | 'speaker' | 'earphone';
+      
+      setIsEarphoneDetected(hasEarphones);
+      setCurrentAudioOutput(hasEarphones ? 'earphone' : currentOutput);
+      
+      console.log('[GroupCall] 🎧 Audio device detection:', {
+        hasEarphones,
+        currentOutput: hasEarphones ? 'earphone' : currentOutput
+      });
+      
+      // Set optimal output untuk device yang terdeteksi
+      if (hasEarphones) {
+        setPreferredAudioOutput('earphone');
+      }
+    };
+    
+    detectAudioDevices();
+  }, []);
+
+  // Function untuk switch audio output
+  const switchAudioOutput = useCallback(() => {
+    const newOutput = currentAudioOutput === 'speaker' ? 'earphone' : 'speaker';
+    setCurrentAudioOutput(newOutput);
+    setPreferredAudioOutput(newOutput);
+    
+    console.log(`[GroupCall] 🔊 Switched audio output to: ${newOutput}`);
+    
+    // Update volume untuk device yang berbeda
+    if (newOutput === 'earphone') {
+      setAudioVolume(0.9); // Higher volume for earphones
+    } else {
+      setAudioVolume(1.0); // Full volume for speakers
+    }
+  }, [currentAudioOutput]);
+
+  // Function untuk increase volume
+  const increaseVolume = useCallback(() => {
+    const newVolume = Math.min(1.0, audioVolume + 0.2);
+    setAudioVolume(newVolume);
+    
+    // Apply ke semua audio elements
+    participants.forEach(participant => {
+      if (participant.audioRef.current) {
+        participant.audioRef.current.volume = newVolume;
+      }
+    });
+    
+    console.log(`[GroupCall] 🔊 Volume increased to: ${newVolume}`);
+  }, [audioVolume, participants]);
 
   // Enhanced audio attachment with retry mechanism (adapted dari video logic)
   const attachAudioStreamWithRetry = async (
@@ -120,6 +180,20 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
             resolve(void 0);
           }
         });
+        
+        // Enhanced audio settings untuk better volume dan routing
+        audioElement.volume = audioVolume; // Apply current volume setting
+        audioElement.playsInline = true;
+        audioElement.autoplay = true;
+        
+        // Apply device-specific optimizations
+        if (currentAudioOutput === 'earphone') {
+          audioElement.volume = Math.min(audioVolume, 0.9); // Protect ears
+        } else {
+          audioElement.volume = audioVolume; // Full configured volume for speakers
+        }
+        
+        console.log(`[GroupCall] 🎵 Audio settings applied: volume=${audioElement.volume}, output=${currentAudioOutput}`);
         
         // Try to play with error handling
         await new Promise((resolve, reject) => {
@@ -981,6 +1055,34 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
             )}
           </Button>
 
+          {/* Audio Output Switch */}
+          <Button
+            onClick={switchAudioOutput}
+            variant="outline"
+            size="lg"
+            className="rounded-full w-14 h-14"
+            data-testid="button-switch-audio-output"
+            title={`Switch to ${currentAudioOutput === 'speaker' ? 'headphone' : 'speaker'}`}
+          >
+            {currentAudioOutput === 'speaker' ? (
+              <Speaker className="w-6 h-6" />
+            ) : (
+              <Headphones className="w-6 h-6" />
+            )}
+          </Button>
+
+          {/* Volume Control */}
+          <Button
+            onClick={increaseVolume}
+            variant="outline"
+            size="lg"
+            className="rounded-full w-14 h-14"
+            data-testid="button-increase-volume"
+            title={`Volume: ${Math.round(audioVolume * 100)}%`}
+          >
+            <Volume2 className="w-6 h-6" />
+          </Button>
+
           <Button
             onClick={leaveCall}
             variant="destructive"
@@ -992,8 +1094,30 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
           </Button>
         </div>
 
-        {/* Additional Info */}
+        {/* Audio Status Display */}
         <div className="mt-4 text-center text-xs text-muted-foreground">
+          <div className="flex items-center justify-center space-x-3 mb-2">
+            <span className="flex items-center space-x-1">
+              {currentAudioOutput === 'speaker' ? (
+                <Speaker className="w-3 h-3" />
+              ) : (
+                <Headphones className="w-3 h-3" />
+              )}
+              <span>{currentAudioOutput === 'speaker' ? 'Speaker' : 'Headphones'}</span>
+            </span>
+            <span>•</span>
+            <span>Volume: {Math.round(audioVolume * 100)}%</span>
+            {isEarphoneDetected && (
+              <>
+                <span>•</span>
+                <span className="text-green-600">🎧 Headset Detected</span>
+              </>
+            )}
+          </div>
+        </div>
+        
+        {/* Additional Info */}
+        <div className="mt-2 text-center text-xs text-muted-foreground">
           <div className="flex items-center justify-center space-x-4">
             <span>Kualitas: HD Audio</span>
             <span>•</span>
