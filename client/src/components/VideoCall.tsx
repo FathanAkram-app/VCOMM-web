@@ -120,10 +120,18 @@ export default function VideoCall() {
     const interval = setInterval(tick, 1000);
     console.log("[VideoCall] 🕐 Simple timer interval created:", interval);
     
+    // 🚀 PROTECT from nuclear cleanup
+    (window as any).__videoCallTimer = interval;
+    console.log("[VideoCall] 🕐 Timer protected from nuclear cleanup");
+    
     return () => {
       console.log("[VideoCall] 🕐 Cleaning up simple timer");
       timerActive = false;
       clearInterval(interval);
+      // Clear protection
+      if ((window as any).__videoCallTimer === interval) {
+        (window as any).__videoCallTimer = null;
+      }
     };
   }, [activeCall?.status, activeCall?.callId]); // Watch for status and callId changes
   

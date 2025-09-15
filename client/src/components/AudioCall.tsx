@@ -112,10 +112,18 @@ export default function AudioCall() {
     const interval = setInterval(tick, 1000);
     console.log("[AudioCall] 🕐 Simple timer interval created:", interval);
     
+    // 🚀 PROTECT from nuclear cleanup
+    (window as any).__audioCallTimer = interval;
+    console.log("[AudioCall] 🕐 Timer protected from nuclear cleanup");
+    
     return () => {
       console.log("[AudioCall] 🕐 Cleaning up simple timer");
       timerActive = false;
       clearInterval(interval);
+      // Clear protection
+      if ((window as any).__audioCallTimer === interval) {
+        (window as any).__audioCallTimer = null;
+      }
     };
   }, [activeCall?.status, activeCall?.callId]); // Watch for status and callId changes
   
