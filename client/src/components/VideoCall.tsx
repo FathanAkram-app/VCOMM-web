@@ -212,7 +212,7 @@ export default function VideoCall() {
             autoPlay
             playsInline
             muted={false}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-contain bg-black"
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
@@ -238,7 +238,7 @@ export default function VideoCall() {
             autoPlay
             playsInline
             muted
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
           />
         </div>
       </div>
