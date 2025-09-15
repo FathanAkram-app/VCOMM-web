@@ -247,6 +247,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         handleGroupCallParticipantsUpdate(message);
         break;
       case 'initiate_group_webrtc':
+        console.log('[CallContext] 🔥 ROUTING: initiate_group_webrtc case matched, calling handleInitiateGroupWebRTC');
         handleInitiateGroupWebRTC(message);
         break;
       case 'group_call_no_participants':
@@ -1090,6 +1091,14 @@ export function CallProvider({ children }: { children: ReactNode }) {
       try {
         const message = JSON.parse(event.data);
         console.log('[CallContext] Received message:', message);
+        
+        // 🔍 DEBUG: Add detailed message routing debugging
+        console.log('[CallContext] 🔍 DEBUG MESSAGE ROUTING:', {
+          messageType: message.type,
+          hasPayload: !!message.payload,
+          messageKeys: Object.keys(message),
+          routingToCase: message.type
+        });
         
         // Debug log specifically for incoming group call messages
         if (message.type === 'incoming_group_call') {
