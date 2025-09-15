@@ -2361,8 +2361,27 @@ export function CallProvider({ children }: { children: ReactNode }) {
     // Get current active call
     const currentActiveCall = activeCallRef.current || activeCall;
     
+    // 🔍 DEBUG: Add detailed logging to understand the issue
+    console.log('[CallContext] 🔍 DEBUG handleInitiateGroupWebRTC:', {
+      currentActiveCall: currentActiveCall ? {
+        callId: currentActiveCall.callId,
+        isGroupCall: currentActiveCall.isGroupCall,
+        callType: currentActiveCall.callType,
+        status: currentActiveCall.status
+      } : null,
+      activeCallFromState: activeCall ? {
+        callId: activeCall.callId,
+        isGroupCall: activeCall.isGroupCall,
+        callType: activeCall.callType
+      } : null,
+      messageCallId: callId,
+      messageParticipants: participants
+    });
+    
     if (!currentActiveCall || !currentActiveCall.isGroupCall) {
       console.log('[CallContext] ❌ No active group call found for WebRTC initiation');
+      console.log('[CallContext] ❌ DEBUG: currentActiveCall exists:', !!currentActiveCall);
+      console.log('[CallContext] ❌ DEBUG: isGroupCall:', currentActiveCall?.isGroupCall);
       return;
     }
     
