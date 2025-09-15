@@ -74,13 +74,19 @@ export default function AudioCall() {
     }
   }, [remoteAudioStream]);
   
-  // Update call duration timer - SAME AS VIDEO CALL
+  // Update call duration timer - FIXED for consistent timing
   useEffect(() => {
-    if (!activeCall || activeCall.status !== 'connected') return;
+    if (!activeCall || activeCall.status !== 'connected') {
+      setCallDuration("00:00:00");
+      return;
+    }
     
-    console.log("[AudioCall] Setting up call duration timer");
+    // 🚀 FIXED: Use consistent start time reference
+    const callStartTime = activeCall.startTime?.getTime() || Date.now();
+    console.log("[AudioCall] Setting up call duration timer with startTime:", new Date(callStartTime));
+    
     const interval = setInterval(() => {
-      const duration = new Date().getTime() - (activeCall.startTime?.getTime() || 0);
+      const duration = Date.now() - callStartTime;
       const hours = Math.floor(duration / 3600000).toString().padStart(2, '0');
       const minutes = Math.floor((duration % 3600000) / 60000).toString().padStart(2, '0');
       const seconds = Math.floor((duration % 60000) / 1000).toString().padStart(2, '0');
@@ -91,7 +97,7 @@ export default function AudioCall() {
       console.log("[AudioCall] Cleaning up call duration timer");
       clearInterval(interval);
     };
-  }, [activeCall]);
+  }, [activeCall?.status, activeCall?.startTime]); // 🚀 FIXED: More specific dependencies
   
   // Cleanup on component unmount - SAME AS VIDEO CALL
   useEffect(() => {

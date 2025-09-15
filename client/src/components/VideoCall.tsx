@@ -82,13 +82,19 @@ export default function VideoCall() {
     }
   }, [remoteAudioStream]);
   
-  // Update call duration timer
+  // Update call duration timer - FIXED for consistent timing
   useEffect(() => {
-    if (!activeCall || activeCall.status !== 'connected') return;
+    if (!activeCall || activeCall.status !== 'connected') {
+      setCallDuration("00:00:00");
+      return;
+    }
     
-    console.log("[VideoCall] Setting up call duration timer");
+    // 🚀 FIXED: Use consistent start time reference
+    const callStartTime = activeCall.startTime?.getTime() || Date.now();
+    console.log("[VideoCall] Setting up call duration timer with startTime:", new Date(callStartTime));
+    
     const interval = setInterval(() => {
-      const duration = new Date().getTime() - (activeCall.startTime?.getTime() || 0);
+      const duration = Date.now() - callStartTime;
       const hours = Math.floor(duration / 3600000).toString().padStart(2, '0');
       const minutes = Math.floor((duration % 3600000) / 60000).toString().padStart(2, '0');
       const seconds = Math.floor((duration % 60000) / 1000).toString().padStart(2, '0');
@@ -99,7 +105,7 @@ export default function VideoCall() {
       console.log("[VideoCall] Cleaning up call duration timer");
       clearInterval(interval);
     };
-  }, [activeCall]);
+  }, [activeCall?.status, activeCall?.startTime]); // 🚀 FIXED: More specific dependencies
   
   // Cleanup on component unmount
   useEffect(() => {
