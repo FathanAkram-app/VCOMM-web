@@ -293,54 +293,80 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
 
   // Get current user ID for filtering (removed - using from useCall now)
 
-  // Enhanced participant data event listener
+  // 🎯 AUTHORITATIVE PARTICIPANT MANAGEMENT: Single source of truth (activeCall.participants + remoteStreams)
+  const updateParticipantsFromState = useCallback(() => {
+    if (!activeCall?.participants || !currentUser) {
+      console.log(`[GroupCall] 🎯 AUTHORITATIVE: Missing activeCall or currentUser`);
+      setParticipants([]);
+      return;
+    }
+    
+    console.log(`[GroupCall] 🎯 AUTHORITATIVE: Updating from state - activeCall has ${activeCall.participants.length} total participants`);
+    
+    // 🎯 SINGLE SOURCE OF TRUTH: Always use activeCall.participants as authoritative source
+    const rawParticipants = activeCall.participants || [];
+    
+    // 🎯 ALWAYS filter out current user for consistency
+    const remoteParticipants = rawParticipants.filter(p => {
+      const participantId = p.userId || p.id;
+      return participantId !== currentUser.id;
+    });
+    
+    console.log(`[GroupCall] 🎯 AUTHORITATIVE: Raw: ${rawParticipants.length}, Remote: ${remoteParticipants.length}, Current user: ${currentUser.id}`);
+    
+    if (!remoteParticipants.length) {
+      console.log(`[GroupCall] 🎯 AUTHORITATIVE: No remote participants`);
+      setParticipants([]);
+      return;
+    }
+    
+    // 🎯 DEDUPLICATION: Remove duplicates by userId
+    const uniqueParticipants = remoteParticipants.filter((p, index, arr) => {
+      const participantId = p.userId || p.id;
+      return arr.findIndex(other => (other.userId || other.id) === participantId) === index;
+    });
+    
+    const finalParticipants = uniqueParticipants.map((p: any) => {
+      const participantId = p.userId || p.id;
+      const participantName = p.userName || p.name || `User ${participantId}`;
+      
+      // Check for existing streams
+      const streamKey = `user_${participantId}`;
+      const userStream = remoteStreams.get(streamKey) || null;
+      const audioEnabled = !!userStream;
+      
+      console.log(`[GroupCall] 🎯 AUTHORITATIVE: Processing ${participantName} (${participantId}):`, {
+        hasStream: !!userStream,
+        audioEnabled
+      });
+      
+      return {
+        userId: participantId,
+        userName: participantName,
+        stream: userStream,
+        audioRef: React.createRef<HTMLAudioElement>(),
+        audioEnabled
+      };
+    });
+    
+    // 🎯 CONSISTENT ORDERING: Always sort by userId
+    finalParticipants.sort((a, b) => a.userId - b.userId);
+    
+    console.log(`[GroupCall] 🎯 AUTHORITATIVE: Final participant list:`, {
+      count: finalParticipants.length,
+      participants: finalParticipants.map(p => `${p.userName}(${p.userId})`),
+      currentUser: currentUser.id
+    });
+    
+    setParticipants(finalParticipants);
+  }, [activeCall?.participants, currentUser, remoteStreams]);
+
+  // Event listener - ONLY triggers state refresh (no direct participant updates)
   useEffect(() => {
     const handleParticipantDataUpdate = (event: CustomEvent) => {
-      console.log('[GroupCall] 🔥 Participant data update event received:', event.detail);
-      const { participants: updatedParticipants, isNewMember, fullSync, participantData } = event.detail;
-      
-      // 🎯 PARTICIPANT SYNC FIX: Handle ALL update scenarios, not just fullSync+newMember
-      if (updatedParticipants && Array.isArray(updatedParticipants)) {
-        console.log('[GroupCall] 🎯 Comprehensive participant sync - updating all participants:', {
-          totalParticipants: updatedParticipants.length,
-          isNewMember: !!isNewMember,
-          fullSync: !!fullSync,
-          hasDetailedData: !!participantData
-        });
-        
-        // Use detailed data if available, fallback to basic data
-        const sourceData = participantData || updatedParticipants;
-        
-        // 🎯 COMPREHENSIVE MAPPING: Handle both detailed and basic participant data
-        const newParticipants = sourceData.map((p: any) => {
-          const participantId = p.userId || p.id;
-          const participantName = p.userName || p.name || `User ${participantId}`;
-          
-          console.log(`[GroupCall] 🔍 Syncing participant:`, {
-            id: participantId,
-            name: participantName,
-            hasDetailedData: !!p.userName
-          });
-          
-          return {
-            userId: participantId,
-            userName: participantName,
-            stream: null, // Will be populated by main useEffect when streams are available
-            audioRef: React.createRef<HTMLAudioElement>(),
-            audioEnabled: p.audioEnabled !== undefined ? p.audioEnabled : true
-          };
-        });
-        
-        // 🎯 FORCE UPDATE: Ensure participants state gets updated
-        setParticipants(newParticipants);
-        
-        console.log('[GroupCall] ✅ Participant sync completed:', {
-          participantCount: newParticipants.length,
-          participantNames: newParticipants.map((p: { userName: string; userId: number }) => `${p.userName}(${p.userId})`)
-        });
-      } else {
-        console.log('[GroupCall] ⚠️ No participant data in update event');
-      }
+      console.log('[GroupCall] 🔥 Event trigger received - triggering state refresh:', event.detail);
+      // 🎯 EVENTS ONLY TRIGGER REFRESH: No direct state updates from events
+      updateParticipantsFromState();
     };
     
     window.addEventListener('participant-data-updated', handleParticipantDataUpdate as EventListener);
@@ -348,57 +374,19 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     return () => {
       window.removeEventListener('participant-data-updated', handleParticipantDataUpdate as EventListener);
     };
-  }, []);
+  }, [updateParticipantsFromState]);
 
-  // Update participants dari activeCall dan remoteStreams state
+  // Main state-based participant updates - SINGLE AUTHORITATIVE SOURCE
   useEffect(() => {
     if (activeCall?.participants && currentUser) {
-      console.log('[GroupCall] Updating participants:', activeCall.participants);
-      console.log('[GroupCall] Current user ID:', currentUser.id);
-      console.log('[GroupCall] Available remote streams:', remoteStreams);
-      
-      // Get remote streams as array dari state
-      const remoteStreamsArray = Array.from(remoteStreams.values());
-      console.log('[GroupCall] Remote streams array:', remoteStreamsArray);
-      
-      // Filter out current user from participants to avoid duplication
-      console.log('[GroupCall] 🔍 Before filtering participants:', activeCall.participants.map(p => `${p.userName}(${p.userId})`));
-      console.log('[GroupCall] 🔍 Current user to filter out:', currentUser.id);
-      
-      const filteredParticipants = activeCall.participants.filter(p => p.userId !== currentUser.id);
-      console.log('[GroupCall] 🔍 After filtering participants:', filteredParticipants.map(p => `${p.userName}(${p.userId})`));
-      
-      const newParticipants = filteredParticipants.map((p) => {
-          const streamKey = `user_${p.userId}`;
-          const userStream = remoteStreams.get(streamKey);
-          
-          console.log(`[GroupCall] 🔍 Mapping participant ${p.userName} (${p.userId}):`, {
-            streamKey,
-            hasStream: !!userStream,
-            streamId: userStream?.id,
-            streamActive: userStream?.active,
-            audioTracks: userStream?.getAudioTracks().length || 0
-          });
-          
-          return {
-            userId: p.userId,
-            userName: p.userName,
-            stream: userStream || null,
-            audioRef: React.createRef<HTMLAudioElement>(),
-            audioEnabled: !!userStream
-          };
-        });
-      
-      console.log('[GroupCall] 📋 Final participants list:', newParticipants.map(p => ({
-        userName: p.userName,
-        userId: p.userId,
-        hasStream: !!p.stream,
-        audioEnabled: p.audioEnabled
-      })));
-      
-      setParticipants(newParticipants);
+      console.log('[GroupCall] 🔥 State change detected - updating participants from authoritative source:', {
+        totalInCall: activeCall.participants.length,
+        currentUser: currentUser.id,
+        remoteStreamCount: remoteStreams.size
+      });
+      updateParticipantsFromState();
     }
-  }, [activeCall?.participants, remoteStreams, currentUser]);
+  }, [activeCall?.participants, currentUser, remoteStreams, updateParticipantsFromState]);
 
   // WebRTC connection utilities
   const getOrCreatePeerConnection = useCallback((userId: number): RTCPeerConnection => {
