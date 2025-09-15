@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useCall } from "../hooks/useCall";
 import { Button } from "./ui/button";
 import { ChevronDown, Mic, MicOff, Phone, Volume2, VolumeX, MessageSquare, Speaker, Headphones } from "lucide-react";
-import { audioManager, optimizeStreamForMobile, createMobileAudioElement, isEarphoneConnected, getCurrentAudioOutput } from '@/utils/audioManager';
+import { audioManager, isEarphoneConnected, getCurrentAudioOutput } from '@/utils/audioManager';
 
 export default function AudioCall() {
   const { activeCall, remoteAudioStream, hangupCall, toggleCallAudio, toggleMute } = useCall();
@@ -11,6 +11,14 @@ export default function AudioCall() {
   const [isMobileDevice, setIsMobileDevice] = useState(false);
   const [isEarphoneDetected, setIsEarphoneDetected] = useState(false);
   const [audioOutput, setAudioOutput] = useState<string>("speaker");
+  const audioElementRef = useRef<HTMLAudioElement>(null);
+  const [audioDiagnostics, setAudioDiagnostics] = useState<{
+    canPlay: boolean;
+    playing: boolean;
+    stalled: boolean;
+    suspended: boolean;
+    error: string | null;
+  }>({ canPlay: false, playing: false, stalled: false, suspended: false, error: null });
   
   console.log("[AudioCall] Component rendering with activeCall:", activeCall);
   console.log("[AudioCall] remoteAudioStream:", remoteAudioStream);
@@ -62,37 +70,17 @@ export default function AudioCall() {
     }
   }, []);
 
-  // Setup remote audio stream with mobile optimization
+  // Setup remote audio stream - direct connection without mobile optimization
   useEffect(() => {
     console.log("[AudioCall] Remote stream effect triggered, remoteAudioStream:", remoteAudioStream);
     
-    if (remoteAudioStream && isMobileDevice) {
-      console.log("[AudioCall] Optimizing audio stream for mobile device");
-      
-      // Optimize stream using audio manager
-      optimizeStreamForMobile(remoteAudioStream).then(optimizedStream => {
-        console.log("[AudioCall] Audio stream optimized for mobile");
-        
-        // Create optimized audio element
-        createMobileAudioElement().then(audioElement => {
-          audioElement.srcObject = optimizedStream;
-          audioElement.play().then(() => {
-            console.log("[AudioCall] Optimized audio playing successfully");
-          }).catch(error => {
-            console.error("[AudioCall] Error playing optimized audio:", error);
-          });
-        });
-      }).catch(error => {
-        console.error("[AudioCall] Error optimizing audio stream:", error);
-      });
-    }
     if (!remoteAudioStream) {
       console.log("[AudioCall] ❌ No remote audio stream available, waiting for stream...");
       return;
     }
     
     console.log("[AudioCall] Setting up remote audio stream...");
-    const audioElement = document.querySelector('#remoteAudio') as HTMLAudioElement;
+    const audioElement = audioElementRef.current;
     
     if (audioElement) {
       console.log("[AudioCall] ✅ Found remote audio element, setting stream");
@@ -107,16 +95,16 @@ export default function AudioCall() {
         audioElement.setAttribute('playsinline', 'true');
         audioElement.setAttribute('webkit-playsinline', 'true');
         
-        // Force audio to use earpiece by default on mobile
+        // Audio routing for mobile - always use display:block for proper audio routing
         if (!isLoudspeaker) {
           // Earpiece mode - optimize for phone speaker
           audioElement.volume = 0.8;
-          audioElement.style.display = 'none'; // Hide completely to force system audio routing
+          audioElement.style.display = 'block'; // Always keep display block for audio routing
           console.log("[AudioCall] 📱 Mobile earpiece mode enabled");
         } else {
           // Loudspeaker mode - optimize for external speaker
           audioElement.volume = 1.0;
-          audioElement.style.display = 'block';
+          audioElement.style.display = 'block'; // Always keep display block for audio routing
           console.log("[AudioCall] 🔊 Mobile loudspeaker mode enabled");
         }
         
@@ -124,6 +112,65 @@ export default function AudioCall() {
         audioElement.setAttribute('preload', 'auto');
         audioElement.setAttribute('controls', 'false');
       }
+      
+      // Add comprehensive audio diagnostics
+      const addAudioDiagnostics = () => {
+        if (!audioElement) return;
+        
+        // Reset diagnostics
+        setAudioDiagnostics({ canPlay: false, playing: false, stalled: false, suspended: false, error: null });
+        
+        const handleCanPlay = () => {
+          console.log('[AudioCall] 🔊 Audio can play - ready state:', audioElement.readyState);
+          setAudioDiagnostics(prev => ({ ...prev, canPlay: true }));
+        };
+        
+        const handlePlaying = () => {
+          console.log('[AudioCall] 🎵 Audio is playing - currentTime:', audioElement.currentTime);
+          setAudioDiagnostics(prev => ({ ...prev, playing: true, stalled: false, suspended: false }));
+        };
+        
+        const handleStalled = () => {
+          console.log('[AudioCall] ⚠️ Audio stalled - network issue detected');
+          setAudioDiagnostics(prev => ({ ...prev, stalled: true }));
+        };
+        
+        const handleSuspend = () => {
+          console.log('[AudioCall] ⏸️ Audio suspended - playback paused by browser');
+          setAudioDiagnostics(prev => ({ ...prev, suspended: true }));
+        };
+        
+        const handleError = (e: Event) => {
+          const error = (e.target as HTMLAudioElement).error;
+          const errorMsg = error ? `${error.code}: ${error.message}` : 'Unknown audio error';
+          console.error('[AudioCall] ❌ Audio error:', errorMsg);
+          setAudioDiagnostics(prev => ({ ...prev, error: errorMsg }));
+        };
+        
+        const handleLoadStart = () => console.log('[AudioCall] 🔄 Audio load started');
+        const handleLoadedData = () => console.log('[AudioCall] 📊 Audio data loaded');
+        const handleLoadedMetadata = () => console.log('[AudioCall] 📋 Audio metadata loaded');
+        const handleProgress = () => console.log('[AudioCall] 📈 Audio loading progress');
+        const handleWaiting = () => console.log('[AudioCall] ⏳ Audio waiting for data');
+        const handleEnded = () => console.log('[AudioCall] 🔚 Audio playback ended');
+        
+        // Add all event listeners
+        audioElement.addEventListener('canplay', handleCanPlay);
+        audioElement.addEventListener('playing', handlePlaying);
+        audioElement.addEventListener('stalled', handleStalled);
+        audioElement.addEventListener('suspend', handleSuspend);
+        audioElement.addEventListener('error', handleError);
+        audioElement.addEventListener('loadstart', handleLoadStart);
+        audioElement.addEventListener('loadeddata', handleLoadedData);
+        audioElement.addEventListener('loadedmetadata', handleLoadedMetadata);
+        audioElement.addEventListener('progress', handleProgress);
+        audioElement.addEventListener('waiting', handleWaiting);
+        audioElement.addEventListener('ended', handleEnded);
+        
+        console.log('[AudioCall] 🎧 Audio diagnostics enabled');
+      };
+      
+      addAudioDiagnostics();
       
       // Force audio to play with multiple attempts and debugging
       const tryPlay = async (attempt = 1) => {
@@ -217,17 +264,11 @@ export default function AudioCall() {
               volume: audioElement.volume
             });
             
-            // If currentTime is still 0, try Web Audio API as alternative
-            if (audioElement.currentTime === 0) {
-              console.log('[AudioCall] 🚨 currentTime still 0, trying Web Audio API...');
-              console.log('[AudioCall] 🔧 Audio element not processing stream data, forcing Web Audio API');
-              
-              // Force stop HTML5 audio and switch to Web Audio API immediately
-              audioElement.pause();
-              audioElement.srcObject = null;
-              console.log('[AudioCall] 🛑 Stopped HTML5 audio element');
-              
-              tryWebAudioAPI();
+            // Check if audio is actually playing
+            if (audioElement.currentTime === 0 && !audioElement.paused) {
+              console.log('[AudioCall] ⚠️ Audio element shows playing but currentTime is 0 - potential stream issue');
+              // Don't switch to Web Audio API, just log the issue
+              console.log('[AudioCall] 🔧 Keeping HTML5 audio - Web Audio API causes more issues on mobile');
             } else {
               console.log('[AudioCall] ✅ HTML5 audio working correctly, currentTime:', audioElement.currentTime);
             }
@@ -256,37 +297,8 @@ export default function AudioCall() {
         }
       };
       
-      // Web Audio API fallback function
-      const tryWebAudioAPI = async () => {
-        try {
-          console.log('[AudioCall] 🔧 Trying Web Audio API approach...');
-          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-          
-          // Resume audio context if suspended
-          if (audioContext.state === 'suspended') {
-            await audioContext.resume();
-            console.log('[AudioCall] AudioContext resumed');
-          }
-          
-          // Create media stream source from remote stream
-          const source = audioContext.createMediaStreamSource(remoteAudioStream);
-          const gainNode = audioContext.createGain();
-          gainNode.gain.value = 1.0;
-          
-          // Connect to destination (speakers)
-          source.connect(gainNode);
-          gainNode.connect(audioContext.destination);
-          
-          console.log('[AudioCall] ✅ Web Audio API setup complete');
-          
-          // Store reference for cleanup
-          (window as any).currentAudioContext = audioContext;
-          (window as any).currentAudioSource = source;
-          
-        } catch (webAudioError) {
-          console.log('[AudioCall] ❌ Web Audio API failed:', webAudioError);
-        }
-      };
+      // Removed Web Audio API fallback - causes more issues than it solves
+      // Keep using direct HTML5 audio element for better compatibility
 
       tryPlay();
     } else {
@@ -299,7 +311,7 @@ export default function AudioCall() {
     const newLoudspeakerState = !isLoudspeaker;
     setIsLoudspeaker(newLoudspeakerState);
     
-    const audioElement = document.querySelector('#remoteAudio') as HTMLAudioElement;
+    const audioElement = audioElementRef.current;
     if (audioElement && isMobileDevice && remoteAudioStream) {
       try {
         console.log(`[AudioCall] Switching to ${newLoudspeakerState ? 'LOUDSPEAKER' : 'EARPIECE'} mode`);
@@ -316,11 +328,17 @@ export default function AudioCall() {
           audioElement.setAttribute('webkit-playsinline', 'true');
           audioElement.removeAttribute('autoplay');
           
-          // Set audio to use loudspeaker
-          Object.defineProperty(audioElement, 'sinkId', {
-            value: 'default',
-            writable: true
-          });
+          // Set audio to use loudspeaker with proper setSinkId API
+          if ('setSinkId' in audioElement && typeof audioElement.setSinkId === 'function') {
+            try {
+              await audioElement.setSinkId('default');
+              console.log('[AudioCall] ✓ setSinkId to default (loudspeaker)');
+            } catch (sinkError) {
+              console.warn('[AudioCall] setSinkId not supported or failed:', sinkError);
+            }
+          } else {
+            console.warn('[AudioCall] setSinkId API not available');
+          }
           
           console.log("[AudioCall] 🔊 Configured for LOUDSPEAKER");
         } else {
@@ -330,11 +348,17 @@ export default function AudioCall() {
           audioElement.removeAttribute('webkit-playsinline');
           audioElement.setAttribute('autoplay', 'true');
           
-          // Set audio to use earpiece/receiver
-          Object.defineProperty(audioElement, 'sinkId', {
-            value: 'communications',
-            writable: true
-          });
+          // Set audio to use earpiece/receiver with proper setSinkId API
+          if ('setSinkId' in audioElement && typeof audioElement.setSinkId === 'function') {
+            try {
+              await audioElement.setSinkId('communications');
+              console.log('[AudioCall] ✓ setSinkId to communications (earpiece)');
+            } catch (sinkError) {
+              console.warn('[AudioCall] setSinkId not supported or failed:', sinkError);
+            }
+          } else {
+            console.warn('[AudioCall] setSinkId API not available');
+          }
           
           console.log("[AudioCall] 📱 Configured for EARPIECE");
         }
@@ -408,7 +432,7 @@ export default function AudioCall() {
       }
       
       // Clean up audio element
-      const audioElement = document.querySelector('#remoteAudio') as HTMLAudioElement;
+      const audioElement = audioElementRef.current;
       if (audioElement) {
         audioElement.pause();
         audioElement.srcObject = null;
@@ -484,12 +508,24 @@ export default function AudioCall() {
   
   return (
     <div className="h-full w-full flex flex-col bg-gray-900">
-      {/* Hidden audio element for remote stream */}
+      {/* Single managed audio element for remote stream */}
       <audio 
-        id="remoteAudio"
+        ref={audioElementRef}
         autoPlay
         playsInline
-        style={{ display: 'none' }}
+        style={{ 
+          position: 'absolute',
+          left: '-9999px',
+          width: '1px',
+          height: '1px',
+          opacity: 0,
+          display: 'block' // Explicitly set to block for proper audio routing
+        }}
+        onCanPlay={() => setAudioDiagnostics(prev => ({ ...prev, canPlay: true }))}
+        onPlaying={() => setAudioDiagnostics(prev => ({ ...prev, playing: true }))}
+        onStalled={() => setAudioDiagnostics(prev => ({ ...prev, stalled: true }))}
+        onSuspend={() => setAudioDiagnostics(prev => ({ ...prev, suspended: true }))}
+        onError={(e) => setAudioDiagnostics(prev => ({ ...prev, error: (e.target as HTMLAudioElement).error?.message || 'Unknown error' }))}
       />
       
       {/* Audio Call UI */}
@@ -680,8 +716,6 @@ export default function AudioCall() {
         </div>
       </div>
       
-      {/* Hidden audio element for remote stream */}
-      <audio id="remoteAudio" autoPlay playsInline style={{ display: 'none' }} />
     </div>
   );
 }

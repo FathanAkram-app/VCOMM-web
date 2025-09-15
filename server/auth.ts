@@ -68,9 +68,11 @@ export async function setupAuth(app: express.Express) {
       }
       
       // Check if NRP already exists
-      const existingUserByNrp = await storage.getUserByNrp(parseResult.data.nrp);
-      if (existingUserByNrp) {
-        return res.status(400).json({ message: "NRP/ID already registered" });
+      if (parseResult.data.nrp) {
+        const existingUserByNrp = await storage.getUserByNrp(parseResult.data.nrp);
+        if (existingUserByNrp) {
+          return res.status(400).json({ message: "NRP/ID already registered" });
+        }
       }
       
       // Hash password
