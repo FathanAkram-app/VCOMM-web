@@ -626,39 +626,44 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     }
 
     try {
-      // CRITICAL FIX: Add recvonly transceiver BEFORE setRemoteDescription for audio reception
-      const transceivers = pc.getTransceivers();
-      const hasAudioReceiver = transceivers.some(t => t.receiver.track && t.receiver.track.kind === 'audio');
-      
-      if (!hasAudioReceiver) {
-        console.log(`[GroupCall] 🔧 Adding recvonly audio transceiver for user ${offerData.fromUserId}`);
-        const audioTransceiver = pc.addTransceiver('audio', { direction: 'recvonly' });
-        console.log(`[GroupCall] ✅ Added audio transceiver:`, {
-          direction: audioTransceiver.direction,
-          trackKind: audioTransceiver.receiver.track?.kind
-        });
-      }
-
-      // Ensure local tracks are added before setting remote description
-      if (finalStream) {
-        const senders = pc.getSenders();
-        console.log(`[GroupCall] 📊 Current senders before answer for user ${offerData.fromUserId}:`, senders.length);
-        
-        if (senders.length === 0) {
-          finalStream.getTracks().forEach(track => {
-            const sender = pc.addTrack(track, finalStream);
-            console.log(`[GroupCall] ✅ Added local track for answer to user ${offerData.fromUserId}:`, {
-              trackKind: track.kind,
-              trackEnabled: track.enabled,
-              senderId: sender ? 'created' : 'failed'
-            });
-          });
-        }
-      }
-      
-      console.log(`[GroupCall] 🔧 About to setRemoteDescription for user ${offerData.fromUserId}`);
+      // ARCHITECT FIX: setRemoteDescription FIRST so browser creates matching transceivers
+      console.log(`[GroupCall] 🔧 Setting remote description first for user ${offerData.fromUserId}`);
       await pc.setRemoteDescription(new RTCSessionDescription(offerData.offer));
       console.log('[GroupCall] ✅ Set remote description for offer from user:', offerData.fromUserId);
+
+      // ARCHITECT FIX: Find existing audio transceiver created by setRemoteDescription
+      const audioTransceiver = pc.getTransceivers().find(t => 
+        t.receiver.track?.kind === 'audio' || (t.mid && offerData.offer.sdp.includes('m=audio'))
+      );
+      
+      if (audioTransceiver && finalStream) {
+        const audioTrack = finalStream.getAudioTracks()[0];
+        if (audioTrack) {
+          // Set direction to sendrecv for bidirectional audio
+          audioTransceiver.direction = 'sendrecv';
+          
+          // Use replaceTrack instead of addTrack to avoid duplicate m-lines
+          await audioTransceiver.sender.replaceTrack(audioTrack);
+          console.log(`[GroupCall] ✅ Used replaceTrack for existing audio transceiver to user ${offerData.fromUserId}:`, {
+            mid: audioTransceiver.mid,
+            direction: audioTransceiver.direction,
+            trackKind: audioTrack.kind,
+            trackEnabled: audioTrack.enabled
+          });
+        }
+      } else {
+        console.log(`[GroupCall] ⚠️ No audio transceiver found for user ${offerData.fromUserId}`);
+      }
+
+      // Log transceiver diagnostics
+      const transceivers = pc.getTransceivers().map(t => ({
+        mid: t.mid,
+        direction: t.direction,
+        hasSender: !!t.sender.track,
+        hasReceiver: !!t.receiver.track,
+        kind: t.receiver.track?.kind || t.sender.track?.kind
+      }));
+      console.log(`[GroupCall] 📊 Transceivers after SRD for user ${offerData.fromUserId}:`, transceivers);
 
       await processPendingICECandidates(offerData.fromUserId, pc);
 
@@ -752,12 +757,29 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
         
         const pc = getOrCreatePeerConnection(userId);
         
-        // Add local stream tracks
-        if (localStream && pc.getSenders().length === 0) {
-          localStream.getTracks().forEach(track => {
-            pc.addTrack(track, localStream);
-            console.log(`[GroupCall] ✅ Added local ${track.kind} track for user ${userId}`);
-          });
+        // ARCHITECT FIX: Use single method for audio provisioning - addTransceiver then replaceTrack
+        if (localStream) {
+          const audioTrack = localStream.getAudioTracks()[0];
+          if (audioTrack) {
+            // Find existing audio transceiver or create new one
+            let audioTransceiver = pc.getTransceivers().find(t => 
+              t.sender.track?.kind === 'audio' || t.receiver.track?.kind === 'audio'
+            );
+            
+            if (!audioTransceiver) {
+              console.log(`[GroupCall] 🔧 Creating new audio transceiver for user ${userId}`);
+              audioTransceiver = pc.addTransceiver('audio', { direction: 'sendrecv' });
+            }
+            
+            // Use replaceTrack to attach local audio
+            await audioTransceiver.sender.replaceTrack(audioTrack);
+            console.log(`[GroupCall] ✅ Used transceiver+replaceTrack for audio to user ${userId}:`, {
+              mid: audioTransceiver.mid,
+              direction: audioTransceiver.direction,
+              trackKind: audioTrack.kind,
+              trackEnabled: audioTrack.enabled
+            });
+          }
         }
 
         // Create and send offer
