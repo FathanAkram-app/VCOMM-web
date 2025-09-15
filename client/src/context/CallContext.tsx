@@ -2,6 +2,75 @@ import { createContext, useContext, useState, useEffect, ReactNode, useRef } fro
 import { useLocation } from 'wouter';
 import { useAuth } from '@/hooks/useAuth';
 
+// 🚀 CENTRALIZED PROTECTED INTERVAL SYSTEM
+// Initialize global protected intervals set
+if (typeof window !== 'undefined') {
+  if (!(window as any).__protectedIntervals) {
+    (window as any).__protectedIntervals = new Set<number>();
+  }
+}
+
+// Helper functions for protected intervals
+const protectInterval = (id: number): void => {
+  if (typeof window !== 'undefined') {
+    (window as any).__protectedIntervals.add(id);
+    console.log('[ProtectedIntervals] 🛡️ Protected interval:', id, 'Set size:', (window as any).__protectedIntervals.size);
+  }
+};
+
+const unprotectInterval = (id: number): void => {
+  if (typeof window !== 'undefined') {
+    (window as any).__protectedIntervals.delete(id);
+    console.log('[ProtectedIntervals] 🗑️ Unprotected interval:', id, 'Set size:', (window as any).__protectedIntervals.size);
+  }
+};
+
+const isProtected = (id: number): boolean => {
+  if (typeof window !== 'undefined') {
+    return (window as any).__protectedIntervals.has(id);
+  }
+  return false;
+};
+
+// Centralized nuclear cleanup that respects protection
+const clearAllIntervalsExceptProtected = (): void => {
+  if (typeof window === 'undefined') return;
+  
+  console.log('[ProtectedIntervals] 💥 NUCLEAR CLEANUP - Clearing all intervals except protected');
+  console.log('[ProtectedIntervals] Protected set contents:', Array.from((window as any).__protectedIntervals));
+  
+  try {
+    const highestIntervalId = setInterval(() => {}, 9999) as unknown as number;
+    let clearedCount = 0;
+    let protectedCount = 0;
+    
+    for (let i = 1; i <= highestIntervalId; i++) {
+      if (isProtected(i)) {
+        protectedCount++;
+        console.log('[ProtectedIntervals] 🛡️ SKIPPING protected interval:', i);
+      } else {
+        clearInterval(i);
+        clearedCount++;
+      }
+    }
+    clearInterval(highestIntervalId);
+    
+    const highestTimeoutId = setTimeout(() => {}, 9999) as unknown as number;
+    for (let i = 1; i <= highestTimeoutId; i++) {
+      clearTimeout(i);
+    }
+    clearTimeout(highestTimeoutId);
+    
+    console.log('[ProtectedIntervals] ✅ Nuclear cleanup completed:', {
+      cleared: clearedCount,
+      protected: protectedCount,
+      protectedIds: Array.from((window as any).__protectedIntervals)
+    });
+  } catch (e) {
+    console.log('[ProtectedIntervals] Error in nuclear cleanup:', e);
+  }
+};
+
 // Utility function to check mobile device compatibility
 const checkMobileCompatibility = () => {
   const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -917,48 +986,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
       (window as any).__waitingToneIntervalId = null;
     }
     
-    // Clear ALL intervals and timeouts (extreme measure) - BUT SKIP TIMER INTERVALS
-    try {
-      console.log('[CallContext] 💥 NUCLEAR INTERVAL CLEANUP - Clearing ALL intervals (except protected timers)');
-      
-      // Get protected timer intervals to skip them
-      const protectedTimers = [];
-      if ((window as any).__videoCallTimer) {
-        protectedTimers.push((window as any).__videoCallTimer);
-        console.log('[CallContext] 🛡️ Protecting robust video call timer:', (window as any).__videoCallTimer);
-      }
-      if ((window as any).__videoCallTimerInterval) {
-        protectedTimers.push((window as any).__videoCallTimerInterval);
-        console.log('[CallContext] 🛡️ Protecting video call timer interval:', (window as any).__videoCallTimerInterval);
-      }
-      if ((window as any).__audioCallTimer) {
-        protectedTimers.push((window as any).__audioCallTimer);
-        console.log('[CallContext] 🛡️ Protecting robust audio call timer:', (window as any).__audioCallTimer);
-      }
-      if ((window as any).__audioCallTimerInterval) {
-        protectedTimers.push((window as any).__audioCallTimerInterval);
-        console.log('[CallContext] 🛡️ Protecting audio call timer interval:', (window as any).__audioCallTimerInterval);
-      }
-      
-      const highestIntervalId = setInterval(() => {}, 9999) as unknown as number;
-      for (let i = 1; i <= highestIntervalId; i++) {
-        // Skip protected timer intervals
-        if (!protectedTimers.includes(i)) {
-          clearInterval(i);
-        }
-      }
-      clearInterval(highestIntervalId);
-      
-      const highestTimeoutId = setTimeout(() => {}, 9999) as unknown as number;
-      for (let i = 1; i <= highestTimeoutId; i++) {
-        clearTimeout(i);
-      }
-      clearTimeout(highestTimeoutId);
-      
-      console.log('[CallContext] ✅ Nuclear interval cleanup completed (protected timers preserved)');
-    } catch (e) {
-      console.log('[CallContext] Error in nuclear interval cleanup:', e);
+    // 🚀 GUARD: Skip nuclear cleanup during connected calls to preserve timers
+    const currentCall = activeCallRef.current || activeCall;
+    if (currentCall && currentCall.status === 'connected') {
+      console.log('[CallContext] 🛡️ SKIPPING nuclear cleanup - call is connected, preserving timers');
+      return;
     }
+    
+    // Use centralized nuclear cleanup that respects protection
+    clearAllIntervalsExceptProtected();
     
     console.log('[CallContext] ✅ AGGRESSIVE AUDIO CLEANUP COMPLETED');
   };
@@ -4596,3 +4632,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
 }
 
 export { CallContext };
+
+// 🚀 EXPORT PROTECTED INTERVAL HELPERS for VideoCall/AudioCall
+export { protectInterval, unprotectInterval, isProtected };
