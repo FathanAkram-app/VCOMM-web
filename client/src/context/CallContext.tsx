@@ -2648,9 +2648,14 @@ export function CallProvider({ children }: { children: ReactNode }) {
       
       // 🚀 CRITICAL FIX: Navigate back to chat even if activeCall is undefined
       // This handles case where call state was cleared but user still on call page
+      console.log('[CallContext] 🔍 DEBUG: Current location:', location);
+      console.log('[CallContext] 🔍 DEBUG: Checking if on call page for navigation...');
+      
       if (location === '/video-call' || location === '/audio-call' || location === '/group-call') {
         console.log('[CallContext] 🔄 NAVIGATION: Auto-navigating back to chat from call page (activeCall undefined)');
         setLocation('/chat');
+      } else {
+        console.log('[CallContext] 🔍 DEBUG: Not on call page, current location:', location);
       }
     }
     
