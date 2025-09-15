@@ -4162,26 +4162,32 @@ export function CallProvider({ children }: { children: ReactNode }) {
         throw new Error('Media devices not supported');
       }
 
-      // Full audio and video enabled from start for group calls
-      const constraints = {
+      // Media constraints based on call type
+      const constraints: MediaStreamConstraints = {
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
           sampleRate: 48000,
           channelCount: 1
-        },
-        video: {
+        }
+      };
+
+      // Only add video constraints for video calls
+      if (callType === 'video') {
+        constraints.video = {
           width: { ideal: 640, max: 1280 },
           height: { ideal: 480, max: 720 },
           frameRate: { ideal: 24, max: 30 },
           facingMode: 'user' // Front camera for group calls
-        }
-      };
+        };
+      } else {
+        constraints.video = false; // Explicitly disable video for audio-only calls
+      }
 
-      console.log('[CallContext] Requesting full media permissions for group call (audio + video enabled)...');
+      console.log(`[CallContext] Requesting media permissions for group call (${callType === 'video' ? 'audio + video' : 'audio-only'} enabled)...`);
       const localStream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log('[CallContext] Got audio and video stream for group call - full media enabled from start');
+      console.log(`[CallContext] Got ${callType === 'video' ? 'audio and video' : 'audio-only'} stream for group call`);
 
       const callId = `group_call_${Date.now()}_${groupId}_${user.id}`;
 
@@ -4383,26 +4389,32 @@ export function CallProvider({ children }: { children: ReactNode }) {
           console.log('[CallContext] ✅ Video track enabled from existing stream for group call');
         }
       } else {
-        // Create new stream with full media enabled
-        const constraints = {
+        // Create new stream based on call type
+        const constraints: MediaStreamConstraints = {
           audio: {
             echoCancellation: true,
             noiseSuppression: true,
             autoGainControl: true,
             sampleRate: 48000,
             channelCount: 1
-          },
-          video: {
-            width: { ideal: 640, max: 1280 },
-            height: { ideal: 480, max: 720 },
-            frameRate: { ideal: 24, max: 30 },
-            facingMode: 'user' // Front camera for group calls
           }
         };
 
-        console.log('[CallContext] Creating new stream for joining group call (audio + video enabled)...');
+        // Only add video constraints for video calls
+        if (callType === 'video') {
+          constraints.video = {
+            width: { ideal: 640, max: 1280 },
+            height: { ideal: 480, max: 720 },
+            frameRate: { ideal: 24, max: 30 },
+            facingMode: 'user'
+          };
+        } else {
+          constraints.video = false; // Explicitly disable video for audio-only calls
+        }
+
+        console.log(`[CallContext] Creating new stream for joining group call (${callType === 'video' ? 'audio + video' : 'audio-only'} enabled)...`);
         localStream = await navigator.mediaDevices.getUserMedia(constraints);
-        console.log('[CallContext] Got new audio and video stream for joining group call - full media enabled from start');
+        console.log(`[CallContext] Got ${callType === 'video' ? 'audio and video' : 'audio-only'} stream for joining group call`);
       }
 
       // Enhanced RTCPeerConnection for joining group calls
