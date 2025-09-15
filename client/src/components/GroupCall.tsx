@@ -129,113 +129,52 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     console.log(`[GroupCall] 🔊 Volume increased to: ${newVolume}`);
   }, [audioVolume, participants]);
 
-  // Enhanced audio attachment with retry mechanism (adapted dari video logic)
-  const attachAudioStreamWithRetry = async (
-    audioElement: HTMLAudioElement, 
-    stream: MediaStream, 
-    label: string,
-    maxRetries: number = 3
-  ): Promise<boolean> => {
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        console.log(`[GroupCall] 🔄 Attempting ${label} audio attach (${attempt}/${maxRetries})`);
-        
-        // Validate stream dan element
-        if (!stream || !stream.active) {
-          console.warn(`[GroupCall] ⚠️ ${label} stream is not active`);
-          return false;
-        }
-        
-        if (!audioElement) {
-          console.warn(`[GroupCall] ⚠️ ${label} audio element not available`);
-          return false;
-        }
-        
-        // Clear previous stream dengan proper cleanup
-        if (audioElement.srcObject) {
-          audioElement.srcObject = null;
-          audioElement.load();
-          // Wait for cleanup to complete
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        
-        // Attach new stream
-        audioElement.srcObject = stream;
-        
-        // Wait for audio to be ready
-        await new Promise((resolve, reject) => {
-          const timeoutId = setTimeout(() => reject(new Error('Timeout waiting for loadeddata')), 3000);
-          
-          const onLoadedData = () => {
-            clearTimeout(timeoutId);
-            audioElement.removeEventListener('loadeddata', onLoadedData);
-            resolve(void 0);
-          };
-          
-          audioElement.addEventListener('loadeddata', onLoadedData);
-          
-          // If already loaded, resolve immediately
-          if (audioElement.readyState >= 2) {
-            clearTimeout(timeoutId);
-            resolve(void 0);
-          }
-        });
-        
-        // Enhanced audio settings untuk better volume dan routing
-        audioElement.volume = audioVolume; // Apply current volume setting
-        audioElement.playsInline = true;
-        audioElement.autoplay = true;
-        
-        // Apply device-specific optimizations
-        if (currentAudioOutput === 'earphone') {
-          audioElement.volume = Math.min(audioVolume, 0.9); // Protect ears
-        } else {
-          audioElement.volume = audioVolume; // Full configured volume for speakers
-        }
-        
-        console.log(`[GroupCall] 🎵 Audio settings applied: volume=${audioElement.volume}, output=${currentAudioOutput}`);
-        
-        // Try to play with error handling
-        await new Promise((resolve, reject) => {
-          const playPromise = audioElement.play();
-          
-          if (playPromise !== undefined) {
-            playPromise
-              .then(() => {
-                console.log(`[GroupCall] ✅ ${label} audio playing successfully (attempt ${attempt})`);
-                resolve(void 0);
-              })
-              .catch((error: Error) => {
-                console.warn(`[GroupCall] ⚠️ ${label} play failed (attempt ${attempt}):`, error.message);
-                
-                // For AbortError, wait and try again
-                if (error.name === 'AbortError') {
-                  setTimeout(() => reject(error), 200 * attempt); // Exponential backoff
-                } else {
-                  reject(error);
-                }
-              });
-          } else {
-            resolve(void 0);
-          }
-        });
-        
-        return true; // Success
-        
-      } catch (error: any) {
-        console.warn(`[GroupCall] ⚠️ ${label} audio attach attempt ${attempt} failed:`, error.message);
-        
-        if (attempt === maxRetries) {
-          console.error(`[GroupCall] ❌ ${label} audio attach failed after ${maxRetries} attempts`);
-          return false;
-        }
-        
-        // Wait before retry with exponential backoff
-        await new Promise(resolve => setTimeout(resolve, 300 * attempt));
-      }
-    }
+  // 🎯 PROVEN AUDIO LOGIC: Use same simple approach as AudioCall (working)
+  const attachAudioStreamSimple = (audioElement: HTMLAudioElement, stream: MediaStream, label: string) => {
+    console.log(`[GroupCall] ✅ Setting ${label} stream to audio element - SIMPLE METHOD`);
+    console.log(`[GroupCall] ${label} stream details:`, {
+      id: stream.id,
+      active: stream.active,
+      audioTracks: stream.getAudioTracks().length
+    });
     
-    return false;
+    // Log track details
+    stream.getTracks().forEach((track, index) => {
+      console.log(`[GroupCall] ${label} Track ${index}:`, {
+        kind: track.kind,
+        enabled: track.enabled,
+        muted: track.muted,
+        readyState: track.readyState,
+        id: track.id
+      });
+    });
+    
+    // EXACT SAME AS WORKING AUDIOCALL - Direct assignment
+    audioElement.srcObject = stream;
+    
+    // EXACT SAME AS WORKING AUDIOCALL - Simple settings  
+    audioElement.autoplay = true;
+    audioElement.muted = false; // Don't mute - we want audio!
+    audioElement.volume = 1.0; // SIMPLE: Full volume like working AudioCall
+    
+    // EXACT SAME AS WORKING AUDIOCALL - Simple retry logic
+    audioElement.play().then(() => {
+      console.log(`[GroupCall] ✅ ${label} audio playing successfully`);
+    }).catch(error => {
+      console.error(`[GroupCall] ❌ ${label} audio play failed:`, error);
+      // EXACT SAME AS WORKING AUDIOCALL - Try muted autoplay as fallback
+      audioElement.muted = true;
+      audioElement.play().then(() => {
+        console.log(`[GroupCall] ✅ ${label} audio playing (muted fallback)`);
+        // EXACT SAME AS WORKING AUDIOCALL - Unmute after starting
+        setTimeout(() => {
+          audioElement.muted = false;
+          console.log(`[GroupCall] 🔊 Unmuted ${label} audio after autoplay`);
+        }, 100);
+      }).catch(err => {
+        console.error(`[GroupCall] ❌ Even muted autoplay failed for ${label}:`, err);
+      });
+    });
   };
 
   // Media initialization function untuk audio-only calls
@@ -878,11 +817,12 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     }
   };
 
-  // Attach audio streams untuk remote participants
+  // Attach audio streams untuk remote participants - PROVEN SIMPLE METHOD
   useEffect(() => {
     participants.forEach((participant) => {
       if (participant.stream && participant.audioRef.current) {
-        attachAudioStreamWithRetry(
+        console.log(`[GroupCall] 🎯 Using SIMPLE audio attachment for ${participant.userName}`);
+        attachAudioStreamSimple(
           participant.audioRef.current,
           participant.stream,
           `Participant-${participant.userName}`
