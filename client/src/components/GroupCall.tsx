@@ -921,49 +921,22 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     }
   };
 
-  // 🎯 REVERT: Use WORKING audio attachment (remove remoteAudioStream approach)
+  // 🎯 FIXED: Use EXACT AudioCall pattern via attachAudioStreamExact function
   useEffect(() => {
+    console.log(`[GroupCall] 🎯 Audio attachment useEffect triggered - participants count: ${participants.length}`);
+    
     participants.forEach((participant) => {
       if (participant.stream && participant.audioRef.current) {
-        console.log(`[GroupCall] 🔊 Attaching audio stream for ${participant.userName}`);
+        console.log(`[GroupCall] 🎯 CALLING attachAudioStreamExact for ${participant.userName} (UserID: ${participant.userId})`);
         
-        // Log stream details
-        console.log(`[GroupCall] Stream details for ${participant.userName}:`, {
-          id: participant.stream.id,
-          active: participant.stream.active,
-          audioTracks: participant.stream.getAudioTracks().length
-        });
-        
-        // Attach stream to audio element
-        participant.audioRef.current.srcObject = participant.stream;
-        
-        // Enable autoplay and set volume
-        participant.audioRef.current.autoplay = true;
-        participant.audioRef.current.muted = false;
-        participant.audioRef.current.volume = 1.0;
-        
-        // Attempt to play the audio
-        participant.audioRef.current.play().then(() => {
-          console.log(`[GroupCall] ✅ ${participant.userName} audio playing successfully`);
-        }).catch(error => {
-          console.error(`[GroupCall] ❌ ${participant.userName} audio play failed:`, error);
-          // Try muted autoplay as fallback
-          if (participant.audioRef.current) {
-            participant.audioRef.current.muted = true;
-            participant.audioRef.current.play().then(() => {
-              console.log(`[GroupCall] ✅ ${participant.userName} audio playing (muted fallback)`);
-              // Unmute after starting
-              setTimeout(() => {
-                if (participant.audioRef.current) {
-                  participant.audioRef.current.muted = false;
-                  console.log(`[GroupCall] 🔊 Unmuted ${participant.userName} audio after autoplay`);
-                }
-              }, 100);
-            }).catch(err => {
-              console.error(`[GroupCall] ❌ Even muted autoplay failed for ${participant.userName}:`, err);
-            });
-          }
-        });
+        // 🎯 USE THE EXACT AUDIOCALL PATTERN VIA OUR FUNCTION
+        attachAudioStreamExact(
+          participant.audioRef.current, 
+          participant.stream, 
+          `${participant.userName}(${participant.userId})`
+        );
+      } else {
+        console.log(`[GroupCall] ⏳ Waiting for ${participant.userName} - stream: ${!!participant.stream}, audioRef: ${!!participant.audioRef.current}`);
       }
     });
   }, [participants]);
