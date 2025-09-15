@@ -157,6 +157,17 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     audioElement.muted = false; // Don't mute - we want audio!
     audioElement.volume = 1.0; // SIMPLE: Full volume like working AudioCall
     
+    // ARCHITECT RECOMMENDED: Try to set audio output to default speakers
+    if ('setSinkId' in audioElement && typeof audioElement.setSinkId === 'function') {
+      audioElement.setSinkId('default').then(() => {
+        console.log(`[GroupCall] ✅ ${label} audio sink set to default speakers`);
+      }).catch(error => {
+        console.warn(`[GroupCall] ⚠️ Could not set audio sink for ${label}:`, error);
+      });
+    } else {
+      console.log(`[GroupCall] ℹ️ setSinkId not supported for ${label}`);
+    }
+    
     // EXACT SAME AS WORKING AUDIOCALL - Simple retry logic
     audioElement.play().then(() => {
       console.log(`[GroupCall] ✅ ${label} audio playing successfully`);
@@ -398,6 +409,12 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
       pc.ontrack = (event) => {
         console.log(`[GroupCall] 🎥 RECEIVED REMOTE TRACK from user ${userId}:`, event.track.kind);
         console.log('[GroupCall] 🎥 Event streams:', event.streams);
+        console.log(`[GroupCall] 🔧 Track details:`, {
+          kind: event.track.kind,
+          enabled: event.track.enabled,
+          muted: event.track.muted,
+          readyState: event.track.readyState
+        });
         
         const remoteStream = event.streams[0];
         if (remoteStream) {
@@ -405,6 +422,17 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
             streamId: remoteStream.id,
             active: remoteStream.active,
             audioTracks: remoteStream.getAudioTracks().length
+          });
+          
+          // Log audio track details
+          remoteStream.getAudioTracks().forEach((track, index) => {
+            console.log(`[GroupCall] 🔊 Remote Audio Track ${index}:`, {
+              kind: track.kind,
+              enabled: track.enabled,
+              muted: track.muted,
+              readyState: track.readyState,
+              id: track.id
+            });
           });
           
           // Update remote streams both in ref and state
@@ -598,6 +626,19 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     }
 
     try {
+      // CRITICAL FIX: Add recvonly transceiver BEFORE setRemoteDescription for audio reception
+      const transceivers = pc.getTransceivers();
+      const hasAudioReceiver = transceivers.some(t => t.receiver.track && t.receiver.track.kind === 'audio');
+      
+      if (!hasAudioReceiver) {
+        console.log(`[GroupCall] 🔧 Adding recvonly audio transceiver for user ${offerData.fromUserId}`);
+        const audioTransceiver = pc.addTransceiver('audio', { direction: 'recvonly' });
+        console.log(`[GroupCall] ✅ Added audio transceiver:`, {
+          direction: audioTransceiver.direction,
+          trackKind: audioTransceiver.receiver.track?.kind
+        });
+      }
+
       // Ensure local tracks are added before setting remote description
       if (finalStream) {
         const senders = pc.getSenders();
@@ -615,6 +656,7 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
         }
       }
       
+      console.log(`[GroupCall] 🔧 About to setRemoteDescription for user ${offerData.fromUserId}`);
       await pc.setRemoteDescription(new RTCSessionDescription(offerData.offer));
       console.log('[GroupCall] ✅ Set remote description for offer from user:', offerData.fromUserId);
 
@@ -960,6 +1002,9 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
               <audio
                 ref={participant.audioRef}
                 className="hidden"
+                playsInline
+                autoPlay
+                muted={false}
                 data-testid={`participant-audio-${participant.userId}`}
               />
             </div>

@@ -1,0 +1,517 @@
+[CallContext] 📊 RECEIVER: Inbound RTP monitoring: {callId: 'call_1757927143483_3_2', bytesReceived: 5900, bytesDelta: 0, packetsReceived: 114, packetsDelta: 0, …}
+CallContext.tsx:459 [CallContext] ⚠️ RECEIVER: Issues detected: ['No RTP data flow (warning count: 3)']
+checkReceiverRTPFlow @ CallContext.tsx:459
+setInterval
+startReceiverRTPMonitoring @ CallContext.tsx:473
+handleWebRTCOffer @ CallContext.tsx:2880
+await in handleWebRTCOffer
+websocket.onmessage @ CallContext.tsx:1288Understand this warning
+CallContext.tsx:460 [CallContext] 🔧 RECEIVER: Transport state: {connectionState: 'connected', iceConnectionState: 'connected', signalingState: 'stable'}
+checkReceiverRTPFlow @ CallContext.tsx:460
+setInterval
+startReceiverRTPMonitoring @ CallContext.tsx:473
+handleWebRTCOffer @ CallContext.tsx:2880
+await in handleWebRTCOffer
+websocket.onmessage @ CallContext.tsx:1288Understand this warning
+CallContext.tsx:390 [CallContext] 📊 RECEIVER: Inbound RTP monitoring: {callId: 'call_1757927143483_3_2', bytesReceived: 5900, bytesDelta: 0, packetsReceived: 114, packetsDelta: 0, …}
+CallContext.tsx:459 [CallContext] ⚠️ RECEIVER: Issues detected: ['No RTP data flow (warning count: 4)']
+checkReceiverRTPFlow @ CallContext.tsx:459
+setInterval
+startReceiverRTPMonitoring @ CallContext.tsx:473
+handleWebRTCOffer @ CallContext.tsx:2880
+await in handleWebRTCOffer
+websocket.onmessage @ CallContext.tsx:1288Understand this warning
+CallContext.tsx:460 [CallContext] 🔧 RECEIVER: Transport state: {connectionState: 'connected', iceConnectionState: 'connected', signalingState: 'stable'}
+checkReceiverRTPFlow @ CallContext.tsx:460
+setInterval
+startReceiverRTPMonitoring @ CallContext.tsx:473
+handleWebRTCOffer @ CallContext.tsx:2880
+await in handleWebRTCOffer
+websocket.onmessage @ CallContext.tsx:1288Understand this warning
+CallContext.tsx:3275 [CallContext] acceptCall function called
+CallContext.tsx:3276 [CallContext] incomingCall: {callId: 'group_call_1757927216211_38_3', callType: 'audio', status: 'ringing', isIncoming: true, peerUserId: 3, …}
+CallContext.tsx:3277 [CallContext] ws connected: true
+CallContext.tsx:3278 [CallContext] user: {id: 2, callsign: 'eko', nrp: '12345', fullName: 'eko a', rank: 'SPC', …}
+CallContext.tsx:3287 [CallContext] Accepting group call - redirecting to joinGroupCall
+CallContext.tsx:4372 [CallContext] Joining existing group call: {callId: 'group_call_1757927216211_38_3', groupId: 38, groupName: 'Ampera Grup', callType: 'audio'}
+CallContext.tsx:4415 [CallContext] Creating new stream for joining group call (audio-only enabled)...
+CallContext.tsx:4648 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: null, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: null, hasIncomingCall: false}
+IncomingCallModal.tsx:6 [IncomingCallModal] 🔥 COMPONENT RENDERED - START
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: null, hasIncomingCall: false}
+IncomingCallModal.tsx:11 [IncomingCallModal] 🔥 After useCall hook - incomingCall: null
+IncomingCallModal.tsx:12 [IncomingCallModal] 🔥 incomingCall type check: object
+IncomingCallModal.tsx:13 [IncomingCallModal] 🔥 incomingCall falsy check: true
+IncomingCallModal.tsx:16 [IncomingCallModal] No incoming call, returning null
+CallContext.tsx:4636 [CallContext] 🔥 INCOMING CALL STATE CHANGED: null
+CallContext.tsx:4417 [CallContext] Got audio-only stream for joining group call
+CallContext.tsx:4449 [CallContext] Added local track for joining group call: audio
+CallContext.tsx:4473 [CallContext] Active call state set for group: 38 callId: group_call_1757927216211_38_3
+CallContext.tsx:4492 [CallContext] Joined group call successfully
+CallContext.tsx:4493 [CallContext] Active call state after joining: {callId: 'group_call_1757927216211_38_3', callType: 'audio', status: 'connected', isIncoming: false, localStream: MediaStream, …}
+CallContext.tsx:4496 [CallContext] 📊 Processing pending participant updates after join...
+CallContext.tsx:4648 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+IncomingCallModal.tsx:6 [IncomingCallModal] 🔥 COMPONENT RENDERED - START
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+IncomingCallModal.tsx:11 [IncomingCallModal] 🔥 After useCall hook - incomingCall: null
+IncomingCallModal.tsx:12 [IncomingCallModal] 🔥 incomingCall type check: object
+IncomingCallModal.tsx:13 [IncomingCallModal] 🔥 incomingCall falsy check: true
+IncomingCallModal.tsx:16 [IncomingCallModal] No incoming call, returning null
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:87 [GroupCall] 🎧 Audio device detection: {hasEarphones: false, currentOutput: 'speaker'}
+GroupCall.tsx:183 [GroupCall] Initializing media with audio-only from start...
+GroupCall.tsx:187 [GroupCall] Initializing media for desktop device
+GroupCall.tsx:323 [GroupCall] Updating participants: []
+GroupCall.tsx:324 [GroupCall] Current user ID: 2
+GroupCall.tsx:325 [GroupCall] Available remote streams: Map(0) {size: 0}
+GroupCall.tsx:329 [GroupCall] Remote streams array: []
+GroupCall.tsx:332 [GroupCall] 🔍 Before filtering participants: []
+GroupCall.tsx:333 [GroupCall] 🔍 Current user to filter out: 2
+GroupCall.tsx:336 [GroupCall] 🔍 After filtering participants: []
+GroupCall.tsx:359 [GroupCall] 📋 Final participants list: []
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:204 [GroupCall] ✅ Got media stream: {id: 'b0b51118-9973-444c-8f13-888597521ee3', active: true, audioTracks: 1}
+GroupCall.tsx:215 [GroupCall] ✅ Audio enabled from start
+GroupCall.tsx:220 [GroupCall] 📊 Media stream set in state and marked as initialized
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:283 [GroupCall] 📊 Stream initialized and ready for WebRTC
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:4525 [CallContext] 🔄 Requesting fresh participant data as backup...
+CallContext.tsx:4538 [CallContext] 📊 Sent backup participant request: {type: 'request_group_participants', payload: {…}}
+CallContext.tsx:4648 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+ChatList.tsx:149 📋 CHATLIST: Removing WebSocket event listeners
+GroupCall.tsx:273 [GroupCall] 🧹 Connection timeouts, reconnection state, and refresh tracking cleaned up
+GroupCall.tsx:87 [GroupCall] 🎧 Audio device detection: {hasEarphones: false, currentOutput: 'speaker'}
+GroupCall.tsx:183 [GroupCall] Initializing media with audio-only from start...
+GroupCall.tsx:187 [GroupCall] Initializing media for desktop device
+GroupCall.tsx:323 [GroupCall] Updating participants: []
+GroupCall.tsx:324 [GroupCall] Current user ID: 2
+GroupCall.tsx:325 [GroupCall] Available remote streams: Map(0) {size: 0}
+GroupCall.tsx:329 [GroupCall] Remote streams array: []
+GroupCall.tsx:332 [GroupCall] 🔍 Before filtering participants: []
+GroupCall.tsx:333 [GroupCall] 🔍 Current user to filter out: 2
+GroupCall.tsx:336 [GroupCall] 🔍 After filtering participants: []
+GroupCall.tsx:359 [GroupCall] 📋 Final participants list: []
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:204 [GroupCall] ✅ Got media stream: {id: '93b4a49b-f6d0-4696-92cd-d73e7fa16815', active: true, audioTracks: 1}
+GroupCall.tsx:215 [GroupCall] ✅ Audio enabled from start
+GroupCall.tsx:220 [GroupCall] 📊 Media stream set in state and marked as initialized
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:283 [GroupCall] 📊 Stream initialized and ready for WebRTC
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:4489 [CallContext] Sent join group call message for recipient: {type: 'join_group_call', payload: {…}}
+CallContext.tsx:1156 [CallContext] Received message: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1159 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'group_call_participants_update', hasPayload: true, messageKeys: Array(2), routingToCase: 'group_call_participants_update'}
+CallContext.tsx:1266 [CallContext] 🔥 GROUP_CALL_PARTICIPANTS_UPDATE received: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1267 [CallContext] 🎯 Participants in message: [3]
+CallContext.tsx:1268 [CallContext] 🎯 CallId in message: group_call_1757927216211_38_3
+CallContext.tsx:1269 [CallContext] 🎯 Full sync flag: true
+CallContext.tsx:2185 [CallContext] 🔥 Group call participants update: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:2186 [CallContext] 🔥 Message payload: {callId: 'group_call_1757927216211_38_3', participants: Array(1), participantData: Array(1), fullSync: true, timestamp: 1757927230243}
+CallContext.tsx:2191 [CallContext] Comparing callIds - message: group_call_1757927216211_38_3 activeCall: group_call_1757927216211_38_3
+CallContext.tsx:2192 [CallContext] ActiveCall groupId: 38
+CallContext.tsx:2231 [CallContext] Extracted groupIds - message: 38 active: 38
+CallContext.tsx:2232 [CallContext] CallId parts: (5) ['group', 'call', '1757927216211', '38', '3']
+CallContext.tsx:2235 [CallContext] Group IDs match, updating participants: [3]
+CallContext.tsx:2241 [CallContext] 🎯 Processing participant update - fullSync: true participantData: [{…}]
+CallContext.tsx:2242 [CallContext] 🎯 Participants array length: 1 ParticipantData array length: 1
+CallContext.tsx:2249 [CallContext] 🔥 Using detailed participant data from server: [{…}]
+CallContext.tsx:2250 [CallContext] 🔥 Detailed participant sample: {userId: 3, userName: 'aji', audioEnabled: true, videoEnabled: true, stream: null}
+CallContext.tsx:2279 [CallContext] Unique participants after deduplication: [{…}]
+CallContext.tsx:2309 [CallContext] Processing regular participant update (not full sync)
+GroupCall.tsx:296 [GroupCall] 🔥 Participant data update event received: {callId: 'group_call_1757927216211_38_3', participants: Array(1), isNewMember: false, fullSync: false}
+CallContext.tsx:2406 [CallContext] 🔥 Dispatching participant-data-updated event for fullSync
+GroupCall.tsx:296 [GroupCall] 🔥 Participant data update event received: {callId: 'group_call_1757927216211_38_3', participants: Array(1), isNewMember: false, fullSync: true, participantData: Array(1)}
+CallContext.tsx:4648 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:323 [GroupCall] Updating participants: [{…}]
+GroupCall.tsx:324 [GroupCall] Current user ID: 2
+GroupCall.tsx:325 [GroupCall] Available remote streams: Map(0) {size: 0}
+GroupCall.tsx:329 [GroupCall] Remote streams array: []
+GroupCall.tsx:332 [GroupCall] 🔍 Before filtering participants: ['aji(3)']
+GroupCall.tsx:333 [GroupCall] 🔍 Current user to filter out: 2
+GroupCall.tsx:336 [GroupCall] 🔍 After filtering participants: ['aji(3)']
+GroupCall.tsx:342 [GroupCall] 🔍 Mapping participant aji (3): {streamKey: 'user_3', hasStream: false, streamId: undefined, streamActive: undefined, audioTracks: 0}
+GroupCall.tsx:359 [GroupCall] 📋 Final participants list: [{…}]
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:4544 [CallContext] 🔄 Requesting fresh participant data as backup...
+CallContext.tsx:4556 [CallContext] 📊 Sent fresh participant request: {type: 'request_group_participants', payload: {…}}
+CallContext.tsx:4573 [CallContext] 📊 Requested updated participant list: {type: 'request_group_participants', payload: {…}}
+CallContext.tsx:390 [CallContext] 📊 RECEIVER: Inbound RTP monitoring: {callId: 'call_1757927143483_3_2', bytesReceived: 5900, bytesDelta: 0, packetsReceived: 114, packetsDelta: 0, …}
+CallContext.tsx:449 [CallContext] 🔧 RECEIVER: CRITICAL AUTO-REPAIR - No RTP data for 10 seconds
+checkReceiverRTPFlow @ CallContext.tsx:449
+setInterval
+startReceiverRTPMonitoring @ CallContext.tsx:473
+handleWebRTCOffer @ CallContext.tsx:2880
+await in handleWebRTCOffer
+websocket.onmessage @ CallContext.tsx:1288Understand this error
+CallContext.tsx:494 [CallContext] 🔧 RECEIVER: Attempting receiver track recovery for callId: call_1757927143483_3_2
+CallContext.tsx:508 [CallContext] 🔧 RECEIVER: Found audio receiver transceiver, attempting recovery
+CallContext.tsx:517 [CallContext] 🔧 RECEIVER: Cycling receiver track enable state
+CallContext.tsx:539 [CallContext] ✅ RECEIVER: Recovery attempt completed
+CallContext.tsx:459 [CallContext] ⚠️ RECEIVER: Issues detected: ['No RTP data flow (warning count: 5)']
+checkReceiverRTPFlow @ CallContext.tsx:459
+setInterval
+startReceiverRTPMonitoring @ CallContext.tsx:473
+handleWebRTCOffer @ CallContext.tsx:2880
+await in handleWebRTCOffer
+websocket.onmessage @ CallContext.tsx:1288Understand this warning
+CallContext.tsx:460 [CallContext] 🔧 RECEIVER: Transport state: {connectionState: 'connected', iceConnectionState: 'connected', signalingState: 'stable'}
+checkReceiverRTPFlow @ CallContext.tsx:460
+setInterval
+startReceiverRTPMonitoring @ CallContext.tsx:473
+handleWebRTCOffer @ CallContext.tsx:2880
+await in handleWebRTCOffer
+websocket.onmessage @ CallContext.tsx:1288Understand this warning
+CallContext.tsx:1156 [CallContext] Received message: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1159 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'group_call_participants_update', hasPayload: true, messageKeys: Array(2), routingToCase: 'group_call_participants_update'}
+CallContext.tsx:1266 [CallContext] 🔥 GROUP_CALL_PARTICIPANTS_UPDATE received: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1267 [CallContext] 🎯 Participants in message: (2) [3, 2]
+CallContext.tsx:1268 [CallContext] 🎯 CallId in message: group_call_1757927216211_38_3
+CallContext.tsx:1269 [CallContext] 🎯 Full sync flag: undefined
+CallContext.tsx:2185 [CallContext] 🔥 Group call participants update: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:2186 [CallContext] 🔥 Message payload: {callId: 'group_call_1757927216211_38_3', participants: Array(2), newParticipant: 2}
+CallContext.tsx:2191 [CallContext] Comparing callIds - message: group_call_1757927216211_38_3 activeCall: group_call_1757927216211_38_3
+CallContext.tsx:2192 [CallContext] ActiveCall groupId: 38
+CallContext.tsx:2231 [CallContext] Extracted groupIds - message: 38 active: 38
+CallContext.tsx:2232 [CallContext] CallId parts: (5) ['group', 'call', '1757927216211', '38', '3']
+CallContext.tsx:2235 [CallContext] Group IDs match, updating participants: (2) [3, 2]
+CallContext.tsx:2241 [CallContext] 🎯 Processing participant update - fullSync: undefined participantData: undefined
+CallContext.tsx:2242 [CallContext] 🎯 Participants array length: 2 ParticipantData array length: undefined
+CallContext.tsx:2279 [CallContext] Unique participants after deduplication: (2) [{…}, {…}]
+CallContext.tsx:2309 [CallContext] Processing regular participant update (not full sync)
+GroupCall.tsx:296 [GroupCall] 🔥 Participant data update event received: {callId: 'group_call_1757927216211_38_3', participants: Array(2), isNewMember: false, fullSync: false}
+CallContext.tsx:1156 [CallContext] Received message: {type: 'initiate_group_webrtc', payload: {…}}
+CallContext.tsx:1159 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'initiate_group_webrtc', hasPayload: true, messageKeys: Array(2), routingToCase: 'initiate_group_webrtc'}
+CallContext.tsx:1273 [CallContext] 🔥 ROUTING: initiate_group_webrtc case matched, calling handleInitiateGroupWebRTC
+CallContext.tsx:2438 [CallContext] 🚀 Group WebRTC initiation received: {type: 'initiate_group_webrtc', payload: {…}}
+CallContext.tsx:2445 [CallContext] 🔍 DEBUG handleInitiateGroupWebRTC: {currentActiveCall: {…}, activeCallFromState: null, messageCallId: 'group_call_1757927216211_38_3', messageParticipants: undefined}
+CallContext.tsx:2485 [CallContext] 🎯 Auto-triggering WebRTC setup for group call participants: undefined
+GroupCall.tsx:491 [GroupCall] Initiating WebRTC for group call: {callId: 'group_call_1757927216211_38_3', participants: undefined, forceInit: undefined, newMember: undefined, activeCall: {…}}
+GroupCall.tsx:692 [GroupCall] 🚀 Initiating WebRTC connections for participants
+GroupCall.tsx:709 [GroupCall] 🎯 Creating WebRTC connection for participant: aji (3)
+GroupCall.tsx:375 [GroupCall] Creating new peer connection for user 3
+GroupCall.tsx:717 [GroupCall] ✅ Added local audio track for user 3
+CallContext.tsx:2516 [CallContext] ✅ WebRTC auto-initiation event dispatched
+CallContext.tsx:4648 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:323 [GroupCall] Updating participants: (2) [{…}, {…}]
+GroupCall.tsx:324 [GroupCall] Current user ID: 2
+GroupCall.tsx:325 [GroupCall] Available remote streams: Map(0) {size: 0}
+GroupCall.tsx:329 [GroupCall] Remote streams array: []
+GroupCall.tsx:332 [GroupCall] 🔍 Before filtering participants: (2) ['User 3(3)', 'User 2(2)']
+GroupCall.tsx:333 [GroupCall] 🔍 Current user to filter out: 2
+GroupCall.tsx:336 [GroupCall] 🔍 After filtering participants: ['User 3(3)']
+GroupCall.tsx:342 [GroupCall] 🔍 Mapping participant User 3 (3): {streamKey: 'user_3', hasStream: false, streamId: undefined, streamActive: undefined, audioTracks: 0}
+GroupCall.tsx:359 [GroupCall] 📋 Final participants list: [{…}]
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:735 [GroupCall] ✅ Sent WebRTC offer to user 3
+GroupCall.tsx:385 [GroupCall] Sending ICE candidate to user 3
+CallContext.tsx:522 [CallContext] 🔧 RECEIVER: Receiver track re-enabled
+CallContext.tsx:1156 [CallContext] Received message: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1159 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'group_call_participants_update', hasPayload: true, messageKeys: Array(2), routingToCase: 'group_call_participants_update'}
+CallContext.tsx:1266 [CallContext] 🔥 GROUP_CALL_PARTICIPANTS_UPDATE received: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1267 [CallContext] 🎯 Participants in message: (2) [3, 2]
+CallContext.tsx:1268 [CallContext] 🎯 CallId in message: group_call_1757927216211_38_3
+CallContext.tsx:1269 [CallContext] 🎯 Full sync flag: true
+CallContext.tsx:2185 [CallContext] 🔥 Group call participants update: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:2186 [CallContext] 🔥 Message payload: {callId: 'group_call_1757927216211_38_3', participants: Array(2), participantData: Array(2), fullSync: true, timestamp: 1757927230547}
+CallContext.tsx:2191 [CallContext] Comparing callIds - message: group_call_1757927216211_38_3 activeCall: group_call_1757927216211_38_3
+CallContext.tsx:2192 [CallContext] ActiveCall groupId: 38
+CallContext.tsx:2231 [CallContext] Extracted groupIds - message: 38 active: 38
+CallContext.tsx:2232 [CallContext] CallId parts: (5) ['group', 'call', '1757927216211', '38', '3']
+CallContext.tsx:2235 [CallContext] Group IDs match, updating participants: (2) [3, 2]
+CallContext.tsx:2241 [CallContext] 🎯 Processing participant update - fullSync: true participantData: (2) [{…}, {…}]
+CallContext.tsx:2242 [CallContext] 🎯 Participants array length: 2 ParticipantData array length: 2
+CallContext.tsx:2249 [CallContext] 🔥 Using detailed participant data from server: (2) [{…}, {…}]
+CallContext.tsx:2250 [CallContext] 🔥 Detailed participant sample: {userId: 3, userName: 'aji', audioEnabled: true, videoEnabled: true, stream: null}
+CallContext.tsx:2279 [CallContext] Unique participants after deduplication: (2) [{…}, {…}]
+CallContext.tsx:2309 [CallContext] Processing regular participant update (not full sync)
+GroupCall.tsx:296 [GroupCall] 🔥 Participant data update event received: {callId: 'group_call_1757927216211_38_3', participants: Array(2), isNewMember: false, fullSync: false}
+CallContext.tsx:2406 [CallContext] 🔥 Dispatching participant-data-updated event for fullSync
+GroupCall.tsx:296 [GroupCall] 🔥 Participant data update event received: {callId: 'group_call_1757927216211_38_3', participants: Array(2), isNewMember: false, fullSync: true, participantData: Array(2)}
+CallContext.tsx:4648 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:323 [GroupCall] Updating participants: (2) [{…}, {…}]
+GroupCall.tsx:324 [GroupCall] Current user ID: 2
+GroupCall.tsx:325 [GroupCall] Available remote streams: Map(0) {size: 0}
+GroupCall.tsx:329 [GroupCall] Remote streams array: []
+GroupCall.tsx:332 [GroupCall] 🔍 Before filtering participants: (2) ['aji(3)', 'eko(2)']
+GroupCall.tsx:333 [GroupCall] 🔍 Current user to filter out: 2
+GroupCall.tsx:336 [GroupCall] 🔍 After filtering participants: ['aji(3)']
+GroupCall.tsx:342 [GroupCall] 🔍 Mapping participant aji (3): {streamKey: 'user_3', hasStream: false, streamId: undefined, streamActive: undefined, audioTracks: 0}
+GroupCall.tsx:359 [GroupCall] 📋 Final participants list: [{…}]
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:1156 [CallContext] Received message: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1159 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'group_call_participants_update', hasPayload: true, messageKeys: Array(2), routingToCase: 'group_call_participants_update'}
+CallContext.tsx:1266 [CallContext] 🔥 GROUP_CALL_PARTICIPANTS_UPDATE received: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1267 [CallContext] 🎯 Participants in message: (2) [3, 2]
+CallContext.tsx:1268 [CallContext] 🎯 CallId in message: group_call_1757927216211_38_3
+CallContext.tsx:1269 [CallContext] 🎯 Full sync flag: true
+CallContext.tsx:2185 [CallContext] 🔥 Group call participants update: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:2186 [CallContext] 🔥 Message payload: {callId: 'group_call_1757927216211_38_3', participants: Array(2), participantData: Array(2), fullSync: true, timestamp: 1757927230548}
+CallContext.tsx:2191 [CallContext] Comparing callIds - message: group_call_1757927216211_38_3 activeCall: group_call_1757927216211_38_3
+CallContext.tsx:2192 [CallContext] ActiveCall groupId: 38
+CallContext.tsx:2231 [CallContext] Extracted groupIds - message: 38 active: 38
+CallContext.tsx:2232 [CallContext] CallId parts: (5) ['group', 'call', '1757927216211', '38', '3']
+CallContext.tsx:2235 [CallContext] Group IDs match, updating participants: (2) [3, 2]
+CallContext.tsx:2241 [CallContext] 🎯 Processing participant update - fullSync: true participantData: (2) [{…}, {…}]
+CallContext.tsx:2242 [CallContext] 🎯 Participants array length: 2 ParticipantData array length: 2
+CallContext.tsx:2249 [CallContext] 🔥 Using detailed participant data from server: (2) [{…}, {…}]
+CallContext.tsx:2250 [CallContext] 🔥 Detailed participant sample: {userId: 3, userName: 'aji', audioEnabled: true, videoEnabled: true, stream: null}
+CallContext.tsx:2279 [CallContext] Unique participants after deduplication: (2) [{…}, {…}]
+CallContext.tsx:2309 [CallContext] Processing regular participant update (not full sync)
+GroupCall.tsx:296 [GroupCall] 🔥 Participant data update event received: {callId: 'group_call_1757927216211_38_3', participants: Array(2), isNewMember: false, fullSync: false}
+CallContext.tsx:2406 [CallContext] 🔥 Dispatching participant-data-updated event for fullSync
+GroupCall.tsx:296 [GroupCall] 🔥 Participant data update event received: {callId: 'group_call_1757927216211_38_3', participants: Array(2), isNewMember: false, fullSync: true, participantData: Array(2)}
+CallContext.tsx:4648 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:323 [GroupCall] Updating participants: (2) [{…}, {…}]
+GroupCall.tsx:324 [GroupCall] Current user ID: 2
+GroupCall.tsx:325 [GroupCall] Available remote streams: Map(0) {size: 0}
+GroupCall.tsx:329 [GroupCall] Remote streams array: []
+GroupCall.tsx:332 [GroupCall] 🔍 Before filtering participants: (2) ['aji(3)', 'eko(2)']
+GroupCall.tsx:333 [GroupCall] 🔍 Current user to filter out: 2
+GroupCall.tsx:336 [GroupCall] 🔍 After filtering participants: ['aji(3)']
+GroupCall.tsx:342 [GroupCall] 🔍 Mapping participant aji (3): {streamKey: 'user_3', hasStream: false, streamId: undefined, streamActive: undefined, audioTracks: 0}
+GroupCall.tsx:359 [GroupCall] 📋 Final participants list: [{…}]
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:385 [GroupCall] Sending ICE candidate to user 3
+CallContext.tsx:527 [CallContext] 🔧 RECEIVER: Direction restored to: sendrecv
+GroupCall.tsx:435 [GroupCall] Connection state changed for user 3: connecting
+CallContext.tsx:1156 [CallContext] Received message: {type: 'initiate_group_webrtc', payload: {…}}
+CallContext.tsx:1159 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'initiate_group_webrtc', hasPayload: true, messageKeys: Array(2), routingToCase: 'initiate_group_webrtc'}
+CallContext.tsx:1273 [CallContext] 🔥 ROUTING: initiate_group_webrtc case matched, calling handleInitiateGroupWebRTC
+CallContext.tsx:2438 [CallContext] 🚀 Group WebRTC initiation received: {type: 'initiate_group_webrtc', payload: {…}}
+CallContext.tsx:2445 [CallContext] 🔍 DEBUG handleInitiateGroupWebRTC: {currentActiveCall: {…}, activeCallFromState: null, messageCallId: 'group_call_1757927216211_38_3', messageParticipants: Array(2)}
+CallContext.tsx:2485 [CallContext] 🎯 Auto-triggering WebRTC setup for group call participants: (2) [{…}, {…}]
+GroupCall.tsx:491 [GroupCall] Initiating WebRTC for group call: {callId: 'group_call_1757927216211_38_3', participants: Array(2), forceInit: true, newMember: 2, activeCall: {…}}
+GroupCall.tsx:692 [GroupCall] 🚀 Initiating WebRTC connections for participants
+GroupCall.tsx:709 [GroupCall] 🎯 Creating WebRTC connection for participant: aji (3)
+CallContext.tsx:2500 [CallContext] 🔄 Server forced WebRTC initiation for new member 2
+CallContext.tsx:2516 [CallContext] ✅ WebRTC auto-initiation event dispatched
+GroupCall.tsx:735 [GroupCall] ✅ Sent WebRTC offer to user 3
+GroupCall.tsx:516 [GroupCall] 🔄 Force WebRTC reconnect triggered for new member: {callId: 'group_call_1757927216211_38_3', participants: Array(2), newMember: 2, forceInit: true, fromServer: true}
+CallContext.tsx:1156 [CallContext] Received message: {type: 'group_webrtc_answer', payload: {…}}
+CallContext.tsx:1159 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'group_webrtc_answer', hasPayload: true, messageKeys: Array(2), routingToCase: 'group_webrtc_answer'}
+CallContext.tsx:1306 [CallContext] Forwarding group WebRTC answer: {callId: 'group_call_1757927216211_38_3', answer: {…}, fromUserId: 3}
+GroupCall.tsx:481 [GroupCall] Received group WebRTC answer: {callId: 'group_call_1757927216211_38_3', answer: {…}, fromUserId: 3}
+GroupCall.tsx:646 [GroupCall] 📥 PROCESSING WEBRTC ANSWER from user: 3
+GroupCall.tsx:399 [GroupCall] 🎥 RECEIVED REMOTE TRACK from user 3: audio
+GroupCall.tsx:400 [GroupCall] 🎥 Event streams: [MediaStream]
+GroupCall.tsx:404 [GroupCall] 📦 STORING REMOTE STREAM for user 3: {streamId: '751e9709-da81-4c07-8f21-ac39fbdb164b', active: true, audioTracks: 1}
+GroupCall.tsx:656 [GroupCall] ✅ Set remote description for answer from user: 3
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:415 [GroupCall] 📦 Updated remoteStreams map, total streams: 1
+GroupCall.tsx:323 [GroupCall] Updating participants: (2) [{…}, {…}]
+GroupCall.tsx:324 [GroupCall] Current user ID: 2
+GroupCall.tsx:325 [GroupCall] Available remote streams: Map(1) {'user_3' => MediaStream}
+GroupCall.tsx:329 [GroupCall] Remote streams array: [MediaStream]
+GroupCall.tsx:332 [GroupCall] 🔍 Before filtering participants: (2) ['aji(3)', 'eko(2)']
+GroupCall.tsx:333 [GroupCall] 🔍 Current user to filter out: 2
+GroupCall.tsx:336 [GroupCall] 🔍 After filtering participants: ['aji(3)']
+GroupCall.tsx:342 [GroupCall] 🔍 Mapping participant aji (3): {streamKey: 'user_3', hasStream: true, streamId: '751e9709-da81-4c07-8f21-ac39fbdb164b', streamActive: true, audioTracks: 1}
+GroupCall.tsx:359 [GroupCall] 📋 Final participants list: [{…}]
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:824 [GroupCall] 🎯 Using SIMPLE audio attachment for aji
+GroupCall.tsx:134 [GroupCall] ✅ Setting Participant-aji stream to audio element - SIMPLE METHOD
+GroupCall.tsx:135 [GroupCall] Participant-aji stream details: {id: '751e9709-da81-4c07-8f21-ac39fbdb164b', active: true, audioTracks: 1}
+GroupCall.tsx:143 [GroupCall] Participant-aji Track 0: {kind: 'audio', enabled: true, muted: false, readyState: 'live', id: 'f1bc530d-d270-42de-be9b-f5f11d42bedb'}
+CallContext.tsx:1156 [CallContext] Received message: {type: 'group_webrtc_ice_candidate', payload: {…}}
+CallContext.tsx:1159 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'group_webrtc_ice_candidate', hasPayload: true, messageKeys: Array(2), routingToCase: 'group_webrtc_ice_candidate'}
+CallContext.tsx:1313 [CallContext] Forwarding group WebRTC ICE candidate: {callId: 'group_call_1757927216211_38_3', candidate: {…}, fromUserId: 3}
+GroupCall.tsx:486 [GroupCall] Received group WebRTC ICE candidate: {callId: 'group_call_1757927216211_38_3', candidate: {…}, fromUserId: 3}
+GroupCall.tsx:666 [GroupCall] 📥 PROCESSING ICE CANDIDATE from user: 3
+GroupCall.tsx:162 [GroupCall] ✅ Participant-aji audio playing successfully
+GroupCall.tsx:680 [GroupCall] ✅ Added ICE candidate for user: 3
+GroupCall.tsx:435 [GroupCall] Connection state changed for user 3: connected
+GroupCall.tsx:438 [GroupCall] ✅ Successfully connected to user 3
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:422 [GroupCall] 🔄 FORCE RE-RENDER participants for user 3
+GroupCall.tsx:824 [GroupCall] 🎯 Using SIMPLE audio attachment for aji
+GroupCall.tsx:134 [GroupCall] ✅ Setting Participant-aji stream to audio element - SIMPLE METHOD
+GroupCall.tsx:135 [GroupCall] Participant-aji stream details: {id: '751e9709-da81-4c07-8f21-ac39fbdb164b', active: true, audioTracks: 1}
+GroupCall.tsx:143 [GroupCall] Participant-aji Track 0: {kind: 'audio', enabled: true, muted: false, readyState: 'live', id: 'f1bc530d-d270-42de-be9b-f5f11d42bedb'}
+GroupCall.tsx:162 [GroupCall] ✅ Participant-aji audio playing successfully
+CallContext.tsx:1156 [CallContext] Received message: {type: 'group_webrtc_offer', payload: {…}}
+CallContext.tsx:1159 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'group_webrtc_offer', hasPayload: true, messageKeys: Array(2), routingToCase: 'group_webrtc_offer'}
+CallContext.tsx:1299 [CallContext] Forwarding group WebRTC offer: {callId: 'group_call_1757927216211_38_3', offer: {…}, fromUserId: 3}
+GroupCall.tsx:476 [GroupCall] Received group WebRTC offer: {callId: 'group_call_1757927216211_38_3', offer: {…}, fromUserId: 3}
+GroupCall.tsx:557 [GroupCall] 📥 PROCESSING WEBRTC OFFER from user: 3
+GroupCall.tsx:604 [GroupCall] 📊 Current senders before answer for user 3: 1
+GroupCall.tsx:619 [GroupCall] ✅ Set remote description for offer from user: 3
+GroupCall.tsx:625 [GroupCall] ✅ Created and set local answer for user: 3
+GroupCall.tsx:637 [GroupCall] ✅ Sent WebRTC answer to user: 3
+CallContext.tsx:4600 [CallContext] 🚀 Triggered WebRTC initialization for group call
+CallContext.tsx:1156 [CallContext] Received message: {type: 'group_webrtc_answer', payload: {…}}
+CallContext.tsx:1159 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'group_webrtc_answer', hasPayload: true, messageKeys: Array(2), routingToCase: 'group_webrtc_answer'}
+CallContext.tsx:1306 [CallContext] Forwarding group WebRTC answer: {callId: 'group_call_1757927216211_38_3', answer: {…}, fromUserId: 3}
+GroupCall.tsx:481 [GroupCall] Received group WebRTC answer: {callId: 'group_call_1757927216211_38_3', answer: {…}, fromUserId: 3}
+GroupCall.tsx:646 [GroupCall] 📥 PROCESSING WEBRTC ANSWER from user: 3
+GroupCall.tsx:661 [GroupCall] ❌ Error handling incoming answer from user 3: InvalidStateError: Failed to execute 'setRemoteDescription' on 'RTCPeerConnection': Failed to set remote answer sdp: Called in wrong state: stable
+handleIncomingWebRTCAnswer @ GroupCall.tsx:661
+await in handleIncomingWebRTCAnswer
+handleGroupWebRTCAnswer @ GroupCall.tsx:482
+websocket.onmessage @ CallContext.tsx:1307Understand this error
+CallContext.tsx:1156 [CallContext] Received message: {type: 'force_webrtc_reconnect', payload: {…}}
+CallContext.tsx:1159 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'force_webrtc_reconnect', hasPayload: true, messageKeys: Array(2), routingToCase: 'force_webrtc_reconnect'}
+CallContext.tsx:1277 [CallContext] 🔥 ROUTING: force_webrtc_reconnect case matched, calling handleInitiateGroupWebRTC
+CallContext.tsx:2438 [CallContext] 🚀 Group WebRTC initiation received: {type: 'force_webrtc_reconnect', payload: {…}}
+CallContext.tsx:2445 [CallContext] 🔍 DEBUG handleInitiateGroupWebRTC: {currentActiveCall: {…}, activeCallFromState: null, messageCallId: 'group_call_1757927216211_38_3', messageParticipants: Array(2)}
+CallContext.tsx:2485 [CallContext] 🎯 Auto-triggering WebRTC setup for group call participants: (2) [{…}, {…}]
+GroupCall.tsx:491 [GroupCall] Initiating WebRTC for group call: {callId: 'group_call_1757927216211_38_3', participants: Array(2), forceInit: true, newMember: 2, activeCall: {…}}
+GroupCall.tsx:692 [GroupCall] 🚀 Initiating WebRTC connections for participants
+GroupCall.tsx:709 [GroupCall] 🎯 Creating WebRTC connection for participant: aji (3)
+CallContext.tsx:2500 [CallContext] 🔄 Server forced WebRTC initiation for new member 2
+CallContext.tsx:2516 [CallContext] ✅ WebRTC auto-initiation event dispatched
+GroupCall.tsx:735 [GroupCall] ✅ Sent WebRTC offer to user 3
+CallContext.tsx:1156 [CallContext] Received message: {type: 'group_webrtc_offer', payload: {…}}
+CallContext.tsx:1159 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'group_webrtc_offer', hasPayload: true, messageKeys: Array(2), routingToCase: 'group_webrtc_offer'}
+CallContext.tsx:1299 [CallContext] Forwarding group WebRTC offer: {callId: 'group_call_1757927216211_38_3', offer: {…}, fromUserId: 3}
+GroupCall.tsx:476 [GroupCall] Received group WebRTC offer: {callId: 'group_call_1757927216211_38_3', offer: {…}, fromUserId: 3}
+GroupCall.tsx:557 [GroupCall] 📥 PROCESSING WEBRTC OFFER from user: 3
+GroupCall.tsx:604 [GroupCall] 📊 Current senders before answer for user 3: 1
+GroupCall.tsx:619 [GroupCall] ✅ Set remote description for offer from user: 3
+GroupCall.tsx:625 [GroupCall] ✅ Created and set local answer for user: 3
+GroupCall.tsx:637 [GroupCall] ✅ Sent WebRTC answer to user: 3
+CallContext.tsx:1156 [CallContext] Received message: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1159 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'group_call_participants_update', hasPayload: true, messageKeys: Array(2), routingToCase: 'group_call_participants_update'}
+CallContext.tsx:1266 [CallContext] 🔥 GROUP_CALL_PARTICIPANTS_UPDATE received: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1267 [CallContext] 🎯 Participants in message: (2) [{…}, {…}]
+CallContext.tsx:1268 [CallContext] 🎯 CallId in message: group_call_1757927216211_38_3
+CallContext.tsx:1269 [CallContext] 🎯 Full sync flag: true
+CallContext.tsx:2185 [CallContext] 🔥 Group call participants update: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:2186 [CallContext] 🔥 Message payload: {callId: 'group_call_1757927216211_38_3', participants: Array(2), isNewMember: true, fullSync: true}
+CallContext.tsx:2191 [CallContext] Comparing callIds - message: group_call_1757927216211_38_3 activeCall: group_call_1757927216211_38_3
+CallContext.tsx:2192 [CallContext] ActiveCall groupId: 38
+CallContext.tsx:2231 [CallContext] Extracted groupIds - message: 38 active: 38
+CallContext.tsx:2232 [CallContext] CallId parts: (5) ['group', 'call', '1757927216211', '38', '3']
+CallContext.tsx:2235 [CallContext] Group IDs match, updating participants: (2) [{…}, {…}]
+CallContext.tsx:2241 [CallContext] 🎯 Processing participant update - fullSync: true participantData: undefined
+CallContext.tsx:2242 [CallContext] 🎯 Participants array length: 2 ParticipantData array length: undefined
+CallContext.tsx:2254 [CallContext] Received detailed participant data: (2) [{…}, {…}]
+CallContext.tsx:2279 [CallContext] Unique participants after deduplication: (2) [{…}, {…}]
+CallContext.tsx:2283 [CallContext] 🔥 Full sync for new member - ensuring complete participant data
+GroupCall.tsx:296 [GroupCall] 🔥 Participant data update event received: {callId: 'group_call_1757927216211_38_3', participants: Array(2), isNewMember: true, fullSync: true}
+GroupCall.tsx:300 [GroupCall] 🎯 Full sync for new member - updating participant list
+CallContext.tsx:2304 [CallContext] 🎯 Full sync complete - participant data updated for new member
+CallContext.tsx:4648 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:323 [GroupCall] Updating participants: (2) [{…}, {…}]
+GroupCall.tsx:324 [GroupCall] Current user ID: 2
+GroupCall.tsx:325 [GroupCall] Available remote streams: Map(1) {'user_3' => MediaStream}
+GroupCall.tsx:329 [GroupCall] Remote streams array: [MediaStream]
+GroupCall.tsx:332 [GroupCall] 🔍 Before filtering participants: (2) ['aji(3)', 'eko(2)']
+GroupCall.tsx:333 [GroupCall] 🔍 Current user to filter out: 2
+GroupCall.tsx:336 [GroupCall] 🔍 After filtering participants: ['aji(3)']
+GroupCall.tsx:342 [GroupCall] 🔍 Mapping participant aji (3): {streamKey: 'user_3', hasStream: true, streamId: '751e9709-da81-4c07-8f21-ac39fbdb164b', streamActive: true, audioTracks: 1}
+GroupCall.tsx:359 [GroupCall] 📋 Final participants list: [{…}]
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:824 [GroupCall] 🎯 Using SIMPLE audio attachment for aji
+GroupCall.tsx:134 [GroupCall] ✅ Setting Participant-aji stream to audio element - SIMPLE METHOD
+GroupCall.tsx:135 [GroupCall] Participant-aji stream details: {id: '751e9709-da81-4c07-8f21-ac39fbdb164b', active: true, audioTracks: 1}
+GroupCall.tsx:143 [GroupCall] Participant-aji Track 0: {kind: 'audio', enabled: true, muted: false, readyState: 'live', id: 'f1bc530d-d270-42de-be9b-f5f11d42bedb'}
+GroupCall.tsx:162 [GroupCall] ✅ Participant-aji audio playing successfully
+GroupCall.tsx:516 [GroupCall] 🔄 Force WebRTC reconnect triggered for new member: {callId: 'group_call_1757927216211_38_3', participants: Array(2), newMember: 2, forceInit: true, fromServer: true}
+CallContext.tsx:1156 [CallContext] Received message: {type: 'group_webrtc_offer', payload: {…}}
+CallContext.tsx:1159 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'group_webrtc_offer', hasPayload: true, messageKeys: Array(2), routingToCase: 'group_webrtc_offer'}
+CallContext.tsx:1299 [CallContext] Forwarding group WebRTC offer: {callId: 'group_call_1757927216211_38_3', offer: {…}, fromUserId: 3}
+GroupCall.tsx:476 [GroupCall] Received group WebRTC offer: {callId: 'group_call_1757927216211_38_3', offer: {…}, fromUserId: 3}
+GroupCall.tsx:557 [GroupCall] 📥 PROCESSING WEBRTC OFFER from user: 3
+GroupCall.tsx:604 [GroupCall] 📊 Current senders before answer for user 3: 1
+GroupCall.tsx:619 [GroupCall] ✅ Set remote description for offer from user: 3
+GroupCall.tsx:625 [GroupCall] ✅ Created and set local answer for user: 3
+GroupCall.tsx:637 [GroupCall] ✅ Sent WebRTC answer to user: 3
+CallContext.tsx:1156 [CallContext] Received message: {type: 'group_webrtc_answer', payload: {…}}
+CallContext.tsx:1159 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'group_webrtc_answer', hasPayload: true, messageKeys: Array(2), routingToCase: 'group_webrtc_answer'}
+CallContext.tsx:1306 [CallContext] Forwarding group WebRTC answer: {callId: 'group_call_1757927216211_38_3', answer: {…}, fromUserId: 3}
+GroupCall.tsx:481 [GroupCall] Received group WebRTC answer: {callId: 'group_call_1757927216211_38_3', answer: {…}, fromUserId: 3}
+GroupCall.tsx:646 [GroupCall] 📥 PROCESSING WEBRTC ANSWER from user: 3
+GroupCall.tsx:661 [GroupCall] ❌ Error handling incoming answer from user 3: InvalidStateError: Failed to execute 'setRemoteDescription' on 'RTCPeerConnection': Failed to set remote answer sdp: Called in wrong state: stable
+handleIncomingWebRTCAnswer @ GroupCall.tsx:661
+await in handleIncomingWebRTCAnswer
+handleGroupWebRTCAnswer @ GroupCall.tsx:482
+websocket.onmessage @ CallContext.tsx:1307Understand this error
+CallContext.tsx:1156 [CallContext] Received message: {type: 'group_webrtc_offer', payload: {…}}
+CallContext.tsx:1159 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'group_webrtc_offer', hasPayload: true, messageKeys: Array(2), routingToCase: 'group_webrtc_offer'}
+CallContext.tsx:1299 [CallContext] Forwarding group WebRTC offer: {callId: 'group_call_1757927216211_38_3', offer: {…}, fromUserId: 3}
+GroupCall.tsx:476 [GroupCall] Received group WebRTC offer: {callId: 'group_call_1757927216211_38_3', offer: {…}, fromUserId: 3}
+GroupCall.tsx:557 [GroupCall] 📥 PROCESSING WEBRTC OFFER from user: 3
+GroupCall.tsx:604 [GroupCall] 📊 Current senders before answer for user 3: 1
+GroupCall.tsx:619 [GroupCall] ✅ Set remote description for offer from user: 3
+GroupCall.tsx:625 [GroupCall] ✅ Created and set local answer for user: 3
+GroupCall.tsx:637 [GroupCall] ✅ Sent WebRTC answer to user: 3
+CallContext.tsx:1156 [CallContext] Received message: {type: 'initiate_group_webrtc', payload: {…}}
+CallContext.tsx:1159 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'initiate_group_webrtc', hasPayload: true, messageKeys: Array(2), routingToCase: 'initiate_group_webrtc'}
+CallContext.tsx:1273 [CallContext] 🔥 ROUTING: initiate_group_webrtc case matched, calling handleInitiateGroupWebRTC
+CallContext.tsx:2438 [CallContext] 🚀 Group WebRTC initiation received: {type: 'initiate_group_webrtc', payload: {…}}
+CallContext.tsx:2445 [CallContext] 🔍 DEBUG handleInitiateGroupWebRTC: {currentActiveCall: {…}, activeCallFromState: null, messageCallId: 'group_call_1757927216211_38_3', messageParticipants: Array(2)}
+CallContext.tsx:2485 [CallContext] 🎯 Auto-triggering WebRTC setup for group call participants: (2) [{…}, {…}]
+GroupCall.tsx:491 [GroupCall] Initiating WebRTC for group call: {callId: 'group_call_1757927216211_38_3', participants: Array(2), forceInit: true, newMember: undefined, activeCall: {…}}
+GroupCall.tsx:692 [GroupCall] 🚀 Initiating WebRTC connections for participants
+GroupCall.tsx:709 [GroupCall] 🎯 Creating WebRTC connection for participant: aji (3)
+CallContext.tsx:2516 [CallContext] ✅ WebRTC auto-initiation event dispatched
+GroupCall.tsx:735 [GroupCall] ✅ Sent WebRTC offer to user 3
+CallContext.tsx:390 [CallContext] 📊 RECEIVER: Inbound RTP monitoring: {callId: 'call_1757927143483_3_2', bytesReceived: 5900, bytesDelta: 0, packetsReceived: 114, packetsDelta: 0, …}
+CallContext.tsx:459 [CallContext] ⚠️ RECEIVER: Issues detected: ['No RTP data flow (warning count: 1)']
+checkReceiverRTPFlow @ CallContext.tsx:459
+setInterval
+startReceiverRTPMonitoring @ CallContext.tsx:473
+handleWebRTCOffer @ CallContext.tsx:2880
+await in handleWebRTCOffer
+websocket.onmessage @ CallContext.tsx:1288Understand this warning
+CallContext.tsx:460 [CallContext] 🔧 RECEIVER: Transport state: {connectionState: 'connected', iceConnectionState: 'connected', signalingState: 'stable'}
+checkReceiverRTPFlow @ CallContext.tsx:460
+setInterval
+startReceiverRTPMonitoring @ CallContext.tsx:473
+handleWebRTCOffer @ CallContext.tsx:2880
+await in handleWebRTCOffer
+websocket.onmessage @ CallContext.tsx:1288Understand this warning
+CallContext.tsx:1156 [CallContext] Received message: {type: 'group_webrtc_offer', payload: {…}}
+CallContext.tsx:1159 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'group_webrtc_offer', hasPayload: true, messageKeys: Array(2), routingToCase: 'group_webrtc_offer'}
+CallContext.tsx:1299 [CallContext] Forwarding group WebRTC offer: {callId: 'group_call_1757927216211_38_3', offer: {…}, fromUserId: 3}
+GroupCall.tsx:476 [GroupCall] Received group WebRTC offer: {callId: 'group_call_1757927216211_38_3', offer: {…}, fromUserId: 3}
+GroupCall.tsx:557 [GroupCall] 📥 PROCESSING WEBRTC OFFER from user: 3
+GroupCall.tsx:604 [GroupCall] 📊 Current senders before answer for user 3: 1
+GroupCall.tsx:619 [GroupCall] ✅ Set remote description for offer from user: 3
+GroupCall.tsx:625 [GroupCall] ✅ Created and set local answer for user: 3
+GroupCall.tsx:637 [GroupCall] ✅ Sent WebRTC answer to user: 3
+CallContext.tsx:1156 [CallContext] Received message: {type: 'group_webrtc_answer', payload: {…}}
+CallContext.tsx:1159 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'group_webrtc_answer', hasPayload: true, messageKeys: Array(2), routingToCase: 'group_webrtc_answer'}
+CallContext.tsx:1306 [CallContext] Forwarding group WebRTC answer: {callId: 'group_call_1757927216211_38_3', answer: {…}, fromUserId: 3}
+GroupCall.tsx:481 [GroupCall] Received group WebRTC answer: {callId: 'group_call_1757927216211_38_3', answer: {…}, fromUserId: 3}
+GroupCall.tsx:646 [GroupCall] 📥 PROCESSING WEBRTC ANSWER from user: 3
+GroupCall.tsx:661 [GroupCall] ❌ Error handling incoming answer from user 3: InvalidStateError: Failed to execute 'setRemoteDescription' on 'RTCPeerConnection': Failed to set remote answer sdp: Called in wrong state: stable
+handleIncomingWebRTCAnswer @ GroupCall.tsx:661
+await in handleIncomingWebRTCAnswer
+handleGroupWebRTCAnswer @ GroupCall.tsx:482
+websocket.onmessage @ CallContext.tsx:1307Understand this error
+CallContext.tsx:1156 [CallContext] Received message: {type: 'group_webrtc_offer', payload: {…}}
+CallContext.tsx:1159 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'group_webrtc_offer', hasPayload: true, messageKeys: Array(2), routingToCase: 'group_webrtc_offer'}
+CallContext.tsx:1299 [CallContext] Forwarding group WebRTC offer: {callId: 'group_call_1757927216211_38_3', offer: {…}, fromUserId: 3}
+GroupCall.tsx:476 [GroupCall] Received group WebRTC offer: {callId: 'group_call_1757927216211_38_3', offer: {…}, fromUserId: 3}
+GroupCall.tsx:557 [GroupCall] 📥 PROCESSING WEBRTC OFFER from user: 3
+GroupCall.tsx:604 [GroupCall] 📊 Current senders before answer for user 3: 1
+GroupCall.tsx:619 [GroupCall] ✅ Set remote description for offer from user: 3
+GroupCall.tsx:625 [GroupCall] ✅ Created and set local answer for user: 3
+GroupCall.tsx:637 [GroupCall] ✅ Sent WebRTC answer to user: 3
+CallContext.tsx:1156 [CallContext] Received message: {type: 'force_webrtc_reconnect', payload: {…}}
+CallContext.tsx:1159 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'force_webrtc_reconnect', hasPayload: true, messageKeys: Array(2), routingToCase: 'force_webrtc_reconnect'}
+CallContext.tsx:1277 [CallContext] 🔥 ROUTING: force_webrtc_reconnect case matched, calling handleInitiateGroupWebRTC
+CallContext.tsx:2438 [CallContext] 🚀 Group WebRTC initiation received: {type: 'force_webrtc_reconnect', payload: {…}}
+CallContext.tsx:2445 [CallContext] 🔍 DEBUG handleInitiateGroupWebRTC: {currentActiveCall: {…}, activeCallFromState: null, messageCallId: 'group_call_1757927216211_38_3', messageParticipants: Array(2)}
+CallContext.tsx:2485 [CallContext] 🎯 Auto-triggering WebRTC setup for group call participants: (2) [{…}, {…}]
+GroupCall.tsx:491 [GroupCall] Initiating WebRTC for group call: {callId: 'group_call_1757927216211_38_3', participants: Array(2), forceInit: true, newMember: undefined, activeCall: {…}}
+GroupCall.tsx:692 [GroupCall] 🚀 Initiating WebRTC connections for participants
+GroupCall.tsx:709 [GroupCall] 🎯 Creating WebRTC connection for participant: aji (3)
+CallContext.tsx:2516 [CallContext] ✅ WebRTC auto-initiation event dispatched
+GroupCall.tsx:735 [GroupCall] ✅ Sent WebRTC offer to user 3
+CallContext.tsx:1156 [CallContext] Received message: {type: 'group_webrtc_answer', payload: {…}}
+CallContext.tsx:1159 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'group_webrtc_answer', hasPayload: true, messageKeys: Array(2), routingToCase: 'group_webrtc_answer'}
+CallContext.tsx:1306 [CallContext] Forwarding group WebRTC answer: {callId: 'group_call_1757927216211_38_3', answer: {…}, fromUserId: 3}
+GroupCall.tsx:481 [GroupCall] Received group WebRTC answer: {callId: 'group_call_1757927216211_38_3', answer: {…}, fromUserId: 3}
+GroupCall.tsx:646 [GroupCall] 📥 PROCESSING WEBRTC ANSWER from user: 3
+GroupCall.tsx:656 [GroupCall] ✅ Set remote description for answer from user: 3
+CallContext.tsx:390 [CallContext] 📊 RECEIVER: Inbound RTP monitoring: 
