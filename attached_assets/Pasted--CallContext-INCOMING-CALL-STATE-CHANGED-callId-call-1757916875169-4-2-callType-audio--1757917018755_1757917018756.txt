@@ -1,0 +1,859 @@
+[CallContext] 🔥 INCOMING CALL STATE CHANGED: {callId: 'call_1757916875169_4_2', callType: 'audio', status: 'ringing', isIncoming: true, peerUserId: 4, …}
+CallContext.tsx:4181 [CallContext] 🔥 INCOMING CALL DETAILS: {callId: 'call_1757916875169_4_2', groupName: undefined, callType: 'audio', isGroupCall: undefined}
+sw.js:194 [SW] Message received: {type: 'KEEP_ALIVE'}
+sw.js:201 Uncaught TypeError: Cannot read properties of undefined (reading 'postMessage')
+    at sw.js:201:22
+(anonymous) @ sw.js:201Understand this error
+CallContext.tsx:2828 [CallContext] acceptCall function called
+CallContext.tsx:2829 [CallContext] incomingCall: {callId: 'call_1757916875169_4_2', callType: 'audio', status: 'ringing', isIncoming: true, peerUserId: 4, …}
+CallContext.tsx:2830 [CallContext] ws connected: true
+CallContext.tsx:2831 [CallContext] user: {id: 2, callsign: 'eko', nrp: '12345', fullName: 'eko a', rank: 'SPC', …}
+CallContext.tsx:2851 [CallContext] Accepting call
+CallContext.tsx:2854 [CallContext] 🔇 FORCE STOPPING ALL RINGTONES - Call accepted
+CallContext.tsx:467 [CallContext] 🔇 STOPPING ALL RINGTONES - comprehensive cleanup
+CallContext.tsx:472 [CallContext] Stopping HTML5 ringtone audio
+CallContext.tsx:481 [CallContext] ✅ HTML5 ringtone stopped and cleared
+CallContext.tsx:490 [CallContext] Force stopping current global ringtone
+CallContext.tsx:498 [CallContext] ✅ Global ringtone reference stopped
+CallContext.tsx:522 [CallContext] ✅ Stopped 0 audio elements
+CallContext.tsx:566 [CallContext] ✅ RINGTONE CLEANUP COMPLETED
+CallContext.tsx:2880 [CallContext] Requesting media permissions for mobile (accept call)...
+CallContext.tsx:4191 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: {…}, activeCall: null, hasIncomingCall: true, incomingCallId: 'call_1757916875169_4_2'}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: {…}, activeCall: null, hasIncomingCall: true}
+IncomingCallModal.tsx:6 [IncomingCallModal] 🔥 COMPONENT RENDERED - START
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: {…}, activeCall: null, hasIncomingCall: true}
+IncomingCallModal.tsx:11 [IncomingCallModal] 🔥 After useCall hook - incomingCall: {callId: 'call_1757916875169_4_2', callType: 'audio', status: 'ringing', isIncoming: true, peerUserId: 4, …}
+IncomingCallModal.tsx:12 [IncomingCallModal] 🔥 incomingCall type check: object
+IncomingCallModal.tsx:13 [IncomingCallModal] 🔥 incomingCall falsy check: false
+IncomingCallModal.tsx:20 [IncomingCallModal] ✅ SHOWING MODAL for call: call_1757916875169_4_2
+IncomingCallModal.tsx:21 [IncomingCallModal] Modal details: {isGroupCall: undefined, groupName: undefined, callType: 'audio', fromUser: 'dino'}
+CallContext.tsx:2882 [CallContext] Got local media stream for incoming call
+CallContext.tsx:2895 [CallContext] Added local stream to existing peerConnection
+CallContext.tsx:2934 [CallContext] 🎯 Call accepted - enabling audio and activating remote stream
+CallContext.tsx:4191 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+IncomingCallModal.tsx:6 [IncomingCallModal] 🔥 COMPONENT RENDERED - START
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+IncomingCallModal.tsx:11 [IncomingCallModal] 🔥 After useCall hook - incomingCall: null
+IncomingCallModal.tsx:12 [IncomingCallModal] 🔥 incomingCall type check: object
+IncomingCallModal.tsx:13 [IncomingCallModal] 🔥 incomingCall falsy check: true
+IncomingCallModal.tsx:16 [IncomingCallModal] No incoming call, returning null
+CallContext.tsx:4179 [CallContext] 🔥 INCOMING CALL STATE CHANGED: null
+CallContext.tsx:4191 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+AudioCall.tsx:406 [AudioCall] Component rendering with activeCall: {callId: 'call_1757916875169_4_2', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 4, …}
+AudioCall.tsx:407 [AudioCall] remoteAudioStream: null
+ChatList.tsx:149 📋 CHATLIST: Removing WebSocket event listeners
+AudioCall.tsx:433 [AudioCall] Mobile device detected: false
+AudioCall.tsx:441 [AudioCall] Earphone connected: false Current output: speaker
+AudioCall.tsx:458 [AudioCall] Remote stream effect triggered, remoteAudioStream: null
+AudioCall.tsx:461 [AudioCall] ❌ No remote audio stream available, waiting for stream...
+AudioCall.tsx:948 [AudioCall] Setting up call duration timer
+CallContext.tsx:3000 [CallContext] 📤 Sending WebRTC ready signal to caller: 4
+CallContext.tsx:3008 [CallContext] ✅ WebRTC ready signal sent successfully
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+AudioCall.tsx:406 [AudioCall] Component rendering with activeCall: {callId: 'call_1757916875169_4_2', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 4, …}
+AudioCall.tsx:407 [AudioCall] remoteAudioStream: null
+CallContext.tsx:899 [CallContext] Received message: {type: 'webrtc_offer', callId: 'call_1757916875169_4_2', offer: {…}}
+CallContext.tsx:1014 [CallContext] 🎯 Processing webrtc_offer message: {type: 'webrtc_offer', callId: 'call_1757916875169_4_2', offer: {…}}
+CallContext.tsx:2317 [CallContext] 🔄 ENHANCED: Received WebRTC offer for callId: call_1757916875169_4_2
+CallContext.tsx:2324 [CallContext] Current activeCall: call_1757916875169_4_2
+CallContext.tsx:2325 [CallContext] Current incomingCall: undefined
+CallContext.tsx:2326 [CallContext] Looking for callId: call_1757916875169_4_2
+CallContext.tsx:2344 [CallContext] 🔄 ENHANCED: Processing WebRTC offer with improved validation...
+CallContext.tsx:2347 [CallContext] 📊 Pre-offer transceiver validation:
+CallContext.tsx:2350 [CallContext] Transceiver 0: {direction: 'sendrecv', currentDirection: null, mid: null, sender: {…}, receiver: {…}}
+CallContext.tsx:2899 [CallContext] 📡 RECEIVER: Received remote stream
+CallContext.tsx:2901 [CallContext] 📡 RECEIVER: Remote stream details: {id: '2ec8364b-9aab-4314-937a-e656bb67f9f7', active: true, audioTracks: 1, videoTracks: 0}
+CallContext.tsx:2909 [CallContext] 📡 RECEIVER: Storing remote stream globally
+CallContext.tsx:2913 [CallContext] Remote audio received - stopping waiting tone
+CallContext.tsx:644 [CallContext] 🔇 AGGRESSIVE AUDIO CLEANUP - STOPPING ALL AUDIO
+CallContext.tsx:678 [CallContext] 💥 NUCLEAR AUDIO CLEANUP - Closing ALL AudioContext instances
+CallContext.tsx:694 [CallContext] ✅ Closed AudioContext
+CallContext.tsx:724 [CallContext] 💥 NUCLEAR INTERVAL CLEANUP - Clearing ALL intervals
+CallContext.tsx:737 [CallContext] ✅ Nuclear interval cleanup completed
+CallContext.tsx:742 [CallContext] ✅ AGGRESSIVE AUDIO CLEANUP COMPLETED
+CallContext.tsx:2386 [CallContext] ✅ ENHANCED: Remote description set successfully
+CallContext.tsx:2389 [CallContext] 📊 Post-offer transceiver validation:
+CallContext.tsx:2397 [CallContext] Updated Transceiver 0: {direction: 'sendrecv', currentDirection: null, mid: '0', kind: 'audio'}
+CallContext.tsx:2422 [CallContext] Processing 6 pending ICE candidates for callId: call_1757916875169_4_2
+CallContext.tsx:4191 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+AudioCall.tsx:406 [AudioCall] Component rendering with activeCall: {callId: 'call_1757916875169_4_2', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 4, …}
+AudioCall.tsx:407 [AudioCall] remoteAudioStream: MediaStream {id: '2ec8364b-9aab-4314-937a-e656bb67f9f7', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:458 [AudioCall] Remote stream effect triggered, remoteAudioStream: MediaStream {id: '2ec8364b-9aab-4314-937a-e656bb67f9f7', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:465 [AudioCall] Setting up remote audio stream...
+AudioCall.tsx:469 [AudioCall] ✅ Found remote audio element, setting stream
+AudioCall.tsx:553 [AudioCall] 🎧 Audio diagnostics enabled
+AudioCall.tsx:562 [AudioCall] 🌐 Browser environment: {userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWeb…KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', platform: 'Win32', isSecureContext: true, protocol: 'https:', hostname: 'd6b9d90f-fa84-48b1-86ca-93bf47f4824f-00-1eu5s7yk2ewfr.picard.replit.dev'}
+AudioCall.tsx:570 [AudioCall] 🔊 Attempt 1 - Audio element state: {paused: true, muted: false, volume: 1, readyState: 0, networkState: 3, …}
+AudioCall.tsx:585 [AudioCall] 🎤 Remote stream info: {tracksCount: 1, streamActive: true, streamId: '2ec8364b-9aab-4314-937a-e656bb67f9f7'}
+AudioCall.tsx:591 [AudioCall] Track 0: {enabled: true, muted: false, readyState: 'live', kind: 'audio', id: '9eaed379-6ed1-4c48-8438-bb8972a75a99', …}
+AudioCall.tsx:603 [AudioCall] 🎮 Checking autoplay policy...
+AudioCall.tsx:9 [AudioCall] 🔓 Force unlocking audio...
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+AudioCall.tsx:406 [AudioCall] Component rendering with activeCall: {callId: 'call_1757916875169_4_2', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 4, …}
+AudioCall.tsx:407 [AudioCall] remoteAudioStream: MediaStream {id: '2ec8364b-9aab-4314-937a-e656bb67f9f7', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+CallContext.tsx:2426 [CallContext] ✅ Added pending ICE candidate
+AudioCall.tsx:537 [AudioCall] ⏳ Audio waiting for data
+CallContext.tsx:2426 [CallContext] ✅ Added pending ICE candidate
+AudioCall.tsx:533 [AudioCall] 🔄 Audio load started
+AudioCall.tsx:535 [AudioCall] 📋 Audio metadata loaded
+AudioCall.tsx:534 [AudioCall] 📊 Audio data loaded
+AudioCall.tsx:507 [AudioCall] 🔊 Audio can play - ready state: 4
+AudioCall.tsx:512 [AudioCall] 🎵 Audio is playing - currentTime: 0
+AudioCall.tsx:615 [AudioCall] ✅ Remote audio playing successfully (attempt 1)
+AudioCall.tsx:624 [AudioCall] 🔄 ENHANCED: Starting transport monitoring integration
+AudioCall.tsx:246 [AudioCall] 🎤 Setting up remote track monitoring: {enabled: true, muted: false, readyState: 'live'}
+CallContext.tsx:2426 [CallContext] ✅ Added pending ICE candidate
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+AudioCall.tsx:406 [AudioCall] Component rendering with activeCall: {callId: 'call_1757916875169_4_2', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 4, …}
+AudioCall.tsx:407 [AudioCall] remoteAudioStream: MediaStream {id: '2ec8364b-9aab-4314-937a-e656bb67f9f7', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:159 [AudioCall] 🌐 ENHANCED Transport Stats: {dtlsState: 'new', iceState: 'new', selectedCandidatePairId: undefined}
+3CallContext.tsx:2426 [CallContext] ✅ Added pending ICE candidate
+CallContext.tsx:2437 [CallContext] ✅ ENHANCED: Local description (answer) set successfully
+CallContext.tsx:2448 [CallContext] ⚠️ WebSocket not ready for answer, using HTTP API fallback
+CallContext.tsx:2928 [CallContext] ❌ RECEIVER: Remote audio element not found
+CallContext.tsx:2465 [CallContext] ✅ Sent WebRTC answer via HTTP API fallback
+AudioCall.tsx:536 [AudioCall] 📈 Audio loading progress
+AudioCall.tsx:700 [AudioCall] 📊 Audio status after play: {paused: false, currentTime: 0, volume: 1}
+AudioCall.tsx:708 [AudioCall] ⚠️ Audio element shows playing but currentTime is 0 - trying audio fix
+AudioCall.tsx:9 [AudioCall] 🔓 Force unlocking audio...
+AudioCall.tsx:40 [AudioCall] 🔍 Checking audio output...
+AudioCall.tsx:60 [AudioCall] 📊 Current audio state: {paused: false, muted: false, volume: 1, currentTime: 0, duration: Infinity, …}
+AudioCall.tsx:719 [AudioCall] 🔧 Audio silent, testing different output devices...
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+AudioCall.tsx:406 [AudioCall] Component rendering with activeCall: {callId: 'call_1757916875169_4_2', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 4, …}
+AudioCall.tsx:407 [AudioCall] remoteAudioStream: MediaStream {id: '2ec8364b-9aab-4314-937a-e656bb67f9f7', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:102 [AudioCall] 📊 ENHANCED Inbound Audio Stats: {bytesReceived: 0, bytesDelta: 0, packetsReceived: 0, packetsDelta: 0, audioLevel: 0, …}
+AudioCall.tsx:121 [AudioCall] ⚠️ ENHANCED: No inbound audio data flow detected!
+(anonymous) @ AudioCall.tsx:121
+(anonymous) @ AudioCall.tsx:90
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this warning
+AudioCall.tsx:159 [AudioCall] 🌐 ENHANCED Transport Stats: {dtlsState: 'connected', iceState: 'connected', selectedCandidatePairId: 'CPkfL3J46Z_EJQBEwa4'}
+AudioCall.tsx:214 [AudioCall] ❌ CRITICAL: Inbound RTP reports exist but no data flow!
+(anonymous) @ AudioCall.tsx:214
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+AudioCall.tsx:215 [AudioCall] 🔧 This indicates the classic 'track exists but no RTP data flows' issue
+(anonymous) @ AudioCall.tsx:215
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+AudioCall.tsx:46 [AudioCall] 🔊 Available audio outputs: 3
+AudioCall.tsx:48 [AudioCall] Output 0: {deviceId: 'default', label: 'Default - Speakers (Realtek(R) Audio)', groupId: '38298ef20e1d9688168619369f0af5a8e3863296a562871ad2e1a468d3667222'}
+AudioCall.tsx:48 [AudioCall] Output 1: {deviceId: 'communications', label: 'Communications - Speakers (Realtek(R) Audio)', groupId: '38298ef20e1d9688168619369f0af5a8e3863296a562871ad2e1a468d3667222'}
+AudioCall.tsx:48 [AudioCall] Output 2: {deviceId: '4c02ff55240e6c65f0fdabd06fededb5359782b182bc18a2ca0e777fd063b654', label: 'Speakers (Realtek(R) Audio)', groupId: '38298ef20e1d9688168619369f0af5a8e3863296a562871ad2e1a468d3667222'}
+AudioCall.tsx:729 [AudioCall] ✅ Testing audio output: Default - Speakers (Realtek(R) Audio)
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+AudioCall.tsx:406 [AudioCall] Component rendering with activeCall: {callId: 'call_1757916875169_4_2', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 4, …}
+AudioCall.tsx:407 [AudioCall] remoteAudioStream: MediaStream {id: '2ec8364b-9aab-4314-937a-e656bb67f9f7', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:180 [AudioCall] 🧪 ENHANCED Active Candidate Pair: {state: 'succeeded', priority: 9115038255631187000, bytesReceived: 1855, bytesSent: 9372, receivedDelta: 714, …}
+AudioCall.tsx:102 [AudioCall] 📊 ENHANCED Inbound Audio Stats: {bytesReceived: 0, bytesDelta: 0, packetsReceived: 0, packetsDelta: 0, audioLevel: 0, …}
+AudioCall.tsx:140 [AudioCall] 📤 ENHANCED Outbound Audio Stats: {bytesSent: 5138, bytesDelta: 2650, packetsSent: 85, packetsDelta: 50, retransmittedPacketsSent: 0, …}
+AudioCall.tsx:159 [AudioCall] 🌐 ENHANCED Transport Stats: {dtlsState: 'connected', iceState: 'connected', selectedCandidatePairId: 'CPkfL3J46Z_EJQBEwa4'}
+AudioCall.tsx:214 [AudioCall] ❌ CRITICAL: Inbound RTP reports exist but no data flow!
+(anonymous) @ AudioCall.tsx:214
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+AudioCall.tsx:215 [AudioCall] 🔧 This indicates the classic 'track exists but no RTP data flows' issue
+(anonymous) @ AudioCall.tsx:215
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+AudioCall.tsx:729 [AudioCall] ✅ Testing audio output: Communications - Speakers (Realtek(R) Audio)
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+AudioCall.tsx:406 [AudioCall] Component rendering with activeCall: {callId: 'call_1757916875169_4_2', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 4, …}
+AudioCall.tsx:407 [AudioCall] remoteAudioStream: MediaStream {id: '2ec8364b-9aab-4314-937a-e656bb67f9f7', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:180 [AudioCall] 🧪 ENHANCED Active Candidate Pair: {state: 'succeeded', priority: 9115038255631187000, bytesReceived: 2527, bytesSent: 15243, receivedDelta: 672, …}
+AudioCall.tsx:102 [AudioCall] 📊 ENHANCED Inbound Audio Stats: {bytesReceived: 0, bytesDelta: 0, packetsReceived: 0, packetsDelta: 0, audioLevel: 0, …}
+AudioCall.tsx:140 [AudioCall] 📤 ENHANCED Outbound Audio Stats: {bytesSent: 9039, bytesDelta: 3901, packetsSent: 135, packetsDelta: 50, retransmittedPacketsSent: 0, …}
+AudioCall.tsx:159 [AudioCall] 🌐 ENHANCED Transport Stats: {dtlsState: 'connected', iceState: 'connected', selectedCandidatePairId: 'CPkfL3J46Z_EJQBEwa4'}
+AudioCall.tsx:214 [AudioCall] ❌ CRITICAL: Inbound RTP reports exist but no data flow!
+(anonymous) @ AudioCall.tsx:214
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+AudioCall.tsx:215 [AudioCall] 🔧 This indicates the classic 'track exists but no RTP data flows' issue
+(anonymous) @ AudioCall.tsx:215
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+AudioCall.tsx:729 [AudioCall] ✅ Testing audio output: Speakers (Realtek(R) Audio)
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+AudioCall.tsx:406 [AudioCall] Component rendering with activeCall: {callId: 'call_1757916875169_4_2', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 4, …}
+AudioCall.tsx:407 [AudioCall] remoteAudioStream: MediaStream {id: '2ec8364b-9aab-4314-937a-e656bb67f9f7', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:180 [AudioCall] 🧪 ENHANCED Active Candidate Pair: {state: 'succeeded', priority: 9115038255631187000, bytesReceived: 3241, bytesSent: 21016, receivedDelta: 714, …}
+AudioCall.tsx:102 [AudioCall] 📊 ENHANCED Inbound Audio Stats: {bytesReceived: 0, bytesDelta: 0, packetsReceived: 0, packetsDelta: 0, audioLevel: 0, …}
+AudioCall.tsx:140 [AudioCall] 📤 ENHANCED Outbound Audio Stats: {bytesSent: 12912, bytesDelta: 3873, packetsSent: 185, packetsDelta: 50, retransmittedPacketsSent: 0, …}
+AudioCall.tsx:159 [AudioCall] 🌐 ENHANCED Transport Stats: {dtlsState: 'connected', iceState: 'connected', selectedCandidatePairId: 'CPkfL3J46Z_EJQBEwa4'}
+AudioCall.tsx:214 [AudioCall] ❌ CRITICAL: Inbound RTP reports exist but no data flow!
+(anonymous) @ AudioCall.tsx:214
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+AudioCall.tsx:215 [AudioCall] 🔧 This indicates the classic 'track exists but no RTP data flows' issue
+(anonymous) @ AudioCall.tsx:215
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+AudioCall.tsx:747 [AudioCall] 😞 Tried all audio devices, none worked
+AudioCall.tsx:271 [AudioCall] 🔔 Showing audio unlock prompt...
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+AudioCall.tsx:406 [AudioCall] Component rendering with activeCall: {callId: 'call_1757916875169_4_2', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 4, …}
+AudioCall.tsx:407 [AudioCall] remoteAudioStream: MediaStream {id: '2ec8364b-9aab-4314-937a-e656bb67f9f7', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:180 [AudioCall] 🧪 ENHANCED Active Candidate Pair: {state: 'succeeded', priority: 9115038255631187000, bytesReceived: 3867, bytesSent: 26175, receivedDelta: 626, …}
+AudioCall.tsx:102 [AudioCall] 📊 ENHANCED Inbound Audio Stats: {bytesReceived: 0, bytesDelta: 0, packetsReceived: 0, packetsDelta: 0, audioLevel: 0, …}
+AudioCall.tsx:140 [AudioCall] 📤 ENHANCED Outbound Audio Stats: {bytesSent: 16171, bytesDelta: 3259, packetsSent: 235, packetsDelta: 50, retransmittedPacketsSent: 0, …}
+AudioCall.tsx:159 [AudioCall] 🌐 ENHANCED Transport Stats: {dtlsState: 'connected', iceState: 'connected', selectedCandidatePairId: 'CPkfL3J46Z_EJQBEwa4'}
+AudioCall.tsx:214 [AudioCall] ❌ CRITICAL: Inbound RTP reports exist but no data flow!
+(anonymous) @ AudioCall.tsx:214
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+AudioCall.tsx:215 [AudioCall] 🔧 This indicates the classic 'track exists but no RTP data flows' issue
+(anonymous) @ AudioCall.tsx:215
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+AudioCall.tsx:406 [AudioCall] Component rendering with activeCall: {callId: 'call_1757916875169_4_2', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 4, …}
+AudioCall.tsx:407 [AudioCall] remoteAudioStream: MediaStream {id: '2ec8364b-9aab-4314-937a-e656bb67f9f7', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:180 [AudioCall] 🧪 ENHANCED Active Candidate Pair: {state: 'succeeded', priority: 9115038255631187000, bytesReceived: 4539, bytesSent: 32183, receivedDelta: 672, …}
+AudioCall.tsx:102 [AudioCall] 📊 ENHANCED Inbound Audio Stats: {bytesReceived: 0, bytesDelta: 0, packetsReceived: 0, packetsDelta: 0, audioLevel: 0, …}
+AudioCall.tsx:140 [AudioCall] 📤 ENHANCED Outbound Audio Stats: {bytesSent: 20027, bytesDelta: 3856, packetsSent: 288, packetsDelta: 53, retransmittedPacketsSent: 0, …}
+AudioCall.tsx:159 [AudioCall] 🌐 ENHANCED Transport Stats: {dtlsState: 'connected', iceState: 'connected', selectedCandidatePairId: 'CPkfL3J46Z_EJQBEwa4'}
+AudioCall.tsx:214 [AudioCall] ❌ CRITICAL: Inbound RTP reports exist but no data flow!
+(anonymous) @ AudioCall.tsx:214
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+AudioCall.tsx:215 [AudioCall] 🔧 This indicates the classic 'track exists but no RTP data flows' issue
+(anonymous) @ AudioCall.tsx:215
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+AudioCall.tsx:326 [AudioCall] 🔓 User clicked unlock audio
+AudioCall.tsx:337 [AudioCall] ⚠️ Could not find audio element
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+AudioCall.tsx:406 [AudioCall] Component rendering with activeCall: {callId: 'call_1757916875169_4_2', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 4, …}
+AudioCall.tsx:407 [AudioCall] remoteAudioStream: MediaStream {id: '2ec8364b-9aab-4314-937a-e656bb67f9f7', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:180 [AudioCall] 🧪 ENHANCED Active Candidate Pair: {state: 'succeeded', priority: 9115038255631187000, bytesReceived: 5207, bytesSent: 37758, receivedDelta: 668, …}
+AudioCall.tsx:102 [AudioCall] 📊 ENHANCED Inbound Audio Stats: {bytesReceived: 0, bytesDelta: 0, packetsReceived: 0, packetsDelta: 0, audioLevel: 0, …}
+AudioCall.tsx:140 [AudioCall] 📤 ENHANCED Outbound Audio Stats: {bytesSent: 23632, bytesDelta: 3605, packetsSent: 338, packetsDelta: 50, retransmittedPacketsSent: 0, …}
+AudioCall.tsx:159 [AudioCall] 🌐 ENHANCED Transport Stats: {dtlsState: 'connected', iceState: 'connected', selectedCandidatePairId: 'CPkfL3J46Z_EJQBEwa4'}
+AudioCall.tsx:214 [AudioCall] ❌ CRITICAL: Inbound RTP reports exist but no data flow!
+(anonymous) @ AudioCall.tsx:214
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+AudioCall.tsx:215 [AudioCall] 🔧 This indicates the classic 'track exists but no RTP data flows' issue
+(anonymous) @ AudioCall.tsx:215
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+AudioCall.tsx:406 [AudioCall] Component rendering with activeCall: {callId: 'call_1757916875169_4_2', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 4, …}
+AudioCall.tsx:407 [AudioCall] remoteAudioStream: MediaStream {id: '2ec8364b-9aab-4314-937a-e656bb67f9f7', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:180 [AudioCall] 🧪 ENHANCED Active Candidate Pair: {state: 'succeeded', priority: 9115038255631187000, bytesReceived: 5917, bytesSent: 43563, receivedDelta: 710, …}
+AudioCall.tsx:102 [AudioCall] 📊 ENHANCED Inbound Audio Stats: {bytesReceived: 0, bytesDelta: 0, packetsReceived: 0, packetsDelta: 0, audioLevel: 0, …}
+AudioCall.tsx:140 [AudioCall] 📤 ENHANCED Outbound Audio Stats: {bytesSent: 27537, bytesDelta: 3905, packetsSent: 388, packetsDelta: 50, retransmittedPacketsSent: 0, …}
+AudioCall.tsx:159 [AudioCall] 🌐 ENHANCED Transport Stats: {dtlsState: 'connected', iceState: 'connected', selectedCandidatePairId: 'CPkfL3J46Z_EJQBEwa4'}
+AudioCall.tsx:214 [AudioCall] ❌ CRITICAL: Inbound RTP reports exist but no data flow!
+(anonymous) @ AudioCall.tsx:214
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+AudioCall.tsx:215 [AudioCall] 🔧 This indicates the classic 'track exists but no RTP data flows' issue
+(anonymous) @ AudioCall.tsx:215
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+AudioCall.tsx:406 [AudioCall] Component rendering with activeCall: {callId: 'call_1757916875169_4_2', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 4, …}
+AudioCall.tsx:407 [AudioCall] remoteAudioStream: MediaStream {id: '2ec8364b-9aab-4314-937a-e656bb67f9f7', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:180 [AudioCall] 🧪 ENHANCED Active Candidate Pair: {state: 'succeeded', priority: 9115038255631187000, bytesReceived: 6589, bytesSent: 48876, receivedDelta: 672, …}
+AudioCall.tsx:102 [AudioCall] 📊 ENHANCED Inbound Audio Stats: {bytesReceived: 0, bytesDelta: 0, packetsReceived: 0, packetsDelta: 0, audioLevel: 0, …}
+AudioCall.tsx:140 [AudioCall] 📤 ENHANCED Outbound Audio Stats: {bytesSent: 30950, bytesDelta: 3413, packetsSent: 438, packetsDelta: 50, retransmittedPacketsSent: 0, …}
+AudioCall.tsx:159 [AudioCall] 🌐 ENHANCED Transport Stats: {dtlsState: 'connected', iceState: 'connected', selectedCandidatePairId: 'CPkfL3J46Z_EJQBEwa4'}
+AudioCall.tsx:214 [AudioCall] ❌ CRITICAL: Inbound RTP reports exist but no data flow!
+(anonymous) @ AudioCall.tsx:214
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+AudioCall.tsx:215 [AudioCall] 🔧 This indicates the classic 'track exists but no RTP data flows' issue
+(anonymous) @ AudioCall.tsx:215
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+AudioCall.tsx:406 [AudioCall] Component rendering with activeCall: {callId: 'call_1757916875169_4_2', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 4, …}
+AudioCall.tsx:407 [AudioCall] remoteAudioStream: MediaStream {id: '2ec8364b-9aab-4314-937a-e656bb67f9f7', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:180 [AudioCall] 🧪 ENHANCED Active Candidate Pair: {state: 'succeeded', priority: 9115038255631187000, bytesReceived: 7307, bytesSent: 54691, receivedDelta: 718, …}
+AudioCall.tsx:102 [AudioCall] 📊 ENHANCED Inbound Audio Stats: {bytesReceived: 0, bytesDelta: 0, packetsReceived: 0, packetsDelta: 0, audioLevel: 0, …}
+AudioCall.tsx:140 [AudioCall] 📤 ENHANCED Outbound Audio Stats: {bytesSent: 34865, bytesDelta: 3915, packetsSent: 488, packetsDelta: 50, retransmittedPacketsSent: 0, …}
+AudioCall.tsx:159 [AudioCall] 🌐 ENHANCED Transport Stats: {dtlsState: 'connected', iceState: 'connected', selectedCandidatePairId: 'CPkfL3J46Z_EJQBEwa4'}
+AudioCall.tsx:214 [AudioCall] ❌ CRITICAL: Inbound RTP reports exist but no data flow!
+(anonymous) @ AudioCall.tsx:214
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+AudioCall.tsx:215 [AudioCall] 🔧 This indicates the classic 'track exists but no RTP data flows' issue
+(anonymous) @ AudioCall.tsx:215
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+AudioCall.tsx:406 [AudioCall] Component rendering with activeCall: {callId: 'call_1757916875169_4_2', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 4, …}
+AudioCall.tsx:407 [AudioCall] remoteAudioStream: MediaStream {id: '2ec8364b-9aab-4314-937a-e656bb67f9f7', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:180 [AudioCall] 🧪 ENHANCED Active Candidate Pair: {state: 'succeeded', priority: 9115038255631187000, bytesReceived: 7979, bytesSent: 60492, receivedDelta: 672, …}
+AudioCall.tsx:102 [AudioCall] 📊 ENHANCED Inbound Audio Stats: {bytesReceived: 0, bytesDelta: 0, packetsReceived: 0, packetsDelta: 0, audioLevel: 0, …}
+AudioCall.tsx:140 [AudioCall] 📤 ENHANCED Outbound Audio Stats: {bytesSent: 38514, bytesDelta: 3649, packetsSent: 541, packetsDelta: 53, retransmittedPacketsSent: 0, …}
+AudioCall.tsx:159 [AudioCall] 🌐 ENHANCED Transport Stats: {dtlsState: 'connected', iceState: 'connected', selectedCandidatePairId: 'CPkfL3J46Z_EJQBEwa4'}
+AudioCall.tsx:214 [AudioCall] ❌ CRITICAL: Inbound RTP reports exist but no data flow!
+(anonymous) @ AudioCall.tsx:214
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+AudioCall.tsx:215 [AudioCall] 🔧 This indicates the classic 'track exists but no RTP data flows' issue
+(anonymous) @ AudioCall.tsx:215
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+AudioCall.tsx:406 [AudioCall] Component rendering with activeCall: {callId: 'call_1757916875169_4_2', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 4, …}
+AudioCall.tsx:407 [AudioCall] remoteAudioStream: MediaStream {id: '2ec8364b-9aab-4314-937a-e656bb67f9f7', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:180 [AudioCall] 🧪 ENHANCED Active Candidate Pair: {state: 'succeeded', priority: 9115038255631187000, bytesReceived: 8651, bytesSent: 66663, receivedDelta: 672, …}
+AudioCall.tsx:102 [AudioCall] 📊 ENHANCED Inbound Audio Stats: {bytesReceived: 0, bytesDelta: 0, packetsReceived: 0, packetsDelta: 0, audioLevel: 0, …}
+AudioCall.tsx:140 [AudioCall] 📤 ENHANCED Outbound Audio Stats: {bytesSent: 42785, bytesDelta: 4271, packetsSent: 591, packetsDelta: 50, retransmittedPacketsSent: 0, …}
+AudioCall.tsx:159 [AudioCall] 🌐 ENHANCED Transport Stats: {dtlsState: 'connected', iceState: 'connected', selectedCandidatePairId: 'CPkfL3J46Z_EJQBEwa4'}
+AudioCall.tsx:214 [AudioCall] ❌ CRITICAL: Inbound RTP reports exist but no data flow!
+(anonymous) @ AudioCall.tsx:214
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+AudioCall.tsx:215 [AudioCall] 🔧 This indicates the classic 'track exists but no RTP data flows' issue
+(anonymous) @ AudioCall.tsx:215
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+AudioCall.tsx:406 [AudioCall] Component rendering with activeCall: {callId: 'call_1757916875169_4_2', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 4, …}
+AudioCall.tsx:407 [AudioCall] remoteAudioStream: MediaStream {id: '2ec8364b-9aab-4314-937a-e656bb67f9f7', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:180 [AudioCall] 🧪 ENHANCED Active Candidate Pair: {state: 'succeeded', priority: 9115038255631187000, bytesReceived: 9369, bytesSent: 71988, receivedDelta: 718, …}
+AudioCall.tsx:102 [AudioCall] 📊 ENHANCED Inbound Audio Stats: {bytesReceived: 0, bytesDelta: 0, packetsReceived: 0, packetsDelta: 0, audioLevel: 0, …}
+AudioCall.tsx:140 [AudioCall] 📤 ENHANCED Outbound Audio Stats: {bytesSent: 46210, bytesDelta: 3425, packetsSent: 641, packetsDelta: 50, retransmittedPacketsSent: 0, …}
+AudioCall.tsx:159 [AudioCall] 🌐 ENHANCED Transport Stats: {dtlsState: 'connected', iceState: 'connected', selectedCandidatePairId: 'CPkfL3J46Z_EJQBEwa4'}
+AudioCall.tsx:214 [AudioCall] ❌ CRITICAL: Inbound RTP reports exist but no data flow!
+(anonymous) @ AudioCall.tsx:214
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+AudioCall.tsx:215 [AudioCall] 🔧 This indicates the classic 'track exists but no RTP data flows' issue
+(anonymous) @ AudioCall.tsx:215
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+AudioCall.tsx:406 [AudioCall] Component rendering with activeCall: {callId: 'call_1757916875169_4_2', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 4, …}
+AudioCall.tsx:407 [AudioCall] remoteAudioStream: MediaStream {id: '2ec8364b-9aab-4314-937a-e656bb67f9f7', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:180 [AudioCall] 🧪 ENHANCED Active Candidate Pair: {state: 'succeeded', priority: 9115038255631187000, bytesReceived: 10037, bytesSent: 77390, receivedDelta: 668, …}
+AudioCall.tsx:102 [AudioCall] 📊 ENHANCED Inbound Audio Stats: {bytesReceived: 0, bytesDelta: 0, packetsReceived: 0, packetsDelta: 0, audioLevel: 0, …}
+AudioCall.tsx:140 [AudioCall] 📤 ENHANCED Outbound Audio Stats: {bytesSent: 49712, bytesDelta: 3502, packetsSent: 691, packetsDelta: 50, retransmittedPacketsSent: 0, …}
+AudioCall.tsx:159 [AudioCall] 🌐 ENHANCED Transport Stats: {dtlsState: 'connected', iceState: 'connected', selectedCandidatePairId: 'CPkfL3J46Z_EJQBEwa4'}
+AudioCall.tsx:214 [AudioCall] ❌ CRITICAL: Inbound RTP reports exist but no data flow!
+(anonymous) @ AudioCall.tsx:214
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+AudioCall.tsx:215 [AudioCall] 🔧 This indicates the classic 'track exists but no RTP data flows' issue
+(anonymous) @ AudioCall.tsx:215
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+AudioCall.tsx:406 [AudioCall] Component rendering with activeCall: {callId: 'call_1757916875169_4_2', callType: 'audio', status: 'connected', isIncoming: true, peerUserId: 4, …}
+AudioCall.tsx:407 [AudioCall] remoteAudioStream: MediaStream {id: '2ec8364b-9aab-4314-937a-e656bb67f9f7', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+AudioCall.tsx:180 [AudioCall] 🧪 ENHANCED Active Candidate Pair: {state: 'succeeded', priority: 9115038255631187000, bytesReceived: 10709, bytesSent: 83008, receivedDelta: 672, …}
+AudioCall.tsx:102 [AudioCall] 📊 ENHANCED Inbound Audio Stats: {bytesReceived: 0, bytesDelta: 0, packetsReceived: 0, packetsDelta: 0, audioLevel: 0, …}
+AudioCall.tsx:140 [AudioCall] 📤 ENHANCED Outbound Audio Stats: {bytesSent: 53360, bytesDelta: 3648, packetsSent: 741, packetsDelta: 50, retransmittedPacketsSent: 0, …}
+AudioCall.tsx:159 [AudioCall] 🌐 ENHANCED Transport Stats: {dtlsState: 'connected', iceState: 'connected', selectedCandidatePairId: 'CPkfL3J46Z_EJQBEwa4'}
+AudioCall.tsx:214 [AudioCall] ❌ CRITICAL: Inbound RTP reports exist but no data flow!
+(anonymous) @ AudioCall.tsx:214
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error
+AudioCall.tsx:215 [AudioCall] 🔧 This indicates the classic 'track exists but no RTP data flows' issue
+(anonymous) @ AudioCall.tsx:215
+Promise.then
+checkStats @ AudioCall.tsx:84
+setInterval
+monitorWebRTCStats @ AudioCall.tsx:227
+tryPlay @ AudioCall.tsx:620
+await in tryPlay
+(anonymous) @ AudioCall.tsx:797
+commitHookEffectListMount @ chunk-WERSD76P.js?v=d7892680:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=d7892680:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=d7892680:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=d7892680:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=d7892680:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=d7892680:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=d7892680:19447
+(anonymous) @ chunk-WERSD76P.js?v=d7892680:19328
+workLoop @ chunk-WERSD76P.js?v=d7892680:197
+flushWork @ chunk-WERSD76P.js?v=d7892680:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=d7892680:384Understand this error

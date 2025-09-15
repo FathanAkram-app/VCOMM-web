@@ -280,7 +280,200 @@ export function CallProvider({ children }: { children: ReactNode }) {
   // Queue for WebRTC offers that arrive before incoming call is created
   const pendingOffers = useRef<any[]>([]);
 
-  // 🎯 CRITICAL FIX 9: Comprehensive transport state monitoring function
+  // 🎯 CRITICAL FIX 9: Enhanced receiver-side RTP monitoring with auto-repair
+  const startReceiverRTPMonitoring = (peerConnection: RTCPeerConnection, callId: string) => {
+    console.log('[CallContext] 🔄 RECEIVER: Starting enhanced receiver-side RTP monitoring for callId:', callId);
+    
+    let previousInboundStats = new Map<string, any>();
+    let receiverStatsInterval: NodeJS.Timeout;
+    let noRTPDataWarningCount = 0;
+    let isReceivingRTP = false;
+    let lastRTPReceiveTime = 0;
+    
+    const checkReceiverRTPFlow = async () => {
+      if (!peerConnection || peerConnection.connectionState === 'closed') {
+        return;
+      }
+      
+      try {
+        const stats = await peerConnection.getStats();
+        let hasInboundAudio = false;
+        let isReceivingAudioData = false;
+        let receiverTrackIssues = [];
+        
+        stats.forEach((report) => {
+          // 🎯 CRITICAL: Monitor inbound RTP specifically for receiver validation
+          if (report.type === 'inbound-rtp' && report.kind === 'audio') {
+            hasInboundAudio = true;
+            const previousReport = previousInboundStats.get(report.id);
+            const bytesReceived = report.bytesReceived || 0;
+            const packetsReceived = report.packetsReceived || 0;
+            
+            if (previousReport) {
+              const bytesDelta = bytesReceived - (previousReport.bytesReceived || 0);
+              const packetsDelta = packetsReceived - (previousReport.packetsReceived || 0);
+              
+              console.log('[CallContext] 📊 RECEIVER: Inbound RTP monitoring:', {
+                callId,
+                bytesReceived,
+                bytesDelta,
+                packetsReceived,
+                packetsDelta,
+                audioLevel: report.audioLevel,
+                jitter: report.jitter,
+                packetsLost: report.packetsLost,
+                fractionLost: report.fractionLost,
+                lastPacketReceivedTimestamp: report.lastPacketReceivedTimestamp
+              });
+              
+              // 🎯 CRITICAL: Detect actual RTP data flow
+              if (bytesDelta > 0 && packetsDelta > 0) {
+                isReceivingAudioData = true;
+                lastRTPReceiveTime = Date.now();
+                
+                if (!isReceivingRTP) {
+                  console.log('[CallContext] ✅ RECEIVER: RTP data flow detected - receiver working correctly!');
+                  isReceivingRTP = true;
+                  noRTPDataWarningCount = 0;
+                }
+              } else if (isReceivingRTP && bytesDelta === 0 && packetsDelta === 0) {
+                // Check if RTP flow has stopped
+                const timeSinceLastRTP = Date.now() - lastRTPReceiveTime;
+                if (timeSinceLastRTP > 5000) { // 5 seconds without RTP
+                  console.warn('[CallContext] ⚠️ RECEIVER: RTP flow has stopped - may need recovery');
+                  isReceivingRTP = false;
+                }
+              }
+            }
+            
+            previousInboundStats.set(report.id, report);
+          }
+          
+          // 🎯 CRITICAL: Monitor receiver track state
+          if (report.type === 'track' && report.kind === 'audio' && !report.remoteSource) {
+            console.log('[CallContext] 📡 RECEIVER: Local audio track state:', {
+              trackIdentifier: report.trackIdentifier,
+              ended: report.ended,
+              detached: report.detached,
+              frameWidth: report.frameWidth,
+              frameHeight: report.frameHeight
+            });
+          }
+        });
+        
+        // 🎯 CRITICAL: Validate receiver state and implement auto-repair
+        if (!hasInboundAudio) {
+          receiverTrackIssues.push('No inbound RTP reports found');
+        }
+        
+        if (!isReceivingAudioData && hasInboundAudio) {
+          noRTPDataWarningCount++;
+          receiverTrackIssues.push(`No RTP data flow (warning count: ${noRTPDataWarningCount})`);
+          
+          // 🎯 CRITICAL: Auto-repair mechanism after multiple failed checks
+          if (noRTPDataWarningCount >= 5) { // 10 seconds of no RTP data
+            console.error('[CallContext] 🔧 RECEIVER: CRITICAL AUTO-REPAIR - No RTP data for 10 seconds');
+            
+            // Attempt receiver track recovery
+            await attemptReceiverTrackRecovery(peerConnection, callId);
+            noRTPDataWarningCount = 0; // Reset counter after repair attempt
+          }
+        }
+        
+        // 🎯 CRITICAL: Log receiver issues
+        if (receiverTrackIssues.length > 0) {
+          console.warn('[CallContext] ⚠️ RECEIVER: Issues detected:', receiverTrackIssues);
+          console.warn('[CallContext] 🔧 RECEIVER: Transport state:', {
+            connectionState: peerConnection.connectionState,
+            iceConnectionState: peerConnection.iceConnectionState,
+            signalingState: peerConnection.signalingState
+          });
+        }
+        
+      } catch (error) {
+        console.error('[CallContext] ❌ RECEIVER: Error checking RTP flow:', error);
+      }
+    };
+    
+    // Check receiver RTP flow every 2 seconds
+    receiverStatsInterval = setInterval(checkReceiverRTPFlow, 2000);
+    
+    // Initial check
+    checkReceiverRTPFlow();
+    
+    // Store cleanup function
+    (window as any)[`__receiverStatsCleanup_${callId}`] = () => {
+      if (receiverStatsInterval) {
+        clearInterval(receiverStatsInterval);
+      }
+    };
+    
+    return () => {
+      if (receiverStatsInterval) {
+        clearInterval(receiverStatsInterval);
+      }
+    };
+  };
+  
+  // 🎯 CRITICAL FIX 10: Receiver track recovery mechanism
+  const attemptReceiverTrackRecovery = async (peerConnection: RTCPeerConnection, callId: string) => {
+    console.log('[CallContext] 🔧 RECEIVER: Attempting receiver track recovery for callId:', callId);
+    
+    try {
+      const transceivers = peerConnection.getTransceivers();
+      let audioReceiverTransceiver: RTCRtpTransceiver | null = null;
+      
+      // Find audio receiver transceiver
+      transceivers.forEach((transceiver) => {
+        if (transceiver.receiver.track?.kind === 'audio') {
+          audioReceiverTransceiver = transceiver;
+        }
+      });
+      
+      if (audioReceiverTransceiver) {
+        console.log('[CallContext] 🔧 RECEIVER: Found audio receiver transceiver, attempting recovery');
+        
+        // Step 1: Force direction to recvonly temporarily
+        const originalDirection = audioReceiverTransceiver.direction;
+        audioReceiverTransceiver.direction = 'recvonly';
+        
+        // Step 2: Disable and re-enable receiver track
+        const receiverTrack = audioReceiverTransceiver.receiver.track;
+        if (receiverTrack) {
+          console.log('[CallContext] 🔧 RECEIVER: Cycling receiver track enable state');
+          receiverTrack.enabled = false;
+          
+          setTimeout(() => {
+            receiverTrack.enabled = true;
+            console.log('[CallContext] 🔧 RECEIVER: Receiver track re-enabled');
+            
+            // Step 3: Restore original direction
+            setTimeout(() => {
+              audioReceiverTransceiver.direction = originalDirection;
+              console.log('[CallContext] 🔧 RECEIVER: Direction restored to:', originalDirection);
+            }, 100);
+          }, 200);
+        }
+        
+        // Step 4: Check if we need to restart ICE for connectivity
+        const connectionState = peerConnection.connectionState;
+        if (connectionState !== 'connected') {
+          console.log('[CallContext] 🔧 RECEIVER: Connection not stable, restarting ICE');
+          peerConnection.restartIce();
+        }
+        
+        console.log('[CallContext] ✅ RECEIVER: Recovery attempt completed');
+        
+      } else {
+        console.error('[CallContext] ❌ RECEIVER: No audio receiver transceiver found for recovery');
+      }
+      
+    } catch (error) {
+      console.error('[CallContext] ❌ RECEIVER: Error during recovery attempt:', error);
+    }
+  };
+  
+  // 🎯 CRITICAL FIX 11: Comprehensive transport state monitoring function
   const startTransportStateMonitoring = (peerConnection: RTCPeerConnection, callId: string) => {
     console.log('[CallContext] 🔄 ENHANCED: Starting comprehensive transport state monitoring for callId:', callId);
     
@@ -1992,7 +2185,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         }
         
         // Remove duplicates from participants list (by userId)
-        const uniqueParticipants = [];
+        const uniqueParticipants: any[] = [];
         const seenIds = new Set();
         
         for (const participant of processedParticipants) {
@@ -2385,35 +2578,106 @@ export function CallProvider({ children }: { children: ReactNode }) {
       await currentCall.peerConnection.setRemoteDescription(new RTCSessionDescription(message.offer));
       console.log('[CallContext] ✅ ENHANCED: Remote description set successfully');
       
-      // 🎯 CRITICAL FIX 3: Validate transceiver directions after setting remote description
-      console.log('[CallContext] 📊 Post-offer transceiver validation:');
+      // 🎯 CRITICAL FIX 3: Enhanced receiver-side transceiver validation and direction enforcement
+      console.log('[CallContext] 📊 RECEIVER: Post-offer transceiver validation with direction enforcement:');
       const updatedTransceivers = currentCall.peerConnection.getTransceivers();
       let hasProperAudioTransceiver = false;
+      let audioReceiverTransceiver: RTCRtpTransceiver | null = null;
       
       updatedTransceivers.forEach((transceiver, index) => {
         const direction = transceiver.direction;
         const currentDirection = transceiver.currentDirection;
         
-        console.log(`[CallContext] Updated Transceiver ${index}:`, {
+        console.log(`[CallContext] RECEIVER: Transceiver ${index}:`, {
           direction,
           currentDirection,
           mid: transceiver.mid,
-          kind: transceiver.receiver.track?.kind
+          kind: transceiver.receiver.track?.kind,
+          receiverTrack: {
+            id: transceiver.receiver.track?.id,
+            enabled: transceiver.receiver.track?.enabled,
+            muted: transceiver.receiver.track?.muted,
+            readyState: transceiver.receiver.track?.readyState
+          }
         });
         
-        // Check for proper bidirectional audio
+        // 🎯 CRITICAL: Focus on audio receiver configuration
         if (transceiver.receiver.track?.kind === 'audio') {
+          audioReceiverTransceiver = transceiver;
+          
+          // 🎯 CRITICAL FIX: Enforce proper receiver direction
+          if (direction !== 'sendrecv' && direction !== 'recvonly') {
+            console.warn(`[CallContext] 🔧 RECEIVER: Correcting audio transceiver direction from ${direction} to sendrecv`);
+            transceiver.direction = 'sendrecv';
+          }
+          
+          // 🎯 CRITICAL FIX: Ensure receiver track is enabled for RTP processing
+          if (transceiver.receiver.track && !transceiver.receiver.track.enabled) {
+            console.warn('[CallContext] 🔧 RECEIVER: Enabling disabled audio receiver track');
+            transceiver.receiver.track.enabled = true;
+          }
+          
           if (direction === 'sendrecv' || direction === 'recvonly') {
             hasProperAudioTransceiver = true;
-          } else {
-            console.warn(`[CallContext] ⚠️ Audio transceiver has wrong direction: ${direction}, should be sendrecv or recvonly`);
+            console.log('[CallContext] ✅ RECEIVER: Proper audio receiver transceiver validated');
           }
         }
       });
       
-      if (!hasProperAudioTransceiver) {
-        console.error('[CallContext] ❌ CRITICAL: No proper audio transceiver found after offer');
-        throw new Error('No proper audio transceiver configured');
+      if (!hasProperAudioTransceiver || !audioReceiverTransceiver) {
+        console.error('[CallContext] ❌ CRITICAL: No proper audio receiver transceiver found after offer');
+        throw new Error('No proper audio receiver transceiver configured');
+      }
+      
+      // 🎯 CRITICAL FIX: Enhanced receiver track validation and auto-repair
+      console.log('[CallContext] 🔧 RECEIVER: Implementing receiver track validation and auto-repair...');
+      const audioReceiver = audioReceiverTransceiver.receiver;
+      const audioReceiverTrack = audioReceiver.track;
+      
+      if (audioReceiverTrack) {
+        console.log('[CallContext] 📊 RECEIVER: Audio receiver track state:', {
+          id: audioReceiverTrack.id,
+          enabled: audioReceiverTrack.enabled,
+          muted: audioReceiverTrack.muted,
+          readyState: audioReceiverTrack.readyState
+        });
+        
+        // 🎯 CRITICAL: Set up receiver track event monitoring for auto-repair
+        audioReceiverTrack.addEventListener('mute', () => {
+          console.warn('[CallContext] ⚠️ RECEIVER: Audio receiver track muted - potential RTP issue');
+          setTimeout(() => {
+            if (audioReceiverTrack.muted) {
+              console.log('[CallContext] 🔧 RECEIVER: Attempting to unmute receiver track');
+              // Force re-enable if still muted after 1 second
+              audioReceiverTrack.enabled = false;
+              setTimeout(() => { audioReceiverTrack.enabled = true; }, 100);
+            }
+          }, 1000);
+        });
+        
+        audioReceiverTrack.addEventListener('unmute', () => {
+          console.log('[CallContext] ✅ RECEIVER: Audio receiver track unmuted - RTP flow restored');
+        });
+        
+        audioReceiverTrack.addEventListener('ended', () => {
+          console.error('[CallContext] ❌ RECEIVER: Audio receiver track ended - attempting recovery');
+          // Trigger receiver track recovery mechanism
+          setTimeout(() => {
+            if (currentCall?.peerConnection && audioReceiverTransceiver) {
+              console.log('[CallContext] 🔧 RECEIVER: Attempting transceiver recovery after track end');
+              try {
+                // Force renegotiation to recover receiver track
+                audioReceiverTransceiver.direction = 'sendrecv';
+              } catch (error) {
+                console.error('[CallContext] ❌ Error during receiver track recovery:', error);
+              }
+            }
+          }, 500);
+        });
+        
+        // 🎯 CRITICAL: Force enable receiver track for RTP processing
+        audioReceiverTrack.enabled = true;
+        console.log('[CallContext] ✅ RECEIVER: Audio receiver track force-enabled for RTP processing');
       }
       
       // Process any pending ICE candidates for this call now that remote description is set
@@ -2431,6 +2695,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
         // Remove processed candidates from queue
         pendingIceCandidates.current = pendingIceCandidates.current.filter(item => item.callId !== currentCall.callId);
       }
+      
+      // 🎯 CRITICAL FIX: Start receiver-side RTP monitoring after remote description is set
+      console.log('[CallContext] 🔄 RECEIVER: Starting enhanced RTP flow monitoring for receiver side');
+      startReceiverRTPMonitoring(currentCall.peerConnection, currentCall.callId);
       
       const answer = await currentCall.peerConnection.createAnswer();
       await currentCall.peerConnection.setLocalDescription(answer);
@@ -3454,7 +3722,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       }
 
       // NEW STRATEGY: For HP with 4 cameras, specifically target back camera
-      let nextFacingMode: string;
+      let nextFacingMode: string = 'user';
       let targetDeviceId: string | undefined;
       let rearCameras: MediaDeviceInfo[] = [];
       let frontCameras: MediaDeviceInfo[] = [];
@@ -3744,8 +4012,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         iceTransportPolicy: 'all',
         bundlePolicy: 'max-bundle',
         rtcpMuxPolicy: 'require',
-        iceCandidatePoolSize: 10, // Pre-gather candidates for faster connection
-        iceGatheringTimeout: 5000  // Reduce gathering timeout
+        iceCandidatePoolSize: 10 // Pre-gather candidates for faster connection
       });
 
       // Enhanced connection state monitoring for group calls
@@ -3965,8 +4232,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         iceTransportPolicy: 'all',
         bundlePolicy: 'max-bundle',
         rtcpMuxPolicy: 'require',
-        iceCandidatePoolSize: 10,
-        iceGatheringTimeout: 5000
+        iceCandidatePoolSize: 10
       });
 
       // Connection monitoring for joining group call
@@ -3996,7 +4262,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       const groupCallState: CallState = {
         callId,
         callType,
-        status: 'connected',
+        status: 'connected' as const,
         isIncoming: false,
         localStream,
         remoteStreams: new Map(),
