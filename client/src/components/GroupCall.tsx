@@ -293,8 +293,96 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
 
   // Get current user ID for filtering (removed - using from useCall now)
 
+  // 🎯 PARTICIPANT NAME CACHE: In-memory cache to prevent repeated fetches
+  const participantNameCache = useRef<Map<number, string>>(new Map());
+  
+  // 🎯 ROBUST NAME RESOLUTION: React Query-based with caching and retry
+  const fetchUserName = useCallback(async (userId: number): Promise<string> => {
+    // Check cache first
+    const cached = participantNameCache.current.get(userId);
+    if (cached && !cached.startsWith('User ')) {
+      console.log(`[GroupCall] 🎯 CACHE HIT: Using cached name for ${userId}: ${cached}`);
+      return cached;
+    }
+    
+    try {
+      console.log(`[GroupCall] 🎯 FETCH NAME: Getting real name for user ${userId}`);
+      const response = await fetch(`/api/users/${userId}`);
+      if (response.ok) {
+        const userData = await response.json();
+        const realName = userData.callsign || userData.fullName || `User ${userId}`;
+        
+        // Cache successful result
+        participantNameCache.current.set(userId, realName);
+        console.log(`[GroupCall] 🎯 FETCH SUCCESS: ${userId} = ${realName}`);
+        return realName;
+      } else {
+        console.log(`[GroupCall] 🎯 FETCH FAILED: API failed for user ${userId}, status: ${response.status}`);
+        const fallback = `User ${userId}`;
+        // Don't cache failures to allow retry later
+        return fallback;
+      }
+    } catch (error) {
+      console.error(`[GroupCall] 🎯 FETCH ERROR: Network error for user ${userId}:`, error);
+      const fallback = `User ${userId}`;
+      // Don't cache network errors to allow retry later
+      return fallback;
+    }
+  }, []);
+
+  // 🎯 ENHANCED NAME RESOLUTION: Process participants with smart caching
+  const enhanceParticipantNames = useCallback(async (participants: any[]): Promise<any[]> => {
+    console.log(`[GroupCall] 🎯 ENHANCE: Processing ${participants.length} participants for name resolution`);
+    
+    // Identify participants that need name resolution
+    const participantsNeedingNames = participants.filter(p => {
+      const currentName = p.userName;
+      const isGenericOrMissing = !currentName || currentName.startsWith('User ');
+      const hasCachedName = participantNameCache.current.has(p.userId);
+      
+      console.log(`[GroupCall] 🎯 ENHANCE: User ${p.userId} - current: "${currentName}", generic: ${isGenericOrMissing}, cached: ${hasCachedName}`);
+      
+      return isGenericOrMissing && !hasCachedName;
+    });
+    
+    console.log(`[GroupCall] 🎯 ENHANCE: ${participantsNeedingNames.length} participants need name fetching`);
+    
+    // Batch fetch names for participants that need them (but limit concurrent requests)
+    if (participantsNeedingNames.length > 0) {
+      const batchSize = 3; // Limit concurrent API calls
+      for (let i = 0; i < participantsNeedingNames.length; i += batchSize) {
+        const batch = participantsNeedingNames.slice(i, i + batchSize);
+        await Promise.all(batch.map(p => fetchUserName(p.userId)));
+      }
+    }
+    
+    // Apply names from cache or existing data
+    const enhancedParticipants = participants.map(p => {
+      const cachedName = participantNameCache.current.get(p.userId);
+      const currentName = p.userName;
+      
+      // Priority: Cached real name > Current name (if not generic) > Fallback
+      let finalName = currentName;
+      
+      if (cachedName && !cachedName.startsWith('User ')) {
+        finalName = cachedName;
+      } else if (!currentName || currentName.startsWith('User ')) {
+        finalName = cachedName || `User ${p.userId}`;
+      }
+      
+      console.log(`[GroupCall] 🎯 ENHANCE: User ${p.userId} final name: "${finalName}"`);
+      
+      return {
+        ...p,
+        userName: finalName
+      };
+    });
+    
+    return enhancedParticipants;
+  }, [fetchUserName]);
+
   // 🎯 AUTHORITATIVE PARTICIPANT MANAGEMENT: Single source of truth (activeCall.participants + remoteStreams)
-  const updateParticipantsFromState = useCallback(() => {
+  const updateParticipantsFromState = useCallback(async () => {
     if (!activeCall?.participants || !currentUser) {
       console.log(`[GroupCall] 🎯 AUTHORITATIVE: Missing activeCall or currentUser`);
       setParticipants([]);
@@ -326,9 +414,12 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
       return arr.findIndex(other => other.userId === participantId) === index;
     });
     
-    const finalParticipants = uniqueParticipants.map((p: any) => {
+    // 🎯 ENHANCE NAMES: Ensure all participants have real names
+    const enhancedParticipants = await enhanceParticipantNames(uniqueParticipants);
+    
+    const finalParticipants = enhancedParticipants.map((p: any) => {
       const participantId = p.userId;
-      const participantName = p.userName || `User ${participantId}`;
+      const participantName = p.userName;
       
       // Check for existing streams
       const streamKey = `user_${participantId}`;
@@ -359,7 +450,7 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     });
     
     setParticipants(finalParticipants);
-  }, [activeCall?.participants, currentUser, remoteStreams]);
+  }, [activeCall?.participants, currentUser, remoteStreams, enhanceParticipantNames]);
 
   // Event listener - ONLY triggers state refresh (no direct participant updates)
   useEffect(() => {
