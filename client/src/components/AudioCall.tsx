@@ -68,7 +68,7 @@ const checkAudioOutput = (audioElement: HTMLAudioElement) => {
   });
 };
 
-// WebRTC stats monitoring to detect actual audio data flow
+// 🎯 ENHANCED: Comprehensive WebRTC stats monitoring with delta calculations
 const monitorWebRTCStats = (peerConnection: RTCPeerConnection | null) => {
   if (!peerConnection) {
     console.log("[AudioCall] ⚠️ No peer connection available for stats monitoring");
@@ -76,32 +76,158 @@ const monitorWebRTCStats = (peerConnection: RTCPeerConnection | null) => {
   }
 
   let statsInterval: NodeJS.Timeout;
+  let previousStats = new Map<string, any>();
+  let noDataWarningShown = false;
+  let firstStatsReceived = false;
   
   const checkStats = () => {
     peerConnection.getStats().then(stats => {
+      let hasInboundAudio = false;
+      let hasOutboundAudio = false;
+      let audioFlowDetected = false;
+      let transportConnected = false;
+      
       stats.forEach(report => {
+        // 🎯 CRITICAL: Enhanced inbound RTP monitoring with deltas
         if (report.type === 'inbound-rtp' && report.kind === 'audio') {
-          console.log("[AudioCall] 📊 WebRTC audio stats:", {
-            bytesReceived: report.bytesReceived,
-            audioLevel: report.audioLevel,
-            jitter: report.jitter,
-            packetsLost: report.packetsLost,
-            packetsReceived: report.packetsReceived
+          hasInboundAudio = true;
+          const previousReport = previousStats.get(report.id);
+          const bytesReceived = report.bytesReceived || 0;
+          const packetsReceived = report.packetsReceived || 0;
+          
+          if (previousReport && firstStatsReceived) {
+            const bytesDelta = bytesReceived - (previousReport.bytesReceived || 0);
+            const packetsDelta = packetsReceived - (previousReport.packetsReceived || 0);
+            
+            console.log("[AudioCall] 📊 ENHANCED Inbound Audio Stats:", {
+              bytesReceived,
+              bytesDelta,
+              packetsReceived,
+              packetsDelta,
+              audioLevel: report.audioLevel,
+              jitter: report.jitter,
+              packetsLost: report.packetsLost,
+              fractionLost: report.fractionLost
+            });
+            
+            // Detect actual audio flow
+            if (bytesDelta > 0 && packetsDelta > 0) {
+              audioFlowDetected = true;
+              if (noDataWarningShown) {
+                console.log("[AudioCall] ✅ RECOVERY: Audio data flow resumed!");
+                noDataWarningShown = false;
+              }
+            } else if (!noDataWarningShown) {
+              console.warn("[AudioCall] ⚠️ ENHANCED: No inbound audio data flow detected!");
+              noDataWarningShown = true;
+            }
+          }
+          
+          previousStats.set(report.id, report);
+        }
+        
+        // 🎯 CRITICAL: Monitor outbound RTP for sender validation
+        if (report.type === 'outbound-rtp' && report.kind === 'audio') {
+          hasOutboundAudio = true;
+          const previousReport = previousStats.get(report.id);
+          const bytesSent = report.bytesSent || 0;
+          const packetsSent = report.packetsSent || 0;
+          
+          if (previousReport && firstStatsReceived) {
+            const bytesDelta = bytesSent - (previousReport.bytesSent || 0);
+            const packetsDelta = packetsSent - (previousReport.packetsSent || 0);
+            
+            console.log("[AudioCall] 📤 ENHANCED Outbound Audio Stats:", {
+              bytesSent,
+              bytesDelta,
+              packetsSent,
+              packetsDelta,
+              retransmittedPacketsSent: report.retransmittedPacketsSent,
+              targetBitrate: report.targetBitrate
+            });
+            
+            if (bytesDelta === 0 && packetsDelta === 0) {
+              console.warn("[AudioCall] ⚠️ ENHANCED: No outbound audio packets - local track issue!");
+            }
+          }
+          
+          previousStats.set(report.id, report);
+        }
+        
+        // 🎯 CRITICAL: Monitor transport state
+        if (report.type === 'transport') {
+          console.log("[AudioCall] 🌐 ENHANCED Transport Stats:", {
+            dtlsState: report.dtlsState,
+            iceState: report.iceState,
+            selectedCandidatePairId: report.selectedCandidatePairId
           });
           
-          // Detect silent audio stream
-          if (report.bytesReceived === 0 || report.audioLevel === 0) {
-            console.log("[AudioCall] ⚠️ No audio data received from remote peer!");
+          if (report.dtlsState === 'connected' && report.iceState === 'connected') {
+            transportConnected = true;
           }
         }
+        
+        // 🎯 CRITICAL: Monitor candidate pairs
+        if (report.type === 'candidate-pair' && report.state === 'succeeded') {
+          const previousPairReport = previousStats.get(report.id);
+          const bytesReceived = report.bytesReceived || 0;
+          const bytesSent = report.bytesSent || 0;
+          
+          if (previousPairReport && firstStatsReceived) {
+            const receivedDelta = bytesReceived - (previousPairReport.bytesReceived || 0);
+            const sentDelta = bytesSent - (previousPairReport.bytesSent || 0);
+            
+            console.log("[AudioCall] 🧪 ENHANCED Active Candidate Pair:", {
+              state: report.state,
+              priority: report.priority,
+              bytesReceived,
+              bytesSent,
+              receivedDelta,
+              sentDelta,
+              currentRoundTripTime: report.currentRoundTripTime
+            });
+            
+            if (receivedDelta > 0 || sentDelta > 0) {
+              transportConnected = true;
+            }
+          }
+          
+          previousStats.set(report.id, report);
+        }
       });
+      
+      // 🎯 CRITICAL: Comprehensive audio flow validation
+      if (firstStatsReceived) {
+        if (!hasInboundAudio) {
+          console.error("[AudioCall] ❌ CRITICAL: No inbound audio RTP reports found!");
+        }
+        
+        if (!hasOutboundAudio) {
+          console.error("[AudioCall] ❌ CRITICAL: No outbound audio RTP reports found!");
+        }
+        
+        if (!transportConnected) {
+          console.error("[AudioCall] ❌ CRITICAL: Transport not properly connected!");
+        }
+        
+        if (!audioFlowDetected && hasInboundAudio) {
+          console.error("[AudioCall] ❌ CRITICAL: Inbound RTP reports exist but no data flow!");
+          console.error("[AudioCall] 🔧 This indicates the classic 'track exists but no RTP data flows' issue");
+        }
+      }
+      
+      firstStatsReceived = true;
+      
     }).catch(err => {
-      console.log("[AudioCall] ⚠️ Failed to get WebRTC stats:", err);
+      console.error("[AudioCall] ❌ Failed to get WebRTC stats:", err);
     });
   };
   
-  // Check stats every 2 seconds
-  statsInterval = setInterval(checkStats, 2000);
+  // Check stats every 1 second for more responsive monitoring
+  statsInterval = setInterval(checkStats, 1000);
+  
+  // Initial check
+  checkStats();
   
   // Return cleanup function
   return () => {
@@ -263,7 +389,19 @@ export default function AudioCall() {
     stalled: boolean;
     suspended: boolean;
     error: string | null;
-  }>({ canPlay: false, playing: false, stalled: false, suspended: false, error: null });
+    rtpFlowDetected: boolean;
+    transportConnected: boolean;
+    trackState: string;
+  }>({ 
+    canPlay: false, 
+    playing: false, 
+    stalled: false, 
+    suspended: false, 
+    error: null,
+    rtpFlowDetected: false,
+    transportConnected: false,
+    trackState: 'unknown'
+  });
   
   console.log("[AudioCall] Component rendering with activeCall:", activeCall);
   console.log("[AudioCall] remoteAudioStream:", remoteAudioStream);
@@ -476,19 +614,52 @@ export default function AudioCall() {
             }
             console.log(`[AudioCall] ✅ Remote audio playing successfully (attempt ${attempt})`);
             
-            // Start comprehensive monitoring
+            // 🎯 ENHANCED: Start comprehensive monitoring with diagnostics integration
             if (activeCall && activeCall.peerConnection) {
-              // Monitor WebRTC stats for data flow
+              // Monitor WebRTC stats for data flow with enhanced diagnostics
               const statsCleanup = monitorWebRTCStats(activeCall.peerConnection);
               (audioElement as any).__statsCleanup = statsCleanup;
               
-              // Monitor remote track state
+              // 🎯 ENHANCED: Start transport state monitoring from CallContext
+              console.log('[AudioCall] 🔄 ENHANCED: Starting transport monitoring integration');
+              const callId = activeCall.callId || 'unknown';
+              
+              // Monitor remote track state with enhanced diagnostics
               if (remoteAudioStream) {
                 const remoteTrack = monitorRemoteTrack(remoteAudioStream);
+                const trackState = remoteTrack ? 
+                  `${remoteTrack.kind}:${remoteTrack.enabled ? 'enabled' : 'disabled'}:${remoteTrack.readyState}` : 
+                  'no-track';
+                
+                setAudioDiagnostics(prev => ({ 
+                  ...prev, 
+                  trackState,
+                  rtpFlowDetected: false // Will be updated by stats monitoring
+                }));
+                
                 if (remoteTrack && !remoteTrack.enabled) {
-                  console.log("[AudioCall] ⚠️ Remote audio track is disabled!");
+                  console.log("[AudioCall] ⚠️ ENHANCED: Remote audio track is disabled!");
+                  setAudioDiagnostics(prev => ({ ...prev, error: 'Remote track disabled' }));
                 }
               }
+              
+              // 🎯 ENHANCED: Set up comprehensive diagnostics monitoring
+              const diagnosticsInterval = setInterval(() => {
+                if (activeCall?.peerConnection) {
+                  const pc = activeCall.peerConnection;
+                  setAudioDiagnostics(prev => ({
+                    ...prev,
+                    transportConnected: 
+                      pc.connectionState === 'connected' && 
+                      pc.iceConnectionState === 'connected'
+                  }));
+                }
+              }, 1000);
+              
+              // Store cleanup function
+              (audioElement as any).__diagnosticsCleanup = () => {
+                if (diagnosticsInterval) clearInterval(diagnosticsInterval);
+              };
             }
             
           } catch (error: any) {

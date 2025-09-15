@@ -280,6 +280,188 @@ export function CallProvider({ children }: { children: ReactNode }) {
   // Queue for WebRTC offers that arrive before incoming call is created
   const pendingOffers = useRef<any[]>([]);
 
+  // 🎯 CRITICAL FIX 9: Comprehensive transport state monitoring function
+  const startTransportStateMonitoring = (peerConnection: RTCPeerConnection, callId: string) => {
+    console.log('[CallContext] 🔄 ENHANCED: Starting comprehensive transport state monitoring for callId:', callId);
+    
+    let previousStats = new Map<string, any>();
+    let statsInterval: NodeJS.Timeout;
+    let connectivityTimeout: NodeJS.Timeout;
+    let isConnected = false;
+    
+    const checkConnectivity = async () => {
+      if (!peerConnection || peerConnection.connectionState === 'closed') {
+        return;
+      }
+      
+      try {
+        const stats = await peerConnection.getStats();
+        let hasAudioFlow = false;
+        let hasValidTransport = false;
+        
+        stats.forEach((report) => {
+          // Check for actual audio data flow with delta calculations
+          if (report.type === 'inbound-rtp' && report.kind === 'audio') {
+            const previousReport = previousStats.get(report.id);
+            const bytesReceived = report.bytesReceived || 0;
+            const packetsReceived = report.packetsReceived || 0;
+            
+            if (previousReport) {
+              const bytesDelta = bytesReceived - (previousReport.bytesReceived || 0);
+              const packetsDelta = packetsReceived - (previousReport.packetsReceived || 0);
+              
+              console.log('[CallContext] 📊 ENHANCED: Audio RTP flow stats:', {
+                callId,
+                bytesReceived,
+                bytesDelta,
+                packetsReceived,
+                packetsDelta,
+                audioLevel: report.audioLevel,
+                jitter: report.jitter,
+                packetsLost: report.packetsLost
+              });
+              
+              if (bytesDelta > 0 && packetsDelta > 0) {
+                hasAudioFlow = true;
+                if (!isConnected) {
+                  console.log('[CallContext] ✅ ENHANCED: Audio RTP flow detected - call is truly connected!');
+                  isConnected = true;
+                }
+              } else if (isConnected && bytesDelta === 0) {
+                console.warn('[CallContext] ⚠️ ENHANCED: Audio RTP flow stopped - potential connection issue');
+              }
+            }
+            
+            previousStats.set(report.id, report);
+          }
+          
+          // Check outbound RTP stats for sender side validation
+          if (report.type === 'outbound-rtp' && report.kind === 'audio') {
+            const previousReport = previousStats.get(report.id);
+            const bytesSent = report.bytesSent || 0;
+            const packetsSent = report.packetsSent || 0;
+            
+            if (previousReport) {
+              const bytesDelta = bytesSent - (previousReport.bytesSent || 0);
+              const packetsDelta = packetsSent - (previousReport.packetsSent || 0);
+              
+              console.log('[CallContext] 📤 ENHANCED: Audio sender stats:', {
+                callId,
+                bytesSent,
+                bytesDelta,
+                packetsSent,
+                packetsDelta,
+                retransmittedPacketsSent: report.retransmittedPacketsSent
+              });
+              
+              if (bytesDelta === 0 && packetsDelta === 0) {
+                console.warn('[CallContext] ⚠️ ENHANCED: No outbound audio packets - sender track issue!');
+              }
+            }
+            
+            previousStats.set(report.id, report);
+          }
+          
+          // Check transport connectivity
+          if (report.type === 'transport') {
+            console.log('[CallContext] 🌐 ENHANCED: Transport stats:', {
+              callId,
+              dtlsState: report.dtlsState,
+              iceState: report.iceState,
+              selectedCandidatePairId: report.selectedCandidatePairId
+            });
+            
+            if (report.dtlsState === 'connected' && report.iceState === 'connected') {
+              hasValidTransport = true;
+            }
+          }
+          
+          // Check candidate pair for actual connectivity
+          if (report.type === 'candidate-pair' && report.state === 'succeeded') {
+            console.log('[CallContext] 🧪 ENHANCED: Active candidate pair:', {
+              callId,
+              state: report.state,
+              priority: report.priority,
+              bytesSent: report.bytesSent,
+              bytesReceived: report.bytesReceived,
+              localCandidateId: report.localCandidateId,
+              remoteCandidateId: report.remoteCandidateId
+            });
+            hasValidTransport = true;
+          }
+        });
+        
+        // Alert if no audio flow detected after reasonable time
+        if (!hasAudioFlow && isConnected === false) {
+          const now = Date.now();
+          const callStartTime = (window as any).__callStartTime || now;
+          const timeSinceStart = now - callStartTime;
+          
+          if (timeSinceStart > 10000) { // 10 seconds
+            console.error('[CallContext] ❌ CRITICAL: No audio RTP flow detected after 10 seconds!');
+            console.error('[CallContext] 🔧 Potential fixes needed:');
+            console.error('[CallContext] 1. Check if local tracks were added before offer creation');
+            console.error('[CallContext] 2. Verify transceiver directions are sendrecv');
+            console.error('[CallContext] 3. Check for DTLS/ICE connectivity issues');
+          }
+        }
+        
+      } catch (error) {
+        console.error('[CallContext] ❌ Error checking connectivity stats:', error);
+      }
+    };
+    
+    // Start monitoring every 2 seconds
+    statsInterval = setInterval(checkConnectivity, 2000);
+    
+    // Initial check
+    checkConnectivity();
+    
+    // Set up connection state change monitoring
+    const onConnectionStateChange = () => {
+      const state = peerConnection.connectionState;
+      console.log('[CallContext] 🔄 ENHANCED: Connection state changed to:', state);
+      
+      if (state === 'connected') {
+        console.log('[CallContext] ✅ ENHANCED: WebRTC connection established');
+        (window as any).__callStartTime = Date.now();
+      } else if (state === 'failed') {
+        console.error('[CallContext] ❌ ENHANCED: WebRTC connection failed');
+        
+        // Attempt ICE restart as recovery
+        console.log('[CallContext] 🔄 ENHANCED: Attempting ICE restart for recovery');
+        peerConnection.restartIce();
+      }
+    };
+    
+    const onIceConnectionStateChange = () => {
+      const state = peerConnection.iceConnectionState;
+      console.log('[CallContext] 🧊 ENHANCED: ICE connection state changed to:', state);
+      
+      if (state === 'connected' || state === 'completed') {
+        console.log('[CallContext] ✅ ENHANCED: ICE connection established');
+      } else if (state === 'failed') {
+        console.error('[CallContext] ❌ ENHANCED: ICE connection failed');
+      }
+    };
+    
+    peerConnection.addEventListener('connectionstatechange', onConnectionStateChange);
+    peerConnection.addEventListener('iceconnectionstatechange', onIceConnectionStateChange);
+    
+    // Store cleanup function globally for cleanup
+    (window as any)[`__statsCleanup_${callId}`] = () => {
+      if (statsInterval) {
+        clearInterval(statsInterval);
+      }
+      if (connectivityTimeout) {
+        clearTimeout(connectivityTimeout);
+      }
+      peerConnection.removeEventListener('connectionstatechange', onConnectionStateChange);
+      peerConnection.removeEventListener('iceconnectionstatechange', onIceConnectionStateChange);
+      console.log('[CallContext] 🧹 ENHANCED: Transport monitoring cleanup completed for callId:', callId);
+    };
+  };
+
   // Function to aggressively stop all ringtones (using waiting tone pattern)
   const stopAllRingtones = () => {
     console.log('[CallContext] 🔇 STOPPING ALL RINGTONES - comprehensive cleanup');
@@ -1283,12 +1465,94 @@ export function CallProvider({ children }: { children: ReactNode }) {
         console.log('[CallContext] ✅ Cleared fallback timeout - received ready signal');
       }
       
-      // Now create and send WebRTC offer since receiver is ready
+      // 🎯 CRITICAL FIX 10: Ensure tracks are properly attached before offer creation
       try {
-        console.log('[CallContext] Creating WebRTC offer after receiver ready...');
-        const offer = await currentActiveCall.peerConnection.createOffer();
+        console.log('[CallContext] 🔄 ENHANCED: Preparing WebRTC offer with proper track validation...');
+        
+        // Validate that local tracks are properly attached BEFORE creating offer
+        console.log('[CallContext] 🎤 ENHANCED: Validating local track attachment before offer...');
+        const senders = currentActiveCall.peerConnection.getSenders();
+        console.log('[CallContext] 📊 Current senders before offer:', senders.length);
+        
+        let hasAudioTrack = false;
+        senders.forEach((sender, index) => {
+          const track = sender.track;
+          console.log(`[CallContext] Sender ${index}:`, {
+            hasTrack: !!track,
+            kind: track?.kind,
+            enabled: track?.enabled,
+            readyState: track?.readyState,
+            id: track?.id
+          });
+          
+          if (track && track.kind === 'audio') {
+            hasAudioTrack = true;
+          }
+        });
+        
+        if (!hasAudioTrack) {
+          console.error('[CallContext] ❌ CRITICAL: No audio track attached to sender before offer creation!');
+          console.error('[CallContext] 🔧 CRITICAL FIX: Attempting to add local stream tracks now...');
+          
+          // Emergency fix: Add local stream tracks if they're missing
+          if (currentActiveCall.localStream) {
+            const audioTracks = currentActiveCall.localStream.getAudioTracks();
+            console.log('[CallContext] 🚨 Emergency track addition:', audioTracks.length, 'audio tracks available');
+            
+            audioTracks.forEach(track => {
+              try {
+                currentActiveCall.peerConnection.addTrack(track, currentActiveCall.localStream!);
+                console.log('[CallContext] ✅ EMERGENCY: Added audio track to peer connection');
+              } catch (error) {
+                console.warn('[CallContext] ⚠️ Track already added or error:', error);
+              }
+            });
+          } else {
+            console.error('[CallContext] ❌ CRITICAL: No local stream available for emergency track addition!');
+            throw new Error('No audio track available for offer creation');
+          }
+        } else {
+          console.log('[CallContext] ✅ ENHANCED: Audio track properly attached before offer creation');
+        }
+        
+        // 🎯 CRITICAL FIX 11: Enhanced offer creation with proper constraints
+        console.log('[CallContext] 🔄 ENHANCED: Creating offer with proper constraints...');
+        const offerOptions: RTCOfferOptions = {
+          offerToReceiveAudio: true,
+          offerToReceiveVideo: currentActiveCall.callType === 'video',
+          iceRestart: false
+        };
+        
+        const offer = await currentActiveCall.peerConnection.createOffer(offerOptions);
+        
+        // 🎯 CRITICAL FIX 12: Validate offer SDP for proper media sections
+        console.log('[CallContext] 📋 ENHANCED: Validating offer SDP...');
+        const sdpLines = offer.sdp?.split('\n') || [];
+        let hasAudioMedia = false;
+        let hasAudioSendRecv = false;
+        
+        sdpLines.forEach(line => {
+          if (line.startsWith('m=audio')) {
+            hasAudioMedia = true;
+            console.log('[CallContext] ✅ Found audio media section in offer');
+          }
+          if (line.includes('a=sendrecv') || line.includes('a=sendonly')) {
+            hasAudioSendRecv = true;
+            console.log('[CallContext] ✅ Found proper audio direction in offer:', line.trim());
+          }
+        });
+        
+        if (!hasAudioMedia) {
+          console.error('[CallContext] ❌ CRITICAL: No audio media section in offer SDP!');
+          throw new Error('Invalid offer SDP - no audio media section');
+        }
+        
+        if (!hasAudioSendRecv) {
+          console.warn('[CallContext] ⚠️ WARNING: No sendrecv/sendonly direction in offer - may cause one-way audio');
+        }
+        
         await currentActiveCall.peerConnection.setLocalDescription(offer);
-        console.log('[CallContext] Local description set successfully');
+        console.log('[CallContext] ✅ ENHANCED: Local description set successfully with proper validation');
 
         // Try WebSocket first, fallback to HTTP API
         const offerData = {
@@ -2050,7 +2314,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   };
 
   const handleWebRTCOffer = async (message: any) => {
-    console.log('[CallContext] Received WebRTC offer for callId:', message.callId);
+    console.log('[CallContext] 🔄 ENHANCED: Received WebRTC offer for callId:', message.callId);
     
     // Use ref for more stable reference
     const currentActiveCall = activeCallRef.current || activeCall;
@@ -2077,9 +2341,80 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      console.log('[CallContext] Processing WebRTC offer...');
+      console.log('[CallContext] 🔄 ENHANCED: Processing WebRTC offer with improved validation...');
+      
+      // 🎯 CRITICAL FIX 1: Validate and log transceiver state BEFORE setting remote description
+      console.log('[CallContext] 📊 Pre-offer transceiver validation:');
+      const transceivers = currentCall.peerConnection.getTransceivers();
+      transceivers.forEach((transceiver, index) => {
+        console.log(`[CallContext] Transceiver ${index}:`, {
+          direction: transceiver.direction,
+          currentDirection: transceiver.currentDirection,
+          mid: transceiver.mid,
+          sender: {
+            track: transceiver.sender.track?.kind,
+            enabled: transceiver.sender.track?.enabled
+          },
+          receiver: {
+            track: transceiver.receiver.track?.kind,
+            enabled: transceiver.receiver.track?.enabled
+          }
+        });
+      });
+      
+      // 🎯 CRITICAL FIX 2: Perfect negotiation pattern with rollback
+      const isOfferCollision = 
+        (currentCall.peerConnection.signalingState !== 'stable') &&
+        (currentCall.peerConnection.localDescription?.type === 'offer');
+      
+      if (isOfferCollision) {
+        console.log('[CallContext] 🔄 ENHANCED: Offer collision detected, implementing rollback strategy');
+        
+        // Determine if we should rollback (polite peer)
+        const isPolitePeer = currentCall.isIncoming; // Receiver is polite
+        
+        if (isPolitePeer) {
+          console.log('[CallContext] Acting as polite peer - rolling back local offer');
+          await currentCall.peerConnection.setLocalDescription({type: 'rollback'} as RTCSessionDescriptionInit);
+        } else {
+          console.log('[CallContext] Acting as impolite peer - ignoring remote offer');
+          return;
+        }
+      }
+      
       await currentCall.peerConnection.setRemoteDescription(new RTCSessionDescription(message.offer));
-      console.log('[CallContext] ✅ Remote description set successfully');
+      console.log('[CallContext] ✅ ENHANCED: Remote description set successfully');
+      
+      // 🎯 CRITICAL FIX 3: Validate transceiver directions after setting remote description
+      console.log('[CallContext] 📊 Post-offer transceiver validation:');
+      const updatedTransceivers = currentCall.peerConnection.getTransceivers();
+      let hasProperAudioTransceiver = false;
+      
+      updatedTransceivers.forEach((transceiver, index) => {
+        const direction = transceiver.direction;
+        const currentDirection = transceiver.currentDirection;
+        
+        console.log(`[CallContext] Updated Transceiver ${index}:`, {
+          direction,
+          currentDirection,
+          mid: transceiver.mid,
+          kind: transceiver.receiver.track?.kind
+        });
+        
+        // Check for proper bidirectional audio
+        if (transceiver.receiver.track?.kind === 'audio') {
+          if (direction === 'sendrecv' || direction === 'recvonly') {
+            hasProperAudioTransceiver = true;
+          } else {
+            console.warn(`[CallContext] ⚠️ Audio transceiver has wrong direction: ${direction}, should be sendrecv or recvonly`);
+          }
+        }
+      });
+      
+      if (!hasProperAudioTransceiver) {
+        console.error('[CallContext] ❌ CRITICAL: No proper audio transceiver found after offer');
+        throw new Error('No proper audio transceiver configured');
+      }
       
       // Process any pending ICE candidates for this call now that remote description is set
       const callCandidates = pendingIceCandidates.current.filter(item => item.callId === currentCall.callId);
@@ -2099,7 +2434,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       
       const answer = await currentCall.peerConnection.createAnswer();
       await currentCall.peerConnection.setLocalDescription(answer);
-      console.log('[CallContext] ✅ Local description (answer) set successfully');
+      console.log('[CallContext] ✅ ENHANCED: Local description (answer) set successfully');
 
       // Send answer back - try WebSocket first, fallback to HTTP API
       if (ws && ws.readyState === WebSocket.OPEN) {
@@ -2141,7 +2476,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   };
 
   const handleWebRTCAnswer = async (message: any) => {
-    console.log('[CallContext] 📡 Received WebRTC answer for callId:', message.callId);
+    console.log('[CallContext] 📡 ENHANCED: Received WebRTC answer for callId:', message.callId);
     
     // Use ref for stable call reference
     const currentActiveCall = activeCallRef.current || activeCall;
@@ -2158,12 +2493,48 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      console.log('[CallContext] 📡 Setting remote description (answer) on caller side');
+      console.log('[CallContext] 📡 ENHANCED: Setting remote description (answer) with validation');
+      
+      // 🎯 CRITICAL FIX 4: Validate signaling state before setting answer
+      const signalingState = currentActiveCall.peerConnection.signalingState;
+      console.log('[CallContext] 📊 Current signaling state:', signalingState);
+      
+      if (signalingState !== 'have-local-offer') {
+        console.error(`[CallContext] ❌ Invalid signaling state for answer: ${signalingState}, expected: have-local-offer`);
+        return;
+      }
+      
       await currentActiveCall.peerConnection.setRemoteDescription(new RTCSessionDescription(message.answer));
-      console.log('[CallContext] ✅ Remote description (answer) set successfully on caller side');
+      console.log('[CallContext] ✅ ENHANCED: Remote description (answer) set successfully on caller side');
+      
+      // 🎯 CRITICAL FIX 5: Start comprehensive transport state monitoring
+      console.log('[CallContext] 🔄 ENHANCED: Starting transport connectivity monitoring');
+      startTransportStateMonitoring(currentActiveCall.peerConnection, currentActiveCall.callId);
+      
+      // 🎯 CRITICAL FIX 6: Validate transceivers after answer
+      console.log('[CallContext] 📊 Post-answer transceiver validation:');
+      const transceivers = currentActiveCall.peerConnection.getTransceivers();
+      transceivers.forEach((transceiver, index) => {
+        console.log(`[CallContext] Final Transceiver ${index}:`, {
+          direction: transceiver.direction,
+          currentDirection: transceiver.currentDirection,
+          mid: transceiver.mid,
+          kind: transceiver.receiver.track?.kind,
+          senderTrack: {
+            kind: transceiver.sender.track?.kind,
+            enabled: transceiver.sender.track?.enabled,
+            readyState: transceiver.sender.track?.readyState
+          }
+        });
+        
+        // 🎯 CRITICAL: Ensure proper sender track is attached
+        if (!transceiver.sender.track && transceiver.direction === 'sendrecv') {
+          console.warn(`[CallContext] ⚠️ CRITICAL: No sender track attached for ${transceiver.receiver.track?.kind} transceiver`);
+        }
+      });
       
       // The ontrack handler should now be triggered for the caller to receive audio
-      console.log('[CallContext] 🎯 Waiting for ontrack event to provide remote stream to caller...');
+      console.log('[CallContext] 🎯 ENHANCED: Waiting for ontrack event to provide remote stream to caller...');
       
     } catch (error) {
       console.error('[CallContext] ❌ Error handling WebRTC answer:', error);
@@ -2171,7 +2542,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   };
 
   const handleWebRTCIceCandidate = async (message: any) => {
-    console.log('[CallContext] Received ICE candidate for callId:', message.callId);
+    console.log('[CallContext] 🧊 ENHANCED: Received ICE candidate for callId:', message.callId);
     
     // Use ref for more stable reference
     const currentActiveCall = activeCallRef.current || activeCall;
@@ -2197,17 +2568,40 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }
 
     try {
+      // 🎯 CRITICAL FIX 7: Enhanced ICE candidate validation
+      const candidate = message.candidate;
+      console.log('[CallContext] 🧊 ICE candidate details:', {
+        type: candidate.candidate?.split(' ')[7] || 'unknown',
+        protocol: candidate.protocol,
+        address: candidate.address,
+        port: candidate.port,
+        priority: candidate.priority,
+        foundation: candidate.foundation
+      });
+      
       // Check if remote description is set
       if (!currentCall.peerConnection.remoteDescription) {
         console.log('[CallContext] Remote description not set yet, queuing ICE candidate');
-        pendingIceCandidates.current.push(message.candidate);
+        pendingIceCandidates.current.push({
+          callId: message.callId,
+          candidate: message.candidate
+        });
         return;
       }
       
       await currentCall.peerConnection.addIceCandidate(new RTCIceCandidate(message.candidate));
-      console.log('[CallContext] ✅ Added ICE candidate successfully');
+      console.log('[CallContext] ✅ ENHANCED: Added ICE candidate successfully');
+      
+      // 🎯 CRITICAL FIX 8: Log ICE connection state after candidate addition
+      console.log('[CallContext] 🧊 ICE connection state after candidate:', {
+        iceConnectionState: currentCall.peerConnection.iceConnectionState,
+        iceGatheringState: currentCall.peerConnection.iceGatheringState,
+        connectionState: currentCall.peerConnection.connectionState
+      });
+      
     } catch (error) {
-      console.error('[CallContext] Error handling ICE candidate:', error);
+      console.error('[CallContext] ❌ Error handling ICE candidate:', error);
+      // Don't fail the call due to one bad ICE candidate
     }
   };
 
