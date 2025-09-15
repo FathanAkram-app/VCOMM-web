@@ -93,9 +93,16 @@ export default function AudioCall() {
       setCallDuration(`${hours}:${minutes}:${seconds}`);
     }, 1000);
     
+    // 🚀 PROTECT timer interval from nuclear cleanup
+    (window as any).__audioCallTimerInterval = interval;
+    
     return () => {
       console.log("[AudioCall] Cleaning up call duration timer");
       clearInterval(interval);
+      // Clear the protected reference
+      if ((window as any).__audioCallTimerInterval === interval) {
+        (window as any).__audioCallTimerInterval = null;
+      }
     };
   }, [activeCall?.status, activeCall?.startTime]); // 🚀 FIXED: More specific dependencies
   

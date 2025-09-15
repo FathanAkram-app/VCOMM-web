@@ -917,12 +917,27 @@ export function CallProvider({ children }: { children: ReactNode }) {
       (window as any).__waitingToneIntervalId = null;
     }
     
-    // Clear ALL intervals and timeouts (extreme measure)
+    // Clear ALL intervals and timeouts (extreme measure) - BUT SKIP TIMER INTERVALS
     try {
-      console.log('[CallContext] 💥 NUCLEAR INTERVAL CLEANUP - Clearing ALL intervals');
+      console.log('[CallContext] 💥 NUCLEAR INTERVAL CLEANUP - Clearing ALL intervals (except protected timers)');
+      
+      // Get protected timer intervals to skip them
+      const protectedTimers = [];
+      if ((window as any).__videoCallTimerInterval) {
+        protectedTimers.push((window as any).__videoCallTimerInterval);
+        console.log('[CallContext] 🛡️ Protecting video call timer interval:', (window as any).__videoCallTimerInterval);
+      }
+      if ((window as any).__audioCallTimerInterval) {
+        protectedTimers.push((window as any).__audioCallTimerInterval);
+        console.log('[CallContext] 🛡️ Protecting audio call timer interval:', (window as any).__audioCallTimerInterval);
+      }
+      
       const highestIntervalId = setInterval(() => {}, 9999) as unknown as number;
       for (let i = 1; i <= highestIntervalId; i++) {
-        clearInterval(i);
+        // Skip protected timer intervals
+        if (!protectedTimers.includes(i)) {
+          clearInterval(i);
+        }
       }
       clearInterval(highestIntervalId);
       
@@ -932,7 +947,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       }
       clearTimeout(highestTimeoutId);
       
-      console.log('[CallContext] ✅ Nuclear interval cleanup completed');
+      console.log('[CallContext] ✅ Nuclear interval cleanup completed (protected timers preserved)');
     } catch (e) {
       console.log('[CallContext] Error in nuclear interval cleanup:', e);
     }
