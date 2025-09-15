@@ -362,7 +362,7 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
       console.log(`[GroupCall] Creating new peer connection for user ${userId}`);
       
       pc = new RTCPeerConnection({
-        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+        iceServers: [], // Offline mode - no external STUN servers
         iceCandidatePoolSize: 10
       });
 
@@ -374,7 +374,7 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
             type: 'group_webrtc_ice_candidate',
             payload: {
               candidate: event.candidate,
-              toUserId: userId,
+              targetUserId: userId,
               fromUserId: currentUser?.id,
               callId: activeCall?.callId
             }
@@ -383,18 +383,35 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
       };
 
       pc.ontrack = (event) => {
-        console.log(`[GroupCall] Received track from user ${userId}:`, event.track.kind);
-        const stream = event.streams[0];
+        console.log(`[GroupCall] 🎥 RECEIVED REMOTE TRACK from user ${userId}:`, event.track.kind);
+        console.log('[GroupCall] 🎥 Event streams:', event.streams);
         
-        if (stream) {
-          const streamKey = `user_${userId}`;
-          remoteStreamsRef.current.set(streamKey, stream);
-          setRemoteStreams(new Map(remoteStreamsRef.current));
-          
-          console.log(`[GroupCall] ✅ Added remote stream for user ${userId}:`, {
-            streamId: stream.id,
-            audioTracks: stream.getAudioTracks().length
+        const remoteStream = event.streams[0];
+        if (remoteStream) {
+          console.log(`[GroupCall] 📦 STORING REMOTE STREAM for user ${userId}:`, {
+            streamId: remoteStream.id,
+            active: remoteStream.active,
+            audioTracks: remoteStream.getAudioTracks().length
           });
+          
+          // Update remote streams both in ref and state
+          remoteStreamsRef.current.set(`user_${userId}`, remoteStream);
+          setRemoteStreams(prev => {
+            const newMap = new Map(prev);
+            newMap.set(`user_${userId}`, remoteStream);
+            console.log('[GroupCall] 📦 Updated remoteStreams map, total streams:', newMap.size);
+            return newMap;
+          });
+          
+          // Force re-render dengan delay untuk memastikan state sudah update
+          setTimeout(() => {
+            setParticipants(prevParticipants => {
+              console.log(`[GroupCall] 🔄 FORCE RE-RENDER participants for user ${userId}`);
+              return [...prevParticipants];
+            });
+          }, 100);
+        } else {
+          console.log(`[GroupCall] ❌ No remote stream in ontrack event for user ${userId}`);
         }
       };
 
@@ -601,7 +618,7 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
           type: 'group_webrtc_answer',
           payload: {
             answer: answer,
-            toUserId: offerData.fromUserId,
+            targetUserId: offerData.fromUserId,
             fromUserId: currentUser.id,
             callId: activeCall?.callId
           }
@@ -699,7 +716,7 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
             type: 'group_webrtc_offer',
             payload: {
               offer: offer,
-              toUserId: userId,
+              targetUserId: userId,
               fromUserId: currentUser.id,
               callId: activeCall.callId
             }
@@ -763,7 +780,7 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
           type: 'group_webrtc_offer',
           payload: {
             offer: offer,
-            toUserId: userId,
+            targetUserId: userId,
             fromUserId: currentUser?.id,
             callId: activeCall?.callId,
             isRefresh: true
