@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useCall } from "../hooks/useCall";
+import { protectInterval, unprotectInterval } from "../context/CallContext";
 import { Button } from "./ui/button";
 import { ChevronDown, Mic, MicOff, Video, VideoOff, Phone, SwitchCamera } from "lucide-react";
 import { useLocation } from "wouter";
@@ -82,9 +83,9 @@ export default function VideoCall() {
     }
   }, [remoteAudioStream]);
   
-  // 🚀 SUPER SIMPLE TIMER - No complex dependencies
+  // 🚀 RESILIENT TIMER - Uses activeCall.startTime with centralized protection
   useEffect(() => {
-    console.log("[VideoCall] 🕐 Simple timer check - activeCall:", !!activeCall, "status:", activeCall?.status);
+    console.log("[VideoCall] 🕐 Resilient timer check - activeCall:", !!activeCall, "status:", activeCall?.status, "startTime:", activeCall?.startTime);
     
     // Only run timer when call is active and connected
     if (!activeCall || activeCall.status !== 'connected') {
@@ -93,23 +94,23 @@ export default function VideoCall() {
       return;
     }
     
-    console.log("[VideoCall] 🕐 STARTING SIMPLE TIMER NOW for callId:", activeCall.callId);
+    // Use activeCall.startTime if available, fallback to Date.now()
+    const callStartTime = activeCall.startTime ? activeCall.startTime.getTime() : Date.now();
+    console.log("[VideoCall] 🕐 STARTING RESILIENT TIMER for callId:", activeCall.callId, "startTime:", new Date(callStartTime));
     
-    // Start counting from NOW regardless of any startTime
-    let startTime = Date.now();
     let timerActive = true;
     
     const tick = () => {
       if (!timerActive) return;
       
-      const elapsed = Date.now() - startTime;
+      const elapsed = Date.now() - callStartTime;
       const sec = Math.floor(elapsed / 1000);
       const hrs = Math.floor(sec / 3600);
       const mins = Math.floor((sec % 3600) / 60);
       const secs = sec % 60;
       
       const formatted = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-      console.log("[VideoCall] 🕐 SIMPLE TICK:", formatted, "elapsed ms:", elapsed);
+      console.log("[VideoCall] 🕐 RESILIENT TICK:", formatted, "elapsed ms:", elapsed);
       setCallDuration(formatted);
     };
     
@@ -118,22 +119,19 @@ export default function VideoCall() {
     
     // Then every second
     const interval = setInterval(tick, 1000);
-    console.log("[VideoCall] 🕐 Simple timer interval created:", interval);
+    console.log("[VideoCall] 🕐 Resilient timer interval created:", interval);
     
-    // 🚀 PROTECT from nuclear cleanup
-    (window as any).__videoCallTimer = interval;
-    console.log("[VideoCall] 🕐 Timer protected from nuclear cleanup");
+    // 🚀 PROTECT using centralized system
+    protectInterval(interval);
     
     return () => {
-      console.log("[VideoCall] 🕐 Cleaning up simple timer");
+      console.log("[VideoCall] 🕐 Cleaning up resilient timer");
       timerActive = false;
       clearInterval(interval);
-      // Clear protection
-      if ((window as any).__videoCallTimer === interval) {
-        (window as any).__videoCallTimer = null;
-      }
+      // Remove from centralized protection
+      unprotectInterval(interval);
     };
-  }, [activeCall?.status, activeCall?.callId]); // Watch for status and callId changes
+  }, [activeCall?.status, activeCall?.callId, activeCall?.startTime]); // Watch for status, callId, and startTime changes
   
   // Cleanup on component unmount
   useEffect(() => {
