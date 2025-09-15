@@ -2639,8 +2639,19 @@ export function CallProvider({ children }: { children: ReactNode }) {
       setActiveCall(null);
       console.log('[CallContext] ✅ Active call cleared');
       
+      // 🚀 FIX: Auto-navigate back to chat when call ended by other user
+      console.log('[CallContext] 🔄 NAVIGATION: Auto-navigating back to chat interface');
+      setLocation('/chat');
+      
     } else {
       console.log('[CallContext] ⚠️ Call ended event for non-active call:', callId, 'current activeCall:', activeCall?.callId);
+      
+      // 🚀 CRITICAL FIX: Navigate back to chat even if activeCall is undefined
+      // This handles case where call state was cleared but user still on call page
+      if (location === '/video-call' || location === '/audio-call' || location === '/group-call') {
+        console.log('[CallContext] 🔄 NAVIGATION: Auto-navigating back to chat from call page (activeCall undefined)');
+        setLocation('/chat');
+      }
     }
     
     // CRITICAL: Do NOT clear incoming call if it's still ringing
@@ -2648,8 +2659,19 @@ export function CallProvider({ children }: { children: ReactNode }) {
     if (incomingCall && incomingCall.callId === callId && incomingCall.status !== 'ringing') {
       console.log('[CallContext] ✅ Clearing incoming call because it was accepted and then ended');
       setIncomingCall(null);
+      
+      // 🚀 FIX: Auto-navigate back to chat when incoming call ended
+      console.log('[CallContext] 🔄 NAVIGATION: Auto-navigating back to chat interface from incoming call');
+      setLocation('/chat');
+      
     } else if (incomingCall && incomingCall.callId === callId && incomingCall.status === 'ringing') {
-      console.log('[CallContext] 🚫 NOT clearing incoming call - still ringing, user hasn\'t responded yet');
+      console.log('[CallContext] 🚫 Clearing ringing incoming call - caller ended before answer');
+      setIncomingCall(null);
+      
+      // 🚀 FIX: Also navigate back when incoming call canceled
+      console.log('[CallContext] 🔄 NAVIGATION: Auto-navigating back to chat interface from canceled incoming call');
+      setLocation('/chat');
+      
     } else {
       console.log('[CallContext] ⚠️ Call ended event does not match incoming call, or no incoming call exists');
     }
