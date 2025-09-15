@@ -382,6 +382,61 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
         iceCandidatePoolSize: 10
       });
 
+      // 🎯 TRANSCEIVER FIX: Ensure audio transceiver exists immediately
+      console.log(`[GroupCall] 🔧 TRANSCEIVER FIX: Adding audio transceiver for user ${userId}`);
+      const audioTransceiver = pc.addTransceiver('audio', { 
+        direction: localStream ? 'sendrecv' : 'recvonly' 
+      });
+      
+      console.log(`[GroupCall] 🔧 TRANSCEIVER FIX: Audio transceiver created:`, {
+        userId,
+        direction: audioTransceiver.direction,
+        hasLocalStream: !!localStream,
+        transceiverMid: audioTransceiver.mid
+      });
+
+      // 🎯 LOCAL TRACK FIX: Attach local audio track with stream if available
+      if (localStream && localStream.getAudioTracks().length > 0) {
+        const audioTrack = localStream.getAudioTracks()[0];
+        try {
+          // Use addTrack with stream (synchronous) instead of replaceTrack
+          pc.addTrack(audioTrack, localStream);
+          audioTransceiver.direction = 'sendrecv';
+          console.log(`[GroupCall] 🔧 LOCAL TRACK FIX: Attached local audio track for user ${userId}:`, {
+            trackId: audioTrack.id,
+            trackEnabled: audioTrack.enabled,
+            streamId: localStream.id,
+            direction: audioTransceiver.direction
+          });
+        } catch (error) {
+          console.error(`[GroupCall] ❌ Failed to attach local audio track for user ${userId}:`, error);
+        }
+      }
+
+      // 🎯 INSTRUMENTATION: Log transceivers/senders/receivers after setup
+      console.log(`[GroupCall] 🔍 INSTRUMENTATION: Peer connection setup complete for user ${userId}:`, {
+        transceivers: pc.getTransceivers().map(t => ({
+          mid: t.mid,
+          direction: t.direction,
+          receiver: !!t.receiver,
+          sender: !!t.sender,
+          hasTrack: !!t.receiver?.track
+        })),
+        senders: pc.getSenders().map(s => ({
+          track: s.track?.kind,
+          trackEnabled: s.track?.enabled
+        })),
+        receivers: pc.getReceivers().map(r => ({
+          track: r.track?.kind,
+          trackEnabled: r.track?.enabled
+        }))
+      });
+
+      // 🎯 INSTRUMENTATION: Log negotiation needed events  
+      pc.onnegotiationneeded = () => {
+        console.log(`[GroupCall] 🔍 INSTRUMENTATION: Negotiation needed for user ${userId}`);
+      };
+
       // Set up event handlers
       pc.onicecandidate = (event) => {
         if (event.candidate && ws && ws.readyState === WebSocket.OPEN) {
@@ -402,33 +457,48 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
         console.log(`[GroupCall] 🎥 RECEIVED REMOTE TRACK from user ${userId}:`, event.track.kind);
         console.log('[GroupCall] 🎥 Event streams:', event.streams);
         
-        const remoteStream = event.streams[0];
-        if (remoteStream) {
-          console.log(`[GroupCall] 📦 STORING REMOTE STREAM for user ${userId}:`, {
+        // 🎯 ROBUST FIX: Handle both cases - when event.streams exists and when it's empty
+        let remoteStream = event.streams[0];
+        const streamKey = `user_${userId}`;
+        
+        if (!remoteStream) {
+          console.log(`[GroupCall] 🔧 ROBUST FIX: No stream in event, creating/reusing MediaStream for user ${userId}`);
+          // Create or reuse existing MediaStream for this user
+          remoteStream = remoteStreamsRef.current.get(streamKey) || new MediaStream();
+          
+          // Add the track to the stream
+          remoteStream.addTrack(event.track);
+          console.log(`[GroupCall] 🔧 ROBUST FIX: Added track to synthesized stream for user ${userId}:`, {
+            trackKind: event.track.kind,
             streamId: remoteStream.id,
-            active: remoteStream.active,
-            audioTracks: remoteStream.getAudioTracks().length
+            trackCount: remoteStream.getTracks().length
           });
-          
-          // Update remote streams both in ref and state
-          remoteStreamsRef.current.set(`user_${userId}`, remoteStream);
-          setRemoteStreams(prev => {
-            const newMap = new Map(prev);
-            newMap.set(`user_${userId}`, remoteStream);
-            console.log('[GroupCall] 📦 Updated remoteStreams map, total streams:', newMap.size);
-            return newMap;
-          });
-          
-          // Force re-render dengan delay untuk memastikan state sudah update
-          setTimeout(() => {
-            setParticipants(prevParticipants => {
-              console.log(`[GroupCall] 🔄 FORCE RE-RENDER participants for user ${userId}`);
-              return [...prevParticipants];
-            });
-          }, 100);
-        } else {
-          console.log(`[GroupCall] ❌ No remote stream in ontrack event for user ${userId}`);
         }
+        
+        console.log(`[GroupCall] 📦 STORING REMOTE STREAM for user ${userId}:`, {
+          streamId: remoteStream.id,
+          active: remoteStream.active,
+          audioTracks: remoteStream.getAudioTracks().length,
+          videoTracks: remoteStream.getVideoTracks().length,
+          totalTracks: remoteStream.getTracks().length
+        });
+        
+        // Update remote streams both in ref and state
+        remoteStreamsRef.current.set(streamKey, remoteStream);
+        setRemoteStreams(prev => {
+          const newMap = new Map(prev);
+          newMap.set(streamKey, remoteStream);
+          console.log('[GroupCall] 📦 Updated remoteStreams map, total streams:', newMap.size);
+          return newMap;
+        });
+        
+        // Force re-render dengan delay untuk memastikan state sudah update
+        setTimeout(() => {
+          setParticipants(prevParticipants => {
+            console.log(`[GroupCall] 🔄 FORCE RE-RENDER participants for user ${userId}`);
+            return [...prevParticipants];
+          });
+        }, 100);
       };
 
       pc.onconnectionstatechange = () => {
@@ -447,6 +517,37 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
 
       peerConnectionsRef.current.set(userId, pc);
       setPeerConnections(new Map(peerConnectionsRef.current));
+      
+      // 🎯 INSTRUMENTATION: Start periodic getStats monitoring
+      const statsInterval = setInterval(async () => {
+        try {
+          const stats = await pc.getStats();
+          let hasRemoteAudio = false;
+          let bytesReceived = 0;
+          
+          stats.forEach(report => {
+            if (report.type === 'inbound-rtp' && report.kind === 'audio') {
+              hasRemoteAudio = true;
+              bytesReceived = report.bytesReceived || 0;
+            }
+          });
+          
+          if (hasRemoteAudio) {
+            console.log(`[GroupCall] 🔍 STATS: User ${userId} audio reception:`, {
+              bytesReceived,
+              connectionState: pc.connectionState,
+              iceConnectionState: pc.iceConnectionState
+            });
+          }
+        } catch (error) {
+          console.error(`[GroupCall] ❌ Stats error for user ${userId}:`, error);
+        }
+      }, 5000); // Check every 5 seconds
+      
+      // Store interval for cleanup (reuse connectionTimeouts map)
+      if (!connectionTimeouts.current.has(userId)) {
+        connectionTimeouts.current.set(userId, statsInterval);
+      }
     }
     
     return pc;
