@@ -523,21 +523,19 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     window.addEventListener('group-webrtc-offer', handleGroupWebRTCOffer as EventListener);
     window.addEventListener('group-webrtc-answer', handleGroupWebRTCAnswer as EventListener);
     window.addEventListener('group-webrtc-ice-candidate', handleGroupWebRTCIceCandidate as EventListener);
-    window.addEventListener('initiate-group-webrtc', handleInitiateWebRTC as EventListener);
+    window.addEventListener('auto-initiate-webrtc', handleInitiateWebRTC as EventListener);
     window.addEventListener('group-participants-update', handleGroupParticipantsUpdate as EventListener);
     window.addEventListener('group-participant-refresh', handleParticipantRefresh as EventListener);
     window.addEventListener('force-webrtc-reconnect', handleForceWebRTCReconnect as EventListener);
-    window.addEventListener('auto-initiate-webrtc', handleInitiateWebRTC as EventListener);
 
     return () => {
       window.removeEventListener('group-webrtc-offer', handleGroupWebRTCOffer as EventListener);
       window.removeEventListener('group-webrtc-answer', handleGroupWebRTCAnswer as EventListener);
       window.removeEventListener('group-webrtc-ice-candidate', handleGroupWebRTCIceCandidate as EventListener);
-      window.removeEventListener('initiate-group-webrtc', handleInitiateWebRTC as EventListener);
+      window.removeEventListener('auto-initiate-webrtc', handleInitiateWebRTC as EventListener);
       window.removeEventListener('group-participants-update', handleGroupParticipantsUpdate as EventListener);
       window.removeEventListener('group-participant-refresh', handleParticipantRefresh as EventListener);
       window.removeEventListener('force-webrtc-reconnect', handleForceWebRTCReconnect as EventListener);
-      window.removeEventListener('auto-initiate-webrtc', handleInitiateWebRTC as EventListener);
     };
   }, [activeCall]);
 
