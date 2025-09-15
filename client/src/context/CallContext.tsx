@@ -250,6 +250,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
         console.log('[CallContext] 🔥 ROUTING: initiate_group_webrtc case matched, calling handleInitiateGroupWebRTC');
         handleInitiateGroupWebRTC(message);
         break;
+      case 'force_webrtc_reconnect':
+        console.log('[CallContext] 🔥 ROUTING: force_webrtc_reconnect case matched, calling handleInitiateGroupWebRTC');
+        handleInitiateGroupWebRTC(message);
+        break;
       case 'group_call_no_participants':
         handleGroupCallNoParticipants(message);
         break;
