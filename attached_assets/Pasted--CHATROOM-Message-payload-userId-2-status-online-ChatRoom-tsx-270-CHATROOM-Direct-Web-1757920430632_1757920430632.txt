@@ -1,0 +1,232 @@
+🔥 CHATROOM: Message payload: {userId: 2, status: 'online'}
+ChatRoom.tsx:270 🔥 CHATROOM: Direct WebSocket message (fallback): {type: 'user_status', payload: {…}}
+ChatRoom.tsx:1037 Starting group audio call for group: Ampera Grup
+CallContext.tsx:4001 [CallContext] Starting group call: {groupId: 38, groupName: 'Ampera Grup', callType: 'audio'}
+CallContext.tsx:11 [CallContext] Mobile compatibility check: {isMobile: false, isHTTPS: true, userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWeb…KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', hasMediaDevices: ƒ}
+CallContext.tsx:4012 [CallContext] Mobile compatibility check for group call: {isMobile: false, isHTTPS: true, hasMediaDevices: ƒ}
+CallContext.tsx:4035 [CallContext] Requesting full media permissions for group call (audio + video enabled)...
+CallContext.tsx:4037 [CallContext] Got audio and video stream for group call - full media enabled from start
+CallContext.tsx:4144 [CallContext] Added local track to group call: audio
+CallContext.tsx:4144 [CallContext] Added local track to group call: video
+CallContext.tsx:4181 [CallContext] Group call invitation sent
+CallContext.tsx:4489 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+ChatRoom.tsx:828 Processing message data for grouping: (12) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:829 Total messages to process: 12
+ChatRoom.tsx:834 Messages with replies: [{…}]
+ChatRoom.tsx:901 Grouped messages: (2) [{…}, {…}]
+ChatRoom.tsx:902 Total date groups: 2
+ChatRoom.tsx:904 Total messages in first group: 8
+ChatRoom.tsx:1253 [Message Debug] Message ID: 197, replyToId: null, content: cek
+ChatRoom.tsx:1253 [Message Debug] Message ID: 198, replyToId: null, content: gmn
+ChatRoom.tsx:1253 [Message Debug] Message ID: 199, replyToId: null, content: coba
+ChatRoom.tsx:1253 [Message Debug] Message ID: 200, replyToId: null, content: kok
+ChatRoom.tsx:1253 [Message Debug] Message ID: 214, replyToId: null, content: Cek
+ChatRoom.tsx:1253 [Message Debug] Message ID: 215, replyToId: null, content: [User Deleted]
+ChatRoom.tsx:1253 [Message Debug] Message ID: 216, replyToId: null, content: [User Deleted]
+ChatRoom.tsx:1253 [Message Debug] Message ID: 217, replyToId: 216, content: cakep
+ChatRoom.tsx:1294 [Reply Debug] Message 217 has replyToId: 216
+ChatRoom.tsx:1295 [Reply Debug] All messages: (12) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+ChatRoom.tsx:1298 [Reply Debug] Found replied message: {id: 216, senderId: 1, senderName: 'test123', content: '[User Deleted]', timestamp: '2025-06-05T12:27:36.691Z', …}
+ChatRoom.tsx:1253 [Message Debug] Message ID: 310, replyToId: null, content: [Diteruskan] Tess
+ChatRoom.tsx:1253 [Message Debug] Message ID: 311, replyToId: null, content: [File: 17521563299775275155729307715143.jpg]
+ChatRoom.tsx:1253 [Message Debug] Message ID: 312, replyToId: null, content: [File: 17521563531216073247134206960683.jpg]
+ChatRoom.tsx:1253 [Message Debug] Message ID: 315, replyToId: null, content: [Diteruskan] [Diteruskan] [File: 17521563531216073247134206960683.jpg]
+IncomingCallModal.tsx:6 [IncomingCallModal] 🔥 COMPONENT RENDERED - START
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+IncomingCallModal.tsx:11 [IncomingCallModal] 🔥 After useCall hook - incomingCall: null
+IncomingCallModal.tsx:12 [IncomingCallModal] 🔥 incomingCall type check: object
+IncomingCallModal.tsx:13 [IncomingCallModal] 🔥 incomingCall falsy check: true
+IncomingCallModal.tsx:16 [IncomingCallModal] No incoming call, returning null
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:170 [GroupCall] Initializing media with audio-only from start...
+GroupCall.tsx:174 [GroupCall] Initializing media for desktop device
+GroupCall.tsx:310 [GroupCall] Updating participants: []
+GroupCall.tsx:311 [GroupCall] Current user ID: 2
+GroupCall.tsx:312 [GroupCall] Available remote streams: Map(0) {size: 0}
+GroupCall.tsx:316 [GroupCall] Remote streams array: []
+GroupCall.tsx:319 [GroupCall] 🔍 Before filtering participants: []
+GroupCall.tsx:320 [GroupCall] 🔍 Current user to filter out: 2
+GroupCall.tsx:323 [GroupCall] 🔍 After filtering participants: []
+GroupCall.tsx:346 [GroupCall] 📋 Final participants list: []
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:191 [GroupCall] ✅ Got media stream: {id: '3e8d315d-b2b9-4419-b273-33cf3bb516e6', active: true, audioTracks: 1}
+GroupCall.tsx:202 [GroupCall] ✅ Audio enabled from start
+GroupCall.tsx:207 [GroupCall] 📊 Media stream set in state and marked as initialized
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:270 [GroupCall] 📊 Stream initialized and ready for WebRTC
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:4489 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+ChatRoom.tsx:285 🔥 CHATROOM: Removing all event listeners
+GroupCall.tsx:260 [GroupCall] 🧹 Connection timeouts, reconnection state, and refresh tracking cleaned up
+GroupCall.tsx:170 [GroupCall] Initializing media with audio-only from start...
+GroupCall.tsx:174 [GroupCall] Initializing media for desktop device
+GroupCall.tsx:310 [GroupCall] Updating participants: []
+GroupCall.tsx:311 [GroupCall] Current user ID: 2
+GroupCall.tsx:312 [GroupCall] Available remote streams: Map(0) {size: 0}
+GroupCall.tsx:316 [GroupCall] Remote streams array: []
+GroupCall.tsx:319 [GroupCall] 🔍 Before filtering participants: []
+GroupCall.tsx:320 [GroupCall] 🔍 Current user to filter out: 2
+GroupCall.tsx:323 [GroupCall] 🔍 After filtering participants: []
+GroupCall.tsx:346 [GroupCall] 📋 Final participants list: []
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:191 [GroupCall] ✅ Got media stream: {id: '6f8d49b6-1318-48f2-88f0-6e12f5624670', active: true, audioTracks: 1}
+GroupCall.tsx:202 [GroupCall] ✅ Audio enabled from start
+GroupCall.tsx:207 [GroupCall] 📊 Media stream set in state and marked as initialized
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:270 [GroupCall] 📊 Stream initialized and ready for WebRTC
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:1097 [CallContext] Received message: {type: 'group_call_initiated', payload: {…}}
+CallContext.tsx:1100 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'group_call_initiated', hasPayload: true, messageKeys: Array(2), routingToCase: 'group_call_initiated'}
+CallContext.tsx:1259 [CallContext] Group call initiated confirmation: {callId: 'group_call_1757920390872_38_2', groupId: 38, totalMembers: 3, onlineMembers: 3, invitationsSent: 2, …}
+CallContext.tsx:4195 [CallContext] Auto-joined group call as initiator: {type: 'join_group_call', payload: {…}}
+CallContext.tsx:1097 [CallContext] Received message: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1100 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'group_call_participants_update', hasPayload: true, messageKeys: Array(2), routingToCase: 'group_call_participants_update'}
+CallContext.tsx:1207 [CallContext] 🔥 GROUP_CALL_PARTICIPANTS_UPDATE received: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1208 [CallContext] 🎯 Participants in message: [2]
+CallContext.tsx:1209 [CallContext] 🎯 CallId in message: group_call_1757920390872_38_2
+CallContext.tsx:1210 [CallContext] 🎯 Full sync flag: undefined
+CallContext.tsx:2118 [CallContext] 🔥 Group call participants update: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:2119 [CallContext] 🔥 Message payload: {callId: 'group_call_1757920390872_38_2', participants: Array(1), newParticipant: 2}
+CallContext.tsx:2124 [CallContext] Comparing callIds - message: group_call_1757920390872_38_2 activeCall: group_call_1757920390872_38_2
+CallContext.tsx:2125 [CallContext] ActiveCall groupId: 38
+CallContext.tsx:2164 [CallContext] Extracted groupIds - message: 38 active: 38
+CallContext.tsx:2165 [CallContext] CallId parts: (5) ['group', 'call', '1757920390872', '38', '2']
+CallContext.tsx:2168 [CallContext] Group IDs match, updating participants: [2]
+CallContext.tsx:2174 [CallContext] 🎯 Processing participant update - fullSync: undefined participantData: undefined
+CallContext.tsx:2175 [CallContext] 🎯 Participants array length: 1 ParticipantData array length: undefined
+CallContext.tsx:2212 [CallContext] Unique participants after deduplication: [{…}]
+CallContext.tsx:2242 [CallContext] Processing regular participant update (not full sync)
+GroupCall.tsx:283 [GroupCall] 🔥 Participant data update event received: {callId: 'group_call_1757920390872_38_2', participants: Array(1), isNewMember: false, fullSync: false}
+CallContext.tsx:1097 [CallContext] Received message: {type: 'initiate_group_webrtc', payload: {…}}
+CallContext.tsx:1100 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'initiate_group_webrtc', hasPayload: true, messageKeys: Array(2), routingToCase: 'initiate_group_webrtc'}
+CallContext.tsx:4489 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:310 [GroupCall] Updating participants: [{…}]
+GroupCall.tsx:311 [GroupCall] Current user ID: 2
+GroupCall.tsx:312 [GroupCall] Available remote streams: Map(0) {size: 0}
+GroupCall.tsx:316 [GroupCall] Remote streams array: []
+GroupCall.tsx:319 [GroupCall] 🔍 Before filtering participants: ['User 2(2)']
+GroupCall.tsx:320 [GroupCall] 🔍 Current user to filter out: 2
+GroupCall.tsx:323 [GroupCall] 🔍 After filtering participants: []
+GroupCall.tsx:346 [GroupCall] 📋 Final participants list: []
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:1097 [CallContext] Received message: {type: 'initiate_group_webrtc', payload: {…}}
+CallContext.tsx:1100 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'initiate_group_webrtc', hasPayload: true, messageKeys: Array(2), routingToCase: 'initiate_group_webrtc'}
+CallContext.tsx:1097 [CallContext] Received message: {type: 'force_webrtc_reconnect', payload: {…}}
+CallContext.tsx:1100 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'force_webrtc_reconnect', hasPayload: true, messageKeys: Array(2), routingToCase: 'force_webrtc_reconnect'}
+CallContext.tsx:1097 [CallContext] Received message: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1100 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'group_call_participants_update', hasPayload: true, messageKeys: Array(2), routingToCase: 'group_call_participants_update'}
+CallContext.tsx:1207 [CallContext] 🔥 GROUP_CALL_PARTICIPANTS_UPDATE received: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1208 [CallContext] 🎯 Participants in message: [{…}]
+CallContext.tsx:1209 [CallContext] 🎯 CallId in message: group_call_1757920390872_38_2
+CallContext.tsx:1210 [CallContext] 🎯 Full sync flag: true
+CallContext.tsx:2118 [CallContext] 🔥 Group call participants update: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:2119 [CallContext] 🔥 Message payload: {callId: 'group_call_1757920390872_38_2', participants: Array(1), isNewMember: true, fullSync: true}
+CallContext.tsx:2124 [CallContext] Comparing callIds - message: group_call_1757920390872_38_2 activeCall: group_call_1757920390872_38_2
+CallContext.tsx:2125 [CallContext] ActiveCall groupId: 38
+CallContext.tsx:2164 [CallContext] Extracted groupIds - message: 38 active: 38
+CallContext.tsx:2165 [CallContext] CallId parts: (5) ['group', 'call', '1757920390872', '38', '2']
+CallContext.tsx:2168 [CallContext] Group IDs match, updating participants: [{…}]
+CallContext.tsx:2174 [CallContext] 🎯 Processing participant update - fullSync: true participantData: undefined
+CallContext.tsx:2175 [CallContext] 🎯 Participants array length: 1 ParticipantData array length: undefined
+CallContext.tsx:2187 [CallContext] Received detailed participant data: [{…}]
+CallContext.tsx:2212 [CallContext] Unique participants after deduplication: [{…}]
+CallContext.tsx:2216 [CallContext] 🔥 Full sync for new member - ensuring complete participant data
+GroupCall.tsx:283 [GroupCall] 🔥 Participant data update event received: {callId: 'group_call_1757920390872_38_2', participants: Array(1), isNewMember: true, fullSync: true}
+GroupCall.tsx:287 [GroupCall] 🎯 Full sync for new member - updating participant list
+CallContext.tsx:2237 [CallContext] 🎯 Full sync complete - participant data updated for new member
+CallContext.tsx:4489 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:310 [GroupCall] Updating participants: [{…}]
+GroupCall.tsx:311 [GroupCall] Current user ID: 2
+GroupCall.tsx:312 [GroupCall] Available remote streams: Map(0) {size: 0}
+GroupCall.tsx:316 [GroupCall] Remote streams array: []
+GroupCall.tsx:319 [GroupCall] 🔍 Before filtering participants: ['eko(2)']
+GroupCall.tsx:320 [GroupCall] 🔍 Current user to filter out: 2
+GroupCall.tsx:323 [GroupCall] 🔍 After filtering participants: []
+GroupCall.tsx:346 [GroupCall] 📋 Final participants list: []
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:1097 [CallContext] Received message: {type: 'initiate_group_webrtc', payload: {…}}
+CallContext.tsx:1100 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'initiate_group_webrtc', hasPayload: true, messageKeys: Array(2), routingToCase: 'initiate_group_webrtc'}
+CallContext.tsx:1097 [CallContext] Received message: {type: 'force_webrtc_reconnect', payload: {…}}
+CallContext.tsx:1100 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'force_webrtc_reconnect', hasPayload: true, messageKeys: Array(2), routingToCase: 'force_webrtc_reconnect'}
+CallContext.tsx:1097 [CallContext] Received message: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1100 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'group_call_participants_update', hasPayload: true, messageKeys: Array(2), routingToCase: 'group_call_participants_update'}
+CallContext.tsx:1207 [CallContext] 🔥 GROUP_CALL_PARTICIPANTS_UPDATE received: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1208 [CallContext] 🎯 Participants in message: (2) [2, 4]
+CallContext.tsx:1209 [CallContext] 🎯 CallId in message: group_call_1757920390872_38_2
+CallContext.tsx:1210 [CallContext] 🎯 Full sync flag: undefined
+CallContext.tsx:2118 [CallContext] 🔥 Group call participants update: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:2119 [CallContext] 🔥 Message payload: {callId: 'group_call_1757920390872_38_2', participants: Array(2), newParticipant: 4}
+CallContext.tsx:2124 [CallContext] Comparing callIds - message: group_call_1757920390872_38_2 activeCall: group_call_1757920390872_38_2
+CallContext.tsx:2125 [CallContext] ActiveCall groupId: 38
+CallContext.tsx:2164 [CallContext] Extracted groupIds - message: 38 active: 38
+CallContext.tsx:2165 [CallContext] CallId parts: (5) ['group', 'call', '1757920390872', '38', '2']
+CallContext.tsx:2168 [CallContext] Group IDs match, updating participants: (2) [2, 4]
+CallContext.tsx:2174 [CallContext] 🎯 Processing participant update - fullSync: undefined participantData: undefined
+CallContext.tsx:2175 [CallContext] 🎯 Participants array length: 2 ParticipantData array length: undefined
+CallContext.tsx:2212 [CallContext] Unique participants after deduplication: (2) [{…}, {…}]
+CallContext.tsx:2242 [CallContext] Processing regular participant update (not full sync)
+GroupCall.tsx:283 [GroupCall] 🔥 Participant data update event received: {callId: 'group_call_1757920390872_38_2', participants: Array(2), isNewMember: false, fullSync: false}
+CallContext.tsx:4489 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:310 [GroupCall] Updating participants: (2) [{…}, {…}]
+GroupCall.tsx:311 [GroupCall] Current user ID: 2
+GroupCall.tsx:312 [GroupCall] Available remote streams: Map(0) {size: 0}
+GroupCall.tsx:316 [GroupCall] Remote streams array: []
+GroupCall.tsx:319 [GroupCall] 🔍 Before filtering participants: (2) ['User 2(2)', 'User 4(4)']
+GroupCall.tsx:320 [GroupCall] 🔍 Current user to filter out: 2
+GroupCall.tsx:323 [GroupCall] 🔍 After filtering participants: ['User 4(4)']
+GroupCall.tsx:329 [GroupCall] 🔍 Mapping participant User 4 (4): {streamKey: 'user_4', hasStream: false, streamId: undefined, streamActive: undefined, audioTracks: 0}
+GroupCall.tsx:346 [GroupCall] 📋 Final participants list: [{…}]
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:1097 [CallContext] Received message: {type: 'initiate_group_webrtc', payload: {…}}
+CallContext.tsx:1100 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'initiate_group_webrtc', hasPayload: true, messageKeys: Array(2), routingToCase: 'initiate_group_webrtc'}
+CallContext.tsx:1097 [CallContext] Received message: {type: 'initiate_group_webrtc', payload: {…}}
+CallContext.tsx:1100 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'initiate_group_webrtc', hasPayload: true, messageKeys: Array(2), routingToCase: 'initiate_group_webrtc'}
+CallContext.tsx:1097 [CallContext] Received message: {type: 'force_webrtc_reconnect', payload: {…}}
+CallContext.tsx:1100 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'force_webrtc_reconnect', hasPayload: true, messageKeys: Array(2), routingToCase: 'force_webrtc_reconnect'}
+CallContext.tsx:1097 [CallContext] Received message: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1100 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'group_call_participants_update', hasPayload: true, messageKeys: Array(2), routingToCase: 'group_call_participants_update'}
+CallContext.tsx:1207 [CallContext] 🔥 GROUP_CALL_PARTICIPANTS_UPDATE received: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:1208 [CallContext] 🎯 Participants in message: (3) [2, 4, 3]
+CallContext.tsx:1209 [CallContext] 🎯 CallId in message: group_call_1757920390872_38_2
+CallContext.tsx:1210 [CallContext] 🎯 Full sync flag: undefined
+CallContext.tsx:2118 [CallContext] 🔥 Group call participants update: {type: 'group_call_participants_update', payload: {…}}
+CallContext.tsx:2119 [CallContext] 🔥 Message payload: {callId: 'group_call_1757920390872_38_2', participants: Array(3), newParticipant: 3}
+CallContext.tsx:2124 [CallContext] Comparing callIds - message: group_call_1757920390872_38_2 activeCall: group_call_1757920390872_38_2
+CallContext.tsx:2125 [CallContext] ActiveCall groupId: 38
+CallContext.tsx:2164 [CallContext] Extracted groupIds - message: 38 active: 38
+CallContext.tsx:2165 [CallContext] CallId parts: (5) ['group', 'call', '1757920390872', '38', '2']
+CallContext.tsx:2168 [CallContext] Group IDs match, updating participants: (3) [2, 4, 3]
+CallContext.tsx:2174 [CallContext] 🎯 Processing participant update - fullSync: undefined participantData: undefined
+CallContext.tsx:2175 [CallContext] 🎯 Participants array length: 3 ParticipantData array length: undefined
+CallContext.tsx:2212 [CallContext] Unique participants after deduplication: (3) [{…}, {…}, {…}]
+CallContext.tsx:2242 [CallContext] Processing regular participant update (not full sync)
+GroupCall.tsx:283 [GroupCall] 🔥 Participant data update event received: {callId: 'group_call_1757920390872_38_2', participants: Array(3), isNewMember: false, fullSync: false}
+CallContext.tsx:4489 [CallContext] 🔥 PROVIDER VALUE UPDATE: {incomingCall: null, activeCall: {…}, hasIncomingCall: false, incomingCallId: undefined}
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+GroupCall.tsx:310 [GroupCall] Updating participants: (3) [{…}, {…}, {…}]
+GroupCall.tsx:311 [GroupCall] Current user ID: 2
+GroupCall.tsx:312 [GroupCall] Available remote streams: Map(0) {size: 0}
+GroupCall.tsx:316 [GroupCall] Remote streams array: []
+GroupCall.tsx:319 [GroupCall] 🔍 Before filtering participants: (3) ['User 2(2)', 'User 4(4)', 'User 3(3)']
+GroupCall.tsx:320 [GroupCall] 🔍 Current user to filter out: 2
+GroupCall.tsx:323 [GroupCall] 🔍 After filtering participants: (2) ['User 4(4)', 'User 3(3)']
+GroupCall.tsx:329 [GroupCall] 🔍 Mapping participant User 4 (4): {streamKey: 'user_4', hasStream: false, streamId: undefined, streamActive: undefined, audioTracks: 0}
+GroupCall.tsx:329 [GroupCall] 🔍 Mapping participant User 3 (3): {streamKey: 'user_3', hasStream: false, streamId: undefined, streamActive: undefined, audioTracks: 0}
+GroupCall.tsx:346 [GroupCall] 📋 Final participants list: (2) [{…}, {…}]
+useCall.ts:12 [useCall] 🔥 Context value: {incomingCall: null, activeCall: {…}, hasIncomingCall: false}
+CallContext.tsx:1097 [CallContext] Received message: {type: 'initiate_group_webrtc', payload: {…}}
+CallContext.tsx:1100 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'initiate_group_webrtc', hasPayload: true, messageKeys: Array(2), routingToCase: 'initiate_group_webrtc'}
+CallContext.tsx:1097 [CallContext] Received message: {type: 'initiate_group_webrtc', payload: {…}}
+CallContext.tsx:1100 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'initiate_group_webrtc', hasPayload: true, messageKeys: Array(2), routingToCase: 'initiate_group_webrtc'}
+CallContext.tsx:1097 [CallContext] Received message: {type: 'force_webrtc_reconnect', payload: {…}}
+CallContext.tsx:1100 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'force_webrtc_reconnect', hasPayload: true, messageKeys: Array(2), routingToCase: 'force_webrtc_reconnect'}
+CallContext.tsx:1097 [CallContext] Received message: {type: 'user_status', payload: {…}}
+CallContext.tsx:1100 [CallContext] 🔍 DEBUG MESSAGE ROUTING: {messageType: 'user_status', hasPayload: true, messageKeys: Array(2), routingToCase: 'user_status'}
+CallContext.tsx:1164 [CallContext] Received user status update: {userId: 4, status: 'offline'}
+sw.js:194 [SW] Message received: {type: 'KEEP_ALIVE'}
