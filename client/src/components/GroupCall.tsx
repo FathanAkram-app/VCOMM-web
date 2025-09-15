@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Users, Radio, Shield, Zap } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { Mic, MicOff, PhoneOff, Users, Radio, Shield, Zap } from 'lucide-react';
 import { useCall } from '@/hooks/useCall';
+import { useLocation } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 interface GroupCallProps {
@@ -11,80 +12,270 @@ interface GroupCallProps {
   callType?: 'audio' | 'video';
 }
 
-interface GroupParticipant {
-  userId: number;
-  userName: string;
-  audioEnabled: boolean;
-  videoEnabled: boolean;
-  stream?: MediaStream;
-}
-
+/**
+ * GroupCall - Sistem group audio call yang menggunakan proven logic dari GroupVideoCallSimple
+ * 
+ * Pendekatan yang telah terbukti:
+ * 1. Audio aktif dari awal dengan retry mechanisms
+ * 2. Stream management yang clean dan reliable  
+ * 3. Error handling yang robust
+ * 4. State management yang clear
+ * 5. Proper cleanup dan connection management
+ */
 export default function GroupCall({ groupId, groupName, callType = 'audio' }: GroupCallProps) {
-  const { user } = useAuth();
-  const { hangupCall, activeCall } = useCall();
+  const { activeCall, hangupCall, toggleCallAudio, ws } = useCall();
+  const [, setLocation] = useLocation();
   
-  const [participants, setParticipants] = useState<GroupParticipant[]>([]);
-  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
-  const [isVideoEnabled, setIsVideoEnabled] = useState(callType === 'video');
+  // Local audio state
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-  const [peerConnections, setPeerConnections] = useState<{ [userId: number]: RTCPeerConnection }>({});
+  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+  
+  // Remote participants state dengan audio-only focus
+  const [participants, setParticipants] = useState<Array<{
+    userId: number;
+    userName: string;
+    stream: MediaStream | null;
+    audioRef: React.RefObject<HTMLAudioElement>;
+    audioEnabled: boolean;
+  }>>([]);
+  
+  // Use useRef for persistent data to avoid setState timing issues
+  const peerConnectionsRef = useRef(new Map<number, RTCPeerConnection>());
+  const pendingICECandidatesRef = useRef(new Map<number, RTCIceCandidate[]>());
+  const remoteStreamsRef = useRef(new Map<string, MediaStream>());
+  
+  // State untuk trigger re-renders
+  const [remoteStreams, setRemoteStreams] = useState<Map<string, MediaStream>>(new Map());
+  const [peerConnections, setPeerConnections] = useState<Map<number, RTCPeerConnection>>(new Map());
+  const [pendingICECandidates, setPendingICECandidates] = useState<Map<number, RTCIceCandidate[]>>(new Map());
+  
+  // Track offer creation state to prevent duplicates
+  const offerCreationStateRef = useRef(new Map<number, 'creating' | 'created' | 'idle'>());
+  
+  // Connection timeout tracking for auto-recovery
+  const connectionTimeouts = useRef(new Map<number, NodeJS.Timeout>());
+  
+  // Reconnection state tracking to prevent loops
+  const reconnectionState = useRef(new Map<number, { 
+    isReconnecting: boolean, 
+    lastAttempt: number, 
+    attemptCount: number 
+  }>());
+  
+  // Refresh tracking untuk prevent bidirectional refresh loops
+  const refreshTracker = useRef(new Map<number, { 
+    lastRefresh: number, 
+    isRefreshing: boolean,
+    refreshSource: 'manual' | 'bidirectional' | 'auto'
+  }>());
 
-  // Function to fetch participant data from server
-  const fetchParticipantData = async (participantIds: number[]) => {
-    // Create a Map to ensure unique participants by userId
-    const participantMap = new Map<number, GroupParticipant>();
-    
-    for (const userId of participantIds) {
-      // Skip if we already processed this user
-      if (participantMap.has(userId)) {
-        continue;
-      }
-      
-      if (userId === user?.id) {
-        participantMap.set(userId, {
-          userId,
-          userName: user.callsign || user.fullName || 'Anda',
-          audioEnabled: true,
-          videoEnabled: callType === 'video',
-          stream: null
-        });
-      } else {
-        try {
-          const response = await fetch(`/api/users/${userId}`);
-          if (response.ok) {
-            const userData = await response.json();
-            participantMap.set(userId, {
-              userId,
-              userName: userData.callsign || userData.fullName || `User ${userId}`,
-              audioEnabled: true,
-              videoEnabled: callType === 'video',
-              stream: null
-            });
-          } else {
-            participantMap.set(userId, {
-              userId,
-              userName: `User ${userId}`,
-              audioEnabled: true,
-              videoEnabled: callType === 'video',
-              stream: null
-            });
-          }
-        } catch (error) {
-          console.error('[GroupCall] Error fetching user data:', error);
-          participantMap.set(userId, {
-            userId,
-            userName: `User ${userId}`,
-            audioEnabled: true,
-            videoEnabled: callType === 'video',
-            stream: null
-          });
+  // Enhanced audio attachment with retry mechanism (adapted dari video logic)
+  const attachAudioStreamWithRetry = async (
+    audioElement: HTMLAudioElement, 
+    stream: MediaStream, 
+    label: string,
+    maxRetries: number = 3
+  ): Promise<boolean> => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`[GroupCall] 🔄 Attempting ${label} audio attach (${attempt}/${maxRetries})`);
+        
+        // Validate stream dan element
+        if (!stream || !stream.active) {
+          console.warn(`[GroupCall] ⚠️ ${label} stream is not active`);
+          return false;
         }
+        
+        if (!audioElement) {
+          console.warn(`[GroupCall] ⚠️ ${label} audio element not available`);
+          return false;
+        }
+        
+        // Clear previous stream dengan proper cleanup
+        if (audioElement.srcObject) {
+          audioElement.srcObject = null;
+          audioElement.load();
+          // Wait for cleanup to complete
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        // Attach new stream
+        audioElement.srcObject = stream;
+        
+        // Wait for audio to be ready
+        await new Promise((resolve, reject) => {
+          const timeoutId = setTimeout(() => reject(new Error('Timeout waiting for loadeddata')), 3000);
+          
+          const onLoadedData = () => {
+            clearTimeout(timeoutId);
+            audioElement.removeEventListener('loadeddata', onLoadedData);
+            resolve(void 0);
+          };
+          
+          audioElement.addEventListener('loadeddata', onLoadedData);
+          
+          // If already loaded, resolve immediately
+          if (audioElement.readyState >= 2) {
+            clearTimeout(timeoutId);
+            resolve(void 0);
+          }
+        });
+        
+        // Try to play with error handling
+        await new Promise((resolve, reject) => {
+          const playPromise = audioElement.play();
+          
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                console.log(`[GroupCall] ✅ ${label} audio playing successfully (attempt ${attempt})`);
+                resolve(void 0);
+              })
+              .catch((error: Error) => {
+                console.warn(`[GroupCall] ⚠️ ${label} play failed (attempt ${attempt}):`, error.message);
+                
+                // For AbortError, wait and try again
+                if (error.name === 'AbortError') {
+                  setTimeout(() => reject(error), 200 * attempt); // Exponential backoff
+                } else {
+                  reject(error);
+                }
+              });
+          } else {
+            resolve(void 0);
+          }
+        });
+        
+        return true; // Success
+        
+      } catch (error: any) {
+        console.warn(`[GroupCall] ⚠️ ${label} audio attach attempt ${attempt} failed:`, error.message);
+        
+        if (attempt === maxRetries) {
+          console.error(`[GroupCall] ❌ ${label} audio attach failed after ${maxRetries} attempts`);
+          return false;
+        }
+        
+        // Wait before retry with exponential backoff
+        await new Promise(resolve => setTimeout(resolve, 300 * attempt));
       }
     }
     
-    // Convert Map back to array
-    return Array.from(participantMap.values());
+    return false;
   };
+
+  // Media initialization function untuk audio-only calls
+  const initializeMediaStream = async () => {
+    try {
+      console.log('[GroupCall] Initializing media with audio-only from start...');
+      
+      // Detect mobile device
+      const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      console.log(`[GroupCall] Initializing media for ${isMobile ? 'mobile' : 'desktop'} device`);
+      
+      const constraints = {
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          // Mobile-optimized audio settings
+          sampleRate: isMobile ? 16000 : 48000,
+          channelCount: 1,
+          latency: isMobile ? 0.02 : 0.01
+        },
+        video: false // Audio-only untuk group calls
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      
+      console.log('[GroupCall] ✅ Got media stream:', {
+        id: stream.id,
+        active: stream.active,
+        audioTracks: stream.getAudioTracks().length
+      });
+
+      // Ensure audio track is enabled
+      const audioTrack = stream.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = true;
+        setIsAudioEnabled(true);
+        console.log('[GroupCall] ✅ Audio enabled from start');
+      }
+
+      setLocalStream(stream);
+      setStreamInitialized(true);
+      console.log('[GroupCall] 📊 Media stream set in state and marked as initialized');
+      return stream;
+
+    } catch (error) {
+      console.error('[GroupCall] ❌ Failed to get media:', error);
+      alert('Gagal mengakses mikrofon untuk panggilan grup. Pastikan izin sudah diberikan.');
+      throw error;
+    }
+  };
+
+  // Initialize local media stream saat component mount dengan enhanced stability
+  useEffect(() => {
+    let mounted = true;
+    let retryCount = 0;
+    
+    const initWithRetry = async () => {
+      while (mounted && retryCount < 3) {
+        try {
+          await initializeMediaStream();
+          break; // Success
+        } catch (error) {
+          retryCount++;
+          console.warn(`[GroupCall] ⚠️ Media initialization attempt ${retryCount} failed:`, error);
+          
+          if (retryCount < 3) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // Exponential backoff
+          } else {
+            console.error('[GroupCall] ❌ Media initialization failed after 3 attempts');
+          }
+        }
+      }
+    };
+    
+    initWithRetry();
+
+    // Cleanup saat component unmount
+    return () => {
+      mounted = false;
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        console.log('[GroupCall] 🧹 Local stream cleaned up');
+      }
+      
+      // Clear all connection timeouts
+      connectionTimeouts.current.forEach(timeout => clearTimeout(timeout));
+      connectionTimeouts.current.clear();
+      
+      // Clear reconnection state
+      reconnectionState.current.clear();
+      
+      // Clear refresh tracking
+      refreshTracker.current.clear();
+      
+      console.log('[GroupCall] 🧹 Connection timeouts, reconnection state, and refresh tracking cleaned up');
+    };
+  }, []);
+
+  // Enhanced stream state tracking untuk better timing
+  const [streamInitialized, setStreamInitialized] = useState(false);
+  
+  useEffect(() => {
+    if (localStream && localStream.active) {
+      setStreamInitialized(true);
+      console.log('[GroupCall] 📊 Stream initialized and ready for WebRTC');
+    }
+  }, [localStream]);
+
+  // Get current user ID for filtering
+  const { data: currentUser } = useQuery<any>({
+    queryKey: ['/api/auth/user'],
+    retry: false,
+  });
 
   // Enhanced participant data event listener
   useEffect(() => {
@@ -94,7 +285,15 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
       
       if (fullSync && isNewMember) {
         console.log('[GroupCall] 🎯 Full sync for new member - updating participant list');
-        setParticipants(updatedParticipants);
+        // Convert to component-specific format untuk audio calls
+        const newParticipants = updatedParticipants.map((p: any) => ({
+          userId: p.userId,
+          userName: p.userName,
+          stream: null,
+          audioRef: React.createRef<HTMLAudioElement>(),
+          audioEnabled: true
+        }));
+        setParticipants(newParticipants);
       }
     };
     
@@ -105,455 +304,503 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     };
   }, []);
 
-  // Simple and direct participant processing
+  // Update participants dari activeCall dan remoteStreams state
   useEffect(() => {
-    console.log('[GroupCall] useEffect triggered');
-    console.log('[GroupCall] activeCall:', activeCall);
-    console.log('[GroupCall] activeCall?.participants:', activeCall?.participants);
-    console.log('[GroupCall] user?.id:', user?.id);
+    if (activeCall?.participants && currentUser) {
+      console.log('[GroupCall] Updating participants:', activeCall.participants);
+      console.log('[GroupCall] Current user ID:', currentUser.id);
+      console.log('[GroupCall] Available remote streams:', remoteStreams);
+      
+      // Get remote streams as array dari state
+      const remoteStreamsArray = Array.from(remoteStreams.values());
+      console.log('[GroupCall] Remote streams array:', remoteStreamsArray);
+      
+      // Filter out current user from participants to avoid duplication
+      console.log('[GroupCall] 🔍 Before filtering participants:', activeCall.participants.map(p => `${p.userName}(${p.userId})`));
+      console.log('[GroupCall] 🔍 Current user to filter out:', currentUser.id);
+      
+      const filteredParticipants = activeCall.participants.filter(p => p.userId !== currentUser.id);
+      console.log('[GroupCall] 🔍 After filtering participants:', filteredParticipants.map(p => `${p.userName}(${p.userId})`));
+      
+      const newParticipants = filteredParticipants.map((p) => {
+          const streamKey = `user_${p.userId}`;
+          const userStream = remoteStreams.get(streamKey);
+          
+          console.log(`[GroupCall] 🔍 Mapping participant ${p.userName} (${p.userId}):`, {
+            streamKey,
+            hasStream: !!userStream,
+            streamId: userStream?.id,
+            streamActive: userStream?.active,
+            audioTracks: userStream?.getAudioTracks().length || 0
+          });
+          
+          return {
+            userId: p.userId,
+            userName: p.userName,
+            stream: userStream || null,
+            audioRef: React.createRef<HTMLAudioElement>(),
+            audioEnabled: !!userStream
+          };
+        });
+      
+      console.log('[GroupCall] 📋 Final participants list:', newParticipants.map(p => ({
+        userName: p.userName,
+        userId: p.userId,
+        hasStream: !!p.stream,
+        audioEnabled: p.audioEnabled
+      })));
+      
+      setParticipants(newParticipants);
+    }
+  }, [activeCall?.participants, remoteStreams, currentUser]);
+
+  // WebRTC connection utilities
+  const getOrCreatePeerConnection = useCallback((userId: number): RTCPeerConnection => {
+    let pc = peerConnectionsRef.current.get(userId);
     
-    if (!activeCall?.participants || activeCall.participants.length === 0) {
-      console.log('[GroupCall] No participants in active call, setting empty array');
-      setParticipants([]);
+    if (!pc || pc.connectionState === 'closed' || pc.connectionState === 'failed') {
+      console.log(`[GroupCall] Creating new peer connection for user ${userId}`);
+      
+      pc = new RTCPeerConnection({
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+        iceCandidatePoolSize: 10
+      });
+
+      // Set up event handlers
+      pc.onicecandidate = (event) => {
+        if (event.candidate && ws && ws.readyState === WebSocket.OPEN) {
+          console.log(`[GroupCall] Sending ICE candidate to user ${userId}`);
+          ws.send(JSON.stringify({
+            type: 'group_webrtc_ice_candidate',
+            payload: {
+              candidate: event.candidate,
+              toUserId: userId,
+              fromUserId: currentUser?.id,
+              callId: activeCall?.callId
+            }
+          }));
+        }
+      };
+
+      pc.ontrack = (event) => {
+        console.log(`[GroupCall] Received track from user ${userId}:`, event.track.kind);
+        const stream = event.streams[0];
+        
+        if (stream) {
+          const streamKey = `user_${userId}`;
+          remoteStreamsRef.current.set(streamKey, stream);
+          setRemoteStreams(new Map(remoteStreamsRef.current));
+          
+          console.log(`[GroupCall] ✅ Added remote stream for user ${userId}:`, {
+            streamId: stream.id,
+            audioTracks: stream.getAudioTracks().length
+          });
+        }
+      };
+
+      pc.onconnectionstatechange = () => {
+        const currentPc = peerConnectionsRef.current.get(userId);
+        if (!currentPc) return;
+        
+        console.log(`[GroupCall] Connection state changed for user ${userId}:`, currentPc.connectionState);
+        
+        if (currentPc.connectionState === 'connected') {
+          console.log(`[GroupCall] ✅ Successfully connected to user ${userId}`);
+        } else if (currentPc.connectionState === 'failed' || currentPc.connectionState === 'disconnected') {
+          console.log(`[GroupCall] ❌ Connection failed/disconnected for user ${userId}`);
+          // Auto-recovery logic could go here
+        }
+      };
+
+      peerConnectionsRef.current.set(userId, pc);
+      setPeerConnections(new Map(peerConnectionsRef.current));
+    }
+    
+    return pc;
+  }, [currentUser, activeCall, ws]);
+
+  // Process pending ICE candidates
+  const processPendingICECandidates = async (userId: number, pc: RTCPeerConnection) => {
+    const candidates = pendingICECandidatesRef.current.get(userId) || [];
+    
+    if (candidates.length > 0) {
+      console.log(`[GroupCall] Processing ${candidates.length} pending ICE candidates for user ${userId}`);
+      
+      for (const candidate of candidates) {
+        try {
+          await pc.addIceCandidate(candidate);
+          console.log(`[GroupCall] ✅ Added pending ICE candidate for user ${userId}`);
+        } catch (error) {
+          console.error(`[GroupCall] ❌ Failed to add pending ICE candidate for user ${userId}:`, error);
+        }
+      }
+      
+      pendingICECandidatesRef.current.delete(userId);
+      setPendingICECandidates(new Map(pendingICECandidatesRef.current));
+    }
+  };
+
+  // Add WebRTC event listeners for group calls
+  useEffect(() => {
+    const handleGroupWebRTCOffer = (event: CustomEvent) => {
+      console.log('[GroupCall] Received group WebRTC offer:', event.detail);
+      handleIncomingWebRTCOffer(event.detail);
+    };
+
+    const handleGroupWebRTCAnswer = (event: CustomEvent) => {
+      console.log('[GroupCall] Received group WebRTC answer:', event.detail);
+      handleIncomingWebRTCAnswer(event.detail);
+    };
+
+    const handleGroupWebRTCIceCandidate = (event: CustomEvent) => {
+      console.log('[GroupCall] Received group WebRTC ICE candidate:', event.detail);
+      handleIncomingICECandidate(event.detail);
+    };
+
+    const handleInitiateWebRTC = (event: CustomEvent) => {
+      console.log('[GroupCall] Initiating WebRTC for group call:', event.detail);
+      initiateWebRTCConnections(event.detail);
+    };
+
+    const handleGroupParticipantsUpdate = (event: CustomEvent) => {
+      console.log('[GroupCall] Participants update received, triggerWebRTC:', event.detail.triggerWebRTC);
+      if (event.detail.triggerWebRTC) {
+        setTimeout(() => {
+          initiateWebRTCConnections(event.detail);
+        }, 1000);
+      }
+    };
+
+    const handleParticipantRefresh = (event: CustomEvent) => {
+      const data = event.detail;
+      console.log(`[GroupCall] Received participant refresh request:`, data);
+      
+      if (data.targetUserId === currentUser?.id) {
+        console.log(`[GroupCall] 🔄 Responding to refresh request from user ${data.fromUserId}`);
+        refreshParticipantConnection(data.fromUserId, 'bidirectional');
+      }
+    };
+
+    const handleForceWebRTCReconnect = (event: CustomEvent) => {
+      const data = event.detail;
+      console.log(`[GroupCall] 🔄 Force WebRTC reconnect triggered for new member:`, data);
+      
+      if (data.newMember && data.newMember !== currentUser?.id) {
+        console.log(`[GroupCall] 🚀 Forcing WebRTC connection to new member ${data.newMember}`);
+        
+        setTimeout(() => {
+          initiateWebRTCConnections(data);
+        }, 200);
+        
+        setTimeout(() => {
+          console.log(`[GroupCall] 🔄 Secondary WebRTC trigger for new member visibility`);
+          initiateWebRTCConnections({
+            ...data,
+            forceInit: true,
+            timestamp: Date.now()
+          });
+        }, 1000);
+      }
+    };
+
+    window.addEventListener('group-webrtc-offer', handleGroupWebRTCOffer as EventListener);
+    window.addEventListener('group-webrtc-answer', handleGroupWebRTCAnswer as EventListener);
+    window.addEventListener('group-webrtc-ice-candidate', handleGroupWebRTCIceCandidate as EventListener);
+    window.addEventListener('initiate-group-webrtc', handleInitiateWebRTC as EventListener);
+    window.addEventListener('group-participants-update', handleGroupParticipantsUpdate as EventListener);
+    window.addEventListener('group-participant-refresh', handleParticipantRefresh as EventListener);
+    window.addEventListener('force-webrtc-reconnect', handleForceWebRTCReconnect as EventListener);
+    window.addEventListener('auto-initiate-webrtc', handleInitiateWebRTC as EventListener);
+
+    return () => {
+      window.removeEventListener('group-webrtc-offer', handleGroupWebRTCOffer as EventListener);
+      window.removeEventListener('group-webrtc-answer', handleGroupWebRTCAnswer as EventListener);
+      window.removeEventListener('group-webrtc-ice-candidate', handleGroupWebRTCIceCandidate as EventListener);
+      window.removeEventListener('initiate-group-webrtc', handleInitiateWebRTC as EventListener);
+      window.removeEventListener('group-participants-update', handleGroupParticipantsUpdate as EventListener);
+      window.removeEventListener('group-participant-refresh', handleParticipantRefresh as EventListener);
+      window.removeEventListener('force-webrtc-reconnect', handleForceWebRTCReconnect as EventListener);
+      window.removeEventListener('auto-initiate-webrtc', handleInitiateWebRTC as EventListener);
+    };
+  }, [activeCall]);
+
+  // WebRTC Handler Functions (Adapted from GroupVideoCallSimple)
+  const handleIncomingWebRTCOffer = async (offerData: any) => {
+    console.log('[GroupCall] 📥 PROCESSING WEBRTC OFFER from user:', offerData.fromUserId);
+    
+    if (!currentUser) {
+      console.log('[GroupCall] ❌ No current user available');
       return;
     }
 
-    console.log('[GroupCall] Processing participants from activeCall:', activeCall.participants);
+    const pc = getOrCreatePeerConnection(offerData.fromUserId);
     
-    // Get unique participant IDs only
-    const uniqueParticipantIds = [...new Set(
-      activeCall.participants.map((p: any) => typeof p === 'object' ? p.userId : p)
-    )];
-    
-    console.log('[GroupCall] Unique participant IDs:', uniqueParticipantIds);
-    
-    // Create participant signature to prevent unnecessary re-processing
-    const participantSignature = uniqueParticipantIds.sort().join(',');
-    const currentSignature = participants.map(p => p.userId).sort().join(',');
-    
-    // Only process if participant list actually changed
-    if (participantSignature !== currentSignature) {
-      console.log('[GroupCall] Participant list changed, updating...');
-      
-      // Build final participant list
-      const buildParticipantList = async () => {
-        const participantList: GroupParticipant[] = [];
-        
-        for (const userId of uniqueParticipantIds) {
-          try {
-            const response = await fetch(`/api/users/${userId}`);
-            if (response.ok) {
-              const userData = await response.json();
-              participantList.push({
-                userId,
-                userName: userData.callsign || userData.fullName || `User ${userId}`,
-                audioEnabled: true,
-                videoEnabled: callType === 'video',
-                stream: undefined
-              });
-            } else {
-              participantList.push({
-                userId,
-                userName: `User ${userId}`,
-                audioEnabled: true,
-                videoEnabled: callType === 'video',
-                stream: undefined
-              });
-            }
-          } catch (error) {
-            console.error('[GroupCall] Error fetching user data:', error);
-            participantList.push({
-              userId,
-              userName: `User ${userId}`,
-              audioEnabled: true,
-              videoEnabled: callType === 'video',
-              stream: undefined
-            });
-          }
-        }
-        
-        console.log('[GroupCall] Final participant list:', participantList);
-        console.log('[GroupCall] Setting participants count:', participantList.length);
-        console.log('[GroupCall] Participant details:');
-        participantList.forEach((p, index) => {
-          console.log(`[GroupCall] ${index}: ID=${p.userId}, Name="${p.userName}", IsCurrentUser=${p.userId === user?.id}`);
-        });
-        setParticipants(participantList);
-      };
-      
-      buildParticipantList();
+    if (pc.signalingState !== 'stable' && pc.signalingState !== 'have-local-offer') {
+      console.log(`[GroupCall] ⚠️ Peer connection for user ${offerData.fromUserId} not in correct state for offer:`, pc.signalingState);
+      setTimeout(() => handleIncomingWebRTCOffer(offerData), 1000);
+      return;
     }
-  }, [activeCall?.participants, user?.id, callType]);
 
-  // 🚀 CRITICAL FIX: Handle forced WebRTC reconnection for asymmetric visibility
-  useEffect(() => {
-    const handleForceWebRTCReconnect = (event: CustomEvent) => {
-      console.log('[GroupCall] 🔄 Force WebRTC reconnect triggered:', event.detail);
-      
-      // Force participant list refresh to fix asymmetric visibility
-      if (activeCall?.participants && activeCall.participants.length > 0) {
-        console.log('[GroupCall] 🔄 Forcing participant list refresh for asymmetric visibility fix');
-        
-        const uniqueParticipantIds = [...new Set(
-          activeCall.participants.map((p: any) => typeof p === 'object' ? p.userId : p)
-        )];
-        
-        const buildParticipantList = async () => {
-          const participantList: GroupParticipant[] = [];
-          
-          for (const userId of uniqueParticipantIds) {
-            try {
-              const response = await fetch(`/api/users/${userId}`);
-              if (response.ok) {
-                const userData = await response.json();
-                participantList.push({
-                  userId,
-                  userName: userData.callsign || userData.fullName || `User ${userId}`,
-                  audioEnabled: true,
-                  videoEnabled: callType === 'video',
-                  stream: undefined
-                });
-              }
-            } catch (error) {
-              console.error('[GroupCall] Error fetching user data:', error);
-            }
-          }
-          
-          console.log('[GroupCall] 🔄 Force-updated participant list:', participantList);
-          setParticipants(participantList);
-        };
-        
-        buildParticipantList();
-      }
-    };
+    // Enhanced stream availability check
+    let streamToUse = localStream;
+    let streamWaitAttempts = 0;
     
-    const handleAutoInitiateWebRTC = (event: CustomEvent) => {
-      console.log('[GroupCall] 🚀 Auto-initiate WebRTC triggered:', event.detail);
-      
-      // Same logic as force reconnect for consistency
-      if (activeCall?.participants && activeCall.participants.length > 0) {
-        console.log('[GroupCall] 🚀 Auto-initiating participant refresh for new member');
-        
-        const uniqueParticipantIds = [...new Set(
-          activeCall.participants.map((p: any) => typeof p === 'object' ? p.userId : p)
-        )];
-        
-        const buildParticipantList = async () => {
-          const participantList: GroupParticipant[] = [];
-          
-          for (const userId of uniqueParticipantIds) {
-            try {
-              const response = await fetch(`/api/users/${userId}`);
-              if (response.ok) {
-                const userData = await response.json();
-                participantList.push({
-                  userId,
-                  userName: userData.callsign || userData.fullName || `User ${userId}`,
-                  audioEnabled: true,
-                  videoEnabled: callType === 'video',
-                  stream: undefined
-                });
-              }
-            } catch (error) {
-              console.error('[GroupCall] Error fetching user data:', error);
-            }
-          }
-          
-          console.log('[GroupCall] 🚀 Auto-initiated participant list:', participantList);
-          setParticipants(participantList);
-        };
-        
-        buildParticipantList();
-      }
-    };
+    while (!streamToUse && streamWaitAttempts < 5) {
+      streamWaitAttempts++;
+      console.log(`[GroupCall] ⏳ Waiting for existing stream... (attempt ${streamWaitAttempts}/5)`);
+      await new Promise(resolve => setTimeout(resolve, 100));
+      streamToUse = localStream;
+    }
     
-    // Add event listeners for server-forced WebRTC reconnection
-    window.addEventListener('force-webrtc-reconnect', handleForceWebRTCReconnect as EventListener);
-    window.addEventListener('auto-initiate-webrtc', handleAutoInitiateWebRTC as EventListener);
-    window.addEventListener('initiate-group-webrtc', handleAutoInitiateWebRTC as EventListener);
-    
-    return () => {
-      window.removeEventListener('force-webrtc-reconnect', handleForceWebRTCReconnect as EventListener);
-      window.removeEventListener('auto-initiate-webrtc', handleAutoInitiateWebRTC as EventListener);
-      window.removeEventListener('initiate-group-webrtc', handleAutoInitiateWebRTC as EventListener);
-    };
-  }, [activeCall?.participants, user?.id, callType]);
-  
-  const localVideoRef = useRef<HTMLVideoElement>(null);
-  const participantRefs = useRef<{ [userId: number]: HTMLVideoElement }>({});
-  const audioRefs = useRef<{ [userId: number]: HTMLAudioElement }>({});
-
-  // Initialize local media stream with mobile optimization
-  useEffect(() => {
-    const initializeMedia = async () => {
+    if (!streamToUse) {
+      console.log('[GroupCall] ⚠️ Local stream not ready, initializing...');
       try {
-        // Detect mobile device
-        const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        console.log(`[GroupCall] Initializing media for ${isMobile ? 'mobile' : 'desktop'} device`);
-        
-        const constraints = {
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-            // Mobile-optimized audio settings
-            sampleRate: isMobile ? 16000 : 48000,
-            channelCount: 1,
-            latency: isMobile ? 0.02 : 0.01
-          },
-          video: callType === 'video' ? {
-            facingMode: 'user',
-            width: { ideal: isMobile ? 480 : 640, max: isMobile ? 640 : 1280 },
-            height: { ideal: isMobile ? 360 : 480, max: isMobile ? 480 : 720 },
-            frameRate: { ideal: isMobile ? 10 : 15, max: isMobile ? 15 : 30 }
-          } : false
-        };
-
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        setLocalStream(stream);
-
-        if (localVideoRef.current && callType === 'video') {
-          localVideoRef.current.srcObject = stream;
-          localVideoRef.current.playsInline = true; // Critical for iOS
-          localVideoRef.current.muted = true;
-        }
-
-        // Mobile audio context initialization
-        if (isMobile) {
-          const initMobileAudio = () => {
-            try {
-              if (!(window as any).mobileAudioContext) {
-                (window as any).mobileAudioContext = new ((window as any).AudioContext || (window as any).webkitAudioContext)();
-              }
-              
-              if ((window as any).mobileAudioContext.state === 'suspended') {
-                (window as any).mobileAudioContext.resume().then(() => {
-                  console.log('[GroupCall] Mobile audio context resumed');
-                });
-              }
-              
-              // Create audio elements for participants with proper mobile settings
-              const audioElement = document.createElement('audio');
-              audioElement.autoplay = true;
-              (audioElement as any).playsInline = true;
-              audioElement.muted = false;
-              audioElement.volume = 1.0;
-              audioElement.controls = false;
-              audioElement.style.display = 'none';
-              document.body.appendChild(audioElement);
-              
-              console.log('[GroupCall] Mobile audio elements configured');
-            } catch (error) {
-              console.error('[GroupCall] Mobile audio setup error:', error);
-            }
-          };
-          
-          // Initialize on user interaction for mobile
-          document.addEventListener('touchstart', initMobileAudio, { once: true });
-          document.addEventListener('click', initMobileAudio, { once: true });
-        }
-
-        console.log('[GroupCall] Local media initialized for group:', groupName);
+        streamToUse = await initializeMediaStream();
+        await new Promise(resolve => setTimeout(resolve, 300));
       } catch (error) {
-        console.error('[GroupCall] Failed to initialize media:', error);
-        alert('Gagal mengakses kamera/mikrofon untuk panggilan grup');
+        console.error('[GroupCall] ❌ Failed to initialize media for incoming offer:', error);
+        return;
       }
-    };
+    }
 
-    initializeMedia();
+    const finalStream = localStream || streamToUse;
+    if (!finalStream) {
+      console.log('[GroupCall] ❌ Still no stream available after initialization');
+      return;
+    }
 
-    return () => {
-      // Cleanup local stream on unmount
-      if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [callType, groupName]);
-
-  // Real microphone audio streaming system for group calls
-  useEffect(() => {
-    if (!localStream || participants.length === 0) return;
-
-    console.log('[GroupCall] Setting up real microphone audio streaming for participants');
-    
-    const audioElements: HTMLAudioElement[] = [];
-    const audioContexts: AudioContext[] = [];
-    
-    participants.forEach(participant => {
-      if (participant.userId !== user?.id) {
-        console.log(`[GroupCall] Setting up real audio stream for participant ${participant.userName} (${participant.userId})`);
+    try {
+      // Ensure local tracks are added before setting remote description
+      if (finalStream) {
+        const senders = pc.getSenders();
+        console.log(`[GroupCall] 📊 Current senders before answer for user ${offerData.fromUserId}:`, senders.length);
         
-        // Create audio element for this participant
-        const audioElement = document.createElement('audio');
-        audioElement.id = `groupAudio-${participant.userId}`;
-        audioElement.autoplay = true;
-        audioElement.muted = false;
-        audioElement.volume = 0.8;
-        audioElement.controls = false;
-        audioElement.playsInline = true;
-        audioElement.style.display = 'none';
-        document.body.appendChild(audioElement);
-        audioElements.push(audioElement);
-        
-        console.log(`[GroupCall] Created audio element for participant ${participant.userId}`);
-
-        // Create real microphone audio stream for this participant
-        const createMicrophoneStream = async () => {
-          try {
-            console.log(`[GroupCall] Creating microphone stream for participant ${participant.userId}`);
-            
-            // Get user's microphone stream (simulating what would be received from WebRTC)
-            // In a real WebRTC implementation, this would be the remote participant's stream
-            const micStream = await navigator.mediaDevices.getUserMedia({ 
-              audio: {
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl: true
-              }, 
-              video: false 
+        if (senders.length === 0) {
+          finalStream.getTracks().forEach(track => {
+            const sender = pc.addTrack(track, finalStream);
+            console.log(`[GroupCall] ✅ Added local track for answer to user ${offerData.fromUserId}:`, {
+              trackKind: track.kind,
+              trackEnabled: track.enabled,
+              senderId: sender ? 'created' : 'failed'
             });
-            
-            console.log(`[GroupCall] Got microphone stream for participant ${participant.userId}`);
-            
-            // Create audio context for processing
-            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-            audioContexts.push(audioContext);
-            
-            // Resume audio context if suspended (mobile requirement)
-            if (audioContext.state === 'suspended') {
-              const resumeAudio = async () => {
-                try {
-                  await audioContext.resume();
-                  console.log(`[GroupCall] Audio context resumed for participant ${participant.userId}`);
-                } catch (err) {
-                  console.error(`[GroupCall] Failed to resume audio context:`, err);
-                }
-              };
-              
-              // Resume on user interaction
-              document.addEventListener('touchstart', resumeAudio, { once: true });
-              document.addEventListener('click', resumeAudio, { once: true });
-              resumeAudio();
-            }
-            
-            // Process the microphone stream through Web Audio API
-            const source = audioContext.createMediaStreamSource(micStream);
-            const gainNode = audioContext.createGain();
-            const mediaStreamDest = audioContext.createMediaStreamDestination();
-            
-            // Apply some processing to differentiate participants
-            gainNode.gain.setValueAtTime(0.7, audioContext.currentTime);
-            
-            // Connect the audio processing chain
-            source.connect(gainNode);
-            gainNode.connect(mediaStreamDest);
-            
-            // Set the processed stream to the audio element
-            audioElement.srcObject = mediaStreamDest.stream;
-            
-            // Try to play the audio
-            try {
-              await audioElement.play();
-              console.log(`[GroupCall] ✅ Real microphone audio playing for participant ${participant.userId}`);
-            } catch (playError) {
-              console.warn(`[GroupCall] ⚠️ Audio play failed for participant ${participant.userId}:`, playError);
-              
-              // Add user interaction listener for mobile
-              const handleInteraction = async () => {
-                try {
-                  await audioElement.play();
-                  console.log(`[GroupCall] ✅ Real audio started after interaction for participant ${participant.userId}`);
-                } catch (err) {
-                  console.error(`[GroupCall] ❌ Real audio still failed for participant ${participant.userId}:`, err);
-                }
-                document.removeEventListener('touchstart', handleInteraction);
-                document.removeEventListener('click', handleInteraction);
-              };
-              
-              document.addEventListener('touchstart', handleInteraction, { once: true });
-              document.addEventListener('click', handleInteraction, { once: true });
-            }
-            
-          } catch (error) {
-            console.error(`[GroupCall] Failed to create microphone stream for participant ${participant.userId}:`, error);
-            
-            // Fallback to silent audio stream if microphone fails
-            try {
-              const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-              audioContexts.push(audioContext);
-              const mediaStreamDest = audioContext.createMediaStreamDestination();
-              audioElement.srcObject = mediaStreamDest.stream;
-              console.log(`[GroupCall] Created silent fallback stream for participant ${participant.userId}`);
-            } catch (fallbackError) {
-              console.error(`[GroupCall] Fallback stream creation failed for participant ${participant.userId}:`, fallbackError);
-            }
-          }
-        };
-        
-        createMicrophoneStream();
+          });
+        }
       }
+      
+      await pc.setRemoteDescription(new RTCSessionDescription(offerData.offer));
+      console.log('[GroupCall] ✅ Set remote description for offer from user:', offerData.fromUserId);
+
+      await processPendingICECandidates(offerData.fromUserId, pc);
+
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      console.log('[GroupCall] ✅ Created and set local answer for user:', offerData.fromUserId);
+
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'group_webrtc_answer',
+          payload: {
+            answer: answer,
+            toUserId: offerData.fromUserId,
+            fromUserId: currentUser.id,
+            callId: activeCall?.callId
+          }
+        }));
+        console.log('[GroupCall] ✅ Sent WebRTC answer to user:', offerData.fromUserId);
+      }
+
+    } catch (error) {
+      console.error(`[GroupCall] ❌ Error handling incoming offer from user ${offerData.fromUserId}:`, error);
+    }
+  };
+
+  const handleIncomingWebRTCAnswer = async (answerData: any) => {
+    console.log('[GroupCall] 📥 PROCESSING WEBRTC ANSWER from user:', answerData.fromUserId);
+    
+    const pc = peerConnectionsRef.current.get(answerData.fromUserId);
+    if (!pc) {
+      console.log(`[GroupCall] ❌ No peer connection found for user ${answerData.fromUserId}`);
+      return;
+    }
+
+    try {
+      await pc.setRemoteDescription(new RTCSessionDescription(answerData.answer));
+      console.log('[GroupCall] ✅ Set remote description for answer from user:', answerData.fromUserId);
+      
+      await processPendingICECandidates(answerData.fromUserId, pc);
+      
+    } catch (error) {
+      console.error(`[GroupCall] ❌ Error handling incoming answer from user ${answerData.fromUserId}:`, error);
+    }
+  };
+
+  const handleIncomingICECandidate = async (candidateData: any) => {
+    console.log('[GroupCall] 📥 PROCESSING ICE CANDIDATE from user:', candidateData.fromUserId);
+    
+    const pc = peerConnectionsRef.current.get(candidateData.fromUserId);
+    if (!pc) {
+      console.log(`[GroupCall] ⚠️ No peer connection for user ${candidateData.fromUserId}, queueing ICE candidate`);
+      const candidates = pendingICECandidatesRef.current.get(candidateData.fromUserId) || [];
+      candidates.push(candidateData.candidate);
+      pendingICECandidatesRef.current.set(candidateData.fromUserId, candidates);
+      setPendingICECandidates(new Map(pendingICECandidatesRef.current));
+      return;
+    }
+
+    try {
+      await pc.addIceCandidate(new RTCIceCandidate(candidateData.candidate));
+      console.log('[GroupCall] ✅ Added ICE candidate for user:', candidateData.fromUserId);
+    } catch (error) {
+      console.error(`[GroupCall] ❌ Error adding ICE candidate for user ${candidateData.fromUserId}:`, error);
+    }
+  };
+
+  const initiateWebRTCConnections = async (data: any) => {
+    if (!activeCall?.participants || !currentUser || !streamInitialized) {
+      console.log('[GroupCall] ❌ Cannot initiate WebRTC: missing requirements');
+      return;
+    }
+
+    console.log('[GroupCall] 🚀 Initiating WebRTC connections for participants');
+    
+    // Filter participants to exclude current user
+    const otherParticipants = activeCall.participants.filter(p => p.userId !== currentUser.id);
+    
+    for (const participant of otherParticipants) {
+      const userId = participant.userId;
+      
+      // Skip if already creating offer for this user
+      if (offerCreationStateRef.current.get(userId) === 'creating') {
+        console.log(`[GroupCall] ⏭️ Skipping user ${userId}, offer already being created`);
+        continue;
+      }
+      
+      offerCreationStateRef.current.set(userId, 'creating');
+      
+      try {
+        console.log(`[GroupCall] 🎯 Creating WebRTC connection for participant: ${participant.userName} (${userId})`);
+        
+        const pc = getOrCreatePeerConnection(userId);
+        
+        // Add local stream tracks
+        if (localStream && pc.getSenders().length === 0) {
+          localStream.getTracks().forEach(track => {
+            pc.addTrack(track, localStream);
+            console.log(`[GroupCall] ✅ Added local ${track.kind} track for user ${userId}`);
+          });
+        }
+
+        // Create and send offer
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: 'group_webrtc_offer',
+            payload: {
+              offer: offer,
+              toUserId: userId,
+              fromUserId: currentUser.id,
+              callId: activeCall.callId
+            }
+          }));
+          console.log(`[GroupCall] ✅ Sent WebRTC offer to user ${userId}`);
+        }
+        
+        offerCreationStateRef.current.set(userId, 'created');
+        
+      } catch (error) {
+        console.error(`[GroupCall] ❌ Failed to create WebRTC connection for user ${userId}:`, error);
+        offerCreationStateRef.current.set(userId, 'idle');
+      }
+      
+      // Small delay between offers to prevent overwhelming
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  };
+
+  const refreshParticipantConnection = async (userId: number, source: 'manual' | 'bidirectional' | 'auto' = 'manual') => {
+    const now = Date.now();
+    const tracker = refreshTracker.current.get(userId);
+    
+    // Anti-loop protection
+    if (tracker && (now - tracker.lastRefresh < 2000)) {
+      console.log(`[GroupCall] ⏭️ Skipping refresh for user ${userId}, too recent (${now - tracker.lastRefresh}ms ago)`);
+      return;
+    }
+    
+    // Set refresh tracking
+    refreshTracker.current.set(userId, {
+      lastRefresh: now,
+      isRefreshing: true,
+      refreshSource: source
     });
     
-    return () => {
-      console.log('[GroupCall] Cleaning up real audio streams');
-      
-      // Clean up audio elements
-      audioElements.forEach(element => {
-        try {
-          if (element.parentNode) {
-            element.parentNode.removeChild(element);
-          }
-          if (element.srcObject) {
-            const stream = element.srcObject as MediaStream;
-            stream.getTracks().forEach(track => track.stop());
-          }
-        } catch (error) {
-          console.warn('[GroupCall] Error cleaning up audio element:', error);
-        }
-      });
-      
-      // Clean up audio contexts
-      audioContexts.forEach(context => {
-        try {
-          if (context.state !== 'closed') {
-            context.close();
-          }
-        } catch (error) {
-          console.warn('[GroupCall] Error closing audio context:', error);
-        }
-      });
-    };
+    console.log(`[GroupCall] 🔄 Refreshing connection for user ${userId} (source: ${source})`);
     
-  }, [localStream, participants, user?.id]);
+    try {
+      // Close existing connection
+      const existingPc = peerConnectionsRef.current.get(userId);
+      if (existingPc) {
+        existingPc.close();
+        peerConnectionsRef.current.delete(userId);
+      }
+      
+      // Create new connection and initiate offer
+      const pc = getOrCreatePeerConnection(userId);
+      
+      if (localStream) {
+        localStream.getTracks().forEach(track => {
+          pc.addTrack(track, localStream);
+        });
+      }
+      
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'group_webrtc_offer',
+          payload: {
+            offer: offer,
+            toUserId: userId,
+            fromUserId: currentUser?.id,
+            callId: activeCall?.callId,
+            isRefresh: true
+          }
+        }));
+      }
+      
+      console.log(`[GroupCall] ✅ Connection refreshed for user ${userId}`);
+      
+    } catch (error) {
+      console.error(`[GroupCall] ❌ Failed to refresh connection for user ${userId}:`, error);
+    } finally {
+      // Clear refresh tracking after a delay
+      setTimeout(() => {
+        const currentTracker = refreshTracker.current.get(userId);
+        if (currentTracker && currentTracker.lastRefresh === now) {
+          refreshTracker.current.set(userId, {
+            ...currentTracker,
+            isRefreshing: false
+          });
+        }
+      }, 3000);
+    }
+  };
 
-  // Participant audio status management
+  // Attach audio streams untuk remote participants
   useEffect(() => {
-    if (participants.length === 0) return;
-
-    console.log('[GroupCall] Managing participant audio status');
-    
-    // Simulate stable audio connections for participants
-    const timeouts: NodeJS.Timeout[] = [];
-    
-    participants.forEach((participant, index) => {
-      if (participant.userId !== user?.id) {
-        const timeout = setTimeout(() => {
-          console.log(`[GroupCall] Enabling audio for ${participant.userName}`);
-          setParticipants(prev => prev.map(p => 
-            p.userId === participant.userId 
-              ? { ...p, audioEnabled: true }
-              : p
-          ));
-        }, 500 + (index * 200)); // Staggered enabling to avoid race conditions
-        
-        timeouts.push(timeout);
+    participants.forEach((participant) => {
+      if (participant.stream && participant.audioRef.current) {
+        attachAudioStreamWithRetry(
+          participant.audioRef.current,
+          participant.stream,
+          `Participant-${participant.userName}`
+        );
       }
     });
-    
-    return () => {
-      timeouts.forEach(timeout => clearTimeout(timeout));
-    };
-  }, [participants.length, user?.id]);
+  }, [participants]);
 
   // Toggle audio
   const toggleAudio = () => {
@@ -566,319 +813,184 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     }
   };
 
-  // Toggle video
-  const toggleVideo = () => {
-    if (!localStream || callType === 'audio') return;
-    
-    const videoTrack = localStream.getVideoTracks()[0];
-    if (videoTrack) {
-      videoTrack.enabled = !videoTrack.enabled;
-      setIsVideoEnabled(videoTrack.enabled);
-    }
-  };
-
   // Leave group call
   const leaveCall = () => {
+    console.log('[GroupCall] Leaving group call...');
+    
+    // Cleanup all peer connections
+    peerConnectionsRef.current.forEach((pc, userId) => {
+      console.log(`[GroupCall] Closing peer connection for user ${userId}`);
+      pc.close();
+    });
+    peerConnectionsRef.current.clear();
+    
+    // Stop local stream
     if (localStream) {
       localStream.getTracks().forEach(track => track.stop());
     }
+    
+    // Call the hangup function
     hangupCall();
+    
+    // Navigate back to chat
+    setLocation('/chat');
   };
 
+  if (!activeCall) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <p className="text-muted-foreground">Panggilan grup tidak ditemukan</p>
+          <Button onClick={() => setLocation('/chat')} className="mt-4">
+            Kembali ke Chat
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col h-screen bg-[#171717]">
+    <div className="flex flex-col h-screen bg-background" data-testid="group-call-container">
       {/* Header */}
-      <div className="bg-[#1a1a1a] border-b border-[#333333] p-4 flex items-center justify-between">
+      <div className="flex items-center justify-between p-4 border-b bg-card">
         <div className="flex items-center space-x-3">
-          <Avatar className="h-10 w-10 bg-[#333333] border border-[#a6c455]">
-            <AvatarFallback className="bg-[#333333] text-[#a6c455] text-sm font-bold">
-              {groupName.substring(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/20">
+            <Users className="w-5 h-5 text-primary" />
+          </div>
           <div>
-            <h3 className="text-white font-semibold">
-              {groupName}
-            </h3>
-            <p className="text-xs text-gray-400 flex items-center">
-              <Users className="h-3 w-3 mr-1" />
-              Panggilan Grup {callType === 'video' ? 'Video' : 'Audio'}
+            <h1 className="text-lg font-semibold" data-testid="group-name">
+              {groupName || activeCall.groupName || 'Panggilan Grup'}
+            </h1>
+            <p className="text-sm text-muted-foreground" data-testid="participants-count">
+              {participants.length + 1} peserta
             </p>
           </div>
         </div>
-        
-        <div className="text-white text-sm">
-          {participants.length} peserta
+        <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/30">
+            <Radio className="w-3 h-3 text-green-600 animate-pulse" />
+            <span className="text-xs text-green-600 font-medium">LIVE</span>
+          </div>
         </div>
       </div>
 
-      {/* Video Grid for Video Calls */}
-      {callType === 'video' && (
-        <div className="flex-1 p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-full">
-            {/* Local video */}
-            <div className="relative bg-[#2a2a2a] rounded-lg overflow-hidden border border-[#333333]">
-              {isVideoEnabled ? (
-                <video
-                  ref={localVideoRef}
-                  autoPlay
-                  muted
-                  playsInline
-                  className="w-full h-full object-cover"
-                />
+      {/* Participants Grid */}
+      <div className="flex-1 p-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
+          {/* Current User */}
+          <div className="flex flex-col items-center p-4 rounded-lg bg-card border" data-testid="local-participant">
+            <Avatar className="w-16 h-16 mb-3">
+              <AvatarFallback className="bg-primary text-primary-foreground text-lg">
+                {currentUser?.callsign?.[0] || currentUser?.fullName?.[0] || 'A'}
+              </AvatarFallback>
+            </Avatar>
+            <p className="text-sm font-medium text-center mb-2" data-testid="local-participant-name">
+              {currentUser?.callsign || currentUser?.fullName || 'Anda'}
+            </p>
+            <div className="flex items-center space-x-2">
+              {isAudioEnabled ? (
+                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/30">
+                  <Mic className="w-3 h-3 text-green-600" />
+                </div>
               ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Avatar className="h-20 w-20 bg-[#333333] border border-[#a6c455]">
-                    <AvatarFallback className="bg-[#333333] text-[#a6c455] text-xl font-bold">
-                      {user?.callsign?.substring(0, 2).toUpperCase() || 'ME'}
-                    </AvatarFallback>
-                  </Avatar>
+                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/30">
+                  <MicOff className="w-3 h-3 text-red-600" />
                 </div>
               )}
-              <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-                Anda {!isAudioEnabled && '(Muted)'}
-              </div>
+              <span className="text-xs text-muted-foreground">(Anda)</span>
             </div>
+          </div>
 
-            {/* Participant videos */}
-            {participants.map(participant => (
-              <div key={participant.userId} className="relative bg-[#2a2a2a] rounded-lg overflow-hidden border border-[#333333]">
-                {participant.videoEnabled && participant.stream ? (
-                  <video
-                    ref={el => {
-                      if (el) participantRefs.current[participant.userId] = el;
-                    }}
-                    autoPlay
-                    playsInline
-                    className="w-full h-full object-cover"
-                  />
+          {/* Remote Participants */}
+          {participants.map((participant) => (
+            <div key={participant.userId} className="flex flex-col items-center p-4 rounded-lg bg-card border" data-testid={`participant-${participant.userId}`}>
+              <Avatar className="w-16 h-16 mb-3">
+                <AvatarFallback className="bg-secondary text-secondary-foreground text-lg">
+                  {participant.userName[0]?.toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <p className="text-sm font-medium text-center mb-2" data-testid={`participant-name-${participant.userId}`}>
+                {participant.userName}
+              </p>
+              <div className="flex items-center space-x-2">
+                {participant.audioEnabled ? (
+                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/30">
+                    <Mic className="w-3 h-3 text-green-600" />
+                  </div>
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Avatar className="h-20 w-20 bg-[#333333] border border-[#a6c455]">
-                      <AvatarFallback className="bg-[#333333] text-[#a6c455] text-xl font-bold">
-                        {participant.userName.substring(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
+                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/30">
+                    <MicOff className="w-3 h-3 text-red-600" />
                   </div>
                 )}
-                <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-                  {participant.userName} {!participant.audioEnabled && '(Muted)'}
-                </div>
+                <span className="text-xs text-muted-foreground">
+                  {participant.stream ? 'Terhubung' : 'Menghubungkan...'}
+                </span>
               </div>
-            ))}
-
-            {/* Empty slots to show waiting for participants */}
-            {Array.from({ length: Math.max(0, 6 - participants.length - 1) }).map((_, index) => (
-              <div key={`empty-${index}`} className="bg-[#2a2a2a] rounded-lg border border-[#333333] border-dashed flex items-center justify-center">
-                <div className="text-gray-500 text-center">
-                  <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Menunggu peserta...</p>
-                </div>
-              </div>
-            ))}
-          </div>
+              
+              {/* Audio element untuk participant (hidden) */}
+              <audio
+                ref={participant.audioRef}
+                autoPlay
+                playsInline
+                muted={false}
+                className="hidden"
+                data-testid={`participant-audio-${participant.userId}`}
+              />
+            </div>
+          ))}
         </div>
-      )}
 
-      {/* Audio-only view */}
-      {callType === 'audio' && (
-        <div className="flex-1 p-6 flex flex-col">
-          {/* Main display area */}
-          <div className="flex-1 flex flex-col items-center justify-center mb-6">
-            {/* Central communication status */}
-            <div className="text-center mb-8">
-              <div className="relative inline-flex items-center justify-center w-32 h-32 bg-gradient-to-br from-[#a6c455] to-[#8ca832] rounded-2xl mb-4 shadow-2xl">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#a6c455] to-[#8ca832] rounded-2xl animate-pulse opacity-20"></div>
-                <div className="relative">
-                  <Radio className="w-12 h-12 text-white" />
-                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
-                </div>
-              </div>
-              <h2 className="text-3xl font-bold text-white mb-2 tracking-wide">TACTICAL COMMS</h2>
-              <div className="flex items-center justify-center space-x-2 mb-2">
-                <Shield className="w-4 h-4 text-[#a6c455]" />
-                <span className="text-[#a6c455] text-sm font-semibold">SECURE CHANNEL</span>
-                <Zap className="w-4 h-4 text-[#a6c455]" />
-              </div>
-              <p className="text-gray-400 text-sm">{participants.length} Personnel Connected</p>
-            </div>
-
-            {/* Modern participant list */}
-            <div className="w-full max-w-2xl">
-              <div className="bg-[#1a1a1a] rounded-xl border border-[#333333] overflow-hidden">
-                <div className="bg-[#2a2a2a] px-4 py-3 border-b border-[#333333]">
-                  <h3 className="text-sm font-semibold text-[#a6c455] uppercase tracking-wide">
-                    ACTIVE PERSONNEL
-                  </h3>
-                </div>
-                
-                <div className="divide-y divide-[#333333]">
-                  {/* Current user first */}
-                  {user && activeCall && (
-                    <div className="px-4 py-3 flex items-center justify-between bg-[#0f2027] border-l-4 border-[#a6c455]">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-[#a6c455] rounded-lg flex items-center justify-center">
-                          <span className="text-black font-bold text-sm">
-                            {user.callsign?.substring(0, 2).toUpperCase() || 'AN'}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="text-white font-medium">Anda</p>
-                          <p className="text-xs text-gray-400">
-                            {user.callsign || 'Unknown'}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <div className={`w-2 h-2 rounded-full ${isAudioEnabled ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                        <span className="text-xs text-gray-400 uppercase">
-                          {isAudioEnabled ? 'ON AIR' : 'MUTED'}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Other participants */}
-                  {participants
-                    .filter(participant => participant.userId !== user?.id)
-                    .map(participant => (
-                      <div key={participant.userId} className="px-4 py-3 flex items-center justify-between hover:bg-[#252525] transition-colors">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-[#4a9eff] rounded-lg flex items-center justify-center">
-                            <span className="text-white font-bold text-sm">
-                              {participant.userName.substring(0, 2).toUpperCase()}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="text-white font-medium">
-                              {participant.userName}
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              Personnel #{participant.userId}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <div className={`w-2 h-2 rounded-full ${participant.audioEnabled ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                          <span className="text-xs text-gray-400 uppercase">
-                            {participant.audioEnabled ? 'ON AIR' : 'MUTED'}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-
-                  {/* Empty slots for waiting */}
-                  {participants.length < 8 && (
-                    <div className="px-4 py-3 flex items-center justify-between opacity-50">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-[#2a2a2a] rounded-lg border-2 border-dashed border-gray-600 flex items-center justify-center">
-                          <Users className="h-4 w-4 text-gray-600" />
-                        </div>
-                        <div>
-                          <p className="text-gray-500 font-medium">Menunggu personel...</p>
-                          <p className="text-xs text-gray-600">
-                            Slot tersedia: {8 - participants.length}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 rounded-full bg-gray-600"></div>
-                        <span className="text-xs text-gray-600 uppercase">STANDBY</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Enhanced Controls */}
-      <div className="bg-gradient-to-r from-[#1a1a1a] to-[#0f1419] border-t border-[#333333] p-6">
-        <div className="flex items-center justify-center space-x-6">
-          {/* Microphone toggle */}
-          <div className="flex flex-col items-center space-y-2">
-            <Button
-              variant={isAudioEnabled ? "default" : "destructive"}
-              size="lg"
-              className={`h-16 w-16 rounded-xl shadow-lg transition-all duration-300 ${
-                isAudioEnabled 
-                  ? 'bg-[#a6c455] hover:bg-[#8ca832] text-black border-2 border-[#a6c455]' 
-                  : 'bg-red-600 hover:bg-red-700 text-white border-2 border-red-600'
-              }`}
-              onClick={toggleAudio}
-            >
-              {isAudioEnabled ? <Mic className="h-6 w-6" /> : <MicOff className="h-6 w-6" />}
-            </Button>
-            <span className="text-xs text-gray-400 uppercase tracking-wide">
-              {isAudioEnabled ? 'ON AIR' : 'MUTED'}
-            </span>
-          </div>
-
-          {/* Video toggle (only for video calls) */}
-          {callType === 'video' && (
-            <div className="flex flex-col items-center space-y-2">
-              <Button
-                variant={isVideoEnabled ? "default" : "destructive"}
-                size="lg"
-                className={`h-16 w-16 rounded-xl shadow-lg transition-all duration-300 ${
-                  isVideoEnabled 
-                    ? 'bg-[#4a9eff] hover:bg-[#357abd] text-white border-2 border-[#4a9eff]' 
-                    : 'bg-red-600 hover:bg-red-700 text-white border-2 border-red-600'
-                }`}
-                onClick={toggleVideo}
-              >
-                {isVideoEnabled ? <Video className="h-6 w-6" /> : <VideoOff className="h-6 w-6" />}
-              </Button>
-              <span className="text-xs text-gray-400 uppercase tracking-wide">
-                {isVideoEnabled ? 'VIDEO' : 'NO VIDEO'}
-              </span>
-            </div>
-          )}
-
-          {/* Hang up */}
-          <div className="flex flex-col items-center space-y-2">
-            <Button
-              variant="destructive"
-              size="lg"
-              className="h-16 w-16 rounded-xl bg-red-600 hover:bg-red-700 text-white border-2 border-red-600 shadow-lg transition-all duration-300"
-              onClick={leaveCall}
-            >
-              <PhoneOff className="h-6 w-6" />
-            </Button>
-            <span className="text-xs text-gray-400 uppercase tracking-wide">
-              DISCONNECT
-            </span>
-          </div>
-        </div>
-        
-        {/* Status bar */}
-        <div className="mt-4 pt-4 border-t border-[#333333]">
-          <div className="flex items-center justify-between text-xs text-gray-500">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span>SECURE CONNECTION</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span>GROUP: {groupName}</span>
-              <span>PARTICIPANTS: {participants.length}</span>
-            </div>
+        {/* Connection Status */}
+        <div className="mt-6 text-center">
+          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-muted text-muted-foreground text-sm">
+            <Shield className="w-3 h-3" />
+            <span>Audio terenkrip end-to-end</span>
           </div>
         </div>
       </div>
 
-      {/* Hidden audio elements for participants - mimicking AudioCall pattern */}
-      {participants.map(participant => (
-        participant.userId !== user?.id && (
-          <audio
-            key={`audio-${participant.userId}`}
-            id={`groupAudio-${participant.userId}`}
-            autoPlay
-            playsInline
-            style={{ display: 'none' }}
-          />
-        )
-      ))}
+      {/* Controls */}
+      <div className="p-6 bg-card border-t">
+        <div className="flex items-center justify-center space-x-4 max-w-md mx-auto">
+          <Button
+            onClick={toggleAudio}
+            variant={isAudioEnabled ? "default" : "destructive"}
+            size="lg"
+            className="rounded-full w-14 h-14"
+            data-testid="button-toggle-audio"
+          >
+            {isAudioEnabled ? (
+              <Mic className="w-6 h-6" />
+            ) : (
+              <MicOff className="w-6 h-6" />
+            )}
+          </Button>
+
+          <Button
+            onClick={leaveCall}
+            variant="destructive"
+            size="lg"
+            className="rounded-full w-14 h-14"
+            data-testid="button-hangup"
+          >
+            <PhoneOff className="w-6 h-6" />
+          </Button>
+        </div>
+
+        {/* Additional Info */}
+        <div className="mt-4 text-center text-xs text-muted-foreground">
+          <div className="flex items-center justify-center space-x-4">
+            <span>Kualitas: HD Audio</span>
+            <span>•</span>
+            <span>Enkripsi: E2E</span>
+            <span>•</span>
+            <span className="flex items-center space-x-1">
+              <Zap className="w-3 h-3" />
+              <span>Real-time</span>
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
