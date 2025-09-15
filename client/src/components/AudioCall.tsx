@@ -68,6 +68,187 @@ const checkAudioOutput = (audioElement: HTMLAudioElement) => {
   });
 };
 
+// WebRTC stats monitoring to detect actual audio data flow
+const monitorWebRTCStats = (peerConnection: RTCPeerConnection | null) => {
+  if (!peerConnection) {
+    console.log("[AudioCall] ⚠️ No peer connection available for stats monitoring");
+    return;
+  }
+
+  let statsInterval: NodeJS.Timeout;
+  
+  const checkStats = () => {
+    peerConnection.getStats().then(stats => {
+      stats.forEach(report => {
+        if (report.type === 'inbound-rtp' && report.kind === 'audio') {
+          console.log("[AudioCall] 📊 WebRTC audio stats:", {
+            bytesReceived: report.bytesReceived,
+            audioLevel: report.audioLevel,
+            jitter: report.jitter,
+            packetsLost: report.packetsLost,
+            packetsReceived: report.packetsReceived
+          });
+          
+          // Detect silent audio stream
+          if (report.bytesReceived === 0 || report.audioLevel === 0) {
+            console.log("[AudioCall] ⚠️ No audio data received from remote peer!");
+          }
+        }
+      });
+    }).catch(err => {
+      console.log("[AudioCall] ⚠️ Failed to get WebRTC stats:", err);
+    });
+  };
+  
+  // Check stats every 2 seconds
+  statsInterval = setInterval(checkStats, 2000);
+  
+  // Return cleanup function
+  return () => {
+    if (statsInterval) {
+      clearInterval(statsInterval);
+    }
+  };
+};
+
+// Monitor remote track state for mute/unmute events
+const monitorRemoteTrack = (stream: MediaStream) => {
+  const audioTracks = stream.getAudioTracks();
+  if (audioTracks.length > 0) {
+    const track = audioTracks[0];
+    
+    console.log("[AudioCall] 🎤 Setting up remote track monitoring:", {
+      enabled: track.enabled,
+      muted: track.muted,
+      readyState: track.readyState
+    });
+    
+    track.addEventListener('mute', () => {
+      console.log("[AudioCall] 🔇 Remote track muted");
+    });
+    
+    track.addEventListener('unmute', () => {
+      console.log("[AudioCall] 🔊 Remote track unmuted");
+    });
+    
+    track.addEventListener('ended', () => {
+      console.log("[AudioCall] ❌ Remote track ended - attempting to reacquire");
+    });
+    
+    return track;
+  }
+  return null;
+};
+
+// Show user prompt for audio unlock
+const showAudioUnlockPrompt = () => {
+  console.log("[AudioCall] 🔔 Showing audio unlock prompt...");
+  
+  // Prevent duplicate prompts
+  if (document.getElementById('audio-unlock-prompt')) {
+    console.log("[AudioCall] 📋 Audio unlock prompt already shown");
+    return;
+  }
+  
+  const promptDiv = document.createElement('div');
+  promptDiv.id = 'audio-unlock-prompt';
+  promptDiv.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    z-index: 10000;
+    text-align: center;
+    font-family: Arial, sans-serif;
+  `;
+  
+  promptDiv.innerHTML = `
+    <h3>🔊 Audio Diblokir Browser</h3>
+    <p>Klik tombol di bawah untuk mengaktifkan audio:</p>
+    <button id="unlock-audio-btn" style="
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px;
+    ">🔓 Aktifkan Audio</button>
+    <button id="test-audio-btn" style="
+      background: #2196F3;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px;
+    ">🧪 Test Audio</button>
+  `;
+  
+  document.body.appendChild(promptDiv);
+  
+  const unlockBtn = document.getElementById('unlock-audio-btn');
+  const testBtn = document.getElementById('test-audio-btn');
+  
+  unlockBtn?.addEventListener('click', async () => {
+    console.log("[AudioCall] 🔓 User clicked unlock audio");
+    
+    // Try to unlock with user gesture - use audioElementRef instead of getElementById
+    try {
+      const audioElement = document.querySelector('audio[data-testid="remote-audio"]') as HTMLAudioElement;
+      if (audioElement) {
+        audioElement.muted = false;
+        audioElement.volume = 1.0;
+        await audioElement.play();
+        console.log("[AudioCall] ✅ Audio unlocked successfully");
+      } else {
+        console.log("[AudioCall] ⚠️ Could not find audio element");
+      }
+    } catch (error) {
+      console.log("[AudioCall] ⚠️ Audio unlock failed:", error);
+    }
+    
+    promptDiv.remove();
+  });
+  
+  testBtn?.addEventListener('click', async () => {
+    console.log("[AudioCall] 🧪 User clicked test audio");
+    
+    // Test with system beep
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 800;
+      gainNode.gain.value = 0.1;
+      
+      oscillator.start();
+      setTimeout(() => oscillator.stop(), 200);
+      
+      console.log("[AudioCall] ✅ Test beep played");
+    } catch (error) {
+      console.log("[AudioCall] ⚠️ Test beep failed:", error);
+    }
+  });
+  
+  // Auto remove after 10 seconds
+  setTimeout(() => {
+    if (document.body.contains(promptDiv)) {
+      promptDiv.remove();
+    }
+  }, 10000);
+};
+
 export default function AudioCall() {
   const { activeCall, remoteAudioStream, hangupCall, toggleCallAudio, toggleMute } = useCall();
   const [callDuration, setCallDuration] = useState("00:00:00");
@@ -294,10 +475,29 @@ export default function AudioCall() {
               await testPlay;
             }
             console.log(`[AudioCall] ✅ Remote audio playing successfully (attempt ${attempt})`);
+            
+            // Start comprehensive monitoring
+            if (activeCall && activeCall.peerConnection) {
+              // Monitor WebRTC stats for data flow
+              const statsCleanup = monitorWebRTCStats(activeCall.peerConnection);
+              (audioElement as any).__statsCleanup = statsCleanup;
+              
+              // Monitor remote track state
+              if (remoteAudioStream) {
+                const remoteTrack = monitorRemoteTrack(remoteAudioStream);
+                if (remoteTrack && !remoteTrack.enabled) {
+                  console.log("[AudioCall] ⚠️ Remote audio track is disabled!");
+                }
+              }
+            }
+            
           } catch (error: any) {
             if (error.name === 'NotAllowedError') {
               userInteractionRequired = true;
               console.log(`[AudioCall] ⚠️ User interaction required for audio playback`);
+              
+              // Show audio unlock prompt immediately
+              showAudioUnlockPrompt();
               
               // Add user interaction listener
               const handleUserInteraction = () => {
@@ -342,6 +542,59 @@ export default function AudioCall() {
             
             // Additional volume and audio output checks
             checkAudioOutput(audioElement);
+            
+            // Try different audio output devices if available and audio is silent
+            if (audioElement.currentTime === 0 && 'setSinkId' in audioElement) {
+              console.log(`[AudioCall] 🔧 Audio silent, testing different output devices...`);
+              navigator.mediaDevices.enumerateDevices().then(devices => {
+                const audioOutputs = devices.filter(device => device.kind === 'audiooutput');
+                if (audioOutputs.length > 1) {
+                  let deviceIndex = 0;
+                  const tryNextDevice = async () => {
+                    if (deviceIndex < audioOutputs.length) {
+                      const device = audioOutputs[deviceIndex];
+                      try {
+                        await (audioElement as any).setSinkId(device.deviceId);
+                        console.log(`[AudioCall] ✅ Testing audio output: ${device.label || 'Device ' + deviceIndex}`);
+                        await audioElement.play();
+                        
+                        // Wait a moment and check if audio is working
+                        setTimeout(() => {
+                          if (audioElement.currentTime > 0) {
+                            console.log(`[AudioCall] 🎉 SUCCESS! Audio working on device: ${device.label}`);
+                          } else {
+                            deviceIndex++;
+                            tryNextDevice();
+                          }
+                        }, 1000);
+                      } catch (error) {
+                        console.log(`[AudioCall] ⚠️ Failed to set device ${device.label}:`, error);
+                        deviceIndex++;
+                        tryNextDevice();
+                      }
+                    } else {
+                      console.log(`[AudioCall] 😞 Tried all audio devices, none worked`);
+                      showAudioUnlockPrompt();
+                    }
+                  };
+                  tryNextDevice();
+                } else {
+                  // Only one device available, show prompt
+                  setTimeout(() => {
+                    if (audioElement.currentTime === 0) {
+                      showAudioUnlockPrompt();
+                    }
+                  }, 2000);
+                }
+              }).catch(err => {
+                console.log(`[AudioCall] ⚠️ Could not enumerate devices:`, err);
+                setTimeout(() => {
+                  if (audioElement.currentTime === 0) {
+                    showAudioUnlockPrompt();
+                  }
+                }, 2000);
+              });
+            }
           }, 1000);
           
         } catch (e) {
