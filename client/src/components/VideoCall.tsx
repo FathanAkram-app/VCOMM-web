@@ -12,6 +12,10 @@ export default function VideoCall() {
   const [callDuration, setCallDuration] = useState("00:00:00");
   const [, setLocation] = useLocation();
   
+  // 🚀 WATCHDOG: Track timer health
+  const lastTickTimeRef = useRef<number>(0);
+  const timerIntervalRef = useRef<number | null>(null);
+  
   console.log("[VideoCall] Component rendering with activeCall:", activeCall);
   
   // Attach local stream to video element
@@ -112,6 +116,9 @@ export default function VideoCall() {
       const formatted = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
       console.log("[VideoCall] 🕐 RESILIENT TICK:", formatted, "elapsed ms:", elapsed);
       setCallDuration(formatted);
+      
+      // 🚀 WATCHDOG: Update last tick time
+      lastTickTimeRef.current = Date.now();
     };
     
     // First tick immediately
@@ -124,14 +131,74 @@ export default function VideoCall() {
     // 🚀 PROTECT using centralized system
     protectInterval(interval);
     
+    // 🚀 WATCHDOG: Store interval reference
+    timerIntervalRef.current = interval;
+    
     return () => {
       console.log("[VideoCall] 🕐 Cleaning up resilient timer");
       timerActive = false;
       clearInterval(interval);
       // Remove from centralized protection
       unprotectInterval(interval);
+      timerIntervalRef.current = null;
     };
   }, [activeCall?.status, activeCall?.callId, activeCall?.startTime]); // Watch for status, callId, and startTime changes
+  
+  // 🚀 WATCHDOG: Monitor timer health and recover if stuck
+  useEffect(() => {
+    if (!activeCall || activeCall.status !== 'connected') {
+      return;
+    }
+    
+    console.log("[VideoCall] 🐕 WATCHDOG: Starting timer health monitor");
+    
+    const watchdogInterval = setInterval(() => {
+      const now = Date.now();
+      const timeSinceLastTick = now - lastTickTimeRef.current;
+      
+      console.log("[VideoCall] 🐕 WATCHDOG: Check - timeSinceLastTick:", timeSinceLastTick + "ms");
+      
+      // If no tick for more than 1500ms while connected, recover
+      if (timeSinceLastTick > 1500 && activeCall?.status === 'connected') {
+        console.warn("[VideoCall] 🐕 WATCHDOG: Timer stuck! Attempting recovery...");
+        console.log("[VideoCall] 🐕 WATCHDOG: Active call:", !!activeCall, "Interval ref:", !!timerIntervalRef.current);
+        
+        // 🚀 ACTUAL RECOVERY: Restart timer immediately
+        console.log("[VideoCall] 🐕 WATCHDOG: Restarting stuck timer NOW");
+        
+        // Clear existing interval if still running
+        if (timerIntervalRef.current) {
+          console.log("[VideoCall] 🐕 WATCHDOG: Clearing stuck interval:", timerIntervalRef.current);
+          clearInterval(timerIntervalRef.current);
+          unprotectInterval(timerIntervalRef.current);
+        }
+        
+        // Create fresh timer with current startTime
+        const callStartTime = activeCall.startTime ? activeCall.startTime.getTime() : Date.now();
+        const newInterval = setInterval(() => {
+          const elapsed = Date.now() - callStartTime;
+          const sec = Math.floor(elapsed / 1000);
+          const hrs = Math.floor(sec / 3600);
+          const mins = Math.floor((sec % 3600) / 60);
+          const secs = sec % 60;
+          
+          const formatted = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+          console.log("[VideoCall] 🐕 WATCHDOG RECOVERY TICK:", formatted);
+          setCallDuration(formatted);
+          lastTickTimeRef.current = Date.now();
+        }, 1000);
+        
+        protectInterval(newInterval);
+        timerIntervalRef.current = newInterval;
+        console.log("[VideoCall] 🐕 WATCHDOG: Timer restarted successfully with interval:", newInterval);
+      }
+    }, 2000); // Check every 2 seconds
+    
+    return () => {
+      console.log("[VideoCall] 🐕 WATCHDOG: Cleaning up health monitor");
+      clearInterval(watchdogInterval);
+    };
+  }, [activeCall?.status, activeCall]); // Watch call status
   
   // Cleanup on component unmount
   useEffect(() => {

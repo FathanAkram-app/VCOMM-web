@@ -14,6 +14,10 @@ export default function AudioCall() {
   const [callDuration, setCallDuration] = useState("00:00:00");
   const [, setLocation] = useLocation();
   
+  // 🚀 WATCHDOG: Track timer health (same as VideoCall)
+  const lastTickTimeRef = useRef<number>(0);
+  const timerIntervalRef = useRef<number | null>(null);
+  
   console.log("[AudioCall] Component rendering with activeCall:", activeCall);
   
   // 🎯 USING PROVEN VIDEO CALL LOGIC: Handle remote streams - same system as video call
@@ -104,6 +108,9 @@ export default function AudioCall() {
       const formatted = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
       console.log("[AudioCall] 🕐 RESILIENT TICK:", formatted, "elapsed ms:", elapsed);
       setCallDuration(formatted);
+      
+      // 🚀 WATCHDOG: Update last tick time (same as VideoCall)
+      lastTickTimeRef.current = Date.now();
     };
     
     // First tick immediately
@@ -116,14 +123,74 @@ export default function AudioCall() {
     // 🚀 PROTECT using centralized system
     protectInterval(interval);
     
+    // 🚀 WATCHDOG: Store interval reference (same as VideoCall)
+    timerIntervalRef.current = interval;
+    
     return () => {
       console.log("[AudioCall] 🕐 Cleaning up resilient timer");
       timerActive = false;
       clearInterval(interval);
       // Remove from centralized protection
       unprotectInterval(interval);
+      timerIntervalRef.current = null;
     };
   }, [activeCall?.status, activeCall?.callId, activeCall?.startTime]); // Watch for status, callId, and startTime changes
+  
+  // 🚀 WATCHDOG: Monitor timer health and recover if stuck (same as VideoCall)
+  useEffect(() => {
+    if (!activeCall || activeCall.status !== 'connected') {
+      return;
+    }
+    
+    console.log("[AudioCall] 🐕 WATCHDOG: Starting timer health monitor");
+    
+    const watchdogInterval = setInterval(() => {
+      const now = Date.now();
+      const timeSinceLastTick = now - lastTickTimeRef.current;
+      
+      console.log("[AudioCall] 🐕 WATCHDOG: Check - timeSinceLastTick:", timeSinceLastTick + "ms");
+      
+      // If no tick for more than 1500ms while connected, recover
+      if (timeSinceLastTick > 1500 && activeCall?.status === 'connected') {
+        console.warn("[AudioCall] 🐕 WATCHDOG: Timer stuck! Attempting recovery...");
+        console.log("[AudioCall] 🐕 WATCHDOG: Active call:", !!activeCall, "Interval ref:", !!timerIntervalRef.current);
+        
+        // 🚀 ACTUAL RECOVERY: Restart timer immediately (same as VideoCall)
+        console.log("[AudioCall] 🐕 WATCHDOG: Restarting stuck timer NOW");
+        
+        // Clear existing interval if still running
+        if (timerIntervalRef.current) {
+          console.log("[AudioCall] 🐕 WATCHDOG: Clearing stuck interval:", timerIntervalRef.current);
+          clearInterval(timerIntervalRef.current);
+          unprotectInterval(timerIntervalRef.current);
+        }
+        
+        // Create fresh timer with current startTime
+        const callStartTime = activeCall.startTime ? activeCall.startTime.getTime() : Date.now();
+        const newInterval = setInterval(() => {
+          const elapsed = Date.now() - callStartTime;
+          const sec = Math.floor(elapsed / 1000);
+          const hrs = Math.floor(sec / 3600);
+          const mins = Math.floor((sec % 3600) / 60);
+          const secs = sec % 60;
+          
+          const formatted = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+          console.log("[AudioCall] 🐕 WATCHDOG RECOVERY TICK:", formatted);
+          setCallDuration(formatted);
+          lastTickTimeRef.current = Date.now();
+        }, 1000);
+        
+        protectInterval(newInterval);
+        timerIntervalRef.current = newInterval;
+        console.log("[AudioCall] 🐕 WATCHDOG: Timer restarted successfully with interval:", newInterval);
+      }
+    }, 2000); // Check every 2 seconds
+    
+    return () => {
+      console.log("[AudioCall] 🐕 WATCHDOG: Cleaning up health monitor");
+      clearInterval(watchdogInterval);
+    };
+  }, [activeCall?.status, activeCall]); // Watch call status
   
   // Cleanup on component unmount - SAME AS VIDEO CALL
   useEffect(() => {
