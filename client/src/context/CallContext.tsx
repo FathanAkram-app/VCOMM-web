@@ -4271,17 +4271,33 @@ export function CallProvider({ children }: { children: ReactNode }) {
             videoTracks: remoteStream.getVideoTracks().length
           });
           
-          setActiveCall(prev => {
-            if (prev?.isGroupCall) {
-              const newRemoteStreams = new Map(prev.remoteStreams);
-              // Use stream ID as key for better tracking
-              newRemoteStreams.set(remoteStream.id, remoteStream);
-              
-              console.log('[CallContext] Updated remote streams:', Array.from(newRemoteStreams.keys()));
-              return { ...prev, remoteStreams: newRemoteStreams };
+          // 🎯 CRITICAL FIX: Find userId from peerConnection to store with correct key
+          let streamUserId = null;
+          for (const [userId, pc] of peerConnectionsRef.current.entries()) {
+            if (pc === peerConnection) {
+              streamUserId = userId;
+              break;
             }
-            return prev;
-          });
+          }
+          
+          if (streamUserId) {
+            console.log(`[CallContext] 🎯 FIXED: Found userId ${streamUserId} for remote stream, storing with user_${streamUserId} key`);
+            
+            setActiveCall(prev => {
+              if (prev?.isGroupCall) {
+                const newRemoteStreams = new Map(prev.remoteStreams);
+                // 🎯 CRITICAL FIX: Use user_${userId} as key to match GroupCall expectation
+                const streamKey = `user_${streamUserId}`;
+                newRemoteStreams.set(streamKey, remoteStream);
+                
+                console.log('[CallContext] 🎯 FIXED: Updated remote streams with correct keys:', Array.from(newRemoteStreams.keys()));
+                return { ...prev, remoteStreams: newRemoteStreams };
+              }
+              return prev;
+            });
+          } else {
+            console.error('[CallContext] ❌ Could not find userId for peer connection, cannot store remote stream');
+          }
         }
       };
 
