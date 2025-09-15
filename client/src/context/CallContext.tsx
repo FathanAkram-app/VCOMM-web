@@ -2403,6 +2403,23 @@ export function CallProvider({ children }: { children: ReactNode }) {
       console.log('[CallContext] ❌ No active group call found for WebRTC initiation');
       console.log('[CallContext] ❌ DEBUG: currentActiveCall exists:', !!currentActiveCall);
       console.log('[CallContext] ❌ DEBUG: isGroupCall:', currentActiveCall?.isGroupCall);
+      
+      // 🚀 CRITICAL FIX: Handle server-sent WebRTC messages for already-ended calls
+      if (message.type === 'force_webrtc_reconnect' || message.payload?.forceInit) {
+        console.log('[CallContext] 🔄 Received server WebRTC initiation for ended/empty group call - ignoring gracefully');
+        console.log('[CallContext] 🔄 This typically happens when server cleanup and client state are out of sync');
+        
+        // Check if we should try to rejoin or just ignore
+        if (callId && participants && participants.length > 0) {
+          console.log('[CallContext] 🔄 Group call has participants, but no local active call - may need to rejoin');
+          // Could trigger a rejoin attempt here if needed
+        } else {
+          console.log('[CallContext] 🔄 Group call appears empty - gracefully ignoring WebRTC initiation');
+        }
+        
+        return;
+      }
+      
       return;
     }
     
