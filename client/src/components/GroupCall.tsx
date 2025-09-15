@@ -297,19 +297,49 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
   useEffect(() => {
     const handleParticipantDataUpdate = (event: CustomEvent) => {
       console.log('[GroupCall] 🔥 Participant data update event received:', event.detail);
-      const { participants: updatedParticipants, isNewMember, fullSync } = event.detail;
+      const { participants: updatedParticipants, isNewMember, fullSync, participantData } = event.detail;
       
-      if (fullSync && isNewMember) {
-        console.log('[GroupCall] 🎯 Full sync for new member - updating participant list');
-        // Convert to component-specific format untuk audio calls
-        const newParticipants = updatedParticipants.map((p: any) => ({
-          userId: p.userId,
-          userName: p.userName,
-          stream: null,
-          audioRef: React.createRef<HTMLAudioElement>(),
-          audioEnabled: true
-        }));
+      // 🎯 PARTICIPANT SYNC FIX: Handle ALL update scenarios, not just fullSync+newMember
+      if (updatedParticipants && Array.isArray(updatedParticipants)) {
+        console.log('[GroupCall] 🎯 Comprehensive participant sync - updating all participants:', {
+          totalParticipants: updatedParticipants.length,
+          isNewMember: !!isNewMember,
+          fullSync: !!fullSync,
+          hasDetailedData: !!participantData
+        });
+        
+        // Use detailed data if available, fallback to basic data
+        const sourceData = participantData || updatedParticipants;
+        
+        // 🎯 COMPREHENSIVE MAPPING: Handle both detailed and basic participant data
+        const newParticipants = sourceData.map((p: any) => {
+          const participantId = p.userId || p.id;
+          const participantName = p.userName || p.name || `User ${participantId}`;
+          
+          console.log(`[GroupCall] 🔍 Syncing participant:`, {
+            id: participantId,
+            name: participantName,
+            hasDetailedData: !!p.userName
+          });
+          
+          return {
+            userId: participantId,
+            userName: participantName,
+            stream: null, // Will be populated by main useEffect when streams are available
+            audioRef: React.createRef<HTMLAudioElement>(),
+            audioEnabled: p.audioEnabled !== undefined ? p.audioEnabled : true
+          };
+        });
+        
+        // 🎯 FORCE UPDATE: Ensure participants state gets updated
         setParticipants(newParticipants);
+        
+        console.log('[GroupCall] ✅ Participant sync completed:', {
+          participantCount: newParticipants.length,
+          participantNames: newParticipants.map((p: { userName: string; userId: number }) => `${p.userName}(${p.userId})`)
+        });
+      } else {
+        console.log('[GroupCall] ⚠️ No participant data in update event');
       }
     };
     
@@ -521,7 +551,13 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
       // 🎯 INSTRUMENTATION: Start periodic getStats monitoring
       const statsInterval = setInterval(async () => {
         try {
-          const stats = await pc.getStats();
+          // Get current peer connection (may have changed since interval creation)
+          const currentPc = peerConnectionsRef.current.get(userId);
+          if (!currentPc || currentPc.connectionState === 'closed') {
+            return;
+          }
+          
+          const stats = await currentPc.getStats();
           let hasRemoteAudio = false;
           let bytesReceived = 0;
           
@@ -535,8 +571,8 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
           if (hasRemoteAudio) {
             console.log(`[GroupCall] 🔍 STATS: User ${userId} audio reception:`, {
               bytesReceived,
-              connectionState: pc.connectionState,
-              iceConnectionState: pc.iceConnectionState
+              connectionState: currentPc.connectionState,
+              iceConnectionState: currentPc.iceConnectionState
             });
           }
         } catch (error) {
@@ -667,9 +703,32 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
 
     const pc = getOrCreatePeerConnection(offerData.fromUserId);
     
-    if (pc.signalingState !== 'stable' && pc.signalingState !== 'have-local-offer') {
-      console.log(`[GroupCall] ⚠️ Peer connection for user ${offerData.fromUserId} not in correct state for offer:`, pc.signalingState);
-      setTimeout(() => handleIncomingWebRTCOffer(offerData), 1000);
+    // 🎯 ROBUST STATE CHECK: Prevent SDP conflicts
+    const signalingState = pc.signalingState;
+    const connectionState = pc.connectionState;
+    
+    console.log(`[GroupCall] 🔍 Offer state check for user ${offerData.fromUserId}:`, {
+      signaling: signalingState,
+      connection: connectionState
+    });
+    
+    // Reject if not in proper state for receiving offer
+    if (signalingState !== 'stable' && signalingState !== 'have-local-offer') {
+      console.log(`[GroupCall] ❌ Rejecting offer from user ${offerData.fromUserId}: PC in ${signalingState} state`);
+      return;
+    }
+    
+    // If connection failed, create fresh connection
+    if (connectionState === 'failed' || connectionState === 'closed') {
+      console.log(`[GroupCall] 🔄 Connection ${connectionState} for user ${offerData.fromUserId}, creating fresh connection`);
+      
+      // Close and recreate peer connection
+      pc.close();
+      peerConnectionsRef.current.delete(offerData.fromUserId);
+      const freshPc = getOrCreatePeerConnection(offerData.fromUserId);
+      
+      // Retry with fresh connection
+      setTimeout(() => handleIncomingWebRTCOffer(offerData), 500);
       return;
     }
 
@@ -702,16 +761,31 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     }
 
     try {
-      // Ensure local tracks are added before setting remote description
+      // 🎯 SDP FIX: Ensure consistent track order BEFORE any SDP operations
       if (finalStream) {
         const senders = pc.getSenders();
         console.log(`[GroupCall] 📊 Current senders before answer for user ${offerData.fromUserId}:`, senders.length);
         
         if (senders.length === 0) {
-          finalStream.getTracks().forEach(track => {
+          // 🎯 CONSISTENT ORDER: Add tracks in predictable order (audio first, then video)
+          const audioTracks = finalStream.getAudioTracks();
+          const videoTracks = finalStream.getVideoTracks();
+          
+          // Add audio tracks first for consistent m-line ordering
+          audioTracks.forEach(track => {
             const sender = pc.addTrack(track, finalStream);
-            console.log(`[GroupCall] ✅ Added local track for answer to user ${offerData.fromUserId}:`, {
-              trackKind: track.kind,
+            console.log(`[GroupCall] ✅ Added audio track for answer to user ${offerData.fromUserId}:`, {
+              trackId: track.id,
+              trackEnabled: track.enabled,
+              senderId: sender ? 'created' : 'failed'
+            });
+          });
+          
+          // Add video tracks second for consistent m-line ordering
+          videoTracks.forEach(track => {
+            const sender = pc.addTrack(track, finalStream);
+            console.log(`[GroupCall] ✅ Added video track for answer to user ${offerData.fromUserId}:`, {
+              trackId: track.id,
               trackEnabled: track.enabled,
               senderId: sender ? 'created' : 'failed'
             });
@@ -719,11 +793,13 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
         }
       }
       
+      // 🎯 SDP SEQUENCE: Set remote description AFTER tracks are properly configured
       await pc.setRemoteDescription(new RTCSessionDescription(offerData.offer));
       console.log('[GroupCall] ✅ Set remote description for offer from user:', offerData.fromUserId);
 
       await processPendingICECandidates(offerData.fromUserId, pc);
 
+      // 🎯 CONSISTENT ANSWER: Create answer with proper m-line order
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       console.log('[GroupCall] ✅ Created and set local answer for user:', offerData.fromUserId);
@@ -801,10 +877,37 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     for (const participant of otherParticipants) {
       const userId = participant.userId;
       
-      // Skip if already creating offer for this user
-      if (offerCreationStateRef.current.get(userId) === 'creating') {
+      // 🎯 ROBUST STATE CHECKS: Multiple protection layers
+      const currentState = offerCreationStateRef.current.get(userId);
+      const existingPc = peerConnectionsRef.current.get(userId);
+      
+      // Skip if already creating offer
+      if (currentState === 'creating') {
         console.log(`[GroupCall] ⏭️ Skipping user ${userId}, offer already being created`);
         continue;
+      }
+      
+      // 🎯 NEW: Check peer connection state to prevent SDP conflicts
+      if (existingPc) {
+        const signalingState = existingPc.signalingState;
+        const connectionState = existingPc.connectionState;
+        
+        console.log(`[GroupCall] 🔍 User ${userId} PC state check:`, {
+          signaling: signalingState,
+          connection: connectionState
+        });
+        
+        // Skip if peer connection is in incompatible state for new offer
+        if (signalingState === 'have-remote-offer' || signalingState === 'have-local-offer') {
+          console.log(`[GroupCall] ⏭️ Skipping user ${userId}, PC in ${signalingState} state`);
+          continue;
+        }
+        
+        // Skip if connection is currently establishing
+        if (connectionState === 'connecting') {
+          console.log(`[GroupCall] ⏭️ Skipping user ${userId}, connection still establishing`);
+          continue;
+        }
       }
       
       offerCreationStateRef.current.set(userId, 'creating');
@@ -813,6 +916,13 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
         console.log(`[GroupCall] 🎯 Creating WebRTC connection for participant: ${participant.userName} (${userId})`);
         
         const pc = getOrCreatePeerConnection(userId);
+        
+        // 🎯 FINAL STATE CHECK: Ensure PC is ready for offer
+        if (pc.signalingState !== 'stable' && pc.signalingState !== 'closed') {
+          console.log(`[GroupCall] ⚠️ User ${userId} PC not in stable state: ${pc.signalingState}, skipping`);
+          offerCreationStateRef.current.set(userId, 'idle');
+          continue;
+        }
         
         // Add local stream tracks
         if (localStream && pc.getSenders().length === 0) {
@@ -847,7 +957,7 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
       }
       
       // Small delay between offers to prevent overwhelming
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
   };
 
