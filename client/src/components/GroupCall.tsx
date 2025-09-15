@@ -308,7 +308,7 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     
     // 🎯 ALWAYS filter out current user for consistency
     const remoteParticipants = rawParticipants.filter(p => {
-      const participantId = p.userId || p.id;
+      const participantId = p.userId;
       return participantId !== currentUser.id;
     });
     
@@ -322,13 +322,13 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     
     // 🎯 DEDUPLICATION: Remove duplicates by userId
     const uniqueParticipants = remoteParticipants.filter((p, index, arr) => {
-      const participantId = p.userId || p.id;
-      return arr.findIndex(other => (other.userId || other.id) === participantId) === index;
+      const participantId = p.userId;
+      return arr.findIndex(other => other.userId === participantId) === index;
     });
     
     const finalParticipants = uniqueParticipants.map((p: any) => {
-      const participantId = p.userId || p.id;
-      const participantName = p.userName || p.name || `User ${participantId}`;
+      const participantId = p.userId;
+      const participantName = p.userName || `User ${participantId}`;
       
       // Check for existing streams
       const streamKey = `user_${participantId}`;
