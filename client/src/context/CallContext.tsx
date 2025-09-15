@@ -1285,14 +1285,38 @@ export function CallProvider({ children }: { children: ReactNode }) {
             break;
           case 'webrtc_offer':
             console.log('[CallContext] 🎯 Processing webrtc_offer message:', message);
-            handleWebRTCOffer(message.payload || message);
+            // 🎯 CRITICAL FIX: Check if this is a group call and forward to GroupCall
+            if (activeCall?.isGroupCall) {
+              console.log('[CallContext] 🎯 FIXED: Detected group call - forwarding webrtc_offer to GroupCall component');
+              window.dispatchEvent(new CustomEvent('group-webrtc-offer', {
+                detail: message.payload || message
+              }));
+            } else {
+              handleWebRTCOffer(message.payload || message);
+            }
             break;
           case 'webrtc_answer':
             console.log('[CallContext] 🎯 Processing webrtc_answer message:', message);
-            handleWebRTCAnswer(message.payload || message);
+            // 🎯 CRITICAL FIX: Check if this is a group call and forward to GroupCall
+            if (activeCall?.isGroupCall) {
+              console.log('[CallContext] 🎯 FIXED: Detected group call - forwarding webrtc_answer to GroupCall component');
+              window.dispatchEvent(new CustomEvent('group-webrtc-answer', {
+                detail: message.payload || message
+              }));
+            } else {
+              handleWebRTCAnswer(message.payload || message);
+            }
             break;
           case 'webrtc_ice_candidate':
-            handleWebRTCIceCandidate(message.payload || message);
+            // 🎯 CRITICAL FIX: Check if this is a group call and forward to GroupCall
+            if (activeCall?.isGroupCall) {
+              console.log('[CallContext] 🎯 FIXED: Detected group call - forwarding webrtc_ice_candidate to GroupCall component');
+              window.dispatchEvent(new CustomEvent('group-webrtc-ice-candidate', {
+                detail: message.payload || message
+              }));
+            } else {
+              handleWebRTCIceCandidate(message.payload || message);
+            }
             break;
           case 'group_webrtc_offer':
             // Forward group WebRTC offer to GroupVideoCallSimple component
