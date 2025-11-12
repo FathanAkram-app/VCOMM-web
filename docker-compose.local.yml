@@ -8,7 +8,7 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://vcomm_user:vcomm_password@postgres:5432/vcomm_db
+      - DATABASE_URL=postgresql://vcomm_user:vcomm_password@postgres:5432/vcomm_db?sslmode=disable
       - SESSION_SECRET=local-vcomm-secret-key-change-this
       - HTTPS_ENABLED=true
     ports:

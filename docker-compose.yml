@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  # VCommMessenger Application
+  vcomm-app:
+    build: .
+    # image: vcomm-app:latest
+    container_name: vcomm-messenger
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://vcomm_user:vcomm_password@postgres:5432/vcomm_db?sslmode=disable
+      - SESSION_SECRET=local-vcomm-secret-key-change-this
+      - HTTPS_ENABLED=true
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./certs:/app/certs:ro
+      - ./uploads:/app/uploads
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - vcomm-network
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: vcomm-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=vcomm_db
+      - POSTGRES_USER=vcomm_user
+      - POSTGRES_PASSWORD=vcomm_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres-config:/etc/postgresql
+    ports:
+      - "5432:5432"
+    command: >
+      postgres
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.7
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+    networks:
+      - vcomm-network
+
+  # Redis for Session Storage and Caching
+  redis:
+    image: redis:7-alpine
+    container_name: vcomm-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - vcomm-network
+
+  # Nginx Reverse Proxy for Mobile Optimization
+  nginx:
+    image: nginx:alpine
+    container_name: vcomm-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx-mobile.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+      - ./nginx-logs:/var/log/nginx
+    depends_on:
+      - vcomm-app
+    networks:
+      - vcomm-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  vcomm-network:
+    driver: bridge
