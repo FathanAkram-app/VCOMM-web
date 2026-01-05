@@ -28,7 +28,7 @@ export const sessions = pgTable(
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   callsign: text("callsign").notNull().unique(),
-  password: text("password").notNull(), 
+  password: text("password").notNull(),
   nrp: text("nrp"),                         // ID Personel/NRP
   fullName: varchar("full_name"),           // Nama lengkap
   rank: varchar("rank"),                    // Pangkat
@@ -36,6 +36,17 @@ export const users = pgTable("users", {
   role: varchar("role").default("user"),    // user, admin, super_admin
   status: varchar("status").default("offline"),
   profileImageUrl: varchar("profile_image_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// FCM tokens table for push notifications
+export const fcmTokens = pgTable("fcm_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  token: text("token").notNull().unique(),
+  deviceId: varchar("device_id", { length: 255 }),
+  platform: varchar("platform", { length: 10 }).notNull(), // 'android' or 'ios'
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -156,6 +167,8 @@ export const lapsitReports = pgTable("lapsit_reports", {
 // Schema types
 export type User = typeof users.$inferSelect;
 export type UpsertUser = typeof users.$inferInsert;
+export type FcmToken = typeof fcmTokens.$inferSelect;
+export type InsertFcmToken = typeof fcmTokens.$inferInsert;
 export type CallHistory = typeof callHistory.$inferSelect;
 export type InsertCallHistory = typeof callHistory.$inferInsert;
 export type LapsitCategory = typeof lapsitCategories.$inferSelect;

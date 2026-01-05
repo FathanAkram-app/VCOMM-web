@@ -32,6 +32,7 @@ export interface IStorage {
   createUser(user: RegisterUser): Promise<User>;
   updateUserStatus(userId: number, status: string): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
+  isUserOnline(userId: number): Promise<boolean>;
   
   // User settings operations
   getUserSettings(userId: number): Promise<any>;
@@ -61,7 +62,7 @@ export interface IStorage {
   // Message operations
   createMessage(data: InsertMessage): Promise<Message>;
   getMessagesByConversation(conversationId: number): Promise<Message[]>;
-  getMessagesByConversationForUser(conversationId: number, userId: number): Promise<Message[]>;
+  getMessagesByConversationForUser(conversationId: number, userId: number, limit?: number, offset?: number): Promise<{messages: Message[], total: number, hasMore: boolean}>;
   clearConversationMessages(conversationId: number): Promise<void>;
   
   // Call history operations
@@ -127,7 +128,12 @@ export class DatabaseStorage implements IStorage {
   async getAllUsers(): Promise<User[]> {
     return await db.select().from(users);
   }
-  
+
+  async isUserOnline(userId: number): Promise<boolean> {
+    const user = await this.getUser(userId);
+    return user?.status === 'online';
+  }
+
   // Conversation operations
   async getConversation(id: number): Promise<Conversation | undefined> {
     const [conversation] = await db
@@ -326,11 +332,28 @@ export class DatabaseStorage implements IStorage {
     return member;
   }
 
-  async getConversationMembers(conversationId: number): Promise<ConversationMember[]> {
-    return await db
-      .select()
+  async getConversationMembers(conversationId: number): Promise<any[]> {
+    const members = await db
+      .select({
+        id: conversationMembers.id,
+        conversationId: conversationMembers.conversationId,
+        userId: conversationMembers.userId,
+        role: conversationMembers.role,
+        joinedAt: conversationMembers.joinedAt,
+        isHidden: conversationMembers.isHidden,
+        // Include user details
+        callsign: users.callsign,
+        fullName: users.fullName,
+        rank: users.rank,
+        branch: users.branch,
+        status: users.status,
+        profileImageUrl: users.profileImageUrl,
+      })
       .from(conversationMembers)
+      .leftJoin(users, eq(conversationMembers.userId, users.id))
       .where(eq(conversationMembers.conversationId, conversationId));
+
+    return members;
   }
 
   async getConversationMembership(userId: number, conversationId: number): Promise<ConversationMember | undefined> {
@@ -451,9 +474,9 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getMessagesByConversationForUser(conversationId: number, userId: number): Promise<Message[]> {
+  async getMessagesByConversationForUser(conversationId: number, userId: number, limit?: number, offset?: number): Promise<{messages: Message[], total: number, hasMore: boolean}> {
     try {
-      // Get all messages for the conversation
+      // Get all messages for the conversation ordered by creation time (ascending for chronological order)
       const allMessages = await db
         .select()
         .from(messages)
@@ -465,19 +488,45 @@ export class DatabaseStorage implements IStorage {
         .select({ messageId: deletedMessagesPerUser.messageId })
         .from(deletedMessagesPerUser)
         .where(eq(deletedMessagesPerUser.userId, userId));
-      
+
       const deletedMessageIds = new Set(deletedByUser.map(d => d.messageId));
-      
+
       // Filter out messages deleted by this user
       const visibleMessages = allMessages.filter(msg => !deletedMessageIds.has(msg.id));
-      
-      console.log(`[Storage] User ${userId} sees ${visibleMessages.length}/${allMessages.length} messages in conversation ${conversationId}`);
+
+      const total = visibleMessages.length;
+
+      // If pagination is requested, apply limit and offset
+      let paginatedMessages = visibleMessages;
+      if (limit !== undefined && offset !== undefined) {
+        // For pagination, we want the most recent messages, so we slice from the end
+        // If offset=0 and limit=15, get last 15 messages
+        // If offset=15 and limit=15, get 15 messages before the last 15
+        const startIndex = Math.max(0, total - offset - limit);
+        const endIndex = total - offset;
+        paginatedMessages = visibleMessages.slice(startIndex, endIndex);
+
+        console.log(`[Storage] Pagination: total=${total}, offset=${offset}, limit=${limit}, startIndex=${startIndex}, endIndex=${endIndex}, returned=${paginatedMessages.length}`);
+      }
+
+      const hasMore = offset !== undefined ? (offset + (limit || 0)) < total : false;
+
+      console.log(`[Storage] User ${userId} sees ${paginatedMessages.length}/${total} messages in conversation ${conversationId}`);
       console.log(`[Storage] User ${userId} has ${deletedMessageIds.size} deleted messages`);
-      
-      return visibleMessages;
+      console.log(`[Storage] hasMore=${hasMore}`);
+
+      return {
+        messages: paginatedMessages,
+        total,
+        hasMore
+      };
     } catch (error) {
       console.error(`Error getting messages for user ${userId} in conversation ${conversationId}:`, error);
-      return [];
+      return {
+        messages: [],
+        total: 0,
+        hasMore: false
+      };
     }
   }
   
@@ -770,8 +819,9 @@ export class DatabaseStorage implements IStorage {
   async updateLastMessageAfterClear(conversationId: number, userId: number): Promise<void> {
     try {
       // Get remaining visible messages for this user
-      const visibleMessages = await this.getMessagesByConversationForUser(conversationId, userId);
-      
+      const result = await this.getMessagesByConversationForUser(conversationId, userId);
+      const visibleMessages = result.messages;
+
       if (visibleMessages.length === 0) {
         // Jika tidak ada pesan yang tersisa untuk user ini, set last_message ke null untuk conversation member
         // Tapi kita tidak bisa update per-user di table conversations, jadi kita skip update ini
@@ -790,15 +840,16 @@ export class DatabaseStorage implements IStorage {
   async getPersonalLastMessage(conversationId: number, userId: number): Promise<any | null> {
     try {
       // Get all visible messages for this user
-      const visibleMessages = await this.getMessagesByConversationForUser(conversationId, userId);
-      
+      const result = await this.getMessagesByConversationForUser(conversationId, userId);
+      const visibleMessages = result.messages;
+
       console.log(`[Storage] Personal last message check for user ${userId} in conversation ${conversationId}: ${visibleMessages.length} visible messages`);
-      
+
       if (visibleMessages.length === 0) {
         console.log(`[Storage] No visible messages for user ${userId} in conversation ${conversationId} - returning null`);
         return null; // No visible messages for this user
       }
-      
+
       // Return the last visible message
       const lastMessage = visibleMessages[visibleMessages.length - 1];
       console.log(`[Storage] Last visible message for user ${userId}: "${lastMessage.content}"`);
@@ -903,13 +954,17 @@ export class DatabaseStorage implements IStorage {
         // Map database status to display status
         let displayStatus = call.status;
         if (call.status === 'ended') {
-          displayStatus = isIncoming ? 'accepted' : 'initiated';
-        } else if (call.status === 'incoming') {
-          displayStatus = isIncoming ? 'accepted' : 'initiated';
-        } else if (call.status === 'initiated') {
-          displayStatus = 'missed';
+          displayStatus = 'ended';
+        } else if (call.status === 'accepted') {
+          displayStatus = 'accepted';
+        } else if (call.status === 'missed') {
+          // Missed call - show as missed for both caller and receiver
+          displayStatus = isIncoming ? 'missed' : 'cancelled';
         } else if (call.status === 'rejected') {
-          displayStatus = 'rejected';
+          displayStatus = isIncoming ? 'missed' : 'declined';
+        } else if (call.status === 'incoming') {
+          // Still ringing/unanswered - shouldn't normally be in history but treat as missed
+          displayStatus = 'missed';
         }
 
         // Get participant names for group calls
