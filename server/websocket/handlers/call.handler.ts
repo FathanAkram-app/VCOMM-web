@@ -2,7 +2,7 @@ import { WebSocket } from 'ws';
 import { IStorage } from '../../storage';
 import { AuthenticatedWebSocket, ClientsMap, GroupCallsMap } from '../utils/types';
 import { sendToClient } from '../utils/send';
-import { fcmService } from '../../services/fcm.service';
+import { gotifyService } from '../../services/gotify.service';
 
 export function createCallHandlers(
   storage: IStorage,
@@ -88,7 +88,7 @@ export function createCallHandlers(
       // Send push notification to offline user
       console.log(`[Call] User ${toUserId} is offline, sending push notification`);
       try {
-        await fcmService.sendCallNotification(
+        await gotifyService.sendCallNotification(
           toUserId,
           fromUserName,
           callType,

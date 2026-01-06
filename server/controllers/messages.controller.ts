@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../auth';
 import { MessagesService } from '../services/messages.service';
-import { fcmService } from '../services/fcm.service';
+import { gotifyService } from '../services/gotify.service';
 
 type BroadcastFunction = (conversationId: number, message: any) => Promise<void>;
 
@@ -60,7 +60,7 @@ export class MessagesController {
             const isOnline = await this.messagesService.isUserOnline(member.userId);
             if (!isOnline) {
               console.log(`[MessagesController] Sending push notification to offline user ${member.userId}`);
-              await fcmService.sendMessageNotification(
+              await gotifyService.sendMessageNotification(
                 member.userId,
                 senderName,
                 content,

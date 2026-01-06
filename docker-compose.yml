@@ -12,6 +12,8 @@ services:
       - DATABASE_URL=postgresql://vcomm_user:vcomm_password@postgres:5432/vcomm_db?sslmode=disable
       - SESSION_SECRET=local-vcomm-secret-key-change-this
       - HTTPS_ENABLED=true
+      - GOTIFY_URL=http://gotify
+      - GOTIFY_APP_TOKEN=AGHBrz2o46iqGz8
     ports:
       - "5000:5000"
     volumes:
@@ -20,6 +22,7 @@ services:
     depends_on:
       - postgres
       - redis
+      - gotify
     networks:
       - vcomm-network
 
@@ -79,9 +82,37 @@ services:
     networks:
       - vcomm-network
 
+  # Coturn TURN/STUN Server for WebRTC
+  coturn:
+    image: coturn/coturn:latest
+    container_name: vcomm-coturn
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./turnserver.conf:/etc/coturn/turnserver.conf:ro
+      - coturn_logs:/var/log/turnserver
+    command: ["-c", "/etc/coturn/turnserver.conf"]
+
+  # Gotify Push Notification Server
+  gotify:
+    image: gotify/server:latest
+    container_name: vcomm-gotify
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      - GOTIFY_DEFAULTUSER_NAME=admin
+      - GOTIFY_DEFAULTUSER_PASS=admin123
+    volumes:
+      - gotify_data:/app/data
+    networks:
+      - vcomm-network
+
 volumes:
   postgres_data:
   redis_data:
+  coturn_logs:
+  gotify_data:
 
 networks:
   vcomm-network:
