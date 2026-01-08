@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import session from 'express-session';
 import bcrypt from 'bcryptjs';
 import connectPg from 'connect-pg-simple';
+import crypto from 'crypto';
 import { storage } from './storage';
 import { loginSchema, registerUserSchema } from '@shared/schema';
 
@@ -33,6 +34,38 @@ export function getSession() {
   });
 }
 
+/**
+ * Middleware to handle X-Session-Token header for mobile apps
+ * This allows mobile clients to use session tokens without cookie support
+ */
+export const sessionTokenMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  const sessionToken = req.headers['x-session-token'] as string;
+
+  if (sessionToken && !req.headers.cookie) {
+    // Construct a signed cookie that express-session can validate
+    // The sessionToken is the unsignedSid, we need to add the signature
+    // For development, we'll use the session secret to sign it
+    const secret = process.env.SESSION_SECRET || 'vcomm-military-secret-key';
+
+    // Create HMAC signature like express-session does
+    const signature = crypto
+      .createHmac('sha256', secret)
+      .update(sessionToken)
+      .digest('base64')
+      .replace(/=+$/, ''); // Remove trailing '='
+
+    // Construct the signed session ID in the format express-session expects
+    const signedSid = `${sessionToken}.${signature}`;
+    const cookieValue = `s:${signedSid}`;
+
+    // Set the cookie header so express-session can use it
+    req.headers.cookie = `connect.sid=${encodeURIComponent(cookieValue)}`;
+    console.log('[Auth] Using X-Session-Token header:', sessionToken.substring(0, 10) + '...');
+  }
+
+  next();
+};
+
 export const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
   console.log("Checking authentication:", req.session?.user ? "User found" : "No user in session");
   if (!req.session || !req.session.user) {
@@ -56,6 +89,9 @@ export const inMemoryConversationMessages = new Map<number, number[]>(); // conv
 export let nextMessageId = 1;
 
 export async function setupAuth(app: express.Express) {
+  // Convert X-Session-Token header to cookie format for mobile apps
+  app.use(sessionTokenMiddleware);
+
   // Use session middleware
   app.use(getSession());
 

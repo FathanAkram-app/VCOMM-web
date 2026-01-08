@@ -11,7 +11,7 @@ class GotifyService {
   constructor() {
     // Use localhost for backend-to-gotify communication (both in same docker network)
     this.gotifyUrl = process.env.GOTIFY_URL || 'http://gotify';
-    this.appToken = process.env.GOTIFY_APP_TOKEN || 'AGHBrz2o46iqGz8';
+    this.appToken = process.env.GOTIFY_APP_TOKEN || 'A8HRPAtOQJay_X1';
 
     if (this.appToken) {
       this.enabled = true;

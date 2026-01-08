@@ -13,7 +13,7 @@ services:
       - SESSION_SECRET=local-vcomm-secret-key-change-this
       - HTTPS_ENABLED=true
       - GOTIFY_URL=http://gotify
-      - GOTIFY_APP_TOKEN=AGHBrz2o46iqGz8
+      - GOTIFY_APP_TOKEN=A8HRPAtOQJay_X1
     ports:
       - "5000:5000"
     volumes:

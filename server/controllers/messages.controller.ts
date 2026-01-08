@@ -46,7 +46,8 @@ export class MessagesController {
         console.log('[MessagesController] ⚠️ broadcastToConversation is NOT available!');
       }
 
-      // Send push notifications to offline users
+      // Send Gotify push notifications to all conversation members (except sender)
+      // The mobile app will decide whether to show notification based on app state
       try {
         const members = await this.messagesService.getConversationMembers(parseInt(conversationId));
         const sender = await this.messagesService.getUser(userId);
@@ -57,21 +58,18 @@ export class MessagesController {
 
         for (const member of members) {
           if (member.userId !== userId) {
-            const isOnline = await this.messagesService.isUserOnline(member.userId);
-            if (!isOnline) {
-              console.log(`[MessagesController] Sending push notification to offline user ${member.userId}`);
-              await gotifyService.sendMessageNotification(
-                member.userId,
-                senderName,
-                content,
-                parseInt(conversationId),
-                conversationName
-              );
-            }
+            console.log(`[MessagesController] Sending Gotify notification to user ${member.userId}`);
+            await gotifyService.sendMessageNotification(
+              member.userId,
+              senderName,
+              content,
+              parseInt(conversationId),
+              conversationName
+            );
           }
         }
       } catch (error) {
-        console.error('[MessagesController] Error sending push notifications:', error);
+        console.error('[MessagesController] Error sending Gotify notifications:', error);
         // Don't fail the message send if push notification fails
       }
 

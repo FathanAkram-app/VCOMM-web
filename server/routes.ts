@@ -50,6 +50,7 @@ import { WebRTCController } from "./controllers/webrtc.controller";
 import { createWebRTCRoutes } from "./routes/webrtc.routes";
 import { FCMController } from "./controllers/fcm.controller";
 import { setupWebSocketServer } from "./websocket/websocket-server";
+import gotifyRoutes from "./routes/gotify.routes";
 
 // Type for requests with authenticated user
 interface AuthRequest extends Request {
@@ -120,6 +121,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // FCM routes
   app.post('/api/fcm/register', isAuthenticated, fcmController.registerToken.bind(fcmController));
   app.post('/api/fcm/unregister', isAuthenticated, fcmController.unregisterToken.bind(fcmController));
+
+  // Gotify routes
+  app.use('/api/gotify', isAuthenticated, gotifyRoutes);
 
   // Serve static uploads
   app.use('/uploads', isAuthenticated, express.static(path.join(process.cwd(), 'uploads')));
