@@ -4,8 +4,13 @@ FROM node:20
 WORKDIR /app
 
 # Copy package files and install dependencies
-COPY package*.json ./
-RUN npm install
+COPY package*.json package-lock.json* ./
+
+# Configure npm for better reliability
+RUN npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm config set fetch-retries 5 && \
+    npm install --verbose
 
 # Copy all source code
 COPY . .

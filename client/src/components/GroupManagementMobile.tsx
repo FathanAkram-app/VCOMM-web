@@ -6,6 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { 
   Users, X, Edit3, Save, Crown, Shield, UserMinus, UserPlus, 
   Search, Check
@@ -45,6 +46,7 @@ export default function GroupManagementMobile({ groupId, groupName, onClose, cur
   const [newGroupName, setNewGroupName] = useState(groupName);
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [memberToRemove, setMemberToRemove] = useState<GroupMember | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { ws } = useCall();
@@ -95,7 +97,8 @@ export default function GroupManagementMobile({ groupId, groupName, onClose, cur
     queryKey: ['/api/all-users'],
   });
 
-  const isCurrentUserAdmin = members.find(m => m.id === currentUserId)?.role === 'admin';
+  const currentUserMember = members.find(m => m.id === currentUserId);
+  const isCurrentUserAdmin = currentUserMember?.role === 'admin' || groupInfo?.isAdmin;
 
   // Available users (not already in group)
   const availableUsers = allUsers.filter(user => 
@@ -149,15 +152,30 @@ export default function GroupManagementMobile({ groupId, groupName, onClose, cur
       const response = await fetch(`/api/groups/${groupId}/members/${userId}`, {
         method: 'DELETE'
       });
-      if (!response.ok) throw new Error('Failed to remove member');
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to remove member');
+      }
+
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/group-members/${groupId}`] });
-      toast({ title: "Anggota berhasil dihapus" });
+      queryClient.invalidateQueries({ queryKey: [`/api/group-info/${groupId}`] });
+      toast({
+        title: "Berhasil",
+        description: "Anggota berhasil dihapus dari grup"
+      });
+      setMemberToRemove(null);
     },
-    onError: () => {
-      toast({ title: "Gagal menghapus anggota", variant: "destructive" });
+    onError: (error: Error) => {
+      toast({
+        title: "Gagal menghapus anggota",
+        description: error.message || "Terjadi kesalahan saat menghapus anggota",
+        variant: "destructive"
+      });
+      setMemberToRemove(null);
     }
   });
 
@@ -459,12 +477,17 @@ export default function GroupManagementMobile({ groupId, groupName, onClose, cur
                             )}
                           </Button>
                           <Button
-                            onClick={() => removeMemberMutation.mutate(member.id)}
+                            onClick={() => setMemberToRemove(member)}
                             size="sm"
                             variant="outline"
-                            className="border-red-600 text-red-400 hover:bg-red-900/20 transition-all duration-300 hover:scale-110 active:scale-95"
+                            disabled={removeMemberMutation.isPending || changeRoleMutation.isPending}
+                            className="border-red-600 text-red-400 hover:bg-red-900/20 transition-all duration-300 hover:scale-110 active:scale-95 disabled:opacity-50"
                           >
-                            <UserMinus className="h-4 w-4" />
+                            {removeMemberMutation.isPending ? (
+                              <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-400 border-t-transparent" />
+                            ) : (
+                              <UserMinus className="h-4 w-4" />
+                            )}
                           </Button>
                         </div>
                       )}
@@ -476,6 +499,35 @@ export default function GroupManagementMobile({ groupId, groupName, onClose, cur
           </div>
         </ScrollArea>
       </div>
+
+      {/* Confirmation Dialog for Removing Member */}
+      <AlertDialog open={!!memberToRemove} onOpenChange={(open) => !open && setMemberToRemove(null)}>
+        <AlertDialogContent className="bg-gradient-to-br from-[#1a2f1a] to-[#0f1f0f] border-[#4a7c59]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-[#a6c455]">Keluarkan Anggota?</AlertDialogTitle>
+            <AlertDialogDescription className="text-[#7d9f7d]">
+              Apakah Anda yakin ingin mengeluarkan {memberToRemove?.callsign} dari grup?
+              Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-[#4a7c59] text-[#7d9f7d] hover:bg-[#4a7c59]/20">
+              Batal
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (memberToRemove) {
+                  removeMemberMutation.mutate(memberToRemove.id);
+                  setMemberToRemove(null);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Keluarkan
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

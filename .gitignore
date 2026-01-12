@@ -17,3 +17,6 @@ google-services.json
 # Logs
 nginx-logs/
 *.log
+
+# Uploads (user-generated content)
+uploads/

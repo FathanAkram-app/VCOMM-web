@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Send, Shield, Trash, Reply, Forward, X, User, Users, ArrowLeft, Mic, Volume2, Play, Pause, CornerDownRight, Phone, Video } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -100,25 +100,65 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   });
   
   // Fetch messages - with aggressive caching and WebSocket updates
-  const { data: messages = [], refetch: refetchMessages } = useQuery({
+  const { data: messagesData, refetch: refetchMessages, isError, error } = useQuery({
     queryKey: [`/api/conversations/${chatId}/messages`],
     enabled: !!chatId && !!user,
     // Remove stale time to always get fresh data
     staleTime: 0,
-    // Add caching time to prevent excessive requests
-    cacheTime: 30 * 1000, // 30 seconds
+    // Use gcTime instead of deprecated cacheTime
+    gcTime: 30 * 1000, // 30 seconds
     retry: 3,
     // Refetch on window focus to ensure fresh data
     refetchOnWindowFocus: true,
-    // Tambahkan console log untuk membantu debugging
-    onSuccess: (data) => {
-      console.log("📨 Messages loaded for chat", chatId, ":", data?.length || 0, "messages");
-      // Scroll to bottom when new messages are loaded
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
-    }
   });
+
+  // Extract messages from response - handle both array and object with messages property
+  const messages = useMemo(() => {
+    console.log("📨 Processing messages data:", messagesData);
+    console.log("📨 Is array?", Array.isArray(messagesData));
+    console.log("📨 Data type:", typeof messagesData);
+
+    if (!messagesData) {
+      console.log("📨 No data received");
+      return [];
+    }
+
+    // Handle array response (legacy format)
+    if (Array.isArray(messagesData)) {
+      console.log("📨 Direct array format with", messagesData.length, "messages");
+      return messagesData;
+    }
+
+    // Handle object response with messages property (current format)
+    if (typeof messagesData === 'object' && 'messages' in messagesData) {
+      const msgs = (messagesData as any).messages || [];
+      console.log("📨 Object format with 'messages' property, found", msgs.length, "messages");
+      return msgs;
+    }
+
+    console.log("📨 Unknown format, returning empty array");
+    return [];
+  }, [messagesData]);
+
+  // Log when messages change
+  useEffect(() => {
+    console.log("📨 Messages state updated. Count:", messages.length);
+    if (messages.length > 0) {
+      console.log("📨 First message:", messages[0]);
+      console.log("📨 Last message:", messages[messages.length - 1]);
+    }
+    // Scroll to bottom when new messages are loaded
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+  }, [messages]);
+
+  // Log errors
+  useEffect(() => {
+    if (isError) {
+      console.error("📨 Error fetching messages:", error);
+    }
+  }, [isError, error]);
   
   // Memastikan pesan dimuat ulang saat chat diubah dan mark as read
   useEffect(() => {
@@ -1222,14 +1262,37 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
       </Dialog>
       
       {/* Messages container with space for input at bottom */}
-      <div 
-        className="flex-1 overflow-y-auto overflow-x-hidden p-4 pb-32 space-y-6" 
-        style={{ 
+      <div
+        className="flex-1 overflow-y-auto overflow-x-hidden p-4 pb-32 space-y-6"
+        style={{
           width: '100%',
           maxWidth: '100vw'
         }}
       >
-        {messageGroups.map(group => {
+        {/* Show error state if message fetching failed */}
+        {isError && (
+          <div className="flex flex-col items-center justify-center h-full text-center p-4">
+            <X className="h-12 w-12 text-red-500 mb-3" />
+            <h3 className="text-red-500 text-lg font-medium mb-1">Error Loading Messages</h3>
+            <p className="text-gray-400 text-sm max-w-md mb-4">
+              {error instanceof Error ? error.message : 'Failed to load messages. Please try again.'}
+            </p>
+            <Button onClick={() => refetchMessages()} variant="outline" className="text-[#a6c455] border-[#a6c455]">
+              Retry
+            </Button>
+          </div>
+        )}
+
+        {/* Show loading state while messages are being fetched */}
+        {!isError && !messagesData && (
+          <div className="flex flex-col items-center justify-center h-full text-center p-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#a6c455] mb-3"></div>
+            <p className="text-gray-400 text-sm">Loading messages...</p>
+          </div>
+        )}
+
+        {/* Show messages if data is loaded and no error */}
+        {!isError && messagesData && messageGroups.map(group => {
           // Buat array semua pesan untuk mencari referenced messages
           const allMessages = messageGroups.flatMap(g => g.messages);
           
@@ -1417,8 +1480,9 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
             </div>
           );
         })}
-        
-        {messages.length === 0 && (
+
+        {/* Show empty state only when data is loaded but no messages */}
+        {!isError && messagesData && messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center p-4">
             <Shield className="h-12 w-12 text-[#a6c455] mb-3" />
             <h3 className="text-[#a6c455] text-lg font-medium mb-1">Saluran Komunikasi Aman</h3>
