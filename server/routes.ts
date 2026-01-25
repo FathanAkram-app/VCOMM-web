@@ -3,8 +3,8 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { cmsStorage } from "./storage-cms";
 import { setupAuth, isAuthenticated, inMemoryUsers, inMemoryConversations, inMemoryConversationMembers, nextConversationId, inMemoryMessages, inMemoryConversationMessages, nextMessageId } from "./auth";
-import { 
-  WebSocketMessage, 
+import {
+  WebSocketMessage,
   insertMessageSchema,
   insertConversationSchema,
   insertConversationMemberSchema
@@ -51,6 +51,7 @@ import { createWebRTCRoutes } from "./routes/webrtc.routes";
 import { FCMController } from "./controllers/fcm.controller";
 import { setupWebSocketServer } from "./websocket/websocket-server";
 import gotifyRoutes from "./routes/gotify.routes";
+import userGotifyRoutes from "./routes/user-gotify.routes";
 
 // Type for requests with authenticated user
 interface AuthRequest extends Request {
@@ -124,6 +125,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Gotify routes
   app.use('/api/gotify', isAuthenticated, gotifyRoutes);
+
+  // User Gotify token management routes
+  app.use('/api/user', isAuthenticated, userGotifyRoutes);
 
   // Serve static uploads
   app.use('/uploads', isAuthenticated, express.static(path.join(process.cwd(), 'uploads')));

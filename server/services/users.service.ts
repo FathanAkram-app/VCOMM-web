@@ -29,7 +29,8 @@ export class UsersService {
       id: user.id,
       callsign: user.callsign,
       fullName: user.fullName,
-      rank: user.rank
+      rank: user.rank,
+      status: user.status
     };
   }
 }

@@ -5,6 +5,7 @@ import connectPg from 'connect-pg-simple';
 import crypto from 'crypto';
 import { storage } from './storage';
 import { loginSchema, registerUserSchema } from '@shared/schema';
+import { gotifyService } from './services/gotify.service';
 
 declare module 'express-session' {
   interface SessionData {
@@ -172,6 +173,14 @@ export async function setupAuth(app: express.Express) {
         console.log(`Created in-memory user: ${user.callsign} (ID: ${userId})`);
       }
 
+      // Auto-provision Gotify client token for push notifications
+      try {
+        await gotifyService.ensureUserHasToken(user.id, user.callsign);
+      } catch (error) {
+        console.warn('[Auth] Failed to provision Gotify token for new user:', error);
+        // Non-critical, continue with registration
+      }
+
       // Store user in session (auto login)
       req.session.user = {
         id: user.id,
@@ -199,7 +208,7 @@ export async function setupAuth(app: express.Express) {
       res.status(500).json({ message: "Failed to register" });
     }
   });
-  
+
   // Login route
   app.post('/api/auth/login', async (req, res) => {
     try {
@@ -242,6 +251,14 @@ export async function setupAuth(app: express.Express) {
         branch: user.branch
       };
 
+      // Auto-provision Gotify client token for push notifications
+      try {
+        await gotifyService.ensureUserHasToken(user.id, user.callsign);
+      } catch (error) {
+        console.warn('[Auth] Failed to provision Gotify token on login:', error);
+        // Non-critical, continue with login
+      }
+
       // Update user status to online (try database, ignore if fails)
       try {
         await storage.updateUserStatus(user.id, 'online');
@@ -282,16 +299,16 @@ export async function setupAuth(app: express.Express) {
       res.status(500).json({ message: "Failed to login" });
     }
   });
-  
+
   // Get current user
   app.get('/api/auth/user', isAuthenticated, async (req, res) => {
     try {
       const user = await storage.getUser(req.session.user.id);
       if (!user) {
-        req.session.destroy(() => {});
+        req.session.destroy(() => { });
         return res.status(401).json({ message: "User not found" });
       }
-      
+
       // Return user without password
       const { password, ...userWithoutPassword } = user;
       res.json(userWithoutPassword);
@@ -300,13 +317,13 @@ export async function setupAuth(app: express.Express) {
       res.status(500).json({ message: "Failed to get user" });
     }
   });
-  
+
   // Logout route
   app.post('/api/auth/logout', isAuthenticated, async (req, res) => {
     try {
       // Update user status to offline
       await storage.updateUserStatus(req.session.user.id, 'offline');
-      
+
       // Destroy session
       req.session.destroy(() => {
         res.json({ message: "Logged out successfully" });

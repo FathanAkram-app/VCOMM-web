@@ -36,6 +36,8 @@ export const users = pgTable("users", {
   role: varchar("role").default("user"),    // user, admin, super_admin
   status: varchar("status").default("offline"),
   profileImageUrl: varchar("profile_image_url"),
+  gotifyClientToken: varchar("gotify_client_token", { length: 255 }),  // Gotify push notification token
+  gotifyTokenUpdatedAt: timestamp("gotify_token_updated_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -315,12 +317,12 @@ export type InsertConversationMember = z.infer<typeof insertConversationMemberSc
 
 // WebSocket message types
 export type WebSocketMessage = {
-  type: 'new_message' | 'user_status' | 'typing' | 'read_receipt' | 
-        'webrtc_offer' | 'webrtc_answer' | 'webrtc_ice_candidate' |
-        'group_webrtc_offer' | 'group_webrtc_answer' | 'group_webrtc_ice_candidate' |
-        'start_group_call' | 'join_group_call' | 'end_call' | 
-        'incoming_group_call' | 'group_call_participants_update' | 'group_call_ended' |
-        'group_update';
+  type: 'new_message' | 'user_status' | 'typing' | 'read_receipt' |
+  'webrtc_offer' | 'webrtc_answer' | 'webrtc_ice_candidate' |
+  'group_webrtc_offer' | 'group_webrtc_answer' | 'group_webrtc_ice_candidate' |
+  'start_group_call' | 'join_group_call' | 'end_call' |
+  'incoming_group_call' | 'group_call_participants_update' | 'group_call_ended' |
+  'group_update';
   payload: any;
 };
 

@@ -33,7 +33,7 @@ export interface IStorage {
   updateUserStatus(userId: number, status: string): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
   isUserOnline(userId: number): Promise<boolean>;
-  
+
   // User settings operations
   getUserSettings(userId: number): Promise<any>;
   updateUserSettings(userId: number, settings: any): Promise<any>;
@@ -43,7 +43,7 @@ export interface IStorage {
   createConversation(data: InsertConversation): Promise<Conversation>;
   getUserConversations(userId: number): Promise<Conversation[]>;
   deleteConversation(id: number): Promise<void>;
-  
+
   // Conversation members operations
   addMemberToConversation(data: InsertConversationMember): Promise<ConversationMember>;
   getConversationMembers(conversationId: number): Promise<ConversationMember[]>;
@@ -58,27 +58,32 @@ export interface IStorage {
   unhideConversationForUser(userId: number, conversationId: number): Promise<void>;
   findHiddenDirectChatBetweenUsers(userId: number, otherUserId: number): Promise<Conversation | undefined>;
   clearChatHistoryForUser(userId: number, conversationId: number): Promise<void>;
-  
+
   // Message operations
   createMessage(data: InsertMessage): Promise<Message>;
   getMessagesByConversation(conversationId: number): Promise<Message[]>;
-  getMessagesByConversationForUser(conversationId: number, userId: number, limit?: number, offset?: number): Promise<{messages: Message[], total: number, hasMore: boolean}>;
+  getMessagesByConversationForUser(conversationId: number, userId: number, limit?: number, offset?: number): Promise<{ messages: Message[], total: number, hasMore: boolean }>;
   clearConversationMessages(conversationId: number): Promise<void>;
-  
+
   // Call history operations
   getCallHistory(userId: number): Promise<any[]>;
   addCallHistory(callData: any): Promise<void>;
   updateCallStatus(callId: string, status: string): Promise<void>;
   deleteCallHistory(callId: number, userId: number): Promise<void>;
-  
+
   // Message operations for delete, reply, and forward
   deleteMessage(messageId: number): Promise<Message>;
   getMessage(messageId: number): Promise<Message | undefined>;
   forwardMessage(originalMessageId: number, newConversationId: number, senderId: number): Promise<Message>;
-  
+
   // User settings operations
   updateUserStatus(userId: number, status: string): Promise<void>;
   changeUserPassword(userId: number, currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }>;
+
+  // Gotify token operations
+  updateUserGotifyToken(userId: number, clientToken: string): Promise<void>;
+  getUserGotifyToken(userId: number): Promise<string | null>;
+  deleteUserGotifyToken(userId: number): Promise<void>;
 }
 
 // Database storage implementation
@@ -116,7 +121,7 @@ export class DatabaseStorage implements IStorage {
   async updateUserStatus(userId: number, status: string): Promise<User | undefined> {
     const [user] = await db
       .update(users)
-      .set({ 
+      .set({
         status: status,
         updatedAt: new Date()
       })
@@ -134,6 +139,40 @@ export class DatabaseStorage implements IStorage {
     return user?.status === 'online';
   }
 
+  // Gotify token operations
+  async updateUserGotifyToken(userId: number, clientToken: string): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        gotifyClientToken: clientToken,
+        gotifyTokenUpdatedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId));
+    console.log(`[Storage] Updated Gotify token for user ${userId}`);
+  }
+
+  async getUserGotifyToken(userId: number): Promise<string | null> {
+    const user = await db
+      .select({ gotifyClientToken: users.gotifyClientToken })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    return user[0]?.gotifyClientToken || null;
+  }
+
+  async deleteUserGotifyToken(userId: number): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        gotifyClientToken: null,
+        gotifyTokenUpdatedAt: null,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId));
+    console.log(`[Storage] Deleted Gotify token for user ${userId}`);
+  }
+
   // Conversation operations
   async getConversation(id: number): Promise<Conversation | undefined> {
     const [conversation] = await db
@@ -142,7 +181,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(conversations.id, id));
     return conversation;
   }
-  
+
   async createConversation(data: InsertConversation): Promise<Conversation> {
     // Di schema, createdById diperlukan tetapi tidak ada di insertConversationSchema
     // Gunakan placeholder userId = 1 untuk sementara
@@ -157,10 +196,10 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return conversation;
   }
-  
+
   async getUserConversations(userId: number): Promise<any[]> {
     console.log(`[Storage] Getting conversations for user ID: ${userId}`);
-    
+
     // Get all conversations where user is a member and not hidden
     const members = await db
       .select()
@@ -173,7 +212,7 @@ export class DatabaseStorage implements IStorage {
       );
 
     console.log(`[Storage] Found ${members.length} memberships for user ${userId}`);
-    
+
     if (members.length === 0) {
       console.log(`[Storage] No memberships found for user ${userId}`);
       return [];
@@ -181,31 +220,31 @@ export class DatabaseStorage implements IStorage {
 
     const conversationIds = members.map(member => member.conversationId);
     console.log(`[Storage] Found conversation IDs for user ${userId}:`, conversationIds);
-    
+
     const userConversations = await db
       .select()
       .from(conversations)
       .where(inArray(conversations.id, conversationIds));
-    
+
     console.log(`[Storage] Retrieved ${userConversations.length} conversations for user ${userId}`);
-    
+
     // Add unread count, member count, and personal last message for each conversation
     const conversationsWithUnreadAndMembers = await Promise.all(
       userConversations.map(async (conv) => {
         // Get unread message count for this user in this conversation
         const unreadCount = await this.getUnreadMessageCount(conv.id, userId);
-        
+
         // Get member count for this conversation
         const members = await this.getConversationMembers(conv.id);
         const memberCount = members.length;
-        
+
         // Get personal last message (that hasn't been deleted by this user)
         const personalLastMessage = await this.getPersonalLastMessage(conv.id, userId);
-        
+
         // Determine what to show as last message
         let displayLastMessage = "Belum ada pesan";
         let displayLastMessageTime = conv.lastMessageTime;
-        
+
         if (personalLastMessage) {
           // User has visible messages, show the latest one
           displayLastMessage = personalLastMessage.content;
@@ -215,7 +254,7 @@ export class DatabaseStorage implements IStorage {
           displayLastMessage = "Belum ada pesan";
           displayLastMessageTime = null;
         }
-        
+
         return {
           ...conv,
           unreadCount,
@@ -225,7 +264,7 @@ export class DatabaseStorage implements IStorage {
         };
       })
     );
-    
+
     return conversationsWithUnreadAndMembers;
   }
 
@@ -244,18 +283,18 @@ export class DatabaseStorage implements IStorage {
             eq(messages.isDeleted, false) // Don't count deleted messages
           )
         );
-      
+
       // Also filter out messages deleted by this specific user
       const deletedByUser = await db
         .select({ messageId: deletedMessagesPerUser.messageId })
         .from(deletedMessagesPerUser)
         .where(eq(deletedMessagesPerUser.userId, userId));
-      
+
       const deletedMessageIds = new Set(deletedByUser.map(d => d.messageId));
-      
+
       // Filter out messages deleted by this user
       const actualUnreadMessages = unreadMessages.filter(msg => !deletedMessageIds.has(msg.id));
-      
+
       console.log(`[Storage] Unread count for user ${userId} in conversation ${conversationId}: ${actualUnreadMessages.length}`);
       return actualUnreadMessages.length;
     } catch (error) {
@@ -268,7 +307,7 @@ export class DatabaseStorage implements IStorage {
   async markConversationMessagesAsRead(conversationId: number, userId: number): Promise<void> {
     try {
       console.log(`[Storage] Marking messages as read for user ${userId} in conversation ${conversationId}`);
-      
+
       // Update all unread messages in this conversation (except user's own messages) to read
       await db
         .update(messages)
@@ -280,30 +319,30 @@ export class DatabaseStorage implements IStorage {
             eq(messages.isRead, false) // Only update unread messages
           )
         );
-      
+
       console.log(`[Storage] Messages marked as read for user ${userId} in conversation ${conversationId}`);
     } catch (error) {
       console.error('Error marking messages as read:', error);
     }
   }
-  
+
   async deleteConversation(id: number): Promise<void> {
     // First delete all messages in this conversation
     await db
       .delete(messages)
       .where(eq(messages.conversationId, id));
-    
+
     // Then delete all members
     await db
       .delete(conversationMembers)
       .where(eq(conversationMembers.conversationId, id));
-    
+
     // Finally delete the conversation itself
     await db
       .delete(conversations)
       .where(eq(conversations.id, id));
   }
-  
+
   // Conversation members operations
   async addMemberToConversation(data: InsertConversationMember): Promise<ConversationMember> {
     // Check if member already exists
@@ -316,11 +355,11 @@ export class DatabaseStorage implements IStorage {
           eq(conversationMembers.userId, data.userId)
         )
       );
-    
+
     if (existingMember) {
       return existingMember;
     }
-    
+
     // Add new member
     const [member] = await db
       .insert(conversationMembers)
@@ -418,7 +457,7 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return conversation;
   }
-  
+
   // Message operations
   async createMessage(data: InsertMessage): Promise<Message> {
     // Insert the new message
@@ -430,23 +469,23 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date()
       })
       .returning();
-    
+
     // Tentukan teks yang akan ditampilkan di preview pesan
     let lastMessagePreview = message.content;
-    
+
     // Jika pesan berisi attachment, tambahkan informasi itu ke preview
     if (message.hasAttachment) {
       const attachmentType = message.attachmentType || 'file';
       // Jika pesan kosong, gunakan teks indikator file saja
       if (!lastMessagePreview || lastMessagePreview.trim() === '') {
         lastMessagePreview = `[${attachmentType.charAt(0).toUpperCase() + attachmentType.slice(1)}]`;
-      } 
+      }
       // Jika ada teks, gabungkan dengan indikator file
       else {
         lastMessagePreview = `${lastMessagePreview} [${attachmentType}]`;
       }
     }
-    
+
     // Now update the conversation with the latest message
     await db.execute(
       sql`UPDATE conversations 
@@ -455,7 +494,7 @@ export class DatabaseStorage implements IStorage {
               last_message_time = NOW() 
           WHERE id = ${message.conversationId}`
     );
-    
+
     return message;
   }
 
@@ -465,16 +504,16 @@ export class DatabaseStorage implements IStorage {
       .from(messages)
       .where(eq(messages.conversationId, conversationId))
       .orderBy(messages.createdAt);
-    
+
     console.log(`Found ${result.length} messages for conversation ${conversationId}`);
     if (result.length > 0) {
       console.log(`Sample message fields:`, Object.keys(result[0]));
     }
-    
+
     return result;
   }
 
-  async getMessagesByConversationForUser(conversationId: number, userId: number, limit?: number, offset?: number): Promise<{messages: Message[], total: number, hasMore: boolean}> {
+  async getMessagesByConversationForUser(conversationId: number, userId: number, limit?: number, offset?: number): Promise<{ messages: Message[], total: number, hasMore: boolean }> {
     try {
       // Get all messages for the conversation ordered by creation time (ascending for chronological order)
       const allMessages = await db
@@ -529,34 +568,34 @@ export class DatabaseStorage implements IStorage {
       };
     }
   }
-  
+
   async clearConversationMessages(conversationId: number): Promise<void> {
     await db
       .delete(messages)
       .where(eq(messages.conversationId, conversationId));
   }
-  
+
   // Message operations for delete, reply, and forward
   async getMessage(messageId: number): Promise<Message | undefined> {
     const [message] = await db
       .select()
       .from(messages)
       .where(eq(messages.id, messageId));
-    
+
     return message;
   }
-  
+
   async deleteMessage(messageId: number): Promise<Message> {
     // Get the message first to check if it has attachments
     const [message] = await db
       .select()
       .from(messages)
       .where(eq(messages.id, messageId));
-    
+
     if (!message) {
       throw new Error(`Message with ID ${messageId} not found`);
     }
-    
+
     // Soft delete message by setting isDeleted flag to true
     // Also clear attachment information if present
     const [updatedMessage] = await db
@@ -573,7 +612,7 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(messages.id, messageId))
       .returning();
-    
+
     return updatedMessage;
   }
 
@@ -587,22 +626,22 @@ export class DatabaseStorage implements IStorage {
           userId: userId,
         })
         .onConflictDoNothing(); // Prevent duplicate entries
-      
+
       console.log(`Message ${messageId} marked as deleted for user ${userId} (local delete)`);
     } catch (error) {
       console.error(`Error marking message ${messageId} as deleted for user ${userId}:`, error);
       throw new Error("Failed to mark message as deleted for user");
     }
   }
-  
+
   async forwardMessage(originalMessageId: number, newConversationId: number, senderId: number): Promise<Message> {
     // Get the original message
     const originalMessage = await this.getMessage(originalMessageId);
-    
+
     if (!originalMessage) {
       throw new Error("Pesan asli tidak ditemukan");
     }
-    
+
     // Create a new message with the same content and attachments but in the new conversation
     const forwardData: InsertMessage = {
       // Tambahkan indikator "Diteruskan" di awal pesan
@@ -617,7 +656,7 @@ export class DatabaseStorage implements IStorage {
       attachmentSize: originalMessage.attachmentSize,
       forwardedFromId: originalMessageId,
     };
-    
+
     // Insert the new message
     const newMessage = await this.createMessage(forwardData);
     return newMessage;
@@ -630,16 +669,16 @@ export class DatabaseStorage implements IStorage {
         .select({ id: messages.id })
         .from(messages)
         .where(eq(messages.conversationId, conversationId));
-      
+
       const idsToDelete = messageIds.map(m => m.id);
-      
+
       if (idsToDelete.length === 0) {
         console.log(`No messages to clear in conversation ${conversationId}`);
         return;
       }
-      
+
       console.log(`Clearing ${idsToDelete.length} messages from conversation ${conversationId}`);
-      
+
       // Update any messages that reference the messages we're about to delete
       if (idsToDelete.length > 0) {
         await db
@@ -647,22 +686,22 @@ export class DatabaseStorage implements IStorage {
           .set({ forwardedFromId: null })
           .where(inArray(messages.forwardedFromId, idsToDelete));
       }
-      
+
       // Now delete all messages in the conversation
       await db
         .delete(messages)
         .where(eq(messages.conversationId, conversationId));
-        
+
       // Clear the last message info from the conversation
       await db
         .update(conversations)
-        .set({ 
+        .set({
           lastMessage: null,
           lastMessageTime: null,
           updatedAt: new Date()
         })
         .where(eq(conversations.id, conversationId));
-        
+
       console.log(`Successfully cleared messages from conversation ${conversationId}`);
     } catch (error) {
       console.error(`Error clearing messages from conversation ${conversationId}:`, error);
@@ -673,12 +712,12 @@ export class DatabaseStorage implements IStorage {
   async deleteConversation(conversationId: number): Promise<void> {
     // Delete all messages in the conversation first
     await this.clearConversationMessages(conversationId);
-    
+
     // Delete all conversation members
     await db
       .delete(conversationMembers)
       .where(eq(conversationMembers.conversationId, conversationId));
-    
+
     // Delete the conversation itself
     await db
       .delete(conversations)
@@ -721,7 +760,7 @@ export class DatabaseStorage implements IStorage {
             eq(conversationMembers.conversationId, conversationId)
           )
         );
-      
+
       console.log(`[Storage] Hidden conversation ${conversationId} for user ${userId}`);
     } catch (error) {
       console.error(`Error hiding conversation ${conversationId} for user ${userId}:`, error);
@@ -741,7 +780,7 @@ export class DatabaseStorage implements IStorage {
             eq(conversationMembers.conversationId, conversationId)
           )
         );
-      
+
       console.log(`[Storage] Unhidden conversation ${conversationId} for user ${userId}`);
     } catch (error) {
       console.error(`Error unhiding conversation ${conversationId} for user ${userId}:`, error);
@@ -773,11 +812,11 @@ export class DatabaseStorage implements IStorage {
       for (const hiddenConv of hiddenConversations) {
         const members = await this.getConversationMembers(hiddenConv.conversation.id);
         const memberIds = members.map(m => m.userId);
-        
+
         // Jika conversation berisi tepat 2 member dan salah satunya adalah otherUserId
-        if (memberIds.length === 2 && 
-            memberIds.includes(userId) && 
-            memberIds.includes(otherUserId)) {
+        if (memberIds.length === 2 &&
+          memberIds.includes(userId) &&
+          memberIds.includes(otherUserId)) {
           console.log(`[Storage] Found hidden direct chat ${hiddenConv.conversation.id} between users ${userId} and ${otherUserId}`);
           return hiddenConv.conversation;
         }
@@ -892,7 +931,7 @@ export class DatabaseStorage implements IStorage {
         .from(callHistory)
         .where(eq(callHistory.callId, callId))
         .limit(1);
-      
+
       return call || null;
     } catch (error) {
       console.error(`Error getting call by callId ${callId}:`, error);
@@ -1018,7 +1057,7 @@ export class DatabaseStorage implements IStorage {
         endTime: callData.endTime,
         duration: callData.duration
       });
-      
+
       console.log(`[Storage] Added call history: ${callData.callId} (${callData.callType}) - ${callData.status}`);
     } catch (error) {
       console.error('Error adding call history:', error);
@@ -1055,12 +1094,12 @@ export class DatabaseStorage implements IStorage {
     try {
       await db
         .update(callHistory)
-        .set({ 
+        .set({
           status,
-          endTime: status === 'missed' || status === 'ended' || status === 'rejected' ? new Date() : undefined 
+          endTime: status === 'missed' || status === 'ended' || status === 'rejected' ? new Date() : undefined
         })
         .where(eq(callHistory.callId, callId));
-      
+
       console.log(`[Storage] Updated call ${callId} status to ${status}`);
     } catch (error) {
       console.error('Error updating call status:', error);
@@ -1190,7 +1229,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(lapsitSubCategories, eq(lapsitReports.subCategoryId, lapsitSubCategories.id))
       .leftJoin(users, eq(lapsitReports.reportedById, users.id))
       .orderBy(desc(lapsitReports.createdAt));
-    
+
     console.log(`[Storage] Found ${reports.length} lapsit reports`);
     return reports;
   }
@@ -1203,17 +1242,17 @@ export class DatabaseStorage implements IStorage {
         .select({ messageId: deletedMessagesPerUser.messageId })
         .from(deletedMessagesPerUser)
         .where(eq(deletedMessagesPerUser.userId, userId));
-      
+
       const deletedMessageIdSet = new Set(deletedMessageResults.map((dm: any) => dm.messageId));
-      
+
       // Filter out messages that are deleted for this user or globally deleted
       return messages.filter(msg => {
         // If message is deleted globally, hide it for everyone
         if (msg.isDeleted) return false;
-        
+
         // If message is deleted for this specific user, hide it only for them
         if (deletedMessageIdSet.has(msg.id)) return false;
-        
+
         return true;
       });
     } catch (error) {
@@ -1226,7 +1265,7 @@ export class DatabaseStorage implements IStorage {
   async updateUserStatus(userId: number, status: string): Promise<void> {
     await db
       .update(users)
-      .set({ 
+      .set({
         status,
         updatedAt: new Date()
       })
@@ -1255,7 +1294,7 @@ export class DatabaseStorage implements IStorage {
       // Update password in database
       await db
         .update(users)
-        .set({ 
+        .set({
           password: hashedNewPassword,
           updatedAt: new Date()
         })
@@ -1272,7 +1311,7 @@ export class DatabaseStorage implements IStorage {
   async getUserGroups(userId: number): Promise<any[]> {
     try {
       console.log(`[Storage] Getting groups for user ${userId}`);
-      
+
       const userGroups = await db
         .select({
           groupId: conversationMembers.conversationId,
@@ -1300,7 +1339,7 @@ export class DatabaseStorage implements IStorage {
   async getGroupMembers(groupId: number): Promise<number[]> {
     try {
       console.log(`[Storage] Getting members for group ${groupId}`);
-      
+
       const members = await db
         .select({ userId: conversationMembers.userId })
         .from(conversationMembers)
@@ -1321,7 +1360,7 @@ export class DatabaseStorage implements IStorage {
       // For now, just return all users as online since we don't have real-time status tracking
       // In a real system, you'd check WebSocket connections or last_seen timestamps
       console.log(`[Storage] Checking online status for users:`, userIds);
-      
+
       const onlineUsers = await db
         .select({ id: users.id })
         .from(users)

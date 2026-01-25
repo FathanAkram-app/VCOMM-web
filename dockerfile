@@ -15,11 +15,22 @@ RUN npm config set fetch-retry-mintimeout 20000 && \
 # Copy all source code
 COPY . .
 
+# Copy migrations folder
+COPY migrations /app/migrations
+
+# Copy and set permissions for entrypoint script
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+
+# Install PostgreSQL client for migrations
+RUN apt-get update && apt-get install -y postgresql-client && rm -rf /var/lib/apt/lists/*
+
 # Build TypeScript (jika ada)
 RUN if [ -f tsconfig.json ]; then npm run build; fi
 
 # Expose port sesuai aplikasi (misal 5000)
 EXPOSE 5000
 
-# Jalankan aplikasi (ubah sesuai entrypoint project)
-CMD ["npm", "start"]
+# Use entrypoint script to run migrations before starting app
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
+

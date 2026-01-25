@@ -339,6 +339,12 @@ export default function VideoCall() {
             muted
             className="w-full h-full object-contain"
           />
+          {!activeCall.videoEnabled && (
+            <div className="absolute inset-0 bg-[#333333] flex flex-col items-center justify-center">
+              <VideoOff className="h-8 w-8 text-[#a6c455] mb-2" />
+              <span className="text-xs text-[#a6c455] uppercase font-medium">Video Disabled</span>
+            </div>
+          )}
         </div>
       </div>
       

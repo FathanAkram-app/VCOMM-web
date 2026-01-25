@@ -2,7 +2,6 @@ import { WebSocket } from 'ws';
 import { IStorage } from '../../storage';
 import { AuthenticatedWebSocket, ClientsMap, GroupCallsMap } from '../utils/types';
 import { sendToClient } from '../utils/send';
-import { gotifyService } from '../../services/gotify.service';
 
 export function createCallHandlers(
   storage: IStorage,
@@ -35,6 +34,7 @@ export function createCallHandlers(
 
     const targetClient = clients.get(toUserId);
     if (targetClient && targetClient.readyState === targetClient.OPEN) {
+      // Send WebSocket notification (for foreground app)
       targetClient.send(JSON.stringify({
         type: 'incoming_call',
         payload: {
@@ -44,7 +44,11 @@ export function createCallHandlers(
           fromUserName
         }
       }));
-      console.log(`[Call] Sent incoming call notification to user ${toUserId}`);
+      console.log(`[Call] Sent incoming call notification to user ${toUserId} via WebSocket`);
+
+      // Note: Notifications are handled via WebSocket - when user is online, they receive
+      // incoming_call message. When backgrounded, the mobile app's WebSocket service
+      // will show a notification.
 
       // Set timeout for unanswered calls (30 seconds)
       setTimeout(async () => {
@@ -72,7 +76,10 @@ export function createCallHandlers(
         }
       }, 30000); // 30 seconds timeout
     } else {
-      // User is offline, log missed call AND send push notification
+      // User is offline (no WebSocket connection)
+      console.log(`[Call] User ${toUserId} is offline (no WebSocket), sending Gotify push`);
+
+      // Log as missed call
       await storage.addCallHistory({
         callId,
         callType,
@@ -85,22 +92,29 @@ export function createCallHandlers(
         duration: null
       });
 
-      // Send push notification to offline user
-      console.log(`[Call] User ${toUserId} is offline, sending push notification`);
+      // Send Gotify push notification
       try {
-        await gotifyService.sendCallNotification(
-          toUserId,
-          fromUserName,
-          callType,
-          callId,
-          fromUserId
-        );
-        console.log(`[Call] Push notification sent to user ${toUserId}`);
+        // Fetch user's Gotify client token
+        const userGotifyToken = await storage.getUserGotifyToken(toUserId);
+
+        if (userGotifyToken) {
+          await gotifyService.sendCallNotification(
+            userGotifyToken,  // User's client token
+            callId,
+            fromUserId.toString(),
+            fromUserName,
+            callType,
+            false  // isGroupCall
+          );
+          console.log(`[Call] Gotify push notification sent to offline user ${toUserId}`);
+        } else {
+          console.warn(`[Call] User ${toUserId} has no Gotify token configured`);
+        }
       } catch (error) {
-        console.error(`[Call] Error sending push notification:`, error);
+        console.error(`[Call] Error sending Gotify push notification:`, error);
       }
 
-      // Send failure response
+      // Notify caller that user is offline
       ws.send(JSON.stringify({
         type: 'call_failed',
         payload: {
@@ -108,7 +122,7 @@ export function createCallHandlers(
           reason: 'User is offline'
         }
       }));
-      console.log(`[Call] User ${toUserId} is offline, call failed`);
+      console.log(`[Call] User ${toUserId} is offline, notified caller`);
     }
   }
 

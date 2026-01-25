@@ -13,7 +13,7 @@ services:
       - SESSION_SECRET=local-vcomm-secret-key-change-this
       - HTTPS_ENABLED=true
       - GOTIFY_URL=http://gotify
-      - GOTIFY_APP_TOKEN=A8HRPAtOQJay_X1
+      - GOTIFY_APP_TOKEN=A7g6dCqw1xgG3RS
     ports:
       - "5000:5000"
     volumes:
@@ -41,14 +41,7 @@ services:
     ports:
       - "5432:5432"
     command: >
-      postgres
-      -c max_connections=200
-      -c shared_buffers=256MB
-      -c effective_cache_size=1GB
-      -c maintenance_work_mem=64MB
-      -c checkpoint_completion_target=0.7
-      -c wal_buffers=16MB
-      -c default_statistics_target=100
+      postgres -c max_connections=200 -c shared_buffers=256MB -c effective_cache_size=1GB -c maintenance_work_mem=64MB -c checkpoint_completion_target=0.7 -c wal_buffers=16MB -c default_statistics_target=100
     networks:
       - vcomm-network
 
@@ -91,7 +84,7 @@ services:
     volumes:
       - ./turnserver.conf:/etc/coturn/turnserver.conf:ro
       - coturn_logs:/var/log/turnserver
-    command: ["-c", "/etc/coturn/turnserver.conf"]
+    command: [ "-c", "/etc/coturn/turnserver.conf" ]
 
   # Gotify Push Notification Server
   gotify:
@@ -113,6 +106,7 @@ volumes:
   redis_data:
   coturn_logs:
   gotify_data:
+
 
 networks:
   vcomm-network:
