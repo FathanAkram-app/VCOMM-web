@@ -32,6 +32,9 @@ export function createConversationsRoutes(conversationsController: Conversations
   router.post('/conversations/:id/hide', isAuthenticated, validateConversationId, conversationsController.hideConversation);
   router.post('/conversations/:id/delete', isAuthenticated, validateConversationId, conversationsController.deleteConversationForUser);
 
+  // Mute/unmute conversation
+  router.post('/conversations/:id/mute', isAuthenticated, validateConversationId, conversationsController.muteConversation);
+
   // Mark as read
   router.post('/conversations/:id/mark-read', isAuthenticated, validateConversationId, conversationsController.markAsRead);
 

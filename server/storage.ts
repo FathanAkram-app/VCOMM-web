@@ -56,6 +56,8 @@ export interface IStorage {
   removeUserFromConversation(userId: number, conversationId: number): Promise<void>;
   hideConversationForUser(userId: number, conversationId: number): Promise<void>;
   unhideConversationForUser(userId: number, conversationId: number): Promise<void>;
+  muteConversation(userId: number, conversationId: number, muted: boolean): Promise<void>;
+  isConversationMuted(userId: number, conversationId: number): Promise<boolean>;
   findHiddenDirectChatBetweenUsers(userId: number, otherUserId: number): Promise<Conversation | undefined>;
   clearChatHistoryForUser(userId: number, conversationId: number): Promise<void>;
 
@@ -219,6 +221,9 @@ export class DatabaseStorage implements IStorage {
     }
 
     const conversationIds = members.map(member => member.conversationId);
+    // Build a map of conversationId -> isMuted for this user
+    const muteMap = new Map<number, boolean>();
+    members.forEach(member => muteMap.set(member.conversationId, member.isMuted ?? false));
     console.log(`[Storage] Found conversation IDs for user ${userId}:`, conversationIds);
 
     const userConversations = await db
@@ -260,7 +265,8 @@ export class DatabaseStorage implements IStorage {
           unreadCount,
           memberCount,
           lastMessage: displayLastMessage,
-          lastMessageTime: displayLastMessageTime
+          lastMessageTime: displayLastMessageTime,
+          isMuted: muteMap.get(conv.id) ?? false,
         };
       })
     );
@@ -785,6 +791,42 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error(`Error unhiding conversation ${conversationId} for user ${userId}:`, error);
       throw new Error("Failed to unhide conversation for user");
+    }
+  }
+
+  async muteConversation(userId: number, conversationId: number, muted: boolean): Promise<void> {
+    try {
+      await db
+        .update(conversationMembers)
+        .set({ isMuted: muted })
+        .where(
+          and(
+            eq(conversationMembers.userId, userId),
+            eq(conversationMembers.conversationId, conversationId)
+          )
+        );
+      console.log(`[Storage] ${muted ? 'Muted' : 'Unmuted'} conversation ${conversationId} for user ${userId}`);
+    } catch (error) {
+      console.error(`Error ${muted ? 'muting' : 'unmuting'} conversation:`, error);
+      throw new Error("Failed to update mute status");
+    }
+  }
+
+  async isConversationMuted(userId: number, conversationId: number): Promise<boolean> {
+    try {
+      const [member] = await db
+        .select({ isMuted: conversationMembers.isMuted })
+        .from(conversationMembers)
+        .where(
+          and(
+            eq(conversationMembers.userId, userId),
+            eq(conversationMembers.conversationId, conversationId)
+          )
+        );
+      return member?.isMuted ?? false;
+    } catch (error) {
+      console.error(`Error checking mute status:`, error);
+      return false;
     }
   }
 

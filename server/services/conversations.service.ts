@@ -92,6 +92,14 @@ export class ConversationsService {
     return await this.storage.getConversationMembership(userId, conversationId);
   }
 
+  async muteConversation(userId: number, conversationId: number, muted: boolean): Promise<void> {
+    await this.storage.muteConversation(userId, conversationId, muted);
+  }
+
+  async isConversationMuted(userId: number, conversationId: number): Promise<boolean> {
+    return await this.storage.isConversationMuted(userId, conversationId);
+  }
+
   // Helper methods
   formatConversations(conversations: Conversation[]): any[] {
     return conversations.map(conv => ({

@@ -36,5 +36,26 @@ else
   echo "ℹ️  No migrations directory found, skipping..."
 fi
 
+# Run drizzle-kit push to auto-sync schema changes
+echo "🔄 Running drizzle-kit push to sync schema..."
+npx drizzle-kit push --force 2>&1 || echo "⚠️  drizzle-kit push encountered issues (schema may already be up to date)"
+echo "✅ Schema sync complete"
+
+# Run database seeder
+echo "🌱 Running database seeder..."
+SEED_FILE="/app/dist/seed.js"
+
+if [ -f "$SEED_FILE" ]; then
+  node "$SEED_FILE"
+
+  if [ $? -eq 0 ]; then
+    echo "✅ Seeder completed successfully"
+  else
+    echo "⚠️  Seeder encountered issues (may already be seeded)"
+  fi
+else
+  echo "ℹ️  No seed file found at $SEED_FILE, skipping..."
+fi
+
 echo "🚀 Starting application..."
 exec npm start

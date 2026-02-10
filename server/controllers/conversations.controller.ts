@@ -205,6 +205,26 @@ export class ConversationsController {
     }
   };
 
+  muteConversation = async (req: AuthRequest, res: Response): Promise<Response | void> => {
+    try {
+      const userId = req.session?.user?.id;
+      if (!userId) {
+        return res.status(400).json({ message: 'User ID not found in session' });
+      }
+
+      const conversationId = parseInt(req.params.id);
+      const { muted } = req.body;
+      const newMuted = muted !== undefined ? !!muted : true;
+
+      await this.conversationsService.muteConversation(userId, conversationId, newMuted);
+
+      return res.json({ muted: newMuted });
+    } catch (error) {
+      console.error('Error toggling mute:', error);
+      return res.status(500).json({ message: 'Failed to update mute status' });
+    }
+  };
+
   // Conversation Members
   getMembers = async (req: AuthRequest, res: Response): Promise<Response | void> => {
     try {

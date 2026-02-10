@@ -140,6 +140,11 @@ export function setupWebSocketServer(httpServer: Server, storage: IStorage) {
             await groupWebRTCHandlers.handleGroupParticipantRefresh(ws, data);
             break;
 
+          case 'ping':
+            // Respond to client keepalive pings
+            ws.send(JSON.stringify({ type: 'pong' }));
+            break;
+
           default:
             console.log(`[WebSocket] Unknown message type: ${data.type}`);
         }
@@ -151,24 +156,48 @@ export function setupWebSocketServer(httpServer: Server, storage: IStorage) {
     // Handle WebSocket close
     ws.on('close', async () => {
       if (ws.userId) {
-        console.log(`WebSocket closed for user ${ws.userId}`);
-        clients.delete(ws.userId);
-        activeSessions.delete(ws.userId);
+        const source = ws.source || 'foreground';
+        console.log(`WebSocket closed for user ${ws.userId} (${source})`);
 
-        // Update user status to offline
-        try {
-          await storage.updateUserStatus(ws.userId, 'offline');
+        // Remove this specific connection
+        const userClients = clients.get(ws.userId);
+        const userSessions = activeSessions.get(ws.userId);
 
-          // Broadcast user status change
-          broadcastToAll({
-            type: 'user_status',
-            payload: {
-              userId: ws.userId,
-              status: 'offline'
-            }
-          });
-        } catch (error) {
-          console.error('Error updating user status on disconnect:', error);
+        if (userClients) {
+          userClients.delete(source);
+          // Clean up empty maps
+          if (userClients.size === 0) {
+            clients.delete(ws.userId);
+          }
+        }
+
+        if (userSessions) {
+          userSessions.delete(source);
+          if (userSessions.size === 0) {
+            activeSessions.delete(ws.userId);
+          }
+        }
+
+        // Only mark user as offline if they have no remaining connections
+        const remainingClients = clients.get(ws.userId);
+        if (!remainingClients || remainingClients.size === 0) {
+          try {
+            await storage.updateUserStatus(ws.userId, 'offline');
+
+            // Broadcast user status change
+            broadcastToAll({
+              type: 'user_status',
+              payload: {
+                userId: ws.userId,
+                status: 'offline'
+              }
+            });
+            console.log(`[WebSocket] User ${ws.userId} is now offline (no remaining connections)`);
+          } catch (error) {
+            console.error('Error updating user status on disconnect:', error);
+          }
+        } else {
+          console.log(`[WebSocket] User ${ws.userId} still has ${remainingClients.size} connection(s) active`);
         }
       }
     });

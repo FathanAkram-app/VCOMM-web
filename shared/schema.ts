@@ -38,6 +38,8 @@ export const users = pgTable("users", {
   profileImageUrl: varchar("profile_image_url"),
   gotifyClientToken: varchar("gotify_client_token", { length: 255 }),  // Gotify push notification token
   gotifyTokenUpdatedAt: timestamp("gotify_token_updated_at"),
+  resetToken: varchar("reset_token", { length: 6 }),
+  resetTokenExpiry: timestamp("reset_token_expiry"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -75,6 +77,7 @@ export const conversationMembers = pgTable("conversation_members", {
   role: varchar("role").default("member"), // 'admin' or 'member'
   joinedAt: timestamp("joined_at").defaultNow(),
   isHidden: boolean("is_hidden").default(false), // Hide conversation from user's list
+  isMuted: boolean("is_muted").default(false), // Mute notifications for this conversation
 });
 
 // Messages table
@@ -92,6 +95,7 @@ export const messages = pgTable("messages", {
   attachmentUrl: varchar("attachment_url"),
   attachmentName: varchar("attachment_name"),
   attachmentSize: integer("attachment_size"), // in bytes
+  attachmentThumbnailUrl: varchar("attachment_thumbnail_url"),
   // Reply, Forward, Delete features
   replyToId: integer("reply_to_id").references(() => messages.id),
   forwardedFromId: integer("forwarded_from_id").references(() => messages.id),

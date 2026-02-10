@@ -1019,7 +1019,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
                 const userData = await response.json();
                 return {
                   userId,
-                  userName: userData.callsign || userData.fullName || `User ${userId}`,
+                  userName: userData.callsign || userData.fullName || `CALLSIGN-${userId}`,
                   audioEnabled: true,
                   videoEnabled: false,
                   stream: null
@@ -1030,7 +1030,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
             }
             return {
               userId,
-              userName: `User ${userId}`,
+              userName: `CALLSIGN-${userId}`,
               audioEnabled: true,
               videoEnabled: false,
               stream: null
@@ -2282,7 +2282,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
           // Simple ID array, convert to participant objects
           processedParticipants = participants.map((id: any) => ({
             userId: id,
-            userName: `User ${id}`,
+            userName: `CALLSIGN-${id}`,
             audioEnabled: true,
             videoEnabled: groupCallToUpdate.callType === 'video'
           }));
@@ -2340,13 +2340,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
           fetch('/api/all-users').then(response => response.json()).then(allUsers => {
             const userMap = new Map();
             allUsers.forEach((user: any) => {
-              userMap.set(user.id, user.callsign || user.fullName || `User ${user.id}`);
+              userMap.set(user.id, user.callsign || user.fullName || `CALLSIGN-${user.id}`);
             });
-            
+
             // Convert participant IDs to participant objects
             const participantObjects = uniqueParticipants.map((participantId: any) => ({
               userId: Number(participantId),
-              userName: userMap.get(Number(participantId)) || `User ${participantId}`,
+              userName: userMap.get(Number(participantId)) || `CALLSIGN-${participantId}`,
               audioEnabled: true,
               videoEnabled: groupCallToUpdate.callType === 'video',
               stream: null
@@ -2385,7 +2385,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
                   ...prev,
                   participants: uniqueParticipants.map((id: any) => ({
                     userId: Number(id),
-                    userName: `User ${id}`,
+                    userName: `CALLSIGN-${id}`,
                     audioEnabled: true,
                     videoEnabled: groupCallToUpdate.callType === 'video',
                     stream: null
@@ -4612,7 +4612,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
           // Create user map for name lookups
           const userMap = new Map();
           allUsers.forEach((user: any) => {
-            userMap.set(user.id, user.callsign || user.fullName || `User ${user.id}`);
+            userMap.set(user.id, user.callsign || user.fullName || `CALLSIGN-${user.id}`);
           });
           
           // Dispatch event to GroupVideoCall to start WebRTC connections

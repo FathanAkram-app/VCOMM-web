@@ -310,21 +310,22 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
       const response = await fetch(`/api/users/${userId}`);
       if (response.ok) {
         const userData = await response.json();
-        const realName = userData.callsign || userData.fullName || `User ${userId}`;
-        
+        // Priority: callsign first, then fullName, then fallback to CALLSIGN-ID
+        const realName = userData.callsign || userData.fullName || `CALLSIGN-${userId}`;
+
         // Cache successful result
         participantNameCache.current.set(userId, realName);
         console.log(`[GroupCall] 🎯 FETCH SUCCESS: ${userId} = ${realName}`);
         return realName;
       } else {
         console.log(`[GroupCall] 🎯 FETCH FAILED: API failed for user ${userId}, status: ${response.status}`);
-        const fallback = `User ${userId}`;
+        const fallback = `CALLSIGN-${userId}`;
         // Don't cache failures to allow retry later
         return fallback;
       }
     } catch (error) {
       console.error(`[GroupCall] 🎯 FETCH ERROR: Network error for user ${userId}:`, error);
-      const fallback = `User ${userId}`;
+      const fallback = `CALLSIGN-${userId}`;
       // Don't cache network errors to allow retry later
       return fallback;
     }
@@ -337,11 +338,11 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     // Identify participants that need name resolution
     const participantsNeedingNames = participants.filter(p => {
       const currentName = p.userName;
-      const isGenericOrMissing = !currentName || currentName.startsWith('User ');
+      const isGenericOrMissing = !currentName || currentName.startsWith('User ') || currentName.startsWith('CALLSIGN-');
       const hasCachedName = participantNameCache.current.has(p.userId);
-      
+
       console.log(`[GroupCall] 🎯 ENHANCE: User ${p.userId} - current: "${currentName}", generic: ${isGenericOrMissing}, cached: ${hasCachedName}`);
-      
+
       return isGenericOrMissing && !hasCachedName;
     });
     
@@ -360,18 +361,18 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     const enhancedParticipants = participants.map(p => {
       const cachedName = participantNameCache.current.get(p.userId);
       const currentName = p.userName;
-      
+
       // Priority: Cached real name > Current name (if not generic) > Fallback
       let finalName = currentName;
-      
-      if (cachedName && !cachedName.startsWith('User ')) {
+
+      if (cachedName && !cachedName.startsWith('User ') && !cachedName.startsWith('CALLSIGN-')) {
         finalName = cachedName;
-      } else if (!currentName || currentName.startsWith('User ')) {
-        finalName = cachedName || `User ${p.userId}`;
+      } else if (!currentName || currentName.startsWith('User ') || currentName.startsWith('CALLSIGN-')) {
+        finalName = cachedName || `CALLSIGN-${p.userId}`;
       }
-      
+
       console.log(`[GroupCall] 🎯 ENHANCE: User ${p.userId} final name: "${finalName}"`);
-      
+
       return {
         ...p,
         userName: finalName

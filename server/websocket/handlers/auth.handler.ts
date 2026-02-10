@@ -10,15 +10,33 @@ export function createAuthHandler(
   broadcastToAll: (message: WebSocketMessage) => void
 ) {
   return async function handleAuth(ws: AuthenticatedWebSocket, data: any) {
-    const { userId } = data.payload;
+    const { userId, source = 'foreground' } = data.payload;
     if (!userId) return;
 
-    // Check for existing session - implement single session login
-    const existingSession = activeSessions.get(userId);
-    if (existingSession) {
-      console.log(`[SINGLE SESSION] User ${userId} already has active session, terminating previous connection`);
+    // Validate source
+    const connectionSource = (source === 'background') ? 'background' : 'foreground';
 
-      // Close existing WebSocket connection
+    // Get or create the user's connections map
+    let userClients = clients.get(userId);
+    let userSessions = activeSessions.get(userId);
+
+    if (!userClients) {
+      userClients = new Map();
+      clients.set(userId, userClients);
+    }
+
+    if (!userSessions) {
+      userSessions = new Map();
+      activeSessions.set(userId, userSessions);
+    }
+
+    // Check for existing session from the SAME source only
+    // (allows foreground + background to coexist, but not two foregrounds)
+    const existingSession = userSessions.get(connectionSource);
+    if (existingSession) {
+      console.log(`[SINGLE SESSION] User ${userId} already has active ${connectionSource} session, terminating previous connection`);
+
+      // Close existing WebSocket connection from same source
       if (existingSession.ws && existingSession.ws.readyState === WebSocket.OPEN) {
         existingSession.ws.send(JSON.stringify({
           type: 'session_terminated',
@@ -28,31 +46,33 @@ export function createAuthHandler(
           }
         }));
         existingSession.ws.close();
-        console.log(`[SINGLE SESSION] Closed previous WebSocket connection for user ${userId}`);
+        console.log(`[SINGLE SESSION] Closed previous ${connectionSource} WebSocket connection for user ${userId}`);
       }
 
       // Remove from clients map
-      clients.delete(userId);
-      console.log(`[SINGLE SESSION] Removed previous client for user ${userId}`);
+      userClients.delete(connectionSource);
+      console.log(`[SINGLE SESSION] Removed previous ${connectionSource} client for user ${userId}`);
     }
 
     // Generate new session ID
-    const sessionId = `session_${userId}_${Date.now()}`;
+    const sessionId = `session_${userId}_${connectionSource}_${Date.now()}`;
 
-    console.log(`User ${userId} authenticated via WebSocket with session ${sessionId}`);
-    console.log(`[WebSocket] Current clients before adding: [${Array.from(clients.keys()).join(', ')}]`);
+    console.log(`User ${userId} authenticated via WebSocket (${connectionSource}) with session ${sessionId}`);
+    console.log(`[WebSocket] User ${userId} connections: [${Array.from(userClients.keys()).join(', ')}]`);
 
     ws.userId = userId;
-    clients.set(userId, ws);
-    activeSessions.set(userId, {
+    ws.source = connectionSource;
+    userClients.set(connectionSource, ws);
+    userSessions.set(connectionSource, {
       sessionId,
       timestamp: Date.now(),
-      ws
+      ws,
+      source: connectionSource
     });
 
-    console.log(`[WebSocket] Current clients after adding: [${Array.from(clients.keys()).join(', ')}]`);
-    console.log(`[WebSocket] User ${userId} WebSocket readyState: ${ws.readyState}`);
-    console.log(`[SINGLE SESSION] Created new session ${sessionId} for user ${userId}`);
+    console.log(`[WebSocket] User ${userId} connections after adding: [${Array.from(userClients.keys()).join(', ')}]`);
+    console.log(`[WebSocket] User ${userId} ${connectionSource} WebSocket readyState: ${ws.readyState}`);
+    console.log(`[SINGLE SESSION] Created new ${connectionSource} session ${sessionId} for user ${userId}`);
 
     // Update user status to online
     await storage.updateUserStatus(userId, 'online');

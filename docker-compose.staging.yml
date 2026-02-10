@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # VCommMessenger Application
+  vcomm-app:
+    image: vcomm-backend:latest
+    container_name: vcomm-messenger-staging
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=staging
+      - DATABASE_URL=postgresql://postgres:ASDqwe%21%40%23@host.docker.internal:5432/vcomm
+      - SESSION_SECRET=${SESSION_SECRET:-change-this-secret-in-staging}
+      - HTTPS_ENABLED=false
+      - PORT=5000
+      - HOST=0.0.0.0
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./certs:/app/certs:ro
+    depends_on:
+      - redis
+    networks:
+      - vcomm-network
+
+  # Redis for Session Storage and Caching
+  redis:
+    image: redis:7-alpine
+    container_name: vcomm-redis-staging
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - vcomm-network
+
+  # Coturn TURN/STUN Server for WebRTC
+  coturn:
+    image: coturn/coturn:latest
+    container_name: vcomm-coturn-staging
+    restart: unless-stopped
+    ports:
+      - "3478:3478"
+      - "3478:3478/udp"
+      - "49152-49200:49152-49200/udp"
+    volumes:
+      - ./turnserver.conf:/etc/coturn/turnserver.conf:ro
+      - coturn_logs:/var/log/turnserver
+    command: ["-c", "/etc/coturn/turnserver.conf"]
+    networks:
+      - vcomm-network
+
+volumes:
+  redis_data:
+  coturn_logs:
+
+networks:
+  vcomm-network:
+    driver: bridge
