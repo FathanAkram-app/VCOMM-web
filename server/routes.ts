@@ -50,6 +50,7 @@ import { WebRTCController } from "./controllers/webrtc.controller";
 import { createWebRTCRoutes } from "./routes/webrtc.routes";
 import { FCMController } from "./controllers/fcm.controller";
 import { setupWebSocketServer } from "./websocket/websocket-server";
+import { getActiveCallForConversation } from "./websocket/handlers/group-call.handler";
 import { notificationService } from "./services/notification.service";
 import gotifyRoutes from "./routes/gotify.routes";
 import userGotifyRoutes from "./routes/user-gotify.routes";
@@ -156,7 +157,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
   // Setup WebSocket server with modular handlers
-  const { clients, sendToUser, broadcastToConversation, broadcastGroupUpdate, broadcastToAll } = setupWebSocketServer(httpServer, storage);
+  const { clients, activeGroupCalls, callConversationMap, sendToUser, broadcastToConversation, broadcastGroupUpdate, broadcastToAll } = setupWebSocketServer(httpServer, storage);
 
   // Initialize NotificationService with live clients map for connectivity checks
   notificationService.initialize(clients, storage);
@@ -177,6 +178,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // WebRTC routes moved to clean architecture (see routes/webrtc.routes.ts)
 
+  // Active call endpoint for rejoin feature
+  app.get('/api/conversations/:id/active-call', isAuthenticated, (req: Request, res: Response) => {
+    const conversationId = parseInt(req.params.id);
+    if (isNaN(conversationId)) {
+      return res.status(400).json({ error: 'Invalid conversation ID' });
+    }
+    const activeCall = getActiveCallForConversation(activeGroupCalls, callConversationMap, conversationId);
+    if (activeCall) {
+      return res.json(activeCall);
+    }
+    return res.json(null);
+  });
 
   return httpServer;
 }

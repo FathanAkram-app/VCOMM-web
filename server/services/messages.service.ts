@@ -36,6 +36,10 @@ export class MessagesService {
     return forwardedMessages;
   }
 
+  async getMessage(messageId: number) {
+    return await this.storage.getMessage(messageId);
+  }
+
   async markMessageAsRead(messageId: number): Promise<void> {
     await this.storage.markMessageAsRead(messageId);
   }

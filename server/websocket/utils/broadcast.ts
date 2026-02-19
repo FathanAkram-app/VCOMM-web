@@ -15,7 +15,6 @@ export function createBroadcastFunctions(storage: IStorage, clients: ClientsMap)
         try {
           client.send(message);
           sentCount++;
-          console.log(`[BROADCAST] ✅ Message sent to user ${userId} (${source})`);
         } catch (error) {
           console.log(`[BROADCAST] ⚠️ Failed to send to user ${userId} (${source}):`, error);
         }
@@ -27,33 +26,19 @@ export function createBroadcastFunctions(storage: IStorage, clients: ClientsMap)
   async function broadcastToConversation(conversationId: number, message: WebSocketMessage) {
     try {
       const members = await storage.getConversationMembers(conversationId);
-      console.log(`[BROADCAST] ========== Broadcasting ${message.type} to conversation ${conversationId} ==========`);
-      console.log(`[BROADCAST] Found ${members.length} members in conversation ${conversationId}`);
-      console.log(`[BROADCAST] Member list: [${members.map(m => m.userId).join(', ')}]`);
-      console.log(`[BROADCAST] Active WebSocket users: ${clients.size}`);
-      console.log(`[BROADCAST] Active user IDs: [${Array.from(clients.keys()).join(', ')}]`);
-
-      let sentCount = 0;
       const messageStr = JSON.stringify(message);
 
+      let sentCount = 0;
       for (const member of members) {
         const userClients = clients.get(member.userId);
-        const hasConnections = userClients && userClients.size > 0;
-        console.log(`[BROADCAST] Member ${member.userId}: has connections=${hasConnections}, count=${userClients?.size || 0}`);
-
         if (userClients && userClients.size > 0) {
           const sent = sendToUser(member.userId, messageStr);
-          sentCount += sent > 0 ? 1 : 0;  // Count users, not connections
-        } else {
-          console.log(`[BROADCAST] ❌ Cannot send to user ${member.userId} - no active connections`);
+          sentCount += sent > 0 ? 1 : 0;
         }
       }
 
-      console.log(`[BROADCAST] Successfully sent message to ${sentCount}/${members.length} members`);
-
-      // Additional verification - check if all expected clients received the message
       if (sentCount < members.length) {
-        console.log(`[BROADCAST] ⚠️ Not all members received message. Expected: ${members.length}, Sent: ${sentCount}`);
+        console.log(`[BROADCAST] ${message.type} to conv ${conversationId}: ${sentCount}/${members.length} members reached`);
       }
     } catch (error) {
       console.error('Error broadcasting to conversation:', error);
@@ -81,9 +66,10 @@ export function createBroadcastFunctions(storage: IStorage, clients: ClientsMap)
     }
   }
 
-  function broadcastToAll(message: WebSocketMessage) {
+  function broadcastToAll(message: WebSocketMessage, excludeUserId?: number) {
     const messageStr = JSON.stringify(message);
     clients.forEach((userClients, userId) => {
+      if (excludeUserId !== undefined && userId === excludeUserId) return;
       userClients.forEach((client, source) => {
         if (client.readyState === WebSocket.OPEN) {
           client.send(messageStr);

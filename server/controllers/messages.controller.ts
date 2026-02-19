@@ -18,7 +18,7 @@ export class MessagesController {
         return res.status(400).json({ message: 'User ID not found in session' });
       }
 
-      const { conversationId, content, replyToId, classification, hasAttachment, attachmentType, attachmentUrl, attachmentName, attachmentSize } = req.body;
+      const { conversationId, content, replyToId, classification, hasAttachment, attachmentType, attachmentUrl, attachmentName, attachmentSize, attachmentThumbnailUrl } = req.body;
 
       const message = await this.messagesService.sendMessage({
         content,
@@ -31,6 +31,7 @@ export class MessagesController {
         attachmentUrl,
         attachmentName,
         attachmentSize: attachmentSize ? parseInt(attachmentSize) : undefined,
+        attachmentThumbnailUrl: attachmentThumbnailUrl || undefined,
       });
 
       // Get sender info for notifications
@@ -120,7 +121,23 @@ export class MessagesController {
       const messageId = parseInt(req.params.id);
       const { deleteForEveryone } = req.body;
 
+      // Get message info before deleting (needed for broadcast)
+      const message = await this.messagesService.getMessage(messageId);
+
       await this.messagesService.deleteMessage(messageId, userId, deleteForEveryone || false);
+
+      // Broadcast deletion to other participants in real-time
+      if (deleteForEveryone && message && this.broadcastToConversation) {
+        console.log('[MessagesController] Broadcasting message_deleted to conversation', message.conversationId);
+        await this.broadcastToConversation(message.conversationId, {
+          type: 'message_deleted',
+          payload: {
+            messageId,
+            conversationId: message.conversationId,
+            deletedByUserId: userId,
+          }
+        });
+      }
 
       return res.json({ message: 'Message deleted successfully' });
     } catch (error) {

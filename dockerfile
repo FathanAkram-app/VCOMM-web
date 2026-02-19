@@ -22,8 +22,8 @@ COPY migrations /app/migrations
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh
 
-# Install PostgreSQL client for migrations
-RUN apt-get update && apt-get install -y postgresql-client && rm -rf /var/lib/apt/lists/*
+# Install PostgreSQL client for migrations and ffmpeg for video thumbnails/compression
+RUN apt-get update && apt-get install -y postgresql-client ffmpeg && rm -rf /var/lib/apt/lists/*
 
 # Build TypeScript (jika ada)
 RUN if [ -f tsconfig.json ]; then npm run build; fi

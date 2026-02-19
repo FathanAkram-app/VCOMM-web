@@ -484,7 +484,7 @@ export const compressUploadedMedia = async (req: any, res: any, next: any) => {
   }
 };
 
-// Generate video thumbnail at 1 second mark
+// Generate video thumbnail - tries 1s mark, falls back to first frame
 export const generateVideoThumbnail = (
   inputPath: string,
   outputPath: string
@@ -492,7 +492,20 @@ export const generateVideoThumbnail = (
   return new Promise((resolve, reject) => {
     ffmpeg(inputPath)
       .on('end', () => resolve())
-      .on('error', (err) => reject(err))
+      .on('error', (err) => {
+        // If 1s mark fails (video too short), try first frame
+        console.log('[THUMBNAIL] Retrying with first frame...');
+        ffmpeg(inputPath)
+          .on('end', () => resolve())
+          .on('error', (err2) => reject(err2))
+          .screenshots({
+            count: 1,
+            timestamps: ['00:00:00.1'],
+            filename: path.basename(outputPath),
+            folder: path.dirname(outputPath),
+            size: '320x?',
+          });
+      })
       .screenshots({
         count: 1,
         timestamps: ['00:00:01'],

@@ -2,7 +2,6 @@ import { WebSocket } from 'ws';
 import { IStorage } from '../../storage';
 import { AuthenticatedWebSocket, ClientsMap, GroupCallsMap } from '../utils/types';
 import { sendToClient, getUserClient } from '../utils/send';
-import { gotifyService } from '../../services/gotify.service';
 
 // Helper to send to all connections of a user
 function sendToAllUserConnections(clients: ClientsMap, userId: number, message: any): boolean {
@@ -24,7 +23,8 @@ export function createCallHandlers(
   storage: IStorage,
   clients: ClientsMap,
   activeGroupCalls: GroupCallsMap,
-  broadcastToAll: (message: any) => void
+  broadcastToAll: (message: any) => void,
+  callConversationMap?: Map<string, number>
 ) {
   // Track calls that have been resolved (answered/rejected/ended) to prevent
   // the 30s timeout from overriding an already-processed call (#7 Call Decline State Sync)
@@ -122,53 +122,65 @@ export function createCallHandlers(
         }
       }, 30000); // 30 seconds timeout
     } else {
-      // User is offline (no WebSocket connection)
-      console.log(`[Call] User ${toUserId} is offline (no WebSocket), sending Gotify push`);
+      // User is offline (no WebSocket connection) - wait for them to come online
+      console.log(`[Call] User ${toUserId} is offline (no WebSocket), waiting for reconnect`);
 
-      // Log as missed call
+      // Log call as incoming (not missed yet - give user time to respond via push)
       await storage.addCallHistory({
         callId,
         callType,
         initiatorId: fromUserId,
-        conversationId: null,
+        conversationId: data.payload.conversationId || null,
         participants: [fromUserId.toString(), toUserId.toString()],
-        status: 'missed',
+        status: 'incoming',
         startTime: new Date(),
         endTime: null,
         duration: null
       });
 
-      // Send Gotify push notification
-      try {
-        // Fetch user's Gotify client token
-        const userGotifyToken = await storage.getUserGotifyToken(toUserId);
+      // Set 30-second timeout - same as online calls
+      // User may open the app from the notification and accept
+      setTimeout(async () => {
+        try {
+          if (processedCalls.has(callId)) {
+            console.log(`[Call] Offline call ${callId} already processed, skipping timeout`);
+            return;
+          }
 
-        if (userGotifyToken) {
-          await gotifyService.sendCallNotification(
-            userGotifyToken,  // User's client token
-            callId,
-            fromUserId.toString(),
-            fromUserName,
-            callType,
-            false  // isGroupCall
-          );
-          console.log(`[Call] Gotify push notification sent to offline user ${toUserId}`);
-        } else {
-          console.warn(`[Call] User ${toUserId} has no Gotify token configured`);
-        }
-      } catch (error) {
-        console.error(`[Call] Error sending Gotify push notification:`, error);
-      }
+          const existingCall = await storage.getCallByCallId(callId);
+          if (existingCall && existingCall.status === 'incoming') {
+            // Still unanswered after 30s - mark as missed
+            await storage.updateCallStatus(callId, 'missed');
+            console.log(`[Call] Offline call ${callId} marked as missed (timeout)`);
 
-      // Notify caller that user is offline
-      ws.send(JSON.stringify({
-        type: 'call_failed',
-        payload: {
-          callId,
-          reason: 'User is offline'
+            // Notify caller that call was not answered
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({
+                type: 'call_missed',
+                payload: { callId, reason: 'timeout' }
+              }));
+            }
+
+            // If target user came online in the meantime, notify them too
+            const targetClients = clients.get(toUserId);
+            if (targetClients) {
+              const missedMessage = JSON.stringify({
+                type: 'call_missed',
+                payload: { callId, reason: 'timeout' }
+              });
+              targetClients.forEach((client) => {
+                if (client.readyState === WebSocket.OPEN) {
+                  client.send(missedMessage);
+                }
+              });
+            }
+          }
+        } catch (error) {
+          console.error('[Call] Error handling offline call timeout:', error);
         }
-      }));
-      console.log(`[Call] User ${toUserId} is offline, notified caller`);
+      }, 30000);
+
+      console.log(`[Call] Waiting 30s for offline user ${toUserId} to come online`);
     }
   }
 
@@ -250,13 +262,13 @@ export function createCallHandlers(
     if (callId.includes('group_call_')) {
       console.log(`[Group Call] Handling group call end for ${callId}`);
 
-      // Try direct callId lookup first, fall back to groupId search
+      // Try direct callId lookup first, fall back to conversationMap search
       let foundCallId = null;
       if (activeGroupCalls.has(callId) && activeGroupCalls.get(callId)!.has(ws.userId)) {
         foundCallId = callId;
-      } else if (groupId) {
-        for (const [activeCallId, participants] of activeGroupCalls.entries()) {
-          if (activeCallId.includes(`_${groupId}_`) && participants.has(ws.userId)) {
+      } else if (groupId && callConversationMap) {
+        for (const [activeCallId, convId] of callConversationMap.entries()) {
+          if (convId === groupId && activeGroupCalls.has(activeCallId) && activeGroupCalls.get(activeCallId)!.has(ws.userId)) {
             foundCallId = activeCallId;
             break;
           }
@@ -273,6 +285,7 @@ export function createCallHandlers(
         if (remainingParticipants === 0) {
           // No participants left, end the entire call
           activeGroupCalls.delete(foundCallId);
+          callConversationMap?.delete(foundCallId);
           console.log(`[Group Call] Removed empty group call ${foundCallId}`);
 
           broadcastToAll({

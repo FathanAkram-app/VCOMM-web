@@ -7,7 +7,7 @@ export function createAuthHandler(
   storage: IStorage,
   clients: ClientsMap,
   activeSessions: SessionsMap,
-  broadcastToAll: (message: WebSocketMessage) => void
+  broadcastToAll: (message: WebSocketMessage, excludeUserId?: number) => void
 ) {
   return async function handleAuth(ws: AuthenticatedWebSocket, data: any) {
     const { userId, source = 'foreground' } = data.payload;
@@ -38,6 +38,8 @@ export function createAuthHandler(
 
       // Close existing WebSocket connection from same source
       if (existingSession.ws && existingSession.ws.readyState === WebSocket.OPEN) {
+        // Flag old ws so its close handler skips cleanup (new session replaces it)
+        existingSession.ws.closedByServer = true;
         existingSession.ws.send(JSON.stringify({
           type: 'session_terminated',
           payload: {
@@ -77,13 +79,36 @@ export function createAuthHandler(
     // Update user status to online
     await storage.updateUserStatus(userId, 'online');
 
-    // Broadcast user status change
+    // Broadcast user status change (skip sending to the user themselves)
     broadcastToAll({
       type: 'user_status',
       payload: {
         userId,
         status: 'online'
       }
-    });
+    }, userId);
+
+    // Deliver any missed call notifications from while user was offline
+    try {
+      const missedCalls = await storage.getRecentMissedCalls(userId, 5);
+      if (missedCalls.length > 0) {
+        console.log(`[Auth] Delivering ${missedCalls.length} missed call notification(s) to user ${userId}`);
+        for (const call of missedCalls) {
+          ws.send(JSON.stringify({
+            type: 'call_missed',
+            payload: {
+              callId: call.callId,
+              callType: call.callType,
+              fromUserId: call.fromUserId,
+              fromUserName: call.fromUserName,
+              timestamp: call.timestamp,
+              reason: 'offline',
+            }
+          }));
+        }
+      }
+    } catch (error) {
+      console.error(`[Auth] Error delivering missed calls for user ${userId}:`, error);
+    }
   };
 }

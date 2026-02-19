@@ -2,7 +2,7 @@ import { IStorage } from '../storage';
 import { User } from '@shared/schema';
 
 export class UsersService {
-  constructor(private storage: IStorage) {}
+  constructor(private storage: IStorage) { }
 
   async getAllUsers(): Promise<User[]> {
     return await this.storage.getAllUsers();

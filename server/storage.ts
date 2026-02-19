@@ -21,7 +21,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
-import { eq, ne, and, or, inArray, desc, exists } from "drizzle-orm";
+import { eq, ne, and, or, not, inArray, desc, gte, exists } from "drizzle-orm";
 
 // Storage interface
 export interface IStorage {
@@ -31,6 +31,7 @@ export interface IStorage {
   getUserByNrp(nrp: string): Promise<User | undefined>;
   createUser(user: RegisterUser): Promise<User>;
   updateUserStatus(userId: number, status: string): Promise<User | undefined>;
+  resetAllUsersOffline(): Promise<void>;
   getAllUsers(): Promise<User[]>;
   isUserOnline(userId: number): Promise<boolean>;
 
@@ -72,9 +73,11 @@ export interface IStorage {
   addCallHistory(callData: any): Promise<void>;
   updateCallStatus(callId: string, status: string): Promise<void>;
   deleteCallHistory(callId: number, userId: number): Promise<void>;
+  getRecentMissedCalls(userId: number, sinceMinutes?: number): Promise<any[]>;
 
   // Message operations for delete, reply, and forward
   deleteMessage(messageId: number): Promise<Message>;
+  deleteMessageForUser(messageId: number, userId: number): Promise<void>;
   getMessage(messageId: number): Promise<Message | undefined>;
   forwardMessage(originalMessageId: number, newConversationId: number, senderId: number): Promise<Message>;
 
@@ -130,6 +133,14 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId))
       .returning();
     return user;
+  }
+
+  async resetAllUsersOffline(): Promise<void> {
+    await db
+      .update(users)
+      .set({ status: 'offline', updatedAt: new Date() })
+      .where(ne(users.status, 'offline'));
+    console.log('[Storage] All users reset to offline');
   }
 
   async getAllUsers(): Promise<User[]> {
@@ -389,6 +400,7 @@ export class DatabaseStorage implements IStorage {
         // Include user details
         callsign: users.callsign,
         fullName: users.fullName,
+        nrp: users.nrp,
         rank: users.rank,
         branch: users.branch,
         status: users.status,
@@ -620,6 +632,10 @@ export class DatabaseStorage implements IStorage {
       .returning();
 
     return updatedMessage;
+  }
+
+  async deleteMessageForUser(messageId: number, userId: number): Promise<void> {
+    return this.markMessageAsDeletedForUser(messageId, userId);
   }
 
   async markMessageAsDeletedForUser(messageId: number, userId: number): Promise<void> {
@@ -1004,23 +1020,42 @@ export class DatabaseStorage implements IStorage {
         const isIncoming = call.initiatorId !== userId; // Check if call is incoming or outgoing
 
         if (call.conversationId) {
-          // Group call - get conversation name
           const [conversation] = await db
             .select()
             .from(conversations)
             .where(eq(conversations.id, call.conversationId));
-          contactName = conversation?.name || 'Group Call';
+
+          if (conversation?.isGroup) {
+            // Group call - use conversation name
+            contactName = conversation.name || 'Group Call';
+          } else {
+            // 1:1 call with conversationId - resolve partner's callsign
+            if (isIncoming) {
+              const [callerUser] = await db
+                .select()
+                .from(users)
+                .where(eq(users.id, call.initiatorId));
+              contactName = callerUser ? (callerUser.callsign || callerUser.fullName || 'Unknown') : 'Unknown';
+            } else {
+              const otherParticipant = call.participants?.find((id: string) => parseInt(id) !== userId);
+              if (otherParticipant) {
+                const [recipientUser] = await db
+                  .select()
+                  .from(users)
+                  .where(eq(users.id, parseInt(otherParticipant)));
+                contactName = recipientUser ? (recipientUser.callsign || recipientUser.fullName || 'Unknown') : 'Unknown';
+              }
+            }
+          }
         } else {
-          // Individual call - get the other user's name
+          // Individual call without conversationId - get the other user's name
           if (isIncoming) {
-            // Incoming call - show caller's name
             const [callerUser] = await db
               .select()
               .from(users)
               .where(eq(users.id, call.initiatorId));
             contactName = callerUser ? (callerUser.callsign || callerUser.fullName || 'Unknown') : 'Unknown';
           } else {
-            // Outgoing call - show recipient's name
             const otherParticipant = call.participants?.find((id: string) => parseInt(id) !== userId);
             if (otherParticipant) {
               const [recipientUser] = await db
@@ -1062,18 +1097,47 @@ export class DatabaseStorage implements IStorage {
           }
         }
 
+        // Determine the actual target user for 1:1 calls
+        let actualToUserId: number = userId;
+        if (!call.callType?.startsWith('group_')) {
+          if (isIncoming) {
+            // Incoming call: toUserId is the requesting user (self)
+            actualToUserId = userId;
+          } else {
+            // Outgoing call: toUserId is the other participant
+            const otherParticipant = call.participants?.find((id: string) => parseInt(id) !== userId);
+            actualToUserId = otherParticipant ? parseInt(otherParticipant) : userId;
+          }
+        }
+
+        // Resolve fromUserName (caller) and toUserName (recipient) properly
+        let fromUserName = 'Unknown';
+        let toUserName = 'Unknown';
+        if (isIncoming) {
+          // Incoming: fromUser is the caller (initiator), toUser is us
+          const [callerUser] = await db.select().from(users).where(eq(users.id, call.initiatorId));
+          fromUserName = callerUser ? (callerUser.callsign || callerUser.fullName || 'Unknown') : 'Unknown';
+          toUserName = contactName;
+        } else {
+          // Outgoing: fromUser is us, toUser is the recipient
+          fromUserName = contactName;
+          toUserName = contactName;
+        }
+
         return {
           id: call.id,
           callId: call.callId,
           callType: call.callType,
           fromUserId: call.initiatorId,
-          toUserId: userId,
+          toUserId: actualToUserId,
           contactName,
-          isOutgoing: !isIncoming, // True if user initiated the call
+          isOutgoing: !isIncoming,
           status: displayStatus,
           duration: call.duration || 0,
           timestamp: call.startTime.toISOString(),
-          fromUserName: contactName,
+          fromUserName,
+          toUserName,
+          conversationId: call.conversationId || null,
           participants: call.participants || [],
           participantNames
         };
@@ -1145,6 +1209,41 @@ export class DatabaseStorage implements IStorage {
       console.log(`[Storage] Updated call ${callId} status to ${status}`);
     } catch (error) {
       console.error('Error updating call status:', error);
+    }
+  }
+
+  async getRecentMissedCalls(userId: number, sinceMinutes: number = 5): Promise<any[]> {
+    try {
+      const since = new Date(Date.now() - sinceMinutes * 60 * 1000);
+      const calls = await db
+        .select()
+        .from(callHistory)
+        .where(
+          and(
+            sql`${callHistory.participants} @> ARRAY[${userId.toString()}]::text[]`,
+            not(eq(callHistory.initiatorId, userId)),
+            eq(callHistory.status, 'missed'),
+            gte(callHistory.startTime, since)
+          )
+        )
+        .orderBy(desc(callHistory.startTime));
+
+      // Enrich with caller names
+      const enriched = await Promise.all(calls.map(async (call) => {
+        const [caller] = await db.select().from(users).where(eq(users.id, call.initiatorId));
+        return {
+          callId: call.callId,
+          callType: call.callType,
+          fromUserId: call.initiatorId,
+          fromUserName: caller ? (caller.callsign || caller.fullName || 'Unknown') : 'Unknown',
+          timestamp: call.startTime.toISOString(),
+        };
+      }));
+
+      return enriched;
+    } catch (error) {
+      console.error('Error getting recent missed calls:', error);
+      return [];
     }
   }
 
