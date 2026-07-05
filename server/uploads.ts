@@ -63,11 +63,10 @@ const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCa
     cb(new Error('Format file tidak didukung'));
   }
 };
-
 // Size limits based on file type - Increased limits for compression handling
 const fileSizeLimits = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   const maxSize = 10 * 1024 * 1024; // Default 10MB
-  
+
   if (file.mimetype.startsWith('image/')) {
     // Image: max 10MB (will be compressed if >1MB)
     if (req.file?.size > 10 * 1024 * 1024) {
@@ -89,7 +88,7 @@ const fileSizeLimits = (req: any, file: Express.Multer.File, cb: multer.FileFilt
       cb(new Error('Ukuran file maksimum 10MB'));
     }
   }
-  
+
   cb(null, true);
 };
 
@@ -401,11 +400,11 @@ export const compressUploadedMedia = async (req: any, res: any, next: any) => {
     const filePath = req.file.path;
     const fileStats = fs.statSync(filePath);
     const fileSizeMB = fileStats.size / (1024 * 1024);
-    
+
     console.log(`[COMPRESSION] Processing file: ${req.file.filename}`);
     console.log(`[COMPRESSION] File type: ${req.file.mimetype}`);
     console.log(`[COMPRESSION] File size: ${fileSizeMB.toFixed(2)}MB`);
-    
+
     // Handle image compression
     if (req.file.mimetype.startsWith('image/')) {
       const shouldCompress = await shouldCompressImageServer(filePath);
@@ -438,15 +437,15 @@ export const compressUploadedMedia = async (req: any, res: any, next: any) => {
     else if (req.file.mimetype.startsWith('video/')) {
       const shouldCompress = await shouldCompressVideoServer(filePath);
       console.log(`[COMPRESSION] Video should compress: ${shouldCompress} (size: ${fileSizeMB.toFixed(2)}MB, threshold: 10MB)`);
-      
+
       if (shouldCompress) {
         console.log('[COMPRESSION] Starting video compression...');
-        
+
         const compressedFilename = `compressed_${req.file.filename.replace(path.extname(req.file.filename), '.mp4')}`;
         const compressedPath = path.join('./uploads', compressedFilename);
-        
+
         const result = await compressVideoServer(filePath, compressedPath, 20);
-        
+
         if (result.success) {
           // Delete original file and update req.file to point to compressed version
           fs.unlinkSync(filePath);
@@ -454,11 +453,24 @@ export const compressUploadedMedia = async (req: any, res: any, next: any) => {
           req.file.path = compressedPath;
           req.file.mimetype = 'video/mp4';
           req.file.size = result.compressedSize; // Update file size to compressed size
-          
+
           console.log(`[COMPRESSION] Video compressed successfully: ${(result.originalSize / (1024 * 1024)).toFixed(2)}MB -> ${(result.compressedSize / (1024 * 1024)).toFixed(2)}MB`);
         } else {
           console.log('[COMPRESSION] Video compression failed, using original file');
         }
+      }
+
+      // Generate video thumbnail (#11)
+      const videoPath = req.file.path;
+      const thumbFilename = `thumb_${req.file.filename.replace(path.extname(req.file.filename), '.jpg')}`;
+      const thumbPath = path.join(uploadDir, thumbFilename);
+
+      try {
+        await generateVideoThumbnail(videoPath, thumbPath);
+        (req as any).videoThumbnailUrl = `/uploads/${thumbFilename}`;
+        console.log(`[COMPRESSION] Video thumbnail generated: ${thumbFilename}`);
+      } catch (thumbErr) {
+        console.error('[COMPRESSION] Video thumbnail generation failed:', thumbErr);
       }
     } else {
       console.log(`[COMPRESSION] File type ${req.file.mimetype} does not need compression`);
@@ -469,6 +481,38 @@ export const compressUploadedMedia = async (req: any, res: any, next: any) => {
     console.error('[COMPRESSION] Error in media compression middleware:', error);
     next(); // Continue without compression if error occurs
   }
+};
+
+// Generate video thumbnail - tries 1s mark, falls back to first frame
+export const generateVideoThumbnail = (
+  inputPath: string,
+  outputPath: string
+): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    ffmpeg(inputPath)
+      .on('end', () => resolve())
+      .on('error', (err) => {
+        // If 1s mark fails (video too short), try first frame
+        console.log('[THUMBNAIL] Retrying with first frame...');
+        ffmpeg(inputPath)
+          .on('end', () => resolve())
+          .on('error', (err2) => reject(err2))
+          .screenshots({
+            count: 1,
+            timestamps: ['00:00:00.1'],
+            filename: path.basename(outputPath),
+            folder: path.dirname(outputPath),
+            size: '320x?',
+          });
+      })
+      .screenshots({
+        count: 1,
+        timestamps: ['00:00:01'],
+        filename: path.basename(outputPath),
+        folder: path.dirname(outputPath),
+        size: '320x?',
+      });
+  });
 };
 
 // Keep backward compatibility

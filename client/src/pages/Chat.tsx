@@ -644,6 +644,26 @@ export default function Chat() {
     };
   }, [user]);
 
+  // Keep the personnel list's online/offline status in sync in real time.
+  // CallContext re-broadcasts WebSocket 'user_status' events (sent when a user
+  // connects or disconnects) as 'websocket-message' custom events.
+  useEffect(() => {
+    const handleUserStatus = (event: CustomEvent) => {
+      const message = event.detail;
+      if (message?.type !== 'user_status' || !message.payload) return;
+
+      const { userId, status } = message.payload;
+      setAllUsers(prev =>
+        prev.map(u => (u.id === userId ? { ...u, status } : u))
+      );
+    };
+
+    window.addEventListener('websocket-message', handleUserStatus as EventListener);
+    return () => {
+      window.removeEventListener('websocket-message', handleUserStatus as EventListener);
+    };
+  }, []);
+
   // Update chats state when React Query data changes
   useEffect(() => {
     if (conversationsData && Array.isArray(conversationsData)) {
@@ -1625,9 +1645,18 @@ export default function Chat() {
                       .map(personnel => (
                         <div key={personnel.id} className="bg-[#1a1a1a] rounded-lg p-4 border border-[#333] hover:border-[#8d9c6b] transition-colors mb-2">
                           <div className="flex items-start space-x-3">
-                            <Avatar className="h-12 w-12 bg-[#2d3328] text-[#8d9c6b]">
-                              <AvatarFallback>{personnel.callsign ? personnel.callsign[0].toUpperCase() : (personnel.firstName ? personnel.firstName[0].toUpperCase() : 'U')}</AvatarFallback>
-                            </Avatar>
+                            <div className="relative flex-shrink-0">
+                              <Avatar className="h-12 w-12 bg-[#2d3328] text-[#8d9c6b]">
+                                <AvatarFallback>{personnel.callsign ? personnel.callsign[0].toUpperCase() : (personnel.firstName ? personnel.firstName[0].toUpperCase() : 'U')}</AvatarFallback>
+                              </Avatar>
+                              {/* Online/offline indicator */}
+                              <span
+                                className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-[#1a1a1a] ${
+                                  personnel.status === 'online' ? 'bg-green-500' : 'bg-gray-500'
+                                }`}
+                                title={personnel.status === 'online' ? 'Online' : 'Offline'}
+                              ></span>
+                            </div>
                             <div className="flex-1">
                               <div className="flex justify-between items-start mb-3">
                                 <div>
@@ -1641,8 +1670,19 @@ export default function Chat() {
                                     {personnel.nrp && <span>NRP: {personnel.nrp}</span>}
                                   </p>
                                 </div>
-                                <Badge className="bg-[#2d3328] text-[#8d9c6b]">
-                                  {personnel.status || "Aktif"}
+                                <Badge
+                                  className={`${
+                                    personnel.status === 'online'
+                                      ? 'bg-green-900/40 text-green-400'
+                                      : 'bg-[#2d2d2d] text-gray-400'
+                                  }`}
+                                >
+                                  <span
+                                    className={`inline-block w-2 h-2 rounded-full mr-1.5 ${
+                                      personnel.status === 'online' ? 'bg-green-500' : 'bg-gray-500'
+                                    }`}
+                                  ></span>
+                                  {personnel.status === 'online' ? 'Online' : 'Offline'}
                                 </Badge>
                               </div>
                               <div className="flex justify-end">
@@ -1760,6 +1800,7 @@ export default function Chat() {
               onClick={() => {
                 setShowNewChatMenu(false);
                 setShowNewDirectChatDialog(true);
+                fetchAllUsers(); // refresh so online (green dot) status is current
               }}
             >
               <User className="mr-2 h-5 w-5" />
@@ -1771,6 +1812,7 @@ export default function Chat() {
               onClick={() => {
                 setShowNewChatMenu(false);
                 setShowNewGroupDialog(true);
+                fetchAllUsers(); // refresh so online (green dot) status is current
               }}
             >
               <Users className="mr-2 h-5 w-5" />
@@ -1800,6 +1842,9 @@ export default function Chat() {
                   .filter(u => u.id !== user?.id)
                   .map(user => (
                     <option key={user.id} value={user.id}>
+                      {/* Native <option> can't render a styled dot, so use a glyph:
+                          🟢 = online, ⚪ = offline */}
+                      {((user.status === 'online' || user.isOnline) ? '🟢 ' : '⚪ ')}
                       {user.callsign || user.firstName || `User ${user.id}`}
                     </option>
                   ))
@@ -1870,7 +1915,15 @@ export default function Chat() {
                           }
                         }}
                       />
-                      <label htmlFor={`user-${user.id}`}>
+                      <label htmlFor={`user-${user.id}`} className="flex items-center">
+                        {/* Online indicator (green dot) for users currently online */}
+                        <span
+                          className={`mr-2 w-2.5 h-2.5 rounded-full inline-block ${
+                            (user.status === 'online' || user.isOnline)
+                              ? 'bg-green-500'
+                              : 'bg-gray-500'
+                          }`}
+                        />
                         {user.callsign || user.firstName || `User ${user.id}`}
                       </label>
                     </div>

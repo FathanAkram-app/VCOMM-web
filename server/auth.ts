@@ -5,11 +5,21 @@ import connectPg from 'connect-pg-simple';
 import crypto from 'crypto';
 import { storage } from './storage';
 import { loginSchema, registerUserSchema } from '@shared/schema';
+import { gotifyService } from './services/gotify.service';
 
 declare module 'express-session' {
   interface SessionData {
-    user?: any;
+    user?: {
+      id: number;
+      callsign: string;
+      rank?: string;
+      branch?: string;
+    };
   }
+}
+
+export interface AuthRequest extends Request {
+  session: session.Session & Partial<session.SessionData>;
 }
 
 export function getSession() {
@@ -110,16 +120,10 @@ export async function setupAuth(app: express.Express) {
       let user;
       try {
         // Try database storage first
-        const existingUserByCallsign = await storage.getUserByCallsign(parseResult.data.callsign);
-        if (existingUserByCallsign) {
-          return res.status(400).json({ message: "Call sign already taken" });
-        }
-
-        if (parseResult.data.nrp) {
-          const existingUserByNrp = await storage.getUserByNrp(parseResult.data.nrp);
-          if (existingUserByNrp) {
-            return res.status(400).json({ message: "NRP/ID already registered" });
-          }
+        // NRP is the unique identifier - check for duplicates
+        const existingUserByNrp = await storage.getUserByNrp(parseResult.data.nrp);
+        if (existingUserByNrp) {
+          return res.status(400).json({ message: "NRP/ID already registered" });
         }
 
         const hashedPassword = await bcrypt.hash(parseResult.data.password, 10);
@@ -134,22 +138,12 @@ export async function setupAuth(app: express.Express) {
         console.log('Database unavailable, using in-memory storage for registration');
 
         // Fallback to in-memory storage
-        // Check if callsign already exists in memory
-        const existingUser = Array.from(inMemoryUsers.values()).find(
-          u => u.callsign === parseResult.data.callsign
+        // Check if NRP already exists in memory (NRP is the unique identifier)
+        const existingByNrp = Array.from(inMemoryUsers.values()).find(
+          u => u.nrp === parseResult.data.nrp
         );
-        if (existingUser) {
-          return res.status(400).json({ message: "Call sign already taken" });
-        }
-
-        // Check if NRP already exists in memory
-        if (parseResult.data.nrp) {
-          const existingByNrp = Array.from(inMemoryUsers.values()).find(
-            u => u.nrp === parseResult.data.nrp
-          );
-          if (existingByNrp) {
-            return res.status(400).json({ message: "NRP/ID already registered" });
-          }
+        if (existingByNrp) {
+          return res.status(400).json({ message: "NRP/ID already registered" });
         }
 
         // Hash password
@@ -170,6 +164,14 @@ export async function setupAuth(app: express.Express) {
 
         inMemoryUsers.set(userId, user);
         console.log(`Created in-memory user: ${user.callsign} (ID: ${userId})`);
+      }
+
+      // Auto-provision Gotify client token for push notifications
+      try {
+        await gotifyService.ensureUserHasToken(user.id, user.callsign);
+      } catch (error) {
+        console.warn('[Auth] Failed to provision Gotify token for new user:', error);
+        // Non-critical, continue with registration
       }
 
       // Store user in session (auto login)
@@ -199,7 +201,7 @@ export async function setupAuth(app: express.Express) {
       res.status(500).json({ message: "Failed to register" });
     }
   });
-  
+
   // Login route
   app.post('/api/auth/login', async (req, res) => {
     try {
@@ -212,16 +214,16 @@ export async function setupAuth(app: express.Express) {
         });
       }
 
-      const { callsign, password } = parseResult.data;
+      const { nrp, password } = parseResult.data;
       let user;
 
       try {
-        // Try database first
-        user = await storage.getUserByCallsign(callsign);
+        // Try database first - login by NRP (unique identifier)
+        user = await storage.getUserByNrp(nrp);
       } catch (dbError) {
         // Fallback to in-memory storage
         console.log('Database unavailable, checking in-memory users for login');
-        user = Array.from(inMemoryUsers.values()).find(u => u.callsign === callsign);
+        user = Array.from(inMemoryUsers.values()).find(u => u.nrp === nrp);
       }
 
       if (!user) {
@@ -241,6 +243,14 @@ export async function setupAuth(app: express.Express) {
         rank: user.rank,
         branch: user.branch
       };
+
+      // Auto-provision Gotify client token for push notifications
+      try {
+        await gotifyService.ensureUserHasToken(user.id, user.callsign);
+      } catch (error) {
+        console.warn('[Auth] Failed to provision Gotify token on login:', error);
+        // Non-critical, continue with login
+      }
 
       // Update user status to online (try database, ignore if fails)
       try {
@@ -282,16 +292,16 @@ export async function setupAuth(app: express.Express) {
       res.status(500).json({ message: "Failed to login" });
     }
   });
-  
+
   // Get current user
   app.get('/api/auth/user', isAuthenticated, async (req, res) => {
     try {
       const user = await storage.getUser(req.session.user.id);
       if (!user) {
-        req.session.destroy(() => {});
+        req.session.destroy(() => { });
         return res.status(401).json({ message: "User not found" });
       }
-      
+
       // Return user without password
       const { password, ...userWithoutPassword } = user;
       res.json(userWithoutPassword);
@@ -300,13 +310,13 @@ export async function setupAuth(app: express.Express) {
       res.status(500).json({ message: "Failed to get user" });
     }
   });
-  
+
   // Logout route
   app.post('/api/auth/logout', isAuthenticated, async (req, res) => {
     try {
       // Update user status to offline
       await storage.updateUserStatus(req.session.user.id, 'offline');
-      
+
       // Destroy session
       req.session.destroy(() => {
         res.json({ message: "Logged out successfully" });

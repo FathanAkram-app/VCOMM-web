@@ -1,54 +1,115 @@
 import { WebSocket } from 'ws';
 import { IStorage } from '../../storage';
-import { AuthenticatedWebSocket, ClientsMap, GroupCallsMap } from '../utils/types';
-import { sendToClient } from '../utils/send';
-import { gotifyService } from '../../services/gotify.service';
+import { AuthenticatedWebSocket, ClientsMap, GroupCallsMap, OneOnOneCallsMap } from '../utils/types';
+import { sendToClient, getUserClient } from '../utils/send';
+import { notificationService } from '../../services/notification.service';
+
+// Helper to send to all connections of a user
+function sendToAllUserConnections(clients: ClientsMap, userId: number, message: any): boolean {
+  const userClients = clients.get(userId);
+  if (!userClients) return false;
+
+  const messageStr = typeof message === 'string' ? message : JSON.stringify(message);
+  let sent = false;
+  userClients.forEach((client, source) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(messageStr);
+      sent = true;
+    }
+  });
+  return sent;
+}
 
 export function createCallHandlers(
   storage: IStorage,
   clients: ClientsMap,
   activeGroupCalls: GroupCallsMap,
-  broadcastToAll: (message: any) => void
+  broadcastToAll: (message: any) => void,
+  callConversationMap?: Map<string, number>,
+  activeOneOnOneCalls?: OneOnOneCallsMap
 ) {
+  // Track calls that have been resolved (answered/rejected/ended) to prevent
+  // the 30s timeout from overriding an already-processed call (#7 Call Decline State Sync)
+  const processedCalls = new Set<string>();
+
+  // Auto-cleanup processedCalls after 60s to prevent memory leak
+  function markCallProcessed(callId: string) {
+    processedCalls.add(callId);
+    setTimeout(() => processedCalls.delete(callId), 60000);
+  }
+
   async function handleInitiateCall(ws: AuthenticatedWebSocket, data: any) {
     if (!ws.userId) return;
 
     const { callId, toUserId, callType, fromUserId, fromUserName } = data.payload;
     console.log(`[Call] User ${fromUserId} (${fromUserName}) initiating ${callType} call to ${toUserId}`);
 
+    // Never process an initiate with no target — it would previously fall through and the
+    // untargeted offer would be broadcast to everyone. Tell the caller it failed.
+    if (!toUserId) {
+      console.warn(`[Call] initiate_call from ${ws.userId} has no toUserId; rejecting`);
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'call_failed', payload: { callId, reason: 'invalid_target', message: 'No call target' } }));
+      }
+      return;
+    }
+
+    // Record the 1:1 call pair so signaling routes to the right peer and the peer is notified on
+    // abrupt disconnect.
+    activeOneOnOneCalls?.set(callId, { caller: fromUserId, callee: toUserId });
+
     // Get target user's name
     const targetUser = await storage.getUser(toUserId);
     const targetUserName = targetUser ? (targetUser.callsign || targetUser.fullName || 'Unknown') : 'Unknown';
 
-    // Log call initiation
-    await storage.addCallHistory({
-      callId,
-      callType,
-      initiatorId: fromUserId,
-      conversationId: null,
-      participants: [fromUserId.toString(), toUserId.toString()],
-      status: 'incoming',
-      startTime: new Date(),
-      endTime: null,
-      duration: null
-    });
+    const targetClient = getUserClient(clients, toUserId);
+    if (targetClient) {
+      // Log call history as incoming (user is online)
+      await storage.addCallHistory({
+        callId,
+        callType,
+        initiatorId: fromUserId,
+        conversationId: data.payload.conversationId || null,
+        participants: [fromUserId.toString(), toUserId.toString()],
+        status: 'incoming',
+        startTime: new Date(),
+        endTime: null,
+        duration: null
+      });
+      // Send WebSocket notification to all connections of the target user
+      const userClients = clients.get(toUserId);
+      if (userClients) {
+        const messageStr = JSON.stringify({
+          type: 'incoming_call',
+          payload: {
+            callId,
+            callType,
+            fromUserId,
+            fromUserName,
+            conversationId: data.payload.conversationId
+          }
+        });
+        userClients.forEach((client, source) => {
+          if (client.readyState === client.OPEN) {
+            client.send(messageStr);
+            console.log(`[Call] Sent incoming call notification to user ${toUserId} (${source}) via WebSocket`);
+          }
+        });
+      }
 
-    const targetClient = clients.get(toUserId);
-    if (targetClient && targetClient.readyState === targetClient.OPEN) {
-      targetClient.send(JSON.stringify({
-        type: 'incoming_call',
-        payload: {
-          callId,
-          callType,
-          fromUserId,
-          fromUserName
-        }
-      }));
-      console.log(`[Call] Sent incoming call notification to user ${toUserId}`);
+      // Note: Notifications are handled via WebSocket - when user is online, they receive
+      // incoming_call message. When backgrounded, the mobile app's WebSocket service
+      // will show a notification.
 
       // Set timeout for unanswered calls (30 seconds)
       setTimeout(async () => {
         try {
+          // Skip if call was already processed (accepted/rejected) before timeout
+          if (processedCalls.has(callId)) {
+            console.log(`[Call] Call ${callId} already processed, skipping timeout`);
+            return;
+          }
+
           // Check if call is still in "incoming" status (not answered)
           const existingCall = await storage.getCallByCallId(callId);
           if (existingCall && existingCall.status === 'incoming') {
@@ -58,12 +119,17 @@ export function createCallHandlers(
 
             // Notify both users that call was missed
             [fromUserId, toUserId].forEach(userId => {
-              const client = clients.get(userId);
-              if (client && client.readyState === client.OPEN) {
-                client.send(JSON.stringify({
+              const userClients = clients.get(userId);
+              if (userClients) {
+                const missedMessage = JSON.stringify({
                   type: 'call_missed',
                   payload: { callId, reason: 'timeout' }
-                }));
+                });
+                userClients.forEach((client, source) => {
+                  if (client.readyState === client.OPEN) {
+                    client.send(missedMessage);
+                  }
+                });
               }
             });
           }
@@ -72,43 +138,70 @@ export function createCallHandlers(
         }
       }, 30000); // 30 seconds timeout
     } else {
-      // User is offline, log missed call AND send push notification
+      // User is offline (no WebSocket connection) - wait for them to come online
+      console.log(`[Call] User ${toUserId} is offline (no WebSocket), sending push and waiting for reconnect`);
+
+      // Push a call notification so a killed/backgrounded device without a live socket can still
+      // ring. (Previously nothing was pushed here, so an offline callee never learned of the call.)
+      notificationService.notifyCall(toUserId, fromUserName, callType, callId, fromUserId)
+        .catch(err => console.error('[Call] Error sending offline call push:', err));
+
+      // Log call as incoming (not missed yet - give user time to respond via push)
       await storage.addCallHistory({
         callId,
         callType,
         initiatorId: fromUserId,
-        conversationId: null,
+        conversationId: data.payload.conversationId || null,
         participants: [fromUserId.toString(), toUserId.toString()],
-        status: 'missed',
+        status: 'incoming',
         startTime: new Date(),
         endTime: null,
         duration: null
       });
 
-      // Send push notification to offline user
-      console.log(`[Call] User ${toUserId} is offline, sending push notification`);
-      try {
-        await gotifyService.sendCallNotification(
-          toUserId,
-          fromUserName,
-          callType,
-          callId,
-          fromUserId
-        );
-        console.log(`[Call] Push notification sent to user ${toUserId}`);
-      } catch (error) {
-        console.error(`[Call] Error sending push notification:`, error);
-      }
+      // Set 30-second timeout - same as online calls
+      // User may open the app from the notification and accept
+      setTimeout(async () => {
+        try {
+          if (processedCalls.has(callId)) {
+            console.log(`[Call] Offline call ${callId} already processed, skipping timeout`);
+            return;
+          }
 
-      // Send failure response
-      ws.send(JSON.stringify({
-        type: 'call_failed',
-        payload: {
-          callId,
-          reason: 'User is offline'
+          const existingCall = await storage.getCallByCallId(callId);
+          if (existingCall && existingCall.status === 'incoming') {
+            // Still unanswered after 30s - mark as missed
+            await storage.updateCallStatus(callId, 'missed');
+            console.log(`[Call] Offline call ${callId} marked as missed (timeout)`);
+
+            // Notify caller that call was not answered
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({
+                type: 'call_missed',
+                payload: { callId, reason: 'timeout' }
+              }));
+            }
+
+            // If target user came online in the meantime, notify them too
+            const targetClients = clients.get(toUserId);
+            if (targetClients) {
+              const missedMessage = JSON.stringify({
+                type: 'call_missed',
+                payload: { callId, reason: 'timeout' }
+              });
+              targetClients.forEach((client) => {
+                if (client.readyState === WebSocket.OPEN) {
+                  client.send(missedMessage);
+                }
+              });
+            }
+          }
+        } catch (error) {
+          console.error('[Call] Error handling offline call timeout:', error);
         }
-      }));
-      console.log(`[Call] User ${toUserId} is offline, call failed`);
+      }, 30000);
+
+      console.log(`[Call] Waiting 30s for offline user ${toUserId} to come online`);
     }
   }
 
@@ -116,18 +209,25 @@ export function createCallHandlers(
     if (!ws.userId) return;
 
     const { callId, toUserId } = data.payload;
-    console.log(`[Call] User ${ws.userId} accepted call ${callId}`);
+    console.log(`[Call] User ${ws.userId} accepted call ${callId}, notifying user ${toUserId}`);
+
+    // Mark call as processed so timeout won't fire
+    markCallProcessed(callId);
 
     // Update call history status to accepted
     await storage.updateCallStatus(callId, 'accepted');
 
-    const targetClient = clients.get(toUserId);
-    if (targetClient && targetClient.readyState === targetClient.OPEN) {
-      targetClient.send(JSON.stringify({
-        type: 'call_accepted',
-        payload: { callId }
-      }));
-      console.log(`[Call] Sent call accepted notification to user ${toUserId}`);
+    // Check if target user has connections
+    const targetClients = clients.get(toUserId);
+    console.log(`[Call] Target user ${toUserId} has ${targetClients ? targetClients.size : 0} connection(s)`);
+
+    if (sendToAllUserConnections(clients, toUserId, {
+      type: 'call_accepted',
+      payload: { callId }
+    })) {
+      console.log(`[Call] ✅ Sent call_accepted to user ${toUserId} for call ${callId}`);
+    } else {
+      console.log(`[Call] ❌ Target user ${toUserId} not connected for call_accepted`);
     }
   }
 
@@ -136,10 +236,16 @@ export function createCallHandlers(
 
     const { callId, toUserId, reason } = data.payload;
     console.log(`[Call] User ${ws.userId} rejected call ${callId}`, reason ? `(reason: ${reason})` : '(no reason)');
-    console.log(`[Call] Reject payload:`, JSON.stringify(data.payload));
 
-    // Update call history status - use 'missed' if user didn't explicitly reject
-    const status = reason === 'busy' ? 'rejected' : 'missed';
+    // Mark call as processed so timeout won't fire
+    markCallProcessed(callId);
+    activeOneOnOneCalls?.delete(callId);
+
+    // Update call history status. An explicit decline ('declined') or busy-reject ('busy') is a
+    // 'rejected' call; only a genuinely unhandled reject (no reason) falls back to 'missed'. This
+    // stops an actively-declined call from being replayed as a "Missed call" toast on every
+    // reconnect for 5 minutes.
+    const status = (reason === 'busy' || reason === 'declined') ? 'rejected' : 'missed';
     console.log(`[Call] Updating call ${callId} status to: ${status}`);
 
     try {
@@ -149,20 +255,18 @@ export function createCallHandlers(
       console.error(`[Call] Failed to update call ${callId} status:`, error);
     }
 
-    const targetClient = clients.get(toUserId);
-    if (targetClient && targetClient.readyState === targetClient.OPEN) {
-      // Get the user's name for a personalized message
-      const rejectingUser = await storage.getUser(ws.userId);
-      const userName = rejectingUser?.callsign || rejectingUser?.fullName || 'User';
+    // Get the user's name for a personalized message
+    const rejectingUser = await storage.getUser(ws.userId);
+    const userName = rejectingUser?.callsign || rejectingUser?.fullName || 'User';
 
-      targetClient.send(JSON.stringify({
-        type: reason === 'busy' ? 'call_failed' : 'call_rejected',
-        payload: {
-          callId,
-          reason: reason || 'declined',
-          message: reason === 'busy' ? `${userName} is currently on another call` : undefined
-        }
-      }));
+    if (sendToAllUserConnections(clients, toUserId, {
+      type: reason === 'busy' ? 'call_failed' : 'call_rejected',
+      payload: {
+        callId,
+        reason: reason || 'declined',
+        message: reason === 'busy' ? `${userName} is currently on another call` : undefined
+      }
+    })) {
       console.log(`[Call] Sent call ${reason === 'busy' ? 'failed (busy)' : 'rejected'} notification to user ${toUserId}`);
     }
   }
@@ -173,19 +277,56 @@ export function createCallHandlers(
     const { callId, toUserId, groupId } = data.payload;
     console.log(`[Call] User ${ws.userId} ended call ${callId}`);
 
-    // Update call history status to ended
-    await storage.updateCallStatus(callId, 'ended');
+    // Mark call as processed so timeout won't fire
+    markCallProcessed(callId);
+    activeOneOnOneCalls?.delete(callId);
+
+    // CALL-WAITING / BUSY FIX:
+    // For 1-on-1 calls, if this call is ALREADY in a terminal state (e.g. it was
+    // just 'rejected' because the callee was busy on another call), then this
+    // end_call is the CALLER's local teardown of a failed attempt — NOT a hangup
+    // of a live call. Relaying call_ended now would wrongly end the callee's OTHER
+    // ongoing call, because the callee's client ends whatever call it is currently
+    // in regardless of callId. So we stop here and do not relay/override.
+    //
+    // Scenario: A & B are in a call. C calls A. A (busy) auto-rejects C's call
+    // (status -> 'rejected') and the server tells C 'call_failed'. C's client then
+    // runs endCall() and emits end_call(toUserId = A). Without this guard the
+    // server would relay call_ended to A and drop the A<->B call.
+    if (!callId.includes('group_call_')) {
+      try {
+        const existingCall = await storage.getCallByCallId(callId);
+        const terminalStatuses = ['rejected', 'missed', 'ended', 'failed'];
+        if (existingCall && terminalStatuses.includes(existingCall.status)) {
+          console.log(`[Call] Ignoring end_call for ${callId} — already '${existingCall.status}'. Not relaying call_ended (prevents a busy-reject from ending an unrelated active call).`);
+          return;
+        }
+      } catch (error) {
+        console.error('[Call] Error checking existing call status in handleEndCall:', error);
+      }
+    }
+
+    // Update call history status to ended — but ONLY for 1:1 calls. For group calls the whole call
+    // must not be marked 'ended' when the first participant hangs up (the web client's normal group
+    // hangup is end_call{isGroupCall}); the group branch below defers 'ended' until the room empties.
+    if (!callId.includes('group_call_')) {
+      await storage.updateCallStatus(callId, 'ended');
+    }
 
     // Check if it's a group call
     if (callId.includes('group_call_')) {
       console.log(`[Group Call] Handling group call end for ${callId}`);
 
-      // Find the correct active group call for this groupId
+      // Try direct callId lookup first, fall back to conversationMap search
       let foundCallId = null;
-      for (const [activeCallId, participants] of activeGroupCalls.entries()) {
-        if (activeCallId.includes(`_${groupId}_`) && participants.has(ws.userId)) {
-          foundCallId = activeCallId;
-          break;
+      if (activeGroupCalls.has(callId) && activeGroupCalls.get(callId)!.has(ws.userId)) {
+        foundCallId = callId;
+      } else if (groupId && callConversationMap) {
+        for (const [activeCallId, convId] of callConversationMap.entries()) {
+          if (convId === groupId && activeGroupCalls.has(activeCallId) && activeGroupCalls.get(activeCallId)!.has(ws.userId)) {
+            foundCallId = activeCallId;
+            break;
+          }
         }
       }
 
@@ -199,6 +340,9 @@ export function createCallHandlers(
         if (remainingParticipants === 0) {
           // No participants left, end the entire call
           activeGroupCalls.delete(foundCallId);
+          callConversationMap?.delete(foundCallId);
+          // Now that the room is empty, mark the call ended (deferred from the top of this handler).
+          try { await storage.updateCallStatus(foundCallId, 'ended'); } catch (e) { console.error('[Group Call] Error marking ended:', e); }
           console.log(`[Group Call] Removed empty group call ${foundCallId}`);
 
           broadcastToAll({
@@ -223,13 +367,11 @@ export function createCallHandlers(
         console.log(`[Group Call] No active group call found for user ${ws.userId} in group ${groupId}`);
       }
     } else {
-      // For individual calls, notify specific user
-      const targetClient = clients.get(toUserId);
-      if (targetClient && targetClient.readyState === targetClient.OPEN) {
-        targetClient.send(JSON.stringify({
-          type: 'call_ended',
-          payload: { callId }
-        }));
+      // For individual calls, notify specific user (all connections)
+      if (sendToAllUserConnections(clients, toUserId, {
+        type: 'call_ended',
+        payload: { callId }
+      })) {
         console.log(`[Call] Sent call ended notification to user ${toUserId}`);
       }
     }
@@ -241,14 +383,11 @@ export function createCallHandlers(
     const { callId, toUserId } = data.payload;
     console.log(`[WebRTC] User ${ws.userId} is ready for WebRTC on call ${callId}`);
 
-    const targetClient = clients.get(toUserId);
-    if (targetClient && targetClient.readyState === targetClient.OPEN) {
-      targetClient.send(JSON.stringify({
-        type: 'webrtc_ready',
-        payload: { callId }
-      }));
-      console.log(`[WebRTC] Sent ready signal to user ${toUserId}`);
-    }
+    sendToAllUserConnections(clients, toUserId, {
+      type: 'webrtc_ready',
+      payload: { callId }
+    });
+    console.log(`[WebRTC] Sent ready signal to user ${toUserId}`);
   }
 
   return {

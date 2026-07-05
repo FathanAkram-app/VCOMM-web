@@ -1,23 +1,82 @@
 import { WebSocket } from 'ws';
 import { IStorage } from '../../storage';
 import { AuthenticatedWebSocket, ClientsMap, GroupCallsMap } from '../utils/types';
-import { sendToClient } from '../utils/send';
+import { sendToClient, getUserClient } from '../utils/send';
+
+// Helper to send to all connections of a user
+function sendToAllUserConnections(clients: ClientsMap, userId: number, message: any): boolean {
+  const userClients = clients.get(userId);
+  if (!userClients) return false;
+
+  const messageStr = typeof message === 'string' ? message : JSON.stringify(message);
+  let sent = false;
+  userClients.forEach((client, source) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(messageStr);
+      sent = true;
+    }
+  });
+  return sent;
+}
+
+// Reverse lookup: find active group call for a given conversationId
+export function getActiveCallForConversation(
+  activeGroupCalls: GroupCallsMap,
+  callConversationMap: Map<string, number>,
+  conversationId: number
+): { callId: string; participants: number[] } | null {
+  // Use the callConversationMap for reliable lookup
+  for (const [callId, convId] of callConversationMap.entries()) {
+    if (convId === conversationId && activeGroupCalls.has(callId)) {
+      const participantSet = activeGroupCalls.get(callId)!;
+      if (participantSet.size > 0) {
+        return {
+          callId,
+          participants: Array.from(participantSet),
+        };
+      }
+    }
+  }
+  return null;
+}
 
 export function createGroupCallHandlers(
   storage: IStorage,
   clients: ClientsMap,
-  activeGroupCalls: GroupCallsMap
+  activeGroupCalls: GroupCallsMap,
+  callConversationMap: Map<string, number>
 ) {
+  // Users who declined a given group call — excluded from rejoin re-invitations so a member who
+  // said no isn't re-rung every time someone rejoins. Cleared when the call ends.
+  const declinedUsers: Map<string, Set<number>> = new Map();
+
+  // True if a group call still has at least one participant with a live socket. Used so the
+  // idle-cleanup timer never wipes a call that is still in progress.
+  function callHasConnectedParticipant(callId: string): boolean {
+    const participants = activeGroupCalls.get(callId);
+    if (!participants || participants.size === 0) return false;
+    for (const uid of participants) {
+      const c = clients.get(uid);
+      if (c && c.size > 0) return true;
+    }
+    return false;
+  }
+
+  function endGroupCallState(callId: string) {
+    activeGroupCalls.delete(callId);
+    callConversationMap.delete(callId);
+    declinedUsers.delete(callId);
+  }
   async function handleStartGroupCall(ws: AuthenticatedWebSocket, data: any) {
     if (!ws.userId) return;
 
     const { callId, groupId, groupName, callType, fromUserId, fromUserName } = data.payload;
     console.log(`[Group Call] User ${fromUserId} (${fromUserName}) starting ${callType} group call in group ${groupId} (${groupName})`);
 
-    // Check if there's already an active group call for this group
+    // Check if there's already an active group call for this group using the conversation map
     let existingCallId = null;
-    for (const [activeCallId, participants] of activeGroupCalls.entries()) {
-      if (activeCallId.includes(`_${groupId}_`) && participants.size > 0) {
+    for (const [activeCallId, convId] of callConversationMap.entries()) {
+      if (convId === groupId && activeGroupCalls.has(activeCallId) && activeGroupCalls.get(activeCallId)!.size > 0) {
         existingCallId = activeCallId;
         break;
       }
@@ -36,14 +95,17 @@ export function createGroupCallHandlers(
         // Get group members to notify
         const members = await storage.getConversationMembers(groupId);
 
-        // Send incoming group call notifications to ALL members (not just the joiner)
-        // This allows members to see the incoming call modal and choose to join
+        // Send incoming group call notifications ONLY to members NOT already in the call
+        // Members already in the call would reject the notification, which would
+        // incorrectly remove them from the participant set
+        const existingParticipants = activeGroupCalls.get(existingCallId)!;
+        const alreadyDeclined = declinedUsers.get(existingCallId) || new Set<number>();
         let invitationsSent = 0;
         for (const member of members) {
-          if (member.userId !== fromUserId) { // Don't send to the person starting the call
-            const targetClient = clients.get(member.userId);
-            if (targetClient && targetClient.readyState === targetClient.OPEN) {
-              targetClient.send(JSON.stringify({
+          // Skip the rejoiner, anyone already in the call, AND anyone who already declined it
+          // (don't re-ring a member who said no every time someone rejoins).
+          if (member.userId !== fromUserId && !existingParticipants.has(member.userId) && !alreadyDeclined.has(member.userId)) {
+            if (sendToAllUserConnections(clients, member.userId, {
                 type: 'incoming_group_call',
                 payload: {
                   callId: existingCallId,
@@ -53,7 +115,7 @@ export function createGroupCallHandlers(
                   fromUserId,
                   fromUserName
                 }
-              }));
+              })) {
               invitationsSent++;
               console.log(`[Group Call] Sent group call invitation to user ${member.userId}`);
             }
@@ -61,20 +123,68 @@ export function createGroupCallHandlers(
         }
         console.log(`[Group Call] Sent ${invitationsSent} group call invitations for existing call ${existingCallId}`);
 
-        // Broadcast participant update to all group members
+        // Resolve participant names server-side
+        const participantData = await Promise.all(
+          participants.map(async (pId: number) => {
+            const u = await storage.getUser(pId);
+            return { userId: pId, userName: u?.callsign || u?.fullName || `User ${pId}` };
+          })
+        );
+
+        // Broadcast participant update to all group members (with names)
         for (const member of members) {
-          const targetClient = clients.get(member.userId);
-          if (targetClient && targetClient.readyState === targetClient.OPEN) {
-            targetClient.send(JSON.stringify({
-              type: 'group_call_participants_update',
-              payload: {
-                callId: existingCallId,
-                participants,
-                newParticipant: fromUserId
-              }
-            }));
-          }
+          sendToAllUserConnections(clients, member.userId, {
+            type: 'group_call_participants_update',
+            payload: {
+              callId: existingCallId,
+              participants,
+              participantData,
+              newParticipant: fromUserId
+            }
+          });
         }
+
+        // Send group_call_initiated to the rejoiner with the EXISTING callId
+        // so the mobile app can update its local state
+        sendToAllUserConnections(clients, fromUserId, {
+          type: 'group_call_initiated',
+          payload: {
+            callId: existingCallId,
+            originalCallId: callId, // The callId the mobile sent (so it knows to update)
+            groupId,
+            totalMembers: members.length,
+            onlineMembers: participants.length,
+            invitationsSent,
+            success: true,
+            isRejoin: true,
+            message: `Joined existing group call with ${participants.length} participants.`
+          }
+        });
+
+        // Send initiate_group_webrtc to the rejoiner after a delay
+        // so they know which participants to create WebRTC connections with
+        setTimeout(async () => {
+          const participantData = await Promise.all(
+            participants.map(async (pId) => {
+              const user = await storage.getUser(pId);
+              return {
+                userId: pId,
+                userName: user?.callsign || user?.fullName || `User ${pId}`,
+              };
+            })
+          );
+
+          sendToAllUserConnections(clients, fromUserId, {
+            type: 'initiate_group_webrtc',
+            payload: {
+              callId: existingCallId,
+              participants: participantData,
+              timestamp: Date.now()
+            }
+          });
+          console.log(`[Group Call] 🚀 Sent WebRTC initiation to rejoiner ${fromUserId} for existing call ${existingCallId}`);
+        }, 500);
+
       } catch (error) {
         console.error(`[Group Call] Error broadcasting participant update:`, error);
       }
@@ -84,14 +194,23 @@ export function createGroupCallHandlers(
     try {
       // Create new group call with enhanced stability
       activeGroupCalls.set(callId, new Set([fromUserId]));
+      callConversationMap.set(callId, groupId);
+      console.log(`[Group Call] Mapped callId ${callId} → conversationId ${groupId}`);
 
-      // Auto-cleanup abandoned group calls after 30 minutes
-      setTimeout(() => {
-        if (activeGroupCalls.has(callId)) {
+      // Idle-cleanup: only wipe the call after 30 minutes IF nobody with a live socket is still in
+      // it. A busy 40-minute call must not have its server room state deleted out from under it
+      // (which would break join/leave/rejoin and strand ghost tiles). Reschedule while still live.
+      const scheduleCleanup = () => setTimeout(() => {
+        if (!activeGroupCalls.has(callId)) return;
+        if (callHasConnectedParticipant(callId)) {
+          console.log(`[Group Call] Call ${callId} still active at cleanup check; rescheduling`);
+          scheduleCleanup();
+        } else {
           console.log(`[Group Call] Auto-cleaning up inactive group call ${callId}`);
-          activeGroupCalls.delete(callId);
+          endGroupCallState(callId);
         }
       }, 30 * 60 * 1000);
+      scheduleCleanup();
 
       // Get group members
       const members = await storage.getConversationMembers(groupId);
@@ -106,10 +225,11 @@ export function createGroupCallHandlers(
 
       for (const member of members) {
         if (member.userId !== fromUserId) {
-          const targetClient = clients.get(member.userId);
-          console.log(`[Group Call] Checking member ${member.userId}: client=${!!targetClient}, readyState=${targetClient?.readyState}`);
+          const userClients = clients.get(member.userId);
+          const hasConnection = userClients && userClients.size > 0;
+          console.log(`[Group Call] Checking member ${member.userId}: hasConnection=${hasConnection}`);
 
-          if (targetClient && targetClient.readyState === targetClient.OPEN) {
+          if (hasConnection) {
             onlineMembers++;
 
             const inviteMessage = {
@@ -128,11 +248,12 @@ export function createGroupCallHandlers(
             };
 
             console.log(`[Group Call] 📤 Sending enhanced invite to user ${member.userId}`);
-            targetClient.send(JSON.stringify(inviteMessage));
-            invitationsSent++;
-            console.log(`[Group Call] ✅ Sent enhanced group call invitation to user ${member.userId}`);
+            if (sendToAllUserConnections(clients, member.userId, inviteMessage)) {
+              invitationsSent++;
+              console.log(`[Group Call] ✅ Sent enhanced group call invitation to user ${member.userId}`);
+            }
           } else {
-            console.log(`[Group Call] ❌ Cannot send to user ${member.userId}: client=${!!targetClient}, readyState=${targetClient?.readyState || 'N/A'}`);
+            console.log(`[Group Call] ❌ Cannot send to user ${member.userId}: no active connections`);
           }
         } else {
           console.log(`[Group Call] Skipping initiator ${member.userId}`);
@@ -140,36 +261,31 @@ export function createGroupCallHandlers(
       }
 
       // Send confirmation to initiator with enhanced info
-      const initiatorClient = clients.get(fromUserId);
-      if (initiatorClient && initiatorClient.readyState === initiatorClient.OPEN) {
-        initiatorClient.send(JSON.stringify({
-          type: 'group_call_initiated',
-          payload: {
-            callId,
-            groupId,
-            totalMembers: members.length,
-            onlineMembers: onlineMembers + 1,
-            invitationsSent,
-            success: true,
-            message: `Group call started. ${invitationsSent} invitations sent to online members.`
-          }
-        }));
-      }
+      sendToAllUserConnections(clients, fromUserId, {
+        type: 'group_call_initiated',
+        payload: {
+          callId,
+          groupId,
+          totalMembers: members.length,
+          onlineMembers: onlineMembers + 1,
+          invitationsSent,
+          success: true,
+          message: `Group call started. ${invitationsSent} invitations sent to online members.`
+        }
+      });
 
       console.log(`[Group Call] Enhanced group call ${callId} initiated: ${invitationsSent} invitations sent to ${onlineMembers} online members`);
 
       // If no invitations were sent, notify the initiator
       if (invitationsSent === 0) {
-        if (initiatorClient && initiatorClient.readyState === initiatorClient.OPEN) {
-          initiatorClient.send(JSON.stringify({
-            type: 'group_call_no_participants',
-            payload: {
-              callId,
-              message: 'No group members are currently online to receive the call invitation. Please try again when other members are active.'
-            }
-          }));
-          console.log(`[Group Call] ⚠️ Notified initiator ${fromUserId} that no members are online`);
-        }
+        sendToAllUserConnections(clients, fromUserId, {
+          type: 'group_call_no_participants',
+          payload: {
+            callId,
+            message: 'No group members are currently online to receive the call invitation. Please try again when other members are active.'
+          }
+        });
+        console.log(`[Group Call] ⚠️ Notified initiator ${fromUserId} that no members are online`);
       }
 
       // Log group call initiation to call history
@@ -199,14 +315,40 @@ export function createGroupCallHandlers(
   async function handleJoinGroupCall(ws: AuthenticatedWebSocket, data: any) {
     if (!ws.userId) return;
 
-    const { callId, groupId, fromUserId } = data.payload;
+    const { callId: requestedCallId, groupId, fromUserId } = data.payload;
     const userId = fromUserId || ws.userId; // Use fromUserId from payload or fallback to ws.userId
-    console.log(`[Group Call] User ${userId} joining group call ${callId}`);
+    console.log(`[Group Call] User ${userId} joining group call ${requestedCallId}`);
+
+    // Resolve the actual callId — if the requested callId doesn't exist,
+    // look up by groupId in the callConversationMap (handles rejoin case
+    // where mobile sends a locally-generated callId)
+    let callId = requestedCallId;
+    if (!activeGroupCalls.has(callId) && groupId) {
+      for (const [activeCallId, convId] of callConversationMap.entries()) {
+        if (convId === groupId && activeGroupCalls.has(activeCallId) && activeGroupCalls.get(activeCallId)!.size > 0) {
+          console.log(`[Group Call] Resolved callId ${callId} → existing ${activeCallId} via groupId ${groupId}`);
+          callId = activeCallId;
+          break;
+        }
+      }
+    }
+
+    // If the call can't be resolved to an existing active call, do NOT resurrect it as a phantom
+    // one-person call. Tell the joiner it has ended so they tear down their ringing/joining UI.
+    // (Accepting a group call the initiator already cancelled used to drop the user into a silent
+    // empty call with no error.)
+    if (!activeGroupCalls.has(callId) || activeGroupCalls.get(callId)!.size === 0) {
+      console.log(`[Group Call] join for unknown/ended call ${callId} — replying group_call_ended`);
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'group_call_ended', payload: { callId, reason: 'call_ended' } }));
+      }
+      return;
+    }
+
+    // Check if user is already a participant (e.g., handleStartGroupCall already added them for rejoin)
+    const alreadyInCall = activeGroupCalls.get(callId)!.has(userId);
 
     // Add user to the group call participants
-    if (!activeGroupCalls.has(callId)) {
-      activeGroupCalls.set(callId, new Set());
-    }
     activeGroupCalls.get(callId)!.add(userId);
 
     // Get current participants list
@@ -216,176 +358,59 @@ export function createGroupCallHandlers(
     // Update participants in call history
     await storage.updateGroupCallParticipants(callId, participants.map(id => id.toString()));
 
+    // If user was already added by handleStartGroupCall (rejoin case), skip duplicate WebRTC initiation
+    if (alreadyInCall) {
+      console.log(`[Group Call] User ${userId} already in call ${callId} (rejoin), skipping duplicate WebRTC init`);
+      return;
+    }
+
     try {
-      // Get group members to notify
-      const members = await storage.getConversationMembers(groupId);
+      // Resolve participant names server-side
+      const participantData = await Promise.all(
+        participants.map(async (pId: number) => {
+          const u = await storage.getUser(pId);
+          return { userId: pId, userName: u?.callsign || u?.fullName || `User ${pId}` };
+        })
+      );
 
-      // Broadcast participant update to all group members
-      console.log(`[Group Call] Broadcasting participant update to ${members.length} members for call ${callId}`);
-      console.log(`[Group Call] Participants to broadcast:`, participants);
+      // Send participants update ONLY to current call participants (with names)
+      console.log(`[Group Call] Sending participant update to ${participants.length} call participants`);
 
-      for (const member of members) {
-        const targetClient = clients.get(member.userId);
-        if (targetClient && targetClient.readyState === targetClient.OPEN) {
-          const updateMessage = {
-            type: 'group_call_participants_update',
-            payload: {
-              callId,
-              participants,
-              newParticipant: userId
-            }
-          };
-
-          console.log(`[Group Call] 📤 Sending participants update to user ${member.userId}:`, updateMessage);
-          targetClient.send(JSON.stringify(updateMessage));
-          console.log(`[Group Call] ✅ Participants update sent to user ${member.userId}`);
-
-          // 🚀 CRITICAL FIX: Force bidirectional WebRTC initiation for new members
-          // This ensures all existing members can see the new member that just joined
-          setTimeout(() => {
-            const webrtcMessage = {
-              type: 'initiate_group_webrtc',
-              payload: {
-                callId,
-                participants: participants.map(p => ({ userId: p, userName: `User ${p}` })),
-                forceInit: true,
-                newMember: userId, // Mark who is the new member
-                timestamp: Date.now()
-              }
-            };
-
-            console.log(`[Group Call] 🔄 Forcing WebRTC initiation for user ${member.userId} due to new member ${userId}`);
-            targetClient.send(JSON.stringify(webrtcMessage));
-          }, 500); // Small delay to ensure participant update is processed first
-
-          // 🔥 NEW: Additional force reconnect for better synchronization
-          setTimeout(() => {
-            const forceReconnectMessage = {
-              type: 'force_webrtc_reconnect',
-              payload: {
-                callId,
-                participants: participants.map(p => ({ userId: p, userName: `User ${p}` })),
-                newMember: userId,
-                forceInit: true,
-                timestamp: Date.now()
-              }
-            };
-
-            console.log(`[Group Call] 🔥 Sending force reconnect to user ${member.userId} for new member ${userId}`);
-            targetClient.send(JSON.stringify(forceReconnectMessage));
-          }, 1000); // 1 second delay
-        } else {
-          console.log(`[Group Call] ❌ Cannot send participants update to user ${member.userId}: client=${!!targetClient}, readyState=${targetClient?.readyState || 'N/A'}`);
-        }
-      }
-
-      // 🔥 NEW: Auto-initiate WebRTC connections for group calls
-      // After broadcasting participants, automatically trigger WebRTC setup
-      console.log(`[Group Call] 🚀 Auto-initiating WebRTC for ${participants.length} participants`);
-
-      // Send WebRTC initiation signals to all participants
       for (const participantId of participants) {
-        const participantClient = clients.get(participantId);
-        if (participantClient && participantClient.readyState === participantClient.OPEN) {
-          const webrtcInitMessage = {
-            type: 'initiate_group_webrtc',
-            payload: {
-              callId,
-              allParticipants: participants,
-              yourUserId: participantId
-            }
-          };
+        const updateMessage = {
+          type: 'group_call_participants_update',
+          payload: {
+            callId,
+            participants,
+            participantData,
+            newParticipant: userId
+          }
+        };
 
-          console.log(`[Group Call] 🎯 Sending WebRTC initiation to user ${participantId}`);
-          participantClient.send(JSON.stringify(webrtcInitMessage));
+        if (sendToAllUserConnections(clients, participantId, updateMessage)) {
+          console.log(`[Group Call] ✅ Participants update sent to user ${participantId}`);
+        } else {
+          console.log(`[Group Call] ❌ Cannot send participants update to user ${participantId}: no active connections`);
         }
       }
-      console.log(`[Group Call] Broadcasted participant update for call ${callId}`);
 
-      // 🔥 CRITICAL FIX: Send detailed participant data to new member
-      // This ensures the new member can see all existing participants
+      // Send ONE initiate_group_webrtc ONLY to the new joiner (after 500ms delay)
+      // The new joiner will create offers to all existing participants
       setTimeout(async () => {
-        try {
-          console.log(`[Group Call] 🎯 Sending detailed participant data to new member ${userId}`);
 
-          // Get user data for all participants
-          const participantData = [];
-          for (const participantId of participants) {
-            try {
-              const userData = await storage.getUser(participantId.toString());
-              participantData.push({
-                userId: participantId,
-                userName: userData?.callsign || userData?.fullName || `User ${participantId}`,
-                audioEnabled: true,
-                videoEnabled: data.payload.callType === 'video'
-              });
-            } catch (error) {
-              console.error(`[Group Call] Error getting user data for ${participantId}:`, error);
-              participantData.push({
-                userId: participantId,
-                userName: `User ${participantId}`,
-                audioEnabled: true,
-                videoEnabled: data.payload.callType === 'video'
-              });
-            }
+        const webrtcMessage = {
+          type: 'initiate_group_webrtc',
+          payload: {
+            callId,
+            participants: participantData,
+            timestamp: Date.now()
           }
+        };
+        console.log(`[Group Call] 🚀 Sending WebRTC initiation to new joiner ${userId}`);
+        sendToAllUserConnections(clients, userId, webrtcMessage);
+      }, 500);
 
-          // Send detailed participant update to new member
-          const detailedUpdateMessage = {
-            type: 'group_call_participants_update',
-            payload: {
-              callId,
-              participants: participantData,
-              isNewMember: true,
-              fullSync: true // Flag to indicate this is a full sync for new member
-            }
-          };
-
-          console.log(`[Group Call] 📤 Sending detailed participant data to new member ${userId}:`, detailedUpdateMessage);
-          const newMemberClient = clients.get(userId);
-          if (newMemberClient && newMemberClient.readyState === newMemberClient.OPEN) {
-            newMemberClient.send(JSON.stringify(detailedUpdateMessage));
-
-            // Also send force WebRTC initiation to new member
-            setTimeout(() => {
-              const webrtcMessage = {
-                type: 'initiate_group_webrtc',
-                payload: {
-                  callId,
-                  participants: participantData,
-                  forceInit: true,
-                  isNewMember: true,
-                  timestamp: Date.now()
-                }
-              };
-
-              console.log(`[Group Call] 🚀 Forcing WebRTC initiation for new member ${userId}`);
-              newMemberClient.send(JSON.stringify(webrtcMessage));
-            }, 500);
-
-            // Additional force reconnect for new member
-            setTimeout(() => {
-              const forceReconnectMessage = {
-                type: 'force_webrtc_reconnect',
-                payload: {
-                  callId,
-                  participants: participantData,
-                  isNewMember: true,
-                  forceInit: true,
-                  timestamp: Date.now()
-                }
-              };
-
-              console.log(`[Group Call] 🔥 Sending force reconnect to new member ${userId}`);
-              newMemberClient.send(JSON.stringify(forceReconnectMessage));
-            }, 1500);
-          }
-
-        } catch (error) {
-          console.error(`[Group Call] Error sending detailed participant data to new member:`, error);
-        }
-      }, 1000); // 1 second delay to ensure everything is set up
-
+      console.log(`[Group Call] Broadcasted participant update for call ${callId}`);
     } catch (error) {
       console.error(`[Group Call] Error broadcasting participant update:`, error);
     }
@@ -396,7 +421,9 @@ export function createGroupCallHandlers(
 
     const { callId } = data.payload;
     const userId = ws.userId;
-    console.log(`[Group Call] User ${userId} leaving group call ${callId}`);
+    // Get the conversationId from the map before we potentially delete it
+    const conversationIdForCall = callConversationMap.get(callId);
+    console.log(`[Group Call] User ${userId} leaving group call ${callId} (conversation: ${conversationIdForCall})`);
 
     // Remove user from the group call participants
     if (activeGroupCalls.has(callId)) {
@@ -408,7 +435,7 @@ export function createGroupCallHandlers(
 
       // If no participants left, remove the call entirely
       if (participants.length === 0) {
-        activeGroupCalls.delete(callId);
+        endGroupCallState(callId);
         console.log(`[Group Call] Call ${callId} has no participants, removing from active calls`);
 
         // Update call status to ended
@@ -416,6 +443,22 @@ export function createGroupCallHandlers(
           await storage.updateCallStatus(callId, 'ended');
         } catch (error) {
           console.error('[Group Call] Error updating call status:', error);
+        }
+
+        // Broadcast group_call_ended to all conversation members
+        if (conversationIdForCall) {
+          try {
+            const members = await storage.getConversationMembers(conversationIdForCall);
+            for (const member of members) {
+              sendToAllUserConnections(clients, member.userId, {
+                type: 'group_call_ended',
+                payload: { callId, groupId: conversationIdForCall }
+              });
+            }
+            console.log(`[Group Call] Broadcasted group_call_ended for call ${callId}`);
+          } catch (error) {
+            console.error('[Group Call] Error broadcasting group_call_ended:', error);
+          }
         }
       } else {
         // Update participants in call history
@@ -427,17 +470,14 @@ export function createGroupCallHandlers(
 
         // Notify remaining participants that this user left
         participants.forEach(participantId => {
-          const participantClient = clients.get(participantId);
-          if (participantClient && participantClient.readyState === participantClient.OPEN) {
-            participantClient.send(JSON.stringify({
-              type: 'participant_left',
-              payload: {
-                callId,
-                userId,
-                participants
-              }
-            }));
-          }
+          sendToAllUserConnections(clients, participantId, {
+            type: 'participant_left',
+            payload: {
+              callId,
+              userId,
+              participants
+            }
+          });
         });
         console.log(`[Group Call] Notified ${participants.length} participants that user ${userId} left`);
       }
@@ -456,22 +496,37 @@ export function createGroupCallHandlers(
       // CRITICAL FIX: Remove rejecting user from active group calls to prevent auto-join
       console.log(`[Group Call] 🚫 Removing user ${fromUserId} from ALL active group calls for group ${groupId}`);
 
-      // Find and remove user from any active group call for this group
-      for (const [activeCallId, participants] of activeGroupCalls.entries()) {
-        if (activeCallId.includes(`_${groupId}_`) && participants.has(fromUserId)) {
-          participants.delete(fromUserId);
-          console.log(`[Group Call] 🗑️ Removed user ${fromUserId} from call ${activeCallId}, remaining participants:`, Array.from(participants));
+      // Record the decline so rejoins don't re-ring this user, and remove them from any active
+      // call for this group.
+      let anyStillActive = false;
+      for (const [activeCallId, convId] of callConversationMap.entries()) {
+        if (convId === groupId && activeGroupCalls.has(activeCallId)) {
+          const declined = declinedUsers.get(activeCallId) || new Set<number>();
+          declined.add(fromUserId);
+          declinedUsers.set(activeCallId, declined);
+
+          const participants = activeGroupCalls.get(activeCallId)!;
+          if (participants.has(fromUserId)) {
+            participants.delete(fromUserId);
+            console.log(`[Group Call] 🗑️ Removed user ${fromUserId} from call ${activeCallId}, remaining participants:`, Array.from(participants));
+          }
 
           // If no participants left, remove the call entirely
           if (participants.size === 0) {
-            activeGroupCalls.delete(activeCallId);
+            endGroupCallState(activeCallId);
             console.log(`[Group Call] 🗑️ Removed empty group call ${activeCallId}`);
+          } else {
+            anyStillActive = true;
           }
         }
       }
 
-      // Update call history status to rejected (only for the rejecting user's record)
-      await storage.updateCallStatus(callId, 'rejected');
+      // Only mark the call's history 'rejected' when NOBODY is on it anymore. A single invitee
+      // declining an ongoing 3-person call must not flip the whole call to 'rejected' with an
+      // endTime while the others keep talking.
+      if (!anyStillActive) {
+        await storage.updateCallStatus(callId, 'rejected');
+      }
 
       // Get group members to notify about rejection
       const members = await storage.getConversationMembers(groupId);
@@ -480,17 +535,15 @@ export function createGroupCallHandlers(
       let notificationsSent = 0;
       for (const member of members) {
         if (member.userId !== fromUserId) { // Don't send to the person who rejected
-          const targetClient = clients.get(member.userId);
-          if (targetClient && targetClient.readyState === targetClient.OPEN) {
-            targetClient.send(JSON.stringify({
-              type: 'group_call_rejected',
-              payload: {
-                callId,
-                groupId,
-                rejectedByUserId: fromUserId,
-                rejectedByUserName: userName
-              }
-            }));
+          if (sendToAllUserConnections(clients, member.userId, {
+            type: 'group_call_rejected',
+            payload: {
+              callId,
+              groupId,
+              rejectedByUserId: fromUserId,
+              rejectedByUserName: userName
+            }
+          })) {
             notificationsSent++;
             console.log(`[Group Call] Sent rejection notification to user ${member.userId}`);
           }
@@ -518,7 +571,7 @@ export function createGroupCallHandlers(
         // Get participant names
         const participantNames = await Promise.all(
           participants.map(async (userId) => {
-            const user = await storage.getUser(userId.toString());
+            const user = await storage.getUser(userId);
             return {
               userId: userId,
               userName: user?.callsign || user?.fullName || `User ${userId}`,
@@ -530,28 +583,31 @@ export function createGroupCallHandlers(
         );
 
         // Send participant update to requesting user
-        const requestingClient = clients.get(requestingUserId);
-        if (requestingClient && requestingClient.readyState === requestingClient.OPEN) {
-          const participantUpdateMessage = {
-            type: 'group_call_participants_update',
-            payload: {
-              callId,
-              participants: participants,
-              participantData: participantNames,
-              fullSync: true,
-              timestamp: Date.now()
-            }
-          };
+        const participantUpdateMessage = {
+          type: 'group_call_participants_update',
+          payload: {
+            callId,
+            participants: participants,
+            participantData: participantNames,
+            fullSync: true,
+            timestamp: Date.now()
+          }
+        };
 
-          console.log(`[Group Call] 🔄 Sending participant update to user ${requestingUserId}:`, participantUpdateMessage);
-          requestingClient.send(JSON.stringify(participantUpdateMessage));
-        }
+        console.log(`[Group Call] 🔄 Sending participant update to user ${requestingUserId}:`, participantUpdateMessage);
+        sendToAllUserConnections(clients, requestingUserId, participantUpdateMessage);
 
       } catch (error) {
         console.error(`[Group Call] Error processing participant request:`, error);
       }
     } else {
-      console.log(`[Group Call] No participants found for call ${callId}`);
+      // The call has no participants (ended / wiped / unknown). Reply so the requester's recovery
+      // poll converges instead of hanging forever rendering stale tiles.
+      console.log(`[Group Call] No participants for call ${callId} — replying group_call_ended`);
+      sendToAllUserConnections(clients, requestingUserId || ws.userId, {
+        type: 'group_call_ended',
+        payload: { callId, reason: 'no_participants' }
+      });
     }
   }
 

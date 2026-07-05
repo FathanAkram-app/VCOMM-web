@@ -93,23 +93,30 @@ class GotifyService {
   }
 
   /**
-   * Send a call notification via Gotify
+   * Send a call notification via Gotify using user's client token
    */
   async sendCallNotification(
-    userId: number,
-    callerName: string,
-    callType: 'audio' | 'video',
+    userClientToken: string,  // User's personal Gotify client token
     callId: string,
-    callerId: number
+    callerId: string,
+    callerName: string,
+    callType: 'audio' | 'video' = 'audio',
+    isGroupCall: boolean = false
   ): Promise<void> {
     if (!this.enabled) {
       console.log('[Gotify] Service not enabled, skipping notification');
       return;
     }
 
-    const callTypeText = callType === 'video' ? 'Video Call' : 'Call';
+    if (!userClientToken) {
+      console.warn('[Gotify] No user client token provided, skipping notification');
+      return;
+    }
 
     try {
+      // Use APP token to send message (not client token)
+      // The userClientToken parameter is stored for the client to receive messages,
+      // but sending must use the app token
       const response = await fetch(`${this.gotifyUrl}/message?token=${this.appToken}`, {
         method: 'POST',
         headers: {
@@ -120,28 +127,16 @@ class GotifyService {
           message: `${callerName} is ${callType === 'video' ? 'video ' : ''}calling...`,
           priority: 10, // Highest priority for calls
           extras: {
-            'client::display': {
-              contentType: 'text/markdown',
-            },
-            'client::notification': {
-              click: {
-                url: `/call/${callId}`,
-              },
-            },
-            'android.action.click': {
-              onReceive: {
-                intentUrl: `vcomm://call/${callId}`,
-              },
-            },
             data: {
               type: 'call',
               callType,
               callId,
-              callerId: callerId.toString(),
+              callerId,
               callerName,
+              isGroupCall,
               timestamp: new Date().toISOString(),
-            },
-          },
+            }
+          }
         }),
       });
 
@@ -168,6 +163,96 @@ class GotifyService {
     } catch (error) {
       console.error('[Gotify] Connection test failed:', error);
       return false;
+    }
+  }
+
+  /**
+   * Create a new Gotify client token for a user via Gotify API
+   * @param userId User ID
+   * @param username Username/callsign for identification
+   * @returns Client token string or null if creation fails
+   */
+  async createClientToken(userId: number, username: string): Promise<string | null> {
+    if (!this.enabled) {
+      console.warn('[Gotify] Service not enabled, cannot create client token');
+      return null;
+    }
+
+    try {
+      console.log(`[Gotify] Creating client token for user ${userId} (${username})`);
+
+      // Use basic auth with admin credentials to create client tokens
+      // Application tokens cannot create client tokens - only user/admin can
+      const gotifyUser = process.env.GOTIFY_ADMIN_USER || 'admin';
+      const gotifyPass = process.env.GOTIFY_ADMIN_PASS || 'admin123';
+      const basicAuth = Buffer.from(`${gotifyUser}:${gotifyPass}`).toString('base64');
+
+      const response = await fetch(`${this.gotifyUrl}/client`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${basicAuth}`,
+        },
+        body: JSON.stringify({
+          name: `vcomm-user-${userId}-${username}`,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[Gotify] API error creating client token: ${response.status}`, errorText);
+        return null;
+      }
+
+      const data = await response.json();
+      console.log(`[Gotify] Successfully created client token for user ${userId}`);
+      return data.token; // Returns the client token
+    } catch (error) {
+      console.error(`[Gotify] Error creating client token for user ${userId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Ensure a user has a Gotify client token
+   * Checks database first, creates new token if needed
+   * @param userId User ID
+   * @param username Username/callsign
+   * @returns Client token or null
+   */
+  async ensureUserHasToken(userId: number, username: string): Promise<string | null> {
+    if (!this.enabled) {
+      return null;
+    }
+
+    try {
+      // Import storage dynamically to avoid circular dependency
+      const { storage } = await import('../storage');
+
+      // Check if user already has a token in database
+      const existingToken = await storage.getUserGotifyToken(userId);
+
+      if (existingToken) {
+        console.log(`[Gotify] User ${userId} already has a client token`);
+        return existingToken;
+      }
+
+      // Create new token via Gotify API
+      console.log(`[Gotify] User ${userId} has no token, creating new one`);
+      const newToken = await this.createClientToken(userId, username);
+
+      if (newToken) {
+        // Save to database
+        await storage.updateUserGotifyToken(userId, newToken);
+        console.log(`[Gotify] Created and saved new client token for user ${userId}`);
+        return newToken;
+      } else {
+        console.error(`[Gotify] Failed to create client token for user ${userId}`);
+        return null;
+      }
+    } catch (error) {
+      console.error(`[Gotify] Error in ensureUserHasToken for user ${userId}:`, error);
+      return null;
     }
   }
 }

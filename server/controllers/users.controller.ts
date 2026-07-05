@@ -9,7 +9,7 @@ export class UsersController {
   constructor(
     private usersService: UsersService,
     private broadcastToAll?: BroadcastFunction
-  ) {}
+  ) { }
 
   getAllUsers = async (req: AuthRequest, res: Response): Promise<Response | void> => {
     try {

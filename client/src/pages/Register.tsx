@@ -159,6 +159,26 @@ export default function Register() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
+              name="nrp"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-gray-400 uppercase text-sm font-medium">NRP / PERSONNEL ID ★ (UNIQUE LOGIN ID)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="text" 
+                      placeholder="ENTER NRP (UNIQUE)" 
+                      className="w-full bg-[#222222] border border-[#444444] p-3 text-white placeholder:text-[#555555]" 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <p className="text-[10px] text-[#5a6b38] font-medium uppercase tracking-tighter italic">Used for login. Must be unique per personnel.</p>
+                  <FormMessage className="text-red-500 text-xs" />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="callsign"
               render={({ field }) => (
                 <FormItem>
@@ -171,25 +191,7 @@ export default function Register() {
                       {...field} 
                     />
                   </FormControl>
-                  <FormMessage className="text-red-500 text-xs" />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="nrp"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-gray-400 uppercase text-sm font-medium">NRP / PERSONNEL ID</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="text" 
-                      placeholder="ENTER NRP" 
-                      className="w-full bg-[#222222] border border-[#444444] p-3 text-white placeholder:text-[#555555]" 
-                      {...field} 
-                    />
-                  </FormControl>
+                  <p className="text-[10px] text-[#5a6b38] font-medium uppercase tracking-tighter italic">Display name. Can be shared with others.</p>
                   <FormMessage className="text-red-500 text-xs" />
                 </FormItem>
               )}

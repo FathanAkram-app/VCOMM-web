@@ -15,5 +15,12 @@ export function createAttachmentsRoutes(attachmentsController: AttachmentsContro
     attachmentsController.uploadFile
   );
 
+  // Download with original filename (#13)
+  router.get(
+    '/attachments/download/:filename',
+    isAuthenticated,
+    attachmentsController.downloadFile
+  );
+
   return router;
 }

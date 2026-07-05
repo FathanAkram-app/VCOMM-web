@@ -83,6 +83,15 @@ class FCMService {
     }
   }
 
+  async removeUserTokens(userId: number): Promise<void> {
+    try {
+      await db.delete(fcmTokens).where(eq(fcmTokens.userId, userId));
+      console.log(`[FCM] All tokens removed for user ${userId}`);
+    } catch (error) {
+      console.error('[FCM] Error removing user tokens:', error);
+    }
+  }
+
   async getUserTokens(userId: number): Promise<string[]> {
     try {
       const tokens = await db
@@ -138,10 +147,12 @@ class FCMService {
         },
         android: {
           priority: 'high',
+          collapseKey: `conversation_${conversationId}`,
           notification: {
             channelId: 'messages',
             sound: 'default',
             priority: 'high' as any,
+            tag: `conversation_${conversationId}`,
           },
         },
         apns: {
@@ -152,6 +163,7 @@ class FCMService {
                 body: messagePreview,
               },
               sound: 'default',
+              threadId: `conversation_${conversationId}`,
             },
           },
         },

@@ -61,6 +61,7 @@ export default function ChatList({
   const { user } = useAuth();
   const [isLoadingChats, setIsLoadingChats] = useState(false);
   const [chatItems, setChatItems] = useState<ChatItem[]>([]);
+  const [onlineUserIds, setOnlineUserIds] = useState<Set<number>>(new Set());
   
   // Pindahkan SEMUA hooks ke level atas komponen
   const { data: conversations, isLoading, refetch: refetchConversations } = useQuery({
@@ -89,6 +90,16 @@ export default function ChatList({
     // Cari pengguna berdasarkan ID
     const partner = allUsers.find((u: any) => u.id === partnerId);
     return partner?.callsign || partner?.fullName || chatName;
+  };
+
+  // Resolve the other participant's user id from a direct chat's original
+  // "Direct Chat X-Y" name, so we can look up their online status.
+  const getPartnerId = (chatName: string): number | undefined => {
+    if (!chatName || !user) return undefined;
+    const match = chatName.match(/Direct Chat (\d+)-(\d+)/);
+    if (!match) return undefined;
+    const [, id1, id2] = match;
+    return parseInt(id1) === user.id ? parseInt(id2) : parseInt(id1);
   };
   
   // Real-time WebSocket handler for ChatList updates
@@ -153,6 +164,38 @@ export default function ChatList({
     };
   }, [refetchConversations]);
 
+  // Seed online status from the users list (each user is enriched with a live
+  // 'online'/'offline' status by /api/all-users).
+  useEffect(() => {
+    if (allUsers && Array.isArray(allUsers)) {
+      const online = new Set<number>();
+      allUsers.forEach((u: any) => {
+        if (u.status === 'online') online.add(u.id);
+      });
+      setOnlineUserIds(online);
+    }
+  }, [allUsers]);
+
+  // Keep online status live: CallContext re-broadcasts WebSocket 'user_status'
+  // events (sent on connect/disconnect) as 'websocket-message' custom events.
+  useEffect(() => {
+    const handleUserStatus = (event: CustomEvent) => {
+      const message = event.detail;
+      if (message?.type !== 'user_status' || !message.payload) return;
+      const { userId, status } = message.payload;
+      setOnlineUserIds(prev => {
+        const next = new Set(prev);
+        if (status === 'online') next.add(userId);
+        else next.delete(userId);
+        return next;
+      });
+    };
+    window.addEventListener('websocket-message', handleUserStatus as EventListener);
+    return () => {
+      window.removeEventListener('websocket-message', handleUserStatus as EventListener);
+    };
+  }, []);
+
   // Load chat list dari API
   useEffect(() => {
     if (isLoading) {
@@ -180,6 +223,7 @@ export default function ChatList({
         lastMessageTime: conversation.lastMessageTime || conversation.updatedAt,
         unread: conversation.unreadCount || 0,
         isOnline: false,
+        otherUserId: conversation.isGroup ? undefined : getPartnerId(conversation.name || ''),
       }));
       
       // Ubah nama chat langsung di effect ini
@@ -318,9 +362,16 @@ export default function ChatList({
                 )}
               </div>
               
-              {/* Online indicator */}
-              {!chat.isGroup && chat.isOnline && (
-                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#171717]"></div>
+              {/* Online/offline indicator (direct chats only) */}
+              {!chat.isGroup && (
+                <div
+                  className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#171717] ${
+                    chat.otherUserId && onlineUserIds.has(chat.otherUserId)
+                      ? 'bg-green-500'
+                      : 'bg-gray-500'
+                  }`}
+                  title={chat.otherUserId && onlineUserIds.has(chat.otherUserId) ? 'Online' : 'Offline'}
+                ></div>
               )}
             </div>
             

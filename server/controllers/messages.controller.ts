@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../auth';
 import { MessagesService } from '../services/messages.service';
-import { gotifyService } from '../services/gotify.service';
+import { notificationService } from '../services/notification.service';
 
 type BroadcastFunction = (conversationId: number, message: any) => Promise<void>;
 
@@ -9,7 +9,7 @@ export class MessagesController {
   constructor(
     private messagesService: MessagesService,
     private broadcastToConversation?: BroadcastFunction
-  ) {}
+  ) { }
 
   sendMessage = async (req: AuthRequest, res: Response): Promise<Response | void> => {
     try {
@@ -18,7 +18,7 @@ export class MessagesController {
         return res.status(400).json({ message: 'User ID not found in session' });
       }
 
-      const { conversationId, content, replyToId, classification, hasAttachment, attachmentType, attachmentUrl, attachmentName, attachmentSize } = req.body;
+      const { conversationId, content, replyToId, classification, hasAttachment, attachmentType, attachmentUrl, attachmentName, attachmentSize, attachmentThumbnailUrl } = req.body;
 
       const message = await this.messagesService.sendMessage({
         content,
@@ -31,46 +31,57 @@ export class MessagesController {
         attachmentUrl,
         attachmentName,
         attachmentSize: attachmentSize ? parseInt(attachmentSize) : undefined,
+        attachmentThumbnailUrl: attachmentThumbnailUrl || undefined,
       });
+
+      // Get sender info for notifications
+      const sender = await this.messagesService.getUser(userId);
+      const senderName = sender?.callsign || sender?.fullName || 'Someone';
 
       // Broadcast to conversation members
       console.log('[MessagesController] broadcastToConversation exists?', !!this.broadcastToConversation);
       if (this.broadcastToConversation) {
-        console.log('[MessagesController] Broadcasting new message to conversation', parseInt(conversationId));
-        await this.broadcastToConversation(parseInt(conversationId), {
+        const broadcastPayload = {
           type: 'new_message',
-          payload: { ...message, conversationId: parseInt(conversationId) }
-        });
+          payload: {
+            ...message,
+            conversationId: parseInt(conversationId),
+            senderName,  // Include senderName for mobile notifications
+            senderId: userId  // Ensure senderId is included as number
+          }
+        };
+        console.log('[MessagesController] Broadcasting new message to conversation', parseInt(conversationId));
+        console.log('[MessagesController] Broadcast payload:', JSON.stringify({
+          type: broadcastPayload.type,
+          senderId: broadcastPayload.payload.senderId,
+          senderName: broadcastPayload.payload.senderName,
+          content: broadcastPayload.payload.content?.substring(0, 50)
+        }));
+        await this.broadcastToConversation(parseInt(conversationId), broadcastPayload);
         console.log('[MessagesController] Broadcast completed');
       } else {
         console.log('[MessagesController] ⚠️ broadcastToConversation is NOT available!');
       }
 
-      // Send Gotify push notifications to all conversation members (except sender)
-      // The mobile app will decide whether to show notification based on app state
+      // Send push notifications to offline conversation members (deduped via NotificationService)
       try {
         const members = await this.messagesService.getConversationMembers(parseInt(conversationId));
-        const sender = await this.messagesService.getUser(userId);
-        const senderName = sender?.callsign || sender?.fullName || 'Someone';
-
         const conversation = await this.messagesService.getConversation(parseInt(conversationId));
         const conversationName = conversation?.isGroup ? conversation.name : undefined;
 
         for (const member of members) {
           if (member.userId !== userId) {
-            console.log(`[MessagesController] Sending Gotify notification to user ${member.userId}`);
-            await gotifyService.sendMessageNotification(
+            await notificationService.notifyMessage(
               member.userId,
               senderName,
               content,
               parseInt(conversationId),
-              conversationName
+              conversationName || undefined
             );
           }
         }
       } catch (error) {
-        console.error('[MessagesController] Error sending Gotify notifications:', error);
-        // Don't fail the message send if push notification fails
+        console.error('[MessagesController] Error sending notifications:', error);
       }
 
       return res.status(201).json(message);
@@ -110,7 +121,23 @@ export class MessagesController {
       const messageId = parseInt(req.params.id);
       const { deleteForEveryone } = req.body;
 
+      // Get message info before deleting (needed for broadcast)
+      const message = await this.messagesService.getMessage(messageId);
+
       await this.messagesService.deleteMessage(messageId, userId, deleteForEveryone || false);
+
+      // Broadcast deletion to other participants in real-time
+      if (deleteForEveryone && message && Number(message.senderId) === userId && message.conversationId && this.broadcastToConversation) {
+        console.log('[MessagesController] Broadcasting message_deleted to conversation', message.conversationId);
+        await this.broadcastToConversation(message.conversationId, {
+          type: 'message_deleted',
+          payload: {
+            messageId,
+            conversationId: message.conversationId,
+            deletedByUserId: userId,
+          }
+        });
+      }
 
       return res.json({ message: 'Message deleted successfully' });
     } catch (error) {
@@ -130,6 +157,49 @@ export class MessagesController {
       const { targetConversationIds } = req.body;
 
       const messages = await this.messagesService.forwardMessage(messageId, targetConversationIds, userId);
+
+      // Broadcast and notify for each forwarded message (#3 Forwarding Notifications)
+      const sender = await this.messagesService.getUser(userId);
+      const senderName = sender?.callsign || sender?.fullName || 'Someone';
+
+      for (const msg of messages) {
+        const convId = msg.conversationId;
+
+        // Broadcast via WebSocket to conversation members
+        if (this.broadcastToConversation) {
+          await this.broadcastToConversation(convId, {
+            type: 'new_message',
+            payload: {
+              ...msg,
+              conversationId: convId,
+              senderName,
+              senderId: userId,
+            },
+          });
+        }
+
+        // Push notifications to offline members
+        try {
+          const members = await this.messagesService.getConversationMembers(convId);
+          const conversation = await this.messagesService.getConversation(convId);
+          const conversationName = conversation?.isGroup ? conversation.name : undefined;
+          const content = msg.content || 'Forwarded message';
+
+          for (const member of members) {
+            if (member.userId !== userId && msg.conversationId) {
+              await notificationService.notifyMessage(
+                member.userId,
+                senderName,
+                content,
+                msg.conversationId,
+                conversationName || undefined
+              );
+            }
+          }
+        } catch (error) {
+          console.error(`[MessagesController] Error sending forward notifications for conv ${convId}:`, error);
+        }
+      }
 
       return res.status(201).json(messages);
     } catch (error) {

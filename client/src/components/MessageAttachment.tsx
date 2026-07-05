@@ -387,8 +387,10 @@ export default function MessageAttachment({
     <div className="flex flex-col mb-1">
       {renderContent()}
       
-      {/* File info and download button - for video and other files only */}
-      {attachmentType !== 'audio' && attachmentType !== 'image' && (
+      {/* File info and download button - only for video, whose player shows no
+          filename. Documents/other files already render their own card in
+          renderContent(), so adding this here would duplicate the file. */}
+      {attachmentType === 'video' && (
         <div className="flex items-center p-2 bg-[#202020] rounded-md mb-1 mt-1 gap-2">
           <div className="flex-shrink-0">
             {getFileIcon()}

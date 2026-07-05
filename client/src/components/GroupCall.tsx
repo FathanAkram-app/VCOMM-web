@@ -310,21 +310,22 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
       const response = await fetch(`/api/users/${userId}`);
       if (response.ok) {
         const userData = await response.json();
-        const realName = userData.callsign || userData.fullName || `User ${userId}`;
-        
+        // Priority: callsign first, then fullName, then fallback to CALLSIGN-ID
+        const realName = userData.callsign || userData.fullName || `CALLSIGN-${userId}`;
+
         // Cache successful result
         participantNameCache.current.set(userId, realName);
         console.log(`[GroupCall] 🎯 FETCH SUCCESS: ${userId} = ${realName}`);
         return realName;
       } else {
         console.log(`[GroupCall] 🎯 FETCH FAILED: API failed for user ${userId}, status: ${response.status}`);
-        const fallback = `User ${userId}`;
+        const fallback = `CALLSIGN-${userId}`;
         // Don't cache failures to allow retry later
         return fallback;
       }
     } catch (error) {
       console.error(`[GroupCall] 🎯 FETCH ERROR: Network error for user ${userId}:`, error);
-      const fallback = `User ${userId}`;
+      const fallback = `CALLSIGN-${userId}`;
       // Don't cache network errors to allow retry later
       return fallback;
     }
@@ -337,11 +338,11 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     // Identify participants that need name resolution
     const participantsNeedingNames = participants.filter(p => {
       const currentName = p.userName;
-      const isGenericOrMissing = !currentName || currentName.startsWith('User ');
+      const isGenericOrMissing = !currentName || currentName.startsWith('User ') || currentName.startsWith('CALLSIGN-');
       const hasCachedName = participantNameCache.current.has(p.userId);
-      
+
       console.log(`[GroupCall] 🎯 ENHANCE: User ${p.userId} - current: "${currentName}", generic: ${isGenericOrMissing}, cached: ${hasCachedName}`);
-      
+
       return isGenericOrMissing && !hasCachedName;
     });
     
@@ -360,18 +361,18 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     const enhancedParticipants = participants.map(p => {
       const cachedName = participantNameCache.current.get(p.userId);
       const currentName = p.userName;
-      
+
       // Priority: Cached real name > Current name (if not generic) > Fallback
       let finalName = currentName;
-      
-      if (cachedName && !cachedName.startsWith('User ')) {
+
+      if (cachedName && !cachedName.startsWith('User ') && !cachedName.startsWith('CALLSIGN-')) {
         finalName = cachedName;
-      } else if (!currentName || currentName.startsWith('User ')) {
-        finalName = cachedName || `User ${p.userId}`;
+      } else if (!currentName || currentName.startsWith('User ') || currentName.startsWith('CALLSIGN-')) {
+        finalName = cachedName || `CALLSIGN-${p.userId}`;
       }
-      
+
       console.log(`[GroupCall] 🎯 ENHANCE: User ${p.userId} final name: "${finalName}"`);
-      
+
       return {
         ...p,
         userName: finalName
@@ -491,11 +492,12 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
         iceCandidatePoolSize: 10
       });
 
-      // 🎯 TRANSCEIVER FIX: Ensure audio transceiver exists immediately
-      console.log(`[GroupCall] 🔧 TRANSCEIVER FIX: Adding audio transceiver for user ${userId}`);
-      const audioTransceiver = pc.addTransceiver('audio', { 
-        direction: localStream ? 'sendrecv' : 'recvonly' 
+      // 🎯 TRANSCEIVER FIX: Add audio + video transceivers for consistent SDP structure with mobile
+      console.log(`[GroupCall] 🔧 TRANSCEIVER FIX: Adding audio+video transceivers for user ${userId}`);
+      const audioTransceiver = pc.addTransceiver('audio', {
+        direction: localStream ? 'sendrecv' : 'recvonly'
       });
+      pc.addTransceiver('video', { direction: 'recvonly' });
       
       console.log(`[GroupCall] 🔧 TRANSCEIVER FIX: Audio transceiver created:`, {
         userId,
@@ -504,21 +506,21 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
         transceiverMid: audioTransceiver.mid
       });
 
-      // 🎯 LOCAL TRACK FIX: Attach local audio track with stream if available
+      // 🎯 LOCAL TRACK FIX: Use replaceTrack on pre-created transceiver — avoids duplicate m-lines
       if (localStream && localStream.getAudioTracks().length > 0) {
         const audioTrack = localStream.getAudioTracks()[0];
         try {
-          // Use addTrack with stream (synchronous) instead of replaceTrack
-          pc.addTrack(audioTrack, localStream);
-          audioTransceiver.direction = 'sendrecv';
-          console.log(`[GroupCall] 🔧 LOCAL TRACK FIX: Attached local audio track for user ${userId}:`, {
-            trackId: audioTrack.id,
-            trackEnabled: audioTrack.enabled,
-            streamId: localStream.id,
-            direction: audioTransceiver.direction
+          audioTransceiver.sender.replaceTrack(audioTrack).then((val)=>{
+            audioTransceiver.direction = 'sendrecv';
+            console.log(`[GroupCall] 🔧 LOCAL TRACK FIX: Replaced audio track via transceiver for user ${userId}:`, {
+              trackId: audioTrack.id,
+              trackEnabled: audioTrack.enabled,
+              direction: audioTransceiver.direction
+            });
           });
+          
         } catch (error) {
-          console.error(`[GroupCall] ❌ Failed to attach local audio track for user ${userId}:`, error);
+          console.error(`[GroupCall] ❌ Failed to replace audio track for user ${userId}:`, error);
         }
       }
 
@@ -792,7 +794,16 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     });
     
     // Reject if not in proper state for receiving offer
-    if (signalingState !== 'stable' && signalingState !== 'have-local-offer') {
+    // Glare handling: both sides sent an offer simultaneously
+    if (signalingState === 'have-local-offer') {
+      const isPolite = (currentUser.id < offerData.fromUserId);
+      if (!isPolite) {
+        console.log(`[GroupCall] ⏭️ Glare: impolite peer, ignoring offer from ${offerData.fromUserId}`);
+        return;
+      }
+      console.log(`[GroupCall] 🔄 Glare: polite peer, rolling back local offer for ${offerData.fromUserId}`);
+      await pc.setLocalDescription({ type: 'rollback' });
+    } else if (signalingState !== 'stable') {
       console.log(`[GroupCall] ❌ Rejecting offer from user ${offerData.fromUserId}: PC in ${signalingState} state`);
       return;
     }
@@ -841,39 +852,28 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
 
     try {
       // 🎯 SDP FIX: Ensure consistent track order BEFORE any SDP operations
+      // 🎯 SDP SEQUENCE: Set remote description FIRST so offer m-lines define transceiver structure
+      await pc.setRemoteDescription(new RTCSessionDescription(offerData.offer));
+      
+      // 🎯 TRACK ORDER: Add tracks AFTER setRemoteDescription — engine matches to existing transceivers
       if (finalStream) {
         const senders = pc.getSenders();
-        console.log(`[GroupCall] 📊 Current senders before answer for user ${offerData.fromUserId}:`, senders.length);
+        console.log(`[GroupCall] 📊 Current senders after setRemote for user ${offerData.fromUserId}:`, senders.length);
         
-        if (senders.length === 0) {
-          // 🎯 CONSISTENT ORDER: Add tracks in predictable order (audio first, then video)
-          const audioTracks = finalStream.getAudioTracks();
-          const videoTracks = finalStream.getVideoTracks();
+        if (senders.filter(s => s.track).length === 0) {
+          const audioTrack = finalStream.getAudioTracks()[0];
+          const videoTrack = finalStream.getVideoTracks()[0];
           
-          // Add audio tracks first for consistent m-line ordering
-          audioTracks.forEach(track => {
-            const sender = pc.addTrack(track, finalStream);
-            console.log(`[GroupCall] ✅ Added audio track for answer to user ${offerData.fromUserId}:`, {
-              trackId: track.id,
-              trackEnabled: track.enabled,
-              senderId: sender ? 'created' : 'failed'
-            });
-          });
-          
-          // Add video tracks second for consistent m-line ordering
-          videoTracks.forEach(track => {
-            const sender = pc.addTrack(track, finalStream);
-            console.log(`[GroupCall] ✅ Added video track for answer to user ${offerData.fromUserId}:`, {
-              trackId: track.id,
-              trackEnabled: track.enabled,
-              senderId: sender ? 'created' : 'failed'
-            });
-          });
+          if (audioTrack) {
+            pc.addTrack(audioTrack, finalStream);
+            console.log(`[GroupCall] ✅ Added audio track for answer to user ${offerData.fromUserId}`);
+          }
+          if (videoTrack) {
+            pc.addTrack(videoTrack, finalStream);
+            console.log(`[GroupCall] ✅ Added video track for answer to user ${offerData.fromUserId}`);
+          }
         }
       }
-      
-      // 🎯 SDP SEQUENCE: Set remote description AFTER tracks are properly configured
-      await pc.setRemoteDescription(new RTCSessionDescription(offerData.offer));
       console.log('[GroupCall] ✅ Set remote description for offer from user:', offerData.fromUserId);
 
       await processPendingICECandidates(offerData.fromUserId, pc);
@@ -925,8 +925,8 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
     console.log('[GroupCall] 📥 PROCESSING ICE CANDIDATE from user:', candidateData.fromUserId);
     
     const pc = peerConnectionsRef.current.get(candidateData.fromUserId);
-    if (!pc) {
-      console.log(`[GroupCall] ⚠️ No peer connection for user ${candidateData.fromUserId}, queueing ICE candidate`);
+    if (!pc || !pc.remoteDescription) {
+      console.log(`[GroupCall] ⚠️ No PC or remoteDescription for user ${candidateData.fromUserId}, queueing ICE candidate`);
       const candidates = pendingICECandidatesRef.current.get(candidateData.fromUserId) || [];
       candidates.push(candidateData.candidate);
       pendingICECandidatesRef.current.set(candidateData.fromUserId, candidates);
@@ -1011,8 +1011,11 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
           });
         }
 
-        // Create and send offer
-        const offer = await pc.createOffer();
+        // Create and send offer — explicit constraints ensure video m-line is always included
+        const offer = await pc.createOffer({
+          offerToReceiveAudio: true,
+          offerToReceiveVideo: true,
+        });
         await pc.setLocalDescription(offer);
         
         if (ws && ws.readyState === WebSocket.OPEN) {

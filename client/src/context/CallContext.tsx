@@ -312,6 +312,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
       case 'group_call_user_left':
         handleGroupCallUserLeft(message);
         break;
+      case 'participant_left':
+        handleGroupParticipantLeft(message);
+        break;
       case 'group_call_participants_update':
         handleGroupCallParticipantsUpdate(message);
         break;
@@ -350,9 +353,47 @@ export function CallProvider({ children }: { children: ReactNode }) {
   
   // Queue for ICE candidates that arrive before remote description is set
   const pendingIceCandidates = useRef<any[]>([]);
-  
+
   // Queue for WebRTC offers that arrive before incoming call is created
   const pendingOffers = useRef<any[]>([]);
+
+  // Holds the live remote MediaStream for the active 1:1 call.
+  // ontrack fires once per remote track (audio, then video). The remote peer
+  // (mobile) sends both tracks in the same stream, so every ontrack event carries
+  // the SAME MediaStream object reference. Passing that same reference to
+  // setRemoteAudioStream a second time is a no-op for React (Object.is bail-out),
+  // so the VideoCall effect never re-attaches the now-video-bearing stream and the
+  // remote video stays blank while audio works. We therefore re-publish a fresh
+  // MediaStream snapshot on every track so React always re-renders.
+  const remoteStreamRef = useRef<MediaStream | null>(null);
+
+  const publishRemoteStream = (event: RTCTrackEvent) => {
+    const incoming = event.streams && event.streams[0];
+    if (incoming) {
+      // Peer grouped its tracks into a stream — track it directly so future
+      // tracks added to the same stream are picked up.
+      remoteStreamRef.current = incoming;
+    } else {
+      // No stream association (e.g. tracks added via addTransceiver/replaceTrack):
+      // accumulate individual tracks into our own stream.
+      if (!remoteStreamRef.current) {
+        remoteStreamRef.current = new MediaStream();
+      }
+      if (event.track && !remoteStreamRef.current.getTracks().some(t => t.id === event.track.id)) {
+        remoteStreamRef.current.addTrack(event.track);
+      }
+    }
+
+    const tracks = remoteStreamRef.current.getTracks();
+    console.log('[CallContext] 📡 Publishing remote stream with tracks:', {
+      audioTracks: tracks.filter(t => t.kind === 'audio').length,
+      videoTracks: tracks.filter(t => t.kind === 'video').length
+    });
+
+    // Fresh MediaStream reference forces React to re-render and re-attach srcObject,
+    // ensuring the remote video element renders once the video track arrives.
+    setRemoteAudioStream(new MediaStream(tracks));
+  };
 
   // 🎯 CRITICAL FIX 9: Enhanced receiver-side RTP monitoring with auto-repair
   const startReceiverRTPMonitoring = (peerConnection: RTCPeerConnection, callId: string) => {
@@ -1019,7 +1060,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
                 const userData = await response.json();
                 return {
                   userId,
-                  userName: userData.callsign || userData.fullName || `User ${userId}`,
+                  userName: userData.callsign || userData.fullName || `CALLSIGN-${userId}`,
                   audioEnabled: true,
                   videoEnabled: false,
                   stream: null
@@ -1030,7 +1071,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
             }
             return {
               userId,
-              userName: `User ${userId}`,
+              userName: `CALLSIGN-${userId}`,
               audioEnabled: true,
               videoEnabled: false,
               stream: null
@@ -1262,6 +1303,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
           case 'group_call_user_left':
             handleGroupCallUserLeft(message);
             break;
+          case 'participant_left':
+            handleGroupParticipantLeft(message);
+            break;
           case 'group_call_participants_update':
             console.log('[CallContext] 🔥 GROUP_CALL_PARTICIPANTS_UPDATE received:', message);
             console.log('[CallContext] 🎯 Participants in message:', message.payload?.participants);
@@ -1386,7 +1430,37 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   const handleIncomingCall = (message: any) => {
     console.log('[CallContext] Incoming call from:', message.fromUserName);
-    
+
+    // BUSY GUARD: if we are already in an active call (or already have a DIFFERENT
+    // call ringing), reject this new 1:1 call as busy instead of setting it up.
+    // Previously the web set up the new incoming call unconditionally, which tore
+    // down / interfered with the call already in progress. This mirrors the mobile
+    // client, which replies "is currently on another call".
+    // (handle both message shapes: full envelope or already-unwrapped payload)
+    const incomingCallId = message.callId ?? message?.payload?.callId;
+    const incomingFromUserId = message.fromUserId ?? message?.payload?.fromUserId;
+    const existingActive = activeCallRef.current || activeCall;
+    const existingIncoming = incomingCallRef.current || incomingCall;
+    const isDuplicateOfExisting =
+      (existingActive && existingActive.callId === incomingCallId) ||
+      (existingIncoming && existingIncoming.callId === incomingCallId);
+
+    if ((existingActive || existingIncoming) && !isDuplicateOfExisting) {
+      console.log('[CallContext] 📵 Busy — already in a call; rejecting incoming call', incomingCallId, 'as busy (not tearing down current call)');
+      if (ws && ws.readyState === WebSocket.OPEN && incomingFromUserId != null) {
+        ws.send(JSON.stringify({
+          type: 'reject_call',
+          payload: {
+            callId: incomingCallId,
+            toUserId: incomingFromUserId,
+            fromUserId: user?.id,
+            reason: 'busy',
+          }
+        }));
+      }
+      return;
+    }
+
     // Play ringtone for incoming call with global reference pattern (same as waiting tone)
     const playRingtone = async () => {
       console.log('[CallContext] 🔊 Starting ringtone for incoming call');
@@ -1577,7 +1651,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       // setRemoteAudioStream(remoteStream); // REMOVED - akan di-set saat acceptCall
     };
 
-    setIncomingCall({
+    const incomingCallState: CallState = {
       callId: message.callId,
       callType: message.callType,
       status: 'ringing',
@@ -1589,7 +1663,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
       audioEnabled: false, // ⚠️ PREVENT EARLY MEDIA - audio disabled until answered
       videoEnabled: false, // ⚠️ PREVENT EARLY MEDIA - video disabled until answered
       isMuted: true, // ⚠️ PREVENT EARLY MEDIA - muted until answered
-    });
+    };
+    // 🎯 MOBILE-PARITY FIX: set the ref synchronously so an offer/ICE candidate that
+    // arrives in the same tick (before the ref-sync useEffect runs) finds this call
+    // instead of being queued/dropped on the very first incoming call.
+    incomingCallRef.current = incomingCallState;
+    setIncomingCall(incomingCallState);
 
     // Process any pending WebRTC offers for this call
     setTimeout(() => {
@@ -1708,34 +1787,14 @@ export function CallProvider({ children }: { children: ReactNode }) {
         };
       });
       
-      // Don't create offer here, wait for webrtc_ready signal from receiver
-      console.log('[CallContext] Waiting for receiver to be ready for WebRTC...');
-      
-      // Add fallback mechanism - if no webrtc_ready signal received within 3 seconds, proceed anyway
-      const fallbackTimeout = setTimeout(() => {
-        console.log('[CallContext] ⚠️ No WebRTC ready signal received, proceeding with fallback offer creation');
-        const fallbackActiveCall = activeCallRef.current;
-        if (fallbackActiveCall && fallbackActiveCall.peerConnection) {
-          fallbackActiveCall.peerConnection!.createOffer()
-            .then(offer => {
-              fallbackActiveCall.peerConnection!.setLocalDescription(offer);
-              if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({
-                  type: 'webrtc_offer',
-                  callId: fallbackActiveCall.callId,
-                  offer: offer
-                }));
-                console.log('[CallContext] ✅ Fallback WebRTC offer sent');
-              }
-            })
-            .catch(error => {
-              console.error('[CallContext] ❌ Fallback offer creation failed:', error);
-            });
-        }
-      }, 3000);
-      
-      // Store timeout so we can clear it if webrtc_ready is received
-      (window as any).__webrtcFallbackTimeout = fallbackTimeout;
+      // 🎯 MOBILE-PARITY FIX: Do NOT create a second offer here.
+      // The single WebRTC offer was already created and sent in startCall (exactly
+      // like the mobile client's OneOnOneCallService.startCall). The receiver applies
+      // that offer and replies with an answer on accept, which we handle in
+      // handleWebRTCAnswer. Creating a second offer here (or via webrtc_ready, or via
+      // the old 3s fallback) renegotiates an already-established connection and was the
+      // cause of the first call failing. Mobile sends exactly one offer — so do we now.
+      console.log('[CallContext] Call accepted — connection negotiated via the original offer/answer; not creating a second offer');
     } else {
       console.error('[CallContext] ❌ No activeCall or peerConnection when call accepted');
       console.error('[CallContext] activeCall (state):', activeCall);
@@ -1745,156 +1804,18 @@ export function CallProvider({ children }: { children: ReactNode }) {
   };
 
   const handleWebRTCReady = async (message: any) => {
-    console.log('[CallContext] Received WebRTC ready signal, payload:', message);
-    console.log('[CallContext] Current activeCall (state):', activeCall);
-    console.log('[CallContext] Current activeCall (ref):', activeCallRef.current);
-    
-    // Use ref for stable call reference
-    const currentActiveCall = activeCallRef.current || activeCall;
-    
-    if (currentActiveCall && currentActiveCall.peerConnection) {
-      console.log('[CallContext] ✅ Found activeCall and peerConnection for WebRTC ready');
-      
-      // Clear the fallback timeout since we received the ready signal
-      if ((window as any).__webrtcFallbackTimeout) {
-        clearTimeout((window as any).__webrtcFallbackTimeout);
-        (window as any).__webrtcFallbackTimeout = null;
-        console.log('[CallContext] ✅ Cleared fallback timeout - received ready signal');
-      }
-      
-      // 🎯 CRITICAL FIX 10: Ensure tracks are properly attached before offer creation
-      try {
-        console.log('[CallContext] 🔄 ENHANCED: Preparing WebRTC offer with proper track validation...');
-        
-        // Validate that local tracks are properly attached BEFORE creating offer
-        console.log('[CallContext] 🎤 ENHANCED: Validating local track attachment before offer...');
-        const senders = currentActiveCall.peerConnection.getSenders();
-        console.log('[CallContext] 📊 Current senders before offer:', senders.length);
-        
-        let hasAudioTrack = false;
-        senders.forEach((sender, index) => {
-          const track = sender.track;
-          console.log(`[CallContext] Sender ${index}:`, {
-            hasTrack: !!track,
-            kind: track?.kind,
-            enabled: track?.enabled,
-            readyState: track?.readyState,
-            id: track?.id
-          });
-          
-          if (track && track.kind === 'audio') {
-            hasAudioTrack = true;
-          }
-        });
-        
-        if (!hasAudioTrack) {
-          console.error('[CallContext] ❌ CRITICAL: No audio track attached to sender before offer creation!');
-          console.error('[CallContext] 🔧 CRITICAL FIX: Attempting to add local stream tracks now...');
-          
-          // Emergency fix: Add local stream tracks if they're missing
-          if (currentActiveCall.localStream) {
-            const audioTracks = currentActiveCall.localStream.getAudioTracks();
-            console.log('[CallContext] 🚨 Emergency track addition:', audioTracks.length, 'audio tracks available');
-            
-            audioTracks.forEach(track => {
-              try {
-                currentActiveCall.peerConnection.addTrack(track, currentActiveCall.localStream!);
-                console.log('[CallContext] ✅ EMERGENCY: Added audio track to peer connection');
-              } catch (error) {
-                console.warn('[CallContext] ⚠️ Track already added or error:', error);
-              }
-            });
-          } else {
-            console.error('[CallContext] ❌ CRITICAL: No local stream available for emergency track addition!');
-            throw new Error('No audio track available for offer creation');
-          }
-        } else {
-          console.log('[CallContext] ✅ ENHANCED: Audio track properly attached before offer creation');
-        }
-        
-        // 🎯 CRITICAL FIX 11: Enhanced offer creation with proper constraints
-        console.log('[CallContext] 🔄 ENHANCED: Creating offer with proper constraints...');
-        const offerOptions: RTCOfferOptions = {
-          offerToReceiveAudio: true,
-          offerToReceiveVideo: currentActiveCall.callType === 'video',
-          iceRestart: false
-        };
-        
-        const offer = await currentActiveCall.peerConnection.createOffer(offerOptions);
-        
-        // 🎯 CRITICAL FIX 12: Validate offer SDP for proper media sections
-        console.log('[CallContext] 📋 ENHANCED: Validating offer SDP...');
-        const sdpLines = offer.sdp?.split('\n') || [];
-        let hasAudioMedia = false;
-        let hasAudioSendRecv = false;
-        
-        sdpLines.forEach(line => {
-          if (line.startsWith('m=audio')) {
-            hasAudioMedia = true;
-            console.log('[CallContext] ✅ Found audio media section in offer');
-          }
-          if (line.includes('a=sendrecv') || line.includes('a=sendonly')) {
-            hasAudioSendRecv = true;
-            console.log('[CallContext] ✅ Found proper audio direction in offer:', line.trim());
-          }
-        });
-        
-        if (!hasAudioMedia) {
-          console.error('[CallContext] ❌ CRITICAL: No audio media section in offer SDP!');
-          throw new Error('Invalid offer SDP - no audio media section');
-        }
-        
-        if (!hasAudioSendRecv) {
-          console.warn('[CallContext] ⚠️ WARNING: No sendrecv/sendonly direction in offer - may cause one-way audio');
-        }
-        
-        await currentActiveCall.peerConnection.setLocalDescription(offer);
-        console.log('[CallContext] ✅ ENHANCED: Local description set successfully with proper validation');
+    // 🎯 MOBILE-PARITY FIX: webrtc_ready used to trigger the caller to create and send a
+    // SECOND offer, renegotiating an already-established connection. The mobile client
+    // (OneOnOneCallService) has no webrtc_ready/second-offer mechanism at all — the caller
+    // sends one offer in startCall and the receiver answers on accept. That single
+    // offer/answer exchange fully establishes the call here too, so this signal is now a
+    // no-op kept only for backward compatibility with receivers that still emit it.
+    console.log('[CallContext] Received WebRTC ready signal (no-op — connection already negotiated via original offer/answer):', message?.callId);
 
-        // Try WebSocket first, fallback to HTTP API
-        const offerData = {
-          type: 'webrtc_offer',
-          callId: currentActiveCall.callId,
-          offer: offer
-        };
-        
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify(offerData));
-          console.log('[CallContext] ✅ Sent WebRTC offer via WebSocket');
-        } else {
-          console.log('[CallContext] ⚠️ WebSocket not ready, using HTTP API fallback');
-          
-          // Use HTTP API as fallback
-          try {
-            const response = await fetch('/api/webrtc/offer', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                callId: currentActiveCall.callId,
-                targetUserId: currentActiveCall.peerUserId,
-                offer: offer
-              })
-            });
-            
-            if (response.ok) {
-              console.log('[CallContext] ✅ Sent WebRTC offer via HTTP API fallback');
-            } else {
-              throw new Error('HTTP API failed');
-            }
-          } catch (error) {
-            console.error('[CallContext] ❌ Both WebSocket and HTTP API failed:', error);
-            hangupCall();
-          }
-        }
-      } catch (error) {
-        console.error('[CallContext] ❌ Error creating WebRTC offer after receiver ready:', error);
-      }
-    } else {
-      console.error('[CallContext] ❌ No activeCall or peerConnection when receiver ready');
-      console.error('[CallContext] activeCall (state):', activeCall);
-      console.error('[CallContext] activeCall (ref):', activeCallRef.current);
+    // Clear any leftover fallback timeout from older builds, just in case.
+    if ((window as any).__webrtcFallbackTimeout) {
+      clearTimeout((window as any).__webrtcFallbackTimeout);
+      (window as any).__webrtcFallbackTimeout = null;
     }
   };
 
@@ -2186,6 +2107,47 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Handle a single participant leaving a group call.
+  // The server sends `participant_left` ({ callId, userId, participants }) from
+  // handleLeaveGroupCall when a member (e.g. a mobile client) leaves while others
+  // remain. Without this handler the web never removed them, so they kept showing
+  // as if still in the call. (Distinct from `group_call_user_left`, which is keyed
+  // by roomId and sent on the end_call path.)
+  const handleGroupParticipantLeft = (message: any) => {
+    const payload = message.payload || message;
+    const { callId, userId } = payload;
+    console.log('[CallContext] participant_left received for user', userId, 'call', callId);
+
+    const currentActiveCall = activeCallRef.current || activeCall;
+    if (!currentActiveCall || !currentActiveCall.isGroupCall) {
+      console.log('[CallContext] No active group call for participant_left, ignoring');
+      return;
+    }
+
+    // Remove the departing user from the participants list (keep existing objects/names).
+    const currentParticipants = currentActiveCall.participants || [];
+    const updatedParticipants = currentParticipants.filter((participant: any) =>
+      typeof participant === 'object' ? participant.userId !== userId : participant !== userId
+    );
+
+    const updatedCall = { ...currentActiveCall, participants: updatedParticipants };
+    setActiveCall(updatedCall);
+    activeCallRef.current = updatedCall;
+    console.log(`[CallContext] Removed user ${userId}; remaining participants:`, updatedParticipants);
+
+    // Tell GroupVideoCallSimple to tear down that user's peer connection + remote stream
+    // so no stale video tile/stream lingers and resources are freed.
+    window.dispatchEvent(new CustomEvent('group-participant-left', {
+      detail: { callId, userId }
+    }));
+
+    // If everyone else has left, end the call locally.
+    if (updatedParticipants.length === 0) {
+      console.log('[CallContext] No participants remaining after leave, ending group call');
+      handleGroupCallEnded({ payload: { callId: currentActiveCall.callId } });
+    }
+  };
+
   // Handle group update notifications for real-time cache invalidation
   const handleGroupUpdate = (message: any) => {
     console.log('[CallContext] Group update received:', message);
@@ -2247,15 +2209,26 @@ export function CallProvider({ children }: { children: ReactNode }) {
     
     // For group calls, match by groupId rather than exact callId since the server may use different callIds
     if (groupCallToUpdate && groupCallToUpdate.isGroupCall) {
-      // Extract groupId from the callId (format: group_call_timestamp_groupId_userId)
-      const callIdParts = callId.split('_');
-      const messageGroupId = callIdParts[3]; // Fourth part is groupId (index 3)
+      // Match the update to our active group call. We accept it if EITHER:
+      //  (a) the callId matches our active call's callId exactly, OR
+      //  (b) the groupId embedded in the callId matches our active groupId.
+      //
+      // (b) only works for web-initiated calls whose callId format is
+      // `group_call_<timestamp>_<groupId>_<userId>` (groupId at index 3).
+      // Mobile-initiated calls use `group_call_<timestamp>_<userId>` (NO groupId
+      // embedded), so (b) would extract the initiator's userId and never match.
+      // (a) covers that case because we join with the mobile's exact callId.
+      const callIdParts = String(callId).split('_');
+      const messageGroupId = callIdParts[3]; // groupId for web-initiated callIds
       const activeGroupId = String(groupCallToUpdate.groupId);
-      
+      const callIdMatches = String(callId) === String(groupCallToUpdate.callId);
+      const groupIdMatches = messageGroupId !== undefined && messageGroupId === activeGroupId;
+
+      console.log('[CallContext] Match check - callIdMatches:', callIdMatches, 'groupIdMatches:', groupIdMatches);
       console.log('[CallContext] Extracted groupIds - message:', messageGroupId, 'active:', activeGroupId);
-      console.log('[CallContext] CallId parts:', callIdParts);
-      
-      if (messageGroupId === activeGroupId) {
+      console.log('[CallContext] CallIds - message:', callId, 'active:', groupCallToUpdate.callId);
+
+      if (callIdMatches || groupIdMatches) {
         console.log('[CallContext] Group IDs match, updating participants:', participants);
         
         // 🔥 ENHANCED: Handle detailed participant data for new members
@@ -2282,7 +2255,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
           // Simple ID array, convert to participant objects
           processedParticipants = participants.map((id: any) => ({
             userId: id,
-            userName: `User ${id}`,
+            userName: `CALLSIGN-${id}`,
             audioEnabled: true,
             videoEnabled: groupCallToUpdate.callType === 'video'
           }));
@@ -2340,13 +2313,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
           fetch('/api/all-users').then(response => response.json()).then(allUsers => {
             const userMap = new Map();
             allUsers.forEach((user: any) => {
-              userMap.set(user.id, user.callsign || user.fullName || `User ${user.id}`);
+              userMap.set(user.id, user.callsign || user.fullName || `CALLSIGN-${user.id}`);
             });
-            
+
             // Convert participant IDs to participant objects
             const participantObjects = uniqueParticipants.map((participantId: any) => ({
               userId: Number(participantId),
-              userName: userMap.get(Number(participantId)) || `User ${participantId}`,
+              userName: userMap.get(Number(participantId)) || `CALLSIGN-${participantId}`,
               audioEnabled: true,
               videoEnabled: groupCallToUpdate.callType === 'video',
               stream: null
@@ -2385,7 +2358,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
                   ...prev,
                   participants: uniqueParticipants.map((id: any) => ({
                     userId: Number(id),
-                    userName: `User ${id}`,
+                    userName: `CALLSIGN-${id}`,
                     audioEnabled: true,
                     videoEnabled: groupCallToUpdate.callType === 'video',
                     stream: null
@@ -2627,13 +2600,31 @@ export function CallProvider({ children }: { children: ReactNode }) {
       console.log('[CallContext] Error stopping audio sources:', error);
     }
     
+    // Use ref to avoid acting on a stale activeCall captured by the ws handler closure.
+    const currentActiveCall = activeCallRef.current || activeCall;
+
+    // Normalize the comparison (guard against string/number or ref-vs-state drift).
+    const callIdMatches = !!currentActiveCall && String(currentActiveCall.callId) === String(callId);
+    // 🩹 FIX (web↔mobile hangup): the server only relays `call_ended` to the correct
+    // peer of a NON-terminal 1:1 call — busy/rejected attempts are filtered out by the
+    // terminal-status guard in handleEndCall — and the web only ever holds a single
+    // active 1:1 call at a time. So a `call_ended` arriving while we're in a 1:1 call is
+    // authoritative and we must tear down even when the callId string doesn't line up
+    // with our activeCall. Previously a mismatch left the web stuck on the call screen
+    // after the mobile side hung up (web-initiated calls especially). Group calls stay
+    // strict: they can legitimately receive call_ended for unrelated rooms.
+    const shouldTeardown = !!currentActiveCall && (callIdMatches || !currentActiveCall.isGroupCall);
+
     // 🚀 ENHANCED: Complete teardown for matching calls
-    if (activeCall && activeCall.callId === callId) {
+    if (shouldTeardown) {
+      if (!callIdMatches) {
+        console.warn('[CallContext] ⚠️ call_ended callId', callId, 'did not match active 1:1 call', currentActiveCall?.callId, '— tearing down anyway (single active 1:1 call)');
+      }
       console.log('[CallContext] ✅ Performing complete teardown for active call:', callId);
-      
+
       // Clean up media streams
-      if (activeCall.localStream) {
-        activeCall.localStream.getTracks().forEach(track => {
+      if (currentActiveCall.localStream) {
+        currentActiveCall.localStream.getTracks().forEach(track => {
           track.stop();
           console.log('[CallContext] 🔇 Stopped local track:', track.kind);
         });
@@ -2646,19 +2637,24 @@ export function CallProvider({ children }: { children: ReactNode }) {
           console.log('[CallContext] 🔇 Stopped remote track:', track.kind);
         });
         setRemoteAudioStream(null);
+        remoteStreamRef.current = null;
       }
-      
-      // 🚀 NEW: Close peer connection
-      if (peerConnection) {
+
+      // 🚀 NEW: Close peer connection. The RTCPeerConnection lives on the call object
+      // (CallState.peerConnection) — there is NO separate peerConnection/setPeerConnection
+      // state in this provider. Referencing a bare `peerConnection`/`setPeerConnection` here
+      // threw a ReferenceError (strict-mode ES module) BEFORE the teardown below ran, and the
+      // ws.onmessage try/catch swallowed it — so a remote hangup left the web stuck on the
+      // call screen (web-initiated hangup was unaffected). Use the call's own connection.
+      if (currentActiveCall.peerConnection) {
         try {
-          peerConnection.close();
+          currentActiveCall.peerConnection.close();
           console.log('[CallContext] 🔌 Closed peer connection');
         } catch (e) {
           console.log('[CallContext] Error closing peer connection:', e);
         }
-        setPeerConnection(null);
       }
-      
+
       // Clear active call
       setActiveCall(null);
       console.log('[CallContext] ✅ Active call cleared');
@@ -2667,19 +2663,21 @@ export function CallProvider({ children }: { children: ReactNode }) {
       console.log('[CallContext] 🔄 NAVIGATION: Auto-navigating back to chat interface');
       setLocation('/chat');
       
+    } else if (currentActiveCall) {
+      // 🛑 CRITICAL FIX: A call_ended arrived for a callId that is NOT our active
+      // call while we ARE in a different call. This happens when a third party
+      // calls a busy user: the caller's client fails the attempt and emits an
+      // end_call which the server may relay here. We must IGNORE it — do not
+      // navigate away or tear down — otherwise the ongoing call gets killed.
+      console.log('[CallContext] ⏭️ Ignoring call_ended for unrelated callId', callId, '— still in active call', currentActiveCall.callId);
     } else {
-      console.log('[CallContext] ⚠️ Call ended event for non-active call:', callId, 'current activeCall:', activeCall?.callId);
-      
-      // 🚀 CRITICAL FIX: Navigate back to chat even if activeCall is undefined
-      // This handles case where call state was cleared but user still on call page
+      console.log('[CallContext] ⚠️ Call ended event for non-active call:', callId, '(no active call)');
+
+      // 🚀 No active call: navigate back to chat if the user is stuck on a call page
+      // (handles the case where call state was already cleared).
       const actualCurrentPath = window.location.pathname;
-      console.log('[CallContext] 🔍 DEBUG: Wouter location:', location);
-      console.log('[CallContext] 🔍 DEBUG: Actual URL pathname:', actualCurrentPath);
-      console.log('[CallContext] 🔍 DEBUG: Checking if on call page for navigation...');
-      
-      // Use actual URL pathname instead of potentially stale wouter location
       if (actualCurrentPath === '/video-call' || actualCurrentPath === '/audio-call' || actualCurrentPath === '/group-call') {
-        console.log('[CallContext] 🔄 NAVIGATION: Auto-navigating back to chat from call page (activeCall undefined)');
+        console.log('[CallContext] 🔄 NAVIGATION: Auto-navigating back to chat from call page (no active call)');
         setLocation('/chat');
       } else {
         console.log('[CallContext] 🔍 DEBUG: Not on call page, actual path:', actualCurrentPath);
@@ -2688,22 +2686,29 @@ export function CallProvider({ children }: { children: ReactNode }) {
     
     // CRITICAL: Do NOT clear incoming call if it's still ringing
     // Only clear incoming call if the ended call matches AND it was accepted (not ringing)
+    // Only navigate away if we're not currently in a DIFFERENT active call —
+    // otherwise clearing an unrelated/stale incoming call would yank the user
+    // out of their ongoing call.
+    const safeToNavigate = !currentActiveCall || currentActiveCall.callId === callId;
+
     if (incomingCall && incomingCall.callId === callId && incomingCall.status !== 'ringing') {
       console.log('[CallContext] ✅ Clearing incoming call because it was accepted and then ended');
       setIncomingCall(null);
-      
-      // 🚀 FIX: Auto-navigate back to chat when incoming call ended
-      console.log('[CallContext] 🔄 NAVIGATION: Auto-navigating back to chat interface from incoming call');
-      setLocation('/chat');
-      
+
+      if (safeToNavigate) {
+        console.log('[CallContext] 🔄 NAVIGATION: Auto-navigating back to chat interface from incoming call');
+        setLocation('/chat');
+      }
+
     } else if (incomingCall && incomingCall.callId === callId && incomingCall.status === 'ringing') {
       console.log('[CallContext] 🚫 Clearing ringing incoming call - caller ended before answer');
       setIncomingCall(null);
-      
-      // 🚀 FIX: Also navigate back when incoming call canceled
-      console.log('[CallContext] 🔄 NAVIGATION: Auto-navigating back to chat interface from canceled incoming call');
-      setLocation('/chat');
-      
+
+      if (safeToNavigate) {
+        console.log('[CallContext] 🔄 NAVIGATION: Auto-navigating back to chat interface from canceled incoming call');
+        setLocation('/chat');
+      }
+
     } else {
       console.log('[CallContext] ⚠️ Call ended event does not match incoming call, or no incoming call exists');
     }
@@ -2902,7 +2907,21 @@ export function CallProvider({ children }: { children: ReactNode }) {
       // 🎯 CRITICAL FIX: Start receiver-side RTP monitoring after remote description is set
       console.log('[CallContext] 🔄 RECEIVER: Starting enhanced RTP flow monitoring for receiver side');
       startReceiverRTPMonitoring(currentCall.peerConnection, currentCall.callId);
-      
+
+      // 🎯 ANSWERER ORDERING FIX (match mobile): if this offer is for an incoming call
+      // the user has NOT accepted yet, our local audio/video tracks have not been added
+      // (getUserMedia runs in acceptCall). Creating the answer now would make our side
+      // recvonly and the caller would never receive our media. Defer answer creation to
+      // acceptCall(), which adds local tracks first and then creates+sends the answer.
+      const isUnacceptedIncoming =
+        !currentActiveCall &&
+        !!currentIncomingCall &&
+        currentIncomingCall.callId === message.callId;
+      if (isUnacceptedIncoming) {
+        console.log('[CallContext] ⏸️ Remote offer applied; deferring answer until call is accepted (local media not added yet)');
+        return;
+      }
+
       const answer = await currentCall.peerConnection.createAnswer();
       await currentCall.peerConnection.setLocalDescription(answer);
       console.log('[CallContext] ✅ ENHANCED: Local description (answer) set successfully');
@@ -3192,23 +3211,17 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
       // Handle incoming remote stream for caller
       peerConnection.ontrack = (event) => {
-        console.log('[CallContext] 📡 CALLER: Received remote stream in startCall');
-        const remoteStream = event.streams[0];
-        console.log('[CallContext] 📡 CALLER: Remote stream details:', {
-          id: remoteStream.id,
-          active: remoteStream.active,
-          audioTracks: remoteStream.getAudioTracks().length,
-          videoTracks: remoteStream.getVideoTracks().length
-        });
-        
-        // Store remote stream globally for AudioCall component
-        console.log('[CallContext] 📡 CALLER: Storing remote stream globally');
-        setRemoteAudioStream(remoteStream);
-        
+        console.log('[CallContext] 📡 CALLER: Received remote track in startCall:', event.track?.kind);
+
+        // Publish a fresh-reference stream so React re-renders for each track
+        // (audio first, video second) — otherwise the remote video stays blank.
+        publishRemoteStream(event);
+        const remoteStream = remoteStreamRef.current!;
+
         // Stop waiting tone when remote audio stream is received
         console.log('[CallContext] Remote audio received - stopping waiting tone');
         stopWaitingTone();
-        
+
         // Find and setup audio element for remote stream
         setTimeout(() => {
           const audioElement = document.querySelector('#remoteAudio') as HTMLAudioElement;
@@ -3252,6 +3265,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
         isMuted: false,
       };
 
+      // 🎯 MOBILE-PARITY FIX: update the ref synchronously (don't wait for the
+      // useEffect that syncs activeCallRef after the next render). On a fast LAN the
+      // receiver's answer can arrive before React re-renders, and handleWebRTCAnswer
+      // reads activeCallRef.current — if it's still null the first call's answer is
+      // dropped. The mobile client keeps the peer connection on the service instance
+      // synchronously; this gives the web the same guarantee.
+      activeCallRef.current = newCall;
       setActiveCall(newCall);
 
       // Start waiting tone for outgoing call
@@ -3365,25 +3385,46 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
       console.log('[CallContext] Added local stream to existing peerConnection');
 
+      // 🎯 ANSWERER ORDERING FIX (match mobile answerCall): now that our local
+      // audio+video tracks are added, create and send the answer. The remote offer
+      // was already applied during ringing (handleWebRTCOffer), so the connection is
+      // in 'have-remote-offer'. Building the answer here guarantees it is sendrecv,
+      // so the caller (mobile) actually receives our camera + microphone.
+      // If the offer hasn't arrived yet (race), handleWebRTCOffer will create the
+      // answer once it does — local tracks are already on this peerConnection by then.
+      try {
+        if (peerConnection.remoteDescription && peerConnection.signalingState === 'have-remote-offer') {
+          const answer = await peerConnection.createAnswer();
+          await peerConnection.setLocalDescription(answer);
+          console.log('[CallContext] ✅ Created answer after accept with local media added');
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+              type: 'webrtc_answer',
+              callId: incomingCall.callId,
+              answer,
+            }));
+            console.log('[CallContext] 📤 Sent WebRTC answer to caller:', incomingCall.peerUserId);
+          }
+        } else {
+          console.log('[CallContext] ⏳ Offer not applied yet at accept time; answer will be sent when offer arrives. signalingState:', peerConnection.signalingState);
+        }
+      } catch (answerError) {
+        console.error('[CallContext] ❌ Error creating/sending answer in acceptCall:', answerError);
+      }
+
       // Setup remote stream handler for receiver
       peerConnection.ontrack = (event) => {
-        console.log('[CallContext] 📡 RECEIVER: Received remote stream');
-        const remoteStream = event.streams[0];
-        console.log('[CallContext] 📡 RECEIVER: Remote stream details:', {
-          id: remoteStream.id,
-          active: remoteStream.active,
-          audioTracks: remoteStream.getAudioTracks().length,
-          videoTracks: remoteStream.getVideoTracks().length
-        });
-        
-        // Store remote stream globally for AudioCall component
-        console.log('[CallContext] 📡 RECEIVER: Storing remote stream globally');
-        setRemoteAudioStream(remoteStream);
-        
+        console.log('[CallContext] 📡 RECEIVER: Received remote track:', event.track?.kind);
+
+        // Publish a fresh-reference stream so React re-renders for each track
+        // (audio first, video second) — otherwise the remote video stays blank.
+        publishRemoteStream(event);
+        const remoteStream = remoteStreamRef.current!;
+
         // Stop waiting tone when remote audio stream is received
         console.log('[CallContext] Remote audio received - stopping waiting tone');
         stopWaitingTone();
-        
+
         // Find and setup audio element for remote stream
         setTimeout(() => {
           const audioElement = document.querySelector('#remoteAudio') as HTMLAudioElement;
@@ -3404,20 +3445,28 @@ export function CallProvider({ children }: { children: ReactNode }) {
       // 🎯 CRITICAL: Now that call is accepted, enable audio and activate pending remote stream
       console.log('[CallContext] 🎯 Call accepted - enabling audio and activating remote stream');
       
-      // Check if there's a pending remote stream from earlier ontrack event
+      // Check if there's a pending remote stream from earlier ontrack event.
+      // The offer is processed (firing ontrack) before the user accepts, so for the
+      // receiver the remote audio+video tracks usually arrive here, not via the
+      // ontrack handler set above.
       if ((window as any).__pendingRemoteStream) {
-        const pendingStream = (window as any).__pendingRemoteStream;
+        const pendingStream = (window as any).__pendingRemoteStream as MediaStream;
         console.log('[CallContext] 🎯 Activating pending remote stream with tracks:', pendingStream.getTracks().length);
-        
+
         // Enable all audio tracks now that call is accepted
         pendingStream.getAudioTracks().forEach(track => {
           track.enabled = true;
           console.log('[CallContext] 🔊 Audio track enabled after call accepted');
         });
-        
-        // Now it's safe to store the remote stream
-        setRemoteAudioStream(pendingStream);
-        
+
+        // Track it and publish a fresh reference so the remote video element attaches.
+        remoteStreamRef.current = pendingStream;
+        setRemoteAudioStream(new MediaStream(pendingStream.getTracks()));
+        console.log('[CallContext] 📡 RECEIVER: Published pending remote stream:', {
+          audioTracks: pendingStream.getAudioTracks().length,
+          videoTracks: pendingStream.getVideoTracks().length
+        });
+
         // Clear pending stream
         (window as any).__pendingRemoteStream = null;
       }
@@ -3782,6 +3831,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       // Clear call state and navigate back to chat
       setActiveCall(null);
       setRemoteAudioStream(null);
+      remoteStreamRef.current = null;
       setIncomingCall(null);
       
       // Additional cleanup - request browser to release all media devices
@@ -4612,7 +4662,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
           // Create user map for name lookups
           const userMap = new Map();
           allUsers.forEach((user: any) => {
-            userMap.set(user.id, user.callsign || user.fullName || `User ${user.id}`);
+            userMap.set(user.id, user.callsign || user.fullName || `CALLSIGN-${user.id}`);
           });
           
           // Dispatch event to GroupVideoCall to start WebRTC connections
