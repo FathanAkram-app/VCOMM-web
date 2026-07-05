@@ -1,8 +1,9 @@
 import express, { type Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
+import { type Server as HttpsServer } from "https";
 import { storage } from "./storage";
 import { cmsStorage } from "./storage-cms";
-import { setupAuth, isAuthenticated, inMemoryUsers, inMemoryConversations, inMemoryConversationMembers, nextConversationId, inMemoryMessages, inMemoryConversationMessages, nextMessageId } from "./auth";
+import { setupAuth, isAuthenticated, inMemoryUsers, inMemoryConversations, inMemoryConversationMembers, nextConversationId, inMemoryMessages, inMemoryConversationMessages, nextMessageId, AuthRequest } from "./auth";
 import {
   WebSocketMessage,
   insertMessageSchema,
@@ -55,15 +56,9 @@ import { notificationService } from "./services/notification.service";
 import gotifyRoutes from "./routes/gotify.routes";
 import userGotifyRoutes from "./routes/user-gotify.routes";
 
-// Type for requests with authenticated user
-interface AuthRequest extends Request {
-  user?: any;
-  session?: any & {
-    user?: any;
-  };
-}
 
-export async function registerRoutes(app: Express): Promise<Server> {
+
+export async function registerRoutes(app: Express, httpServer: Server | HttpsServer): Promise<Server | HttpsServer> {
   // Add global request logging
   app.use((req, res, next) => {
     if (req.method === 'DELETE' && req.path.includes('/api/conversations/')) {
@@ -154,10 +149,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin and LAPSIT routes moved to clean architecture (see routes/admin.routes.ts and routes/lapsit.routes.ts)
 
 
-  const httpServer = createServer(app);
+  // The HTTP/HTTPS server is created by the caller (index.ts) so the SAME server object both hosts
+  // the /ws upgrade handler AND calls .listen(). Previously this function created its own plain
+  // http server for the WSS while index.ts listened on a separate https server in HTTPS mode, so
+  // every wss:// upgrade was destroyed and all call signaling was dead over HTTPS.
 
   // Setup WebSocket server with modular handlers
   const { clients, activeGroupCalls, callConversationMap, sendToUser, broadcastToConversation, broadcastGroupUpdate, broadcastToAll } = setupWebSocketServer(httpServer, storage);
+
+  // Set clients provider in users service for dynamic status management
+  usersService.setClientsProvider(() => clients);
 
   // Initialize NotificationService with live clients map for connectivity checks
   notificationService.initialize(clients, storage);

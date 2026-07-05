@@ -63,11 +63,10 @@ const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCa
     cb(new Error('Format file tidak didukung'));
   }
 };
-
 // Size limits based on file type - Increased limits for compression handling
 const fileSizeLimits = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   const maxSize = 10 * 1024 * 1024; // Default 10MB
-  
+
   if (file.mimetype.startsWith('image/')) {
     // Image: max 10MB (will be compressed if >1MB)
     if (req.file?.size > 10 * 1024 * 1024) {
@@ -89,7 +88,7 @@ const fileSizeLimits = (req: any, file: Express.Multer.File, cb: multer.FileFilt
       cb(new Error('Ukuran file maksimum 10MB'));
     }
   }
-  
+
   cb(null, true);
 };
 
@@ -401,11 +400,11 @@ export const compressUploadedMedia = async (req: any, res: any, next: any) => {
     const filePath = req.file.path;
     const fileStats = fs.statSync(filePath);
     const fileSizeMB = fileStats.size / (1024 * 1024);
-    
+
     console.log(`[COMPRESSION] Processing file: ${req.file.filename}`);
     console.log(`[COMPRESSION] File type: ${req.file.mimetype}`);
     console.log(`[COMPRESSION] File size: ${fileSizeMB.toFixed(2)}MB`);
-    
+
     // Handle image compression
     if (req.file.mimetype.startsWith('image/')) {
       const shouldCompress = await shouldCompressImageServer(filePath);

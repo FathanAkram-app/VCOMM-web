@@ -46,6 +46,27 @@ export function createGroupCallHandlers(
   activeGroupCalls: GroupCallsMap,
   callConversationMap: Map<string, number>
 ) {
+  // Users who declined a given group call — excluded from rejoin re-invitations so a member who
+  // said no isn't re-rung every time someone rejoins. Cleared when the call ends.
+  const declinedUsers: Map<string, Set<number>> = new Map();
+
+  // True if a group call still has at least one participant with a live socket. Used so the
+  // idle-cleanup timer never wipes a call that is still in progress.
+  function callHasConnectedParticipant(callId: string): boolean {
+    const participants = activeGroupCalls.get(callId);
+    if (!participants || participants.size === 0) return false;
+    for (const uid of participants) {
+      const c = clients.get(uid);
+      if (c && c.size > 0) return true;
+    }
+    return false;
+  }
+
+  function endGroupCallState(callId: string) {
+    activeGroupCalls.delete(callId);
+    callConversationMap.delete(callId);
+    declinedUsers.delete(callId);
+  }
   async function handleStartGroupCall(ws: AuthenticatedWebSocket, data: any) {
     if (!ws.userId) return;
 
@@ -78,10 +99,12 @@ export function createGroupCallHandlers(
         // Members already in the call would reject the notification, which would
         // incorrectly remove them from the participant set
         const existingParticipants = activeGroupCalls.get(existingCallId)!;
+        const alreadyDeclined = declinedUsers.get(existingCallId) || new Set<number>();
         let invitationsSent = 0;
         for (const member of members) {
-          // Skip the rejoiner AND anyone already in the call
-          if (member.userId !== fromUserId && !existingParticipants.has(member.userId)) {
+          // Skip the rejoiner, anyone already in the call, AND anyone who already declined it
+          // (don't re-ring a member who said no every time someone rejoins).
+          if (member.userId !== fromUserId && !existingParticipants.has(member.userId) && !alreadyDeclined.has(member.userId)) {
             if (sendToAllUserConnections(clients, member.userId, {
                 type: 'incoming_group_call',
                 payload: {
@@ -174,14 +197,20 @@ export function createGroupCallHandlers(
       callConversationMap.set(callId, groupId);
       console.log(`[Group Call] Mapped callId ${callId} → conversationId ${groupId}`);
 
-      // Auto-cleanup abandoned group calls after 30 minutes
-      setTimeout(() => {
-        if (activeGroupCalls.has(callId)) {
+      // Idle-cleanup: only wipe the call after 30 minutes IF nobody with a live socket is still in
+      // it. A busy 40-minute call must not have its server room state deleted out from under it
+      // (which would break join/leave/rejoin and strand ghost tiles). Reschedule while still live.
+      const scheduleCleanup = () => setTimeout(() => {
+        if (!activeGroupCalls.has(callId)) return;
+        if (callHasConnectedParticipant(callId)) {
+          console.log(`[Group Call] Call ${callId} still active at cleanup check; rescheduling`);
+          scheduleCleanup();
+        } else {
           console.log(`[Group Call] Auto-cleaning up inactive group call ${callId}`);
-          activeGroupCalls.delete(callId);
-          callConversationMap.delete(callId);
+          endGroupCallState(callId);
         }
       }, 30 * 60 * 1000);
+      scheduleCleanup();
 
       // Get group members
       const members = await storage.getConversationMembers(groupId);
@@ -304,13 +333,22 @@ export function createGroupCallHandlers(
       }
     }
 
+    // If the call can't be resolved to an existing active call, do NOT resurrect it as a phantom
+    // one-person call. Tell the joiner it has ended so they tear down their ringing/joining UI.
+    // (Accepting a group call the initiator already cancelled used to drop the user into a silent
+    // empty call with no error.)
+    if (!activeGroupCalls.has(callId) || activeGroupCalls.get(callId)!.size === 0) {
+      console.log(`[Group Call] join for unknown/ended call ${callId} — replying group_call_ended`);
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'group_call_ended', payload: { callId, reason: 'call_ended' } }));
+      }
+      return;
+    }
+
     // Check if user is already a participant (e.g., handleStartGroupCall already added them for rejoin)
-    const alreadyInCall = activeGroupCalls.has(callId) && activeGroupCalls.get(callId)!.has(userId);
+    const alreadyInCall = activeGroupCalls.get(callId)!.has(userId);
 
     // Add user to the group call participants
-    if (!activeGroupCalls.has(callId)) {
-      activeGroupCalls.set(callId, new Set());
-    }
     activeGroupCalls.get(callId)!.add(userId);
 
     // Get current participants list
@@ -397,8 +435,7 @@ export function createGroupCallHandlers(
 
       // If no participants left, remove the call entirely
       if (participants.length === 0) {
-        activeGroupCalls.delete(callId);
-        callConversationMap.delete(callId);
+        endGroupCallState(callId);
         console.log(`[Group Call] Call ${callId} has no participants, removing from active calls`);
 
         // Update call status to ended
@@ -459,26 +496,37 @@ export function createGroupCallHandlers(
       // CRITICAL FIX: Remove rejecting user from active group calls to prevent auto-join
       console.log(`[Group Call] 🚫 Removing user ${fromUserId} from ALL active group calls for group ${groupId}`);
 
-      // Find and remove user from any active group call for this group
+      // Record the decline so rejoins don't re-ring this user, and remove them from any active
+      // call for this group.
+      let anyStillActive = false;
       for (const [activeCallId, convId] of callConversationMap.entries()) {
         if (convId === groupId && activeGroupCalls.has(activeCallId)) {
+          const declined = declinedUsers.get(activeCallId) || new Set<number>();
+          declined.add(fromUserId);
+          declinedUsers.set(activeCallId, declined);
+
           const participants = activeGroupCalls.get(activeCallId)!;
           if (participants.has(fromUserId)) {
             participants.delete(fromUserId);
             console.log(`[Group Call] 🗑️ Removed user ${fromUserId} from call ${activeCallId}, remaining participants:`, Array.from(participants));
+          }
 
-            // If no participants left, remove the call entirely
-            if (participants.size === 0) {
-              activeGroupCalls.delete(activeCallId);
-              callConversationMap.delete(activeCallId);
-              console.log(`[Group Call] 🗑️ Removed empty group call ${activeCallId}`);
-            }
+          // If no participants left, remove the call entirely
+          if (participants.size === 0) {
+            endGroupCallState(activeCallId);
+            console.log(`[Group Call] 🗑️ Removed empty group call ${activeCallId}`);
+          } else {
+            anyStillActive = true;
           }
         }
       }
 
-      // Update call history status to rejected (only for the rejecting user's record)
-      await storage.updateCallStatus(callId, 'rejected');
+      // Only mark the call's history 'rejected' when NOBODY is on it anymore. A single invitee
+      // declining an ongoing 3-person call must not flip the whole call to 'rejected' with an
+      // endTime while the others keep talking.
+      if (!anyStillActive) {
+        await storage.updateCallStatus(callId, 'rejected');
+      }
 
       // Get group members to notify about rejection
       const members = await storage.getConversationMembers(groupId);
@@ -553,7 +601,13 @@ export function createGroupCallHandlers(
         console.error(`[Group Call] Error processing participant request:`, error);
       }
     } else {
-      console.log(`[Group Call] No participants found for call ${callId}`);
+      // The call has no participants (ended / wiped / unknown). Reply so the requester's recovery
+      // poll converges instead of hanging forever rendering stale tiles.
+      console.log(`[Group Call] No participants for call ${callId} — replying group_call_ended`);
+      sendToAllUserConnections(clients, requestingUserId || ws.userId, {
+        type: 'group_call_ended',
+        payload: { callId, reason: 'no_participants' }
+      });
     }
   }
 

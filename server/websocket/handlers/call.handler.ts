@@ -1,7 +1,8 @@
 import { WebSocket } from 'ws';
 import { IStorage } from '../../storage';
-import { AuthenticatedWebSocket, ClientsMap, GroupCallsMap } from '../utils/types';
+import { AuthenticatedWebSocket, ClientsMap, GroupCallsMap, OneOnOneCallsMap } from '../utils/types';
 import { sendToClient, getUserClient } from '../utils/send';
+import { notificationService } from '../../services/notification.service';
 
 // Helper to send to all connections of a user
 function sendToAllUserConnections(clients: ClientsMap, userId: number, message: any): boolean {
@@ -24,7 +25,8 @@ export function createCallHandlers(
   clients: ClientsMap,
   activeGroupCalls: GroupCallsMap,
   broadcastToAll: (message: any) => void,
-  callConversationMap?: Map<string, number>
+  callConversationMap?: Map<string, number>,
+  activeOneOnOneCalls?: OneOnOneCallsMap
 ) {
   // Track calls that have been resolved (answered/rejected/ended) to prevent
   // the 30s timeout from overriding an already-processed call (#7 Call Decline State Sync)
@@ -41,6 +43,20 @@ export function createCallHandlers(
 
     const { callId, toUserId, callType, fromUserId, fromUserName } = data.payload;
     console.log(`[Call] User ${fromUserId} (${fromUserName}) initiating ${callType} call to ${toUserId}`);
+
+    // Never process an initiate with no target — it would previously fall through and the
+    // untargeted offer would be broadcast to everyone. Tell the caller it failed.
+    if (!toUserId) {
+      console.warn(`[Call] initiate_call from ${ws.userId} has no toUserId; rejecting`);
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'call_failed', payload: { callId, reason: 'invalid_target', message: 'No call target' } }));
+      }
+      return;
+    }
+
+    // Record the 1:1 call pair so signaling routes to the right peer and the peer is notified on
+    // abrupt disconnect.
+    activeOneOnOneCalls?.set(callId, { caller: fromUserId, callee: toUserId });
 
     // Get target user's name
     const targetUser = await storage.getUser(toUserId);
@@ -123,7 +139,12 @@ export function createCallHandlers(
       }, 30000); // 30 seconds timeout
     } else {
       // User is offline (no WebSocket connection) - wait for them to come online
-      console.log(`[Call] User ${toUserId} is offline (no WebSocket), waiting for reconnect`);
+      console.log(`[Call] User ${toUserId} is offline (no WebSocket), sending push and waiting for reconnect`);
+
+      // Push a call notification so a killed/backgrounded device without a live socket can still
+      // ring. (Previously nothing was pushed here, so an offline callee never learned of the call.)
+      notificationService.notifyCall(toUserId, fromUserName, callType, callId, fromUserId)
+        .catch(err => console.error('[Call] Error sending offline call push:', err));
 
       // Log call as incoming (not missed yet - give user time to respond via push)
       await storage.addCallHistory({
@@ -218,9 +239,13 @@ export function createCallHandlers(
 
     // Mark call as processed so timeout won't fire
     markCallProcessed(callId);
+    activeOneOnOneCalls?.delete(callId);
 
-    // Update call history status - use 'missed' if user didn't explicitly reject
-    const status = reason === 'busy' ? 'rejected' : 'missed';
+    // Update call history status. An explicit decline ('declined') or busy-reject ('busy') is a
+    // 'rejected' call; only a genuinely unhandled reject (no reason) falls back to 'missed'. This
+    // stops an actively-declined call from being replayed as a "Missed call" toast on every
+    // reconnect for 5 minutes.
+    const status = (reason === 'busy' || reason === 'declined') ? 'rejected' : 'missed';
     console.log(`[Call] Updating call ${callId} status to: ${status}`);
 
     try {
@@ -254,9 +279,39 @@ export function createCallHandlers(
 
     // Mark call as processed so timeout won't fire
     markCallProcessed(callId);
+    activeOneOnOneCalls?.delete(callId);
 
-    // Update call history status to ended
-    await storage.updateCallStatus(callId, 'ended');
+    // CALL-WAITING / BUSY FIX:
+    // For 1-on-1 calls, if this call is ALREADY in a terminal state (e.g. it was
+    // just 'rejected' because the callee was busy on another call), then this
+    // end_call is the CALLER's local teardown of a failed attempt — NOT a hangup
+    // of a live call. Relaying call_ended now would wrongly end the callee's OTHER
+    // ongoing call, because the callee's client ends whatever call it is currently
+    // in regardless of callId. So we stop here and do not relay/override.
+    //
+    // Scenario: A & B are in a call. C calls A. A (busy) auto-rejects C's call
+    // (status -> 'rejected') and the server tells C 'call_failed'. C's client then
+    // runs endCall() and emits end_call(toUserId = A). Without this guard the
+    // server would relay call_ended to A and drop the A<->B call.
+    if (!callId.includes('group_call_')) {
+      try {
+        const existingCall = await storage.getCallByCallId(callId);
+        const terminalStatuses = ['rejected', 'missed', 'ended', 'failed'];
+        if (existingCall && terminalStatuses.includes(existingCall.status)) {
+          console.log(`[Call] Ignoring end_call for ${callId} — already '${existingCall.status}'. Not relaying call_ended (prevents a busy-reject from ending an unrelated active call).`);
+          return;
+        }
+      } catch (error) {
+        console.error('[Call] Error checking existing call status in handleEndCall:', error);
+      }
+    }
+
+    // Update call history status to ended — but ONLY for 1:1 calls. For group calls the whole call
+    // must not be marked 'ended' when the first participant hangs up (the web client's normal group
+    // hangup is end_call{isGroupCall}); the group branch below defers 'ended' until the room empties.
+    if (!callId.includes('group_call_')) {
+      await storage.updateCallStatus(callId, 'ended');
+    }
 
     // Check if it's a group call
     if (callId.includes('group_call_')) {
@@ -286,6 +341,8 @@ export function createCallHandlers(
           // No participants left, end the entire call
           activeGroupCalls.delete(foundCallId);
           callConversationMap?.delete(foundCallId);
+          // Now that the room is empty, mark the call ended (deferred from the top of this handler).
+          try { await storage.updateCallStatus(foundCallId, 'ended'); } catch (e) { console.error('[Group Call] Error marking ended:', e); }
           console.log(`[Group Call] Removed empty group call ${foundCallId}`);
 
           broadcastToAll({

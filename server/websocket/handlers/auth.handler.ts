@@ -76,8 +76,8 @@ export function createAuthHandler(
     console.log(`[WebSocket] User ${userId} ${connectionSource} WebSocket readyState: ${ws.readyState}`);
     console.log(`[SINGLE SESSION] Created new ${connectionSource} session ${sessionId} for user ${userId}`);
 
-    // Update user status to online
-    await storage.updateUserStatus(userId, 'online');
+    // We no longer update database status
+    // await storage.updateUserStatus(userId, 'online');
 
     // Broadcast user status change (skip sending to the user themselves)
     broadcastToAll({

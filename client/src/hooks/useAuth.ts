@@ -15,7 +15,7 @@ interface AuthState {
  */
 export function useAuth(): AuthState & {
   logout: () => Promise<void>;
-  login: (callsign: string, password: string) => Promise<User>;
+  login: (nrp: string, password: string) => Promise<User>;
 } {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -37,14 +37,14 @@ export function useAuth(): AuthState & {
   }, [isQueryLoading]);
 
   // Fungsi untuk login
-  const login = async (callsign: string, password: string): Promise<User> => {
+  const login = async (nrp: string, password: string): Promise<User> => {
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ callsign, password }),
+        body: JSON.stringify({ nrp, password }),
         credentials: "include"
       });
 

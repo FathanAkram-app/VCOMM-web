@@ -92,9 +92,12 @@ export default function GroupManagementMobile({ groupId, groupName, onClose, cur
     queryKey: [`/api/group-members/${groupId}`],
   });
 
-  // Fetch all users for adding
+  // Fetch all users for adding.
+  // Poll periodically so the online (green dot) indicator stays current.
   const { data: allUsers = [] } = useQuery<any[]>({
     queryKey: ['/api/all-users'],
+    refetchInterval: 15000,
+    refetchOnWindowFocus: true,
   });
 
   const currentUserMember = members.find(m => m.id === currentUserId);
@@ -371,6 +374,10 @@ export default function GroupManagementMobile({ groupId, groupName, onClose, cur
                                       {user.callsign.substring(0, 2).toUpperCase()}
                                     </AvatarFallback>
                                   </Avatar>
+                                  {/* Online indicator (green dot) for users currently online on web */}
+                                  {(user.status === 'online' || user.isOnline) && (
+                                    <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-[#1a2f1a] animate-pulse" />
+                                  )}
                                   {selectedUsers.includes(user.id) && (
                                     <div className="absolute -top-1 -right-1 bg-[#a6c455] rounded-full p-0.5 animate-in zoom-in-50 duration-300">
                                       <Check className="h-3 w-3 text-black" />

@@ -9,7 +9,7 @@ export class MessagesController {
   constructor(
     private messagesService: MessagesService,
     private broadcastToConversation?: BroadcastFunction
-  ) {}
+  ) { }
 
   sendMessage = async (req: AuthRequest, res: Response): Promise<Response | void> => {
     try {
@@ -76,7 +76,7 @@ export class MessagesController {
               senderName,
               content,
               parseInt(conversationId),
-              conversationName
+              conversationName || undefined
             );
           }
         }
@@ -127,7 +127,7 @@ export class MessagesController {
       await this.messagesService.deleteMessage(messageId, userId, deleteForEveryone || false);
 
       // Broadcast deletion to other participants in real-time
-      if (deleteForEveryone && message && this.broadcastToConversation) {
+      if (deleteForEveryone && message && Number(message.senderId) === userId && message.conversationId && this.broadcastToConversation) {
         console.log('[MessagesController] Broadcasting message_deleted to conversation', message.conversationId);
         await this.broadcastToConversation(message.conversationId, {
           type: 'message_deleted',
@@ -186,13 +186,13 @@ export class MessagesController {
           const content = msg.content || 'Forwarded message';
 
           for (const member of members) {
-            if (member.userId !== userId) {
+            if (member.userId !== userId && msg.conversationId) {
               await notificationService.notifyMessage(
                 member.userId,
                 senderName,
                 content,
-                convId,
-                conversationName
+                msg.conversationId,
+                conversationName || undefined
               );
             }
           }

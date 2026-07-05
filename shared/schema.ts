@@ -27,9 +27,9 @@ export const sessions = pgTable(
 // Users table
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  callsign: text("callsign").notNull().unique(),
+  callsign: text("callsign").notNull(),            // Username/callsign - NOT unique, multiple users can share
   password: text("password").notNull(),
-  nrp: text("nrp"),                         // ID Personel/NRP
+  nrp: text("nrp").notNull().unique(),              // NRP/Personnel ID - UNIQUE login identifier
   fullName: varchar("full_name"),           // Nama lengkap
   rank: varchar("rank"),                    // Pangkat
   branch: varchar("branch"),                // Cabang/Unit
@@ -276,9 +276,9 @@ export const registerUserSchema = createInsertSchema(users).pick({
 });
 export type RegisterUser = z.infer<typeof registerUserSchema>;
 
-// Login schema
+// Login schema - uses NRP as the unique login identifier
 export const loginSchema = z.object({
-  callsign: z.string().min(1, "Call sign is required"),
+  nrp: z.string().min(1, "NRP/Personnel ID is required"),
   password: z.string().min(1, "Password is required"),
 });
 export type LoginCredentials = z.infer<typeof loginSchema>;
@@ -321,12 +321,16 @@ export type InsertConversationMember = z.infer<typeof insertConversationMemberSc
 
 // WebSocket message types
 export type WebSocketMessage = {
-  type: 'new_message' | 'user_status' | 'typing' | 'read_receipt' |
-  'webrtc_offer' | 'webrtc_answer' | 'webrtc_ice_candidate' |
-  'group_webrtc_offer' | 'group_webrtc_answer' | 'group_webrtc_ice_candidate' |
-  'start_group_call' | 'join_group_call' | 'end_call' |
-  'incoming_group_call' | 'group_call_participants_update' | 'group_call_ended' |
-  'group_update';
+  type:
+  | 'auth' | 'session_terminated' | 'pong' | 'ping' | 'user_status' | 'typing' | 'read_receipt'
+  | 'new_message' | 'message_deleted'
+  | 'initiate_call' | 'accept_call' | 'reject_call' | 'end_call' | 'call_missed' | 'webrtc_ready'
+  | 'webrtc_offer' | 'webrtc_answer' | 'webrtc_ice_candidate'
+  | 'start_group_call' | 'join_group_call' | 'leave_group_call' | 'reject_group_call'
+  | 'incoming_group_call' | 'group_call_participants_update' | 'group_call_ended'
+  | 'request_group_participants' | 'group_participant_refresh'
+  | 'group_webrtc_offer' | 'group_webrtc_answer' | 'group_webrtc_ice_candidate'
+  | 'group_update';
   payload: any;
 };
 

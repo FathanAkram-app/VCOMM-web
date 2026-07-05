@@ -431,6 +431,50 @@ export default function GroupVideoCallSimple() {
       }
     };
 
+    // Tear down a single participant who left the call (e.g. a mobile client).
+    // Close their peer connection, stop and drop their remote stream, and clear
+    // any per-user tracking so no stale video tile or stream lingers.
+    const handleParticipantLeft = (event: CustomEvent) => {
+      const userId = event.detail?.userId;
+      if (userId === undefined || userId === null) return;
+      console.log('[GroupVideoCallSimple] 👋 Participant left, cleaning up user', userId);
+
+      const pc = peerConnectionsRef.current.get(userId);
+      if (pc) {
+        try { pc.close(); } catch (e) { console.warn('[GroupVideoCallSimple] Error closing pc for', userId, e); }
+        peerConnectionsRef.current.delete(userId);
+        setPeerConnections(prev => {
+          const next = new Map(prev);
+          next.delete(userId);
+          return next;
+        });
+      }
+
+      const streamKey = `user_${userId}`;
+      const stream = remoteStreamsRef.current.get(streamKey);
+      if (stream) {
+        try { stream.getTracks().forEach(t => t.stop()); } catch {}
+        remoteStreamsRef.current.delete(streamKey);
+        setRemoteStreams(prev => {
+          const next = new Map(prev);
+          next.delete(streamKey);
+          return next;
+        });
+      }
+
+      pendingICECandidatesRef.current.delete(userId);
+      offerCreationStateRef.current.delete(userId);
+      if (connectionTimeouts.current.has(userId)) {
+        clearTimeout(connectionTimeouts.current.get(userId));
+        connectionTimeouts.current.delete(userId);
+      }
+      reconnectionState.current.delete(userId);
+      refreshTracker.current.delete(userId);
+
+      // Drop the tile immediately (the participants list is also updated via activeCall).
+      setParticipants(prev => prev.filter(p => p.userId !== userId));
+    };
+
     window.addEventListener('group-webrtc-offer', handleGroupWebRTCOffer as EventListener);
     window.addEventListener('group-webrtc-answer', handleGroupWebRTCAnswer as EventListener);
     window.addEventListener('group-webrtc-ice-candidate', handleGroupWebRTCIceCandidate as EventListener);
@@ -439,6 +483,7 @@ export default function GroupVideoCallSimple() {
     window.addEventListener('group-participant-refresh', handleParticipantRefresh as EventListener);
     window.addEventListener('force-webrtc-reconnect', handleForceWebRTCReconnect as EventListener);
     window.addEventListener('auto-initiate-webrtc', handleInitiateWebRTC as EventListener);
+    window.addEventListener('group-participant-left', handleParticipantLeft as EventListener);
 
     return () => {
       window.removeEventListener('group-webrtc-offer', handleGroupWebRTCOffer as EventListener);
@@ -449,6 +494,7 @@ export default function GroupVideoCallSimple() {
       window.removeEventListener('group-participant-refresh', handleParticipantRefresh as EventListener);
       window.removeEventListener('force-webrtc-reconnect', handleForceWebRTCReconnect as EventListener);
       window.removeEventListener('auto-initiate-webrtc', handleInitiateWebRTC as EventListener);
+      window.removeEventListener('group-participant-left', handleParticipantLeft as EventListener);
     };
   }, [activeCall]);
 
@@ -719,39 +765,59 @@ export default function GroupVideoCallSimple() {
         iceGatheringTimeout: 5000
       });
       
-      // Setup ontrack event untuk menerima remote stream
+      // Setup ontrack event untuk menerima remote stream.
+      // IMPORTANT: ontrack fires once per remote track (audio, then video).
+      // We cannot rely solely on event.streams[0]: when the remote peer (mobile)
+      // is the OFFERER it adds tracks via addTransceiver()+replaceTrack(), which
+      // produces NO stream association (a=msid is absent), so event.streams is
+      // empty and the remote video never renders. To match the mobile client's
+      // behavior we maintain our own MediaStream per user and add each incoming
+      // track to it, falling back to event.streams[0] when the sender provides one.
       pc.ontrack = (event) => {
         console.log('[GroupVideoCallSimple] 🎥 RECEIVED REMOTE TRACK from user', userId, ':', event.track.kind);
         console.log('[GroupVideoCallSimple] 🎥 Event streams:', event.streams);
-        
-        const remoteStream = event.streams[0];
-        if (remoteStream) {
-          console.log('[GroupVideoCallSimple] 📦 STORING REMOTE STREAM for user', userId, ':', {
-            streamId: remoteStream.id,
-            active: remoteStream.active,
-            videoTracks: remoteStream.getVideoTracks().length,
-            audioTracks: remoteStream.getAudioTracks().length
-          });
-          
-          // Update remote streams both in ref and state
-          remoteStreamsRef.current.set(`user_${userId}`, remoteStream);
-          setRemoteStreams(prev => {
-            const newMap = new Map(prev);
-            newMap.set(`user_${userId}`, remoteStream);
-            console.log('[GroupVideoCallSimple] 📦 Updated remoteStreams map, total streams:', newMap.size);
-            return newMap;
-          });
-          
-          // Force re-render dengan delay untuk memastikan state sudah update
-          setTimeout(() => {
-            setParticipants(prevParticipants => {
-              console.log('[GroupVideoCallSimple] 🔄 FORCE RE-RENDER participants for user', userId);
-              return [...prevParticipants];
-            });
-          }, 100);
+
+        const streamKey = `user_${userId}`;
+        let remoteStream = remoteStreamsRef.current.get(streamKey);
+
+        if (event.streams && event.streams[0]) {
+          // Sender associated the track with a stream — use it directly.
+          remoteStream = event.streams[0];
         } else {
-          console.log('[GroupVideoCallSimple] ❌ No remote stream in ontrack event for user', userId);
+          // No stream association (mobile offerer case). Build/extend our own.
+          if (!remoteStream) {
+            remoteStream = new MediaStream();
+            console.log('[GroupVideoCallSimple] 🧩 Created synthetic remote stream for user', userId);
+          }
+          if (!remoteStream.getTracks().some(t => t.id === event.track.id)) {
+            remoteStream.addTrack(event.track);
+            console.log('[GroupVideoCallSimple] 🧩 Added', event.track.kind, 'track to synthetic stream for user', userId);
+          }
         }
+
+        console.log('[GroupVideoCallSimple] 📦 STORING REMOTE STREAM for user', userId, ':', {
+          streamId: remoteStream.id,
+          active: remoteStream.active,
+          videoTracks: remoteStream.getVideoTracks().length,
+          audioTracks: remoteStream.getAudioTracks().length
+        });
+
+        // Update remote streams both in ref and state (new Map ref triggers re-render)
+        remoteStreamsRef.current.set(streamKey, remoteStream);
+        setRemoteStreams(prev => {
+          const newMap = new Map(prev);
+          newMap.set(streamKey, remoteStream!);
+          console.log('[GroupVideoCallSimple] 📦 Updated remoteStreams map, total streams:', newMap.size);
+          return newMap;
+        });
+
+        // Force re-render dengan delay untuk memastikan state sudah update
+        setTimeout(() => {
+          setParticipants(prevParticipants => {
+            console.log('[GroupVideoCallSimple] 🔄 FORCE RE-RENDER participants for user', userId);
+            return [...prevParticipants];
+          });
+        }, 100);
       };
       
       // Setup ICE candidate handling

@@ -124,20 +124,29 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
     }
 
     // Handle array response (legacy format)
+    let rawMessages: any[] = [];
     if (Array.isArray(messagesData)) {
       console.log("📨 Direct array format with", messagesData.length, "messages");
-      return messagesData;
+      rawMessages = messagesData;
+    } else if (typeof messagesData === 'object' && 'messages' in messagesData) {
+      // Handle object response with messages property (current format)
+      rawMessages = (messagesData as any).messages || [];
+      console.log("📨 Object format with 'messages' property, found", rawMessages.length, "messages");
+    } else {
+      console.log("📨 Unknown format, returning empty array");
+      return [];
     }
 
-    // Handle object response with messages property (current format)
-    if (typeof messagesData === 'object' && 'messages' in messagesData) {
-      const msgs = (messagesData as any).messages || [];
-      console.log("📨 Object format with 'messages' property, found", msgs.length, "messages");
-      return msgs;
-    }
-
-    console.log("📨 Unknown format, returning empty array");
-    return [];
+    // Dedupe by id so a message never renders twice (mirrors the mobile chatStore
+    // guard). The WebSocket layer echoes new_message back to the sender across
+    // several redundant channels, so the same id can arrive more than once.
+    const seenIds = new Set<number>();
+    return rawMessages.filter((msg: any) => {
+      if (msg?.id == null) return true;
+      if (seenIds.has(msg.id)) return false;
+      seenIds.add(msg.id);
+      return true;
+    });
   }, [messagesData]);
 
   // Log when messages change
@@ -694,7 +703,7 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ conversationId: targetConversationId }),
+        body: JSON.stringify({ targetConversationIds: [targetConversationId] }),
       });
       
       if (!response.ok) {
@@ -811,8 +820,13 @@ export default function ChatRoom({ chatId, isGroup, onBack }: ChatRoomProps) {
   // Handle sending messages
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if ((!message.trim() && !attachment) || !user) return;
+
+    // Guard against a second submit (Enter + click, or a click during the
+    // upload-induced delay) while the first send is still in flight — otherwise
+    // the message is POSTed twice and shows up doubled.
+    if (sendMessageMutation.isPending) return;
     
     // Log actual reply information
     console.log("Current reply state:", replyToMessage);

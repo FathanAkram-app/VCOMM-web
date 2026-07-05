@@ -13,8 +13,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 
 // Login validation schema
 const loginSchema = z.object({
-  callsign: z.string().min(3, "Callsign minimal 3 karakter"),
-  password: z.string().min(6, "Password minimal 6 karakter"),
+  nrp: z.string().min(1, "NRP/Personnel ID is required"),
+  password: z.string().min(1, "Password is required"),
 });
 
 type LoginValues = z.infer<typeof loginSchema>;
@@ -28,7 +28,7 @@ export default function Login() {
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      callsign: "",
+      nrp: "",
       password: "",
     },
   });
@@ -39,7 +39,7 @@ export default function Login() {
     setIsLoading(true);
     try {
       // Gunakan fungsi login dari useAuth
-      await login(values.callsign, values.password);
+      await login(values.nrp, values.password);
 
       // Tampilkan notifikasi berhasil
       toast({
@@ -105,14 +105,14 @@ export default function Login() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
             <FormField
               control={form.control}
-              name="callsign"
+              name="nrp"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-400 uppercase text-sm font-medium">CALLSIGN / USERNAME</FormLabel>
+                  <FormLabel className="text-gray-400 uppercase text-sm font-medium">NRP / PERSONNEL ID</FormLabel>
                   <FormControl>
                     <Input 
                       type="text" 
-                      placeholder="ENTER CALLSIGN" 
+                      placeholder="ENTER NRP" 
                       className="w-full bg-[#222222] border border-[#444444] p-3 text-white placeholder:text-[#555555]" 
                       {...field} 
                     />

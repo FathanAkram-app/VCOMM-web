@@ -9,8 +9,17 @@ import { gotifyService } from './services/gotify.service';
 
 declare module 'express-session' {
   interface SessionData {
-    user?: any;
+    user?: {
+      id: number;
+      callsign: string;
+      rank?: string;
+      branch?: string;
+    };
   }
+}
+
+export interface AuthRequest extends Request {
+  session: session.Session & Partial<session.SessionData>;
 }
 
 export function getSession() {
@@ -111,16 +120,10 @@ export async function setupAuth(app: express.Express) {
       let user;
       try {
         // Try database storage first
-        const existingUserByCallsign = await storage.getUserByCallsign(parseResult.data.callsign);
-        if (existingUserByCallsign) {
-          return res.status(400).json({ message: "Call sign already taken" });
-        }
-
-        if (parseResult.data.nrp) {
-          const existingUserByNrp = await storage.getUserByNrp(parseResult.data.nrp);
-          if (existingUserByNrp) {
-            return res.status(400).json({ message: "NRP/ID already registered" });
-          }
+        // NRP is the unique identifier - check for duplicates
+        const existingUserByNrp = await storage.getUserByNrp(parseResult.data.nrp);
+        if (existingUserByNrp) {
+          return res.status(400).json({ message: "NRP/ID already registered" });
         }
 
         const hashedPassword = await bcrypt.hash(parseResult.data.password, 10);
@@ -135,22 +138,12 @@ export async function setupAuth(app: express.Express) {
         console.log('Database unavailable, using in-memory storage for registration');
 
         // Fallback to in-memory storage
-        // Check if callsign already exists in memory
-        const existingUser = Array.from(inMemoryUsers.values()).find(
-          u => u.callsign === parseResult.data.callsign
+        // Check if NRP already exists in memory (NRP is the unique identifier)
+        const existingByNrp = Array.from(inMemoryUsers.values()).find(
+          u => u.nrp === parseResult.data.nrp
         );
-        if (existingUser) {
-          return res.status(400).json({ message: "Call sign already taken" });
-        }
-
-        // Check if NRP already exists in memory
-        if (parseResult.data.nrp) {
-          const existingByNrp = Array.from(inMemoryUsers.values()).find(
-            u => u.nrp === parseResult.data.nrp
-          );
-          if (existingByNrp) {
-            return res.status(400).json({ message: "NRP/ID already registered" });
-          }
+        if (existingByNrp) {
+          return res.status(400).json({ message: "NRP/ID already registered" });
         }
 
         // Hash password
@@ -221,16 +214,16 @@ export async function setupAuth(app: express.Express) {
         });
       }
 
-      const { callsign, password } = parseResult.data;
+      const { nrp, password } = parseResult.data;
       let user;
 
       try {
-        // Try database first
-        user = await storage.getUserByCallsign(callsign);
+        // Try database first - login by NRP (unique identifier)
+        user = await storage.getUserByNrp(nrp);
       } catch (dbError) {
         // Fallback to in-memory storage
         console.log('Database unavailable, checking in-memory users for login');
-        user = Array.from(inMemoryUsers.values()).find(u => u.callsign === callsign);
+        user = Array.from(inMemoryUsers.values()).find(u => u.nrp === nrp);
       }
 
       if (!user) {

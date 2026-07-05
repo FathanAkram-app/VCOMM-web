@@ -1,8 +1,9 @@
 import { Server } from 'http';
+import { Server as HttpsServer } from 'https';
 import { WebSocketServer, WebSocket } from 'ws';
 import { IStorage } from '../storage';
 import { WebSocketMessage } from '@shared/schema';
-import { AuthenticatedWebSocket, ClientsMap, SessionsMap, GroupCallsMap } from './utils/types';
+import { AuthenticatedWebSocket, ClientsMap, SessionsMap, GroupCallsMap, OneOnOneCallsMap } from './utils/types';
 import { createBroadcastFunctions } from './utils/broadcast';
 import { createSendToUser } from './utils/send';
 import { createAuthHandler } from './handlers/auth.handler';
@@ -15,7 +16,7 @@ import { createGroupWebRTCHandlers } from './handlers/group-webrtc.handler';
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
 const HEARTBEAT_TIMEOUT = 10000;  // 10 seconds to respond
 
-export function setupWebSocketServer(httpServer: Server, storage: IStorage) {
+export function setupWebSocketServer(httpServer: Server | HttpsServer, storage: IStorage) {
   console.log("Setting up WebSocket server on path /ws");
 
   const wss = new WebSocketServer({
@@ -30,6 +31,9 @@ export function setupWebSocketServer(httpServer: Server, storage: IStorage) {
   const activeGroupCalls: GroupCallsMap = new Map();
   // Reverse lookup: callId → conversationId (groupId)
   const callConversationMap: Map<string, number> = new Map();
+  // Active 1:1 calls: callId → { caller, callee }. Populated on initiate/accept, used to route
+  // signaling to the correct peer and to notify the peer on abrupt disconnect.
+  const activeOneOnOneCalls: OneOnOneCallsMap = new Map();
 
   // Create utility functions
   const { broadcastToConversation, broadcastGroupUpdate, broadcastToAll } = createBroadcastFunctions(storage, clients);
@@ -39,17 +43,19 @@ export function setupWebSocketServer(httpServer: Server, storage: IStorage) {
   const handleAuth = createAuthHandler(storage, clients, activeSessions, broadcastToAll);
   const handleTyping = createTypingHandler(broadcastToConversation);
 
-  const callHandlers = createCallHandlers(storage, clients, activeGroupCalls, broadcastToAll, callConversationMap);
-  const webrtcHandlers = createWebRTCHandlers(storage, clients);
+  const callHandlers = createCallHandlers(storage, clients, activeGroupCalls, broadcastToAll, callConversationMap, activeOneOnOneCalls);
+  const webrtcHandlers = createWebRTCHandlers(storage, clients, activeOneOnOneCalls);
   const groupCallHandlers = createGroupCallHandlers(storage, clients, activeGroupCalls, callConversationMap);
   const groupWebRTCHandlers = createGroupWebRTCHandlers(storage, clients, activeGroupCalls);
 
-  // ─── Server startup: reset all users to offline ───
+  // ─── Server startup: reset all users to offline (no longer needed as status is dynamic) ───
+  /*
   storage.resetAllUsersOffline().then(() => {
     console.log('[WebSocket] All users set to offline on server startup');
   }).catch((err) => {
     console.error('[WebSocket] Error resetting user statuses on startup:', err);
   });
+  */
 
   // ─── Heartbeat: detect dead connections ───
   const heartbeatInterval = setInterval(() => {
@@ -79,6 +85,16 @@ export function setupWebSocketServer(httpServer: Server, storage: IStorage) {
 
     // Initialize heartbeat tracking
     ws.isAlive = true;
+
+    // Reap sockets that open but never authenticate. The heartbeat loop only pings sockets in the
+    // authenticated `clients` map, so an unauthenticated socket would otherwise linger forever.
+    const authTimeout = setTimeout(() => {
+      if (!ws.userId && ws.readyState === WebSocket.OPEN) {
+        console.log('[WebSocket] Terminating socket that never authenticated within grace period');
+        ws.close(1008, 'auth_timeout');
+      }
+    }, 30000);
+    ws.on('close', () => clearTimeout(authTimeout));
 
     // Respond to server-level pong (binary ping/pong frames)
     ws.on('pong', () => {
@@ -228,7 +244,8 @@ export function setupWebSocketServer(httpServer: Server, storage: IStorage) {
         const remainingClients = clients.get(ws.userId);
         if (!remainingClients || remainingClients.size === 0) {
           try {
-            await storage.updateUserStatus(ws.userId, 'offline');
+            // We no longer update database status
+            // await storage.updateUserStatus(ws.userId, 'offline');
 
             // Broadcast user status change (skip the disconnecting user)
             broadcastToAll({
@@ -240,7 +257,52 @@ export function setupWebSocketServer(httpServer: Server, storage: IStorage) {
             }, ws.userId);
             console.log(`[WebSocket] User ${ws.userId} is now offline (no remaining connections)`);
           } catch (error) {
-            console.error('Error updating user status on disconnect:', error);
+            console.error('Error broadcasting user status on disconnect:', error);
+          }
+
+          // ─── Call cleanup on abrupt disconnect (F14) ───
+          // The user is fully gone (no foreground or background socket). Tear down their calls so
+          // the peer isn't stuck and ghost group participants don't block future invitations.
+          const goneUserId = ws.userId;
+          try {
+            // 1:1 calls: notify the other party the call died, then drop the call record.
+            for (const [callId, info] of Array.from(activeOneOnOneCalls.entries())) {
+              if (info.caller === goneUserId || info.callee === goneUserId) {
+                const peerId = info.caller === goneUserId ? info.callee : info.caller;
+                const peerClients = clients.get(peerId);
+                if (peerClients) {
+                  const msg = JSON.stringify({ type: 'call_ended', payload: { callId, reason: 'peer_disconnected' } });
+                  peerClients.forEach((c) => { if (c.readyState === WebSocket.OPEN) c.send(msg); });
+                }
+                activeOneOnOneCalls.delete(callId);
+                console.log(`[WebSocket] Cleaned up 1:1 call ${callId} after user ${goneUserId} disconnected`);
+              }
+            }
+
+            // Group calls: remove the user; end the call if empty, else notify remaining participants.
+            for (const [callId, participants] of Array.from(activeGroupCalls.entries())) {
+              if (participants.has(goneUserId)) {
+                participants.delete(goneUserId);
+                const remaining = Array.from(participants);
+                if (remaining.length === 0) {
+                  const convId = callConversationMap.get(callId);
+                  activeGroupCalls.delete(callId);
+                  callConversationMap.delete(callId);
+                  try { await storage.updateCallStatus(callId, 'ended'); } catch (e) { /* best effort */ }
+                  broadcastToAll({ type: 'group_call_ended', payload: { callId, groupId: convId ?? null } });
+                  console.log(`[WebSocket] Group call ${callId} ended (last participant ${goneUserId} disconnected)`);
+                } else {
+                  const leftMsg = JSON.stringify({ type: 'participant_left', payload: { callId, userId: goneUserId, participants: remaining } });
+                  remaining.forEach((pid) => {
+                    const pc = clients.get(pid);
+                    if (pc) pc.forEach((c) => { if (c.readyState === WebSocket.OPEN) c.send(leftMsg); });
+                  });
+                  console.log(`[WebSocket] Removed disconnected user ${goneUserId} from group call ${callId}, ${remaining.length} remain`);
+                }
+              }
+            }
+          } catch (error) {
+            console.error('[WebSocket] Error during call cleanup on disconnect:', error);
           }
         } else {
           console.log(`[WebSocket] User ${ws.userId} still has ${remainingClients.size} connection(s) active`);

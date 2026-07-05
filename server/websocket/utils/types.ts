@@ -19,3 +19,11 @@ export interface SessionInfo {
 export type ClientsMap = Map<number, Map<string, AuthenticatedWebSocket>>;
 export type SessionsMap = Map<number, Map<string, SessionInfo>>;
 export type GroupCallsMap = Map<string, Set<number>>;
+
+// Active 1:1 calls: callId -> the two participant userIds. Used to route webrtc offer/answer/ICE to
+// the other party (instead of broadcasting to everyone) and to notify the peer on abrupt disconnect.
+export interface OneOnOneCallInfo {
+  caller: number;
+  callee: number;
+}
+export type OneOnOneCallsMap = Map<string, OneOnOneCallInfo>;

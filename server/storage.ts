@@ -70,6 +70,7 @@ export interface IStorage {
 
   // Call history operations
   getCallHistory(userId: number): Promise<any[]>;
+  getCallByCallId(callId: string): Promise<any>;
   addCallHistory(callData: any): Promise<void>;
   updateCallStatus(callId: string, status: string): Promise<void>;
   deleteCallHistory(callId: number, userId: number): Promise<void>;
@@ -82,7 +83,10 @@ export interface IStorage {
   forwardMessage(originalMessageId: number, newConversationId: number, senderId: number): Promise<Message>;
 
   // User settings operations
-  updateUserStatus(userId: number, status: string): Promise<void>;
+  getUserSettings(userId: number): Promise<any>;
+  updateUserSettings(userId: number, settings: any): Promise<any>;
+
+  // User password/status operations
   changeUserPassword(userId: number, currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }>;
 
   // Gotify token operations
@@ -95,22 +99,22 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    const result = await db.select().from(users).where(eq(users.id, id)) as User[];
+    return result && result.length > 0 ? result[0] : undefined;
   }
 
   async getUserByCallsign(callsign: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.callsign, callsign));
-    return user;
+    const result = await db.select().from(users).where(eq(users.callsign, callsign)) as User[];
+    return result && result.length > 0 ? result[0] : undefined;
   }
 
   async getUserByNrp(nrp: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.nrp, nrp));
-    return user;
+    const result = await db.select().from(users).where(eq(users.nrp, nrp)) as User[];
+    return result && result.length > 0 ? result[0] : undefined;
   }
 
   async createUser(userData: RegisterUser): Promise<User> {
-    const [user] = await db
+    const result = await db
       .insert(users)
       .values({
         ...userData,
@@ -119,20 +123,25 @@ export class DatabaseStorage implements IStorage {
         createdAt: new Date(),
         updatedAt: new Date()
       })
-      .returning();
-    return user;
+      .returning() as User[];
+
+    if (!result || result.length === 0) {
+      throw new Error("Failed to create user");
+    }
+    return result[0];
   }
 
   async updateUserStatus(userId: number, status: string): Promise<User | undefined> {
-    const [user] = await db
+    const result = await db
       .update(users)
       .set({
         status: status,
         updatedAt: new Date()
       })
       .where(eq(users.id, userId))
-      .returning();
-    return user;
+      .returning() as User[];
+
+    return result && result.length > 0 ? result[0] : undefined;
   }
 
   async resetAllUsersOffline(): Promise<void> {
@@ -343,27 +352,12 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async deleteConversation(id: number): Promise<void> {
-    // First delete all messages in this conversation
-    await db
-      .delete(messages)
-      .where(eq(messages.conversationId, id));
 
-    // Then delete all members
-    await db
-      .delete(conversationMembers)
-      .where(eq(conversationMembers.conversationId, id));
-
-    // Finally delete the conversation itself
-    await db
-      .delete(conversations)
-      .where(eq(conversations.id, id));
-  }
 
   // Conversation members operations
   async addMemberToConversation(data: InsertConversationMember): Promise<ConversationMember> {
     // Check if member already exists
-    const [existingMember] = await db
+    const existingResult = await db
       .select()
       .from(conversationMembers)
       .where(
@@ -371,21 +365,25 @@ export class DatabaseStorage implements IStorage {
           eq(conversationMembers.conversationId, data.conversationId),
           eq(conversationMembers.userId, data.userId)
         )
-      );
+      ) as ConversationMember[];
 
-    if (existingMember) {
-      return existingMember;
+    if (existingResult && existingResult.length > 0) {
+      return existingResult[0];
     }
 
     // Add new member
-    const [member] = await db
+    const result = await db
       .insert(conversationMembers)
       .values({
         ...data,
         joinedAt: new Date()
       })
-      .returning();
-    return member;
+      .returning() as ConversationMember[];
+
+    if (!result || result.length === 0) {
+      throw new Error("Failed to add member to conversation");
+    }
+    return result[0];
   }
 
   async getConversationMembers(conversationId: number): Promise<any[]> {
@@ -465,28 +463,37 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateConversation(conversationId: number, data: Partial<Conversation>): Promise<Conversation> {
-    const [conversation] = await db
+    const result = await db
       .update(conversations)
       .set({
         ...data,
         updatedAt: new Date()
       })
       .where(eq(conversations.id, conversationId))
-      .returning();
-    return conversation;
+      .returning() as Conversation[];
+
+    if (!result || result.length === 0) {
+      throw new Error(`Failed to update conversation ${conversationId}`);
+    }
+    return result[0];
   }
 
   // Message operations
   async createMessage(data: InsertMessage): Promise<Message> {
     // Insert the new message
-    const [message] = await db
+    const result = await db
       .insert(messages)
       .values({
         ...data,
         createdAt: new Date(),
         updatedAt: new Date()
       })
-      .returning();
+      .returning() as Message[];
+
+    if (!result || result.length === 0) {
+      throw new Error("Failed to create message");
+    }
+    const message = result[0];
 
     // Tentukan teks yang akan ditampilkan di preview pesan
     let lastMessagePreview = message.content;
@@ -587,36 +594,34 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async clearConversationMessages(conversationId: number): Promise<void> {
-    await db
-      .delete(messages)
-      .where(eq(messages.conversationId, conversationId));
-  }
+
 
   // Message operations for delete, reply, and forward
   async getMessage(messageId: number): Promise<Message | undefined> {
-    const [message] = await db
+    const result = await db
       .select()
       .from(messages)
-      .where(eq(messages.id, messageId));
+      .where(eq(messages.id, messageId)) as Message[];
 
-    return message;
+    return result && result.length > 0 ? result[0] : undefined;
   }
 
   async deleteMessage(messageId: number): Promise<Message> {
     // Get the message first to check if it has attachments
-    const [message] = await db
+    const result = await db
       .select()
       .from(messages)
-      .where(eq(messages.id, messageId));
+      .where(eq(messages.id, messageId)) as Message[];
 
-    if (!message) {
+    if (!result || result.length === 0) {
       throw new Error(`Message with ID ${messageId} not found`);
     }
 
+    const message = result[0];
+
     // Soft delete message by setting isDeleted flag to true
     // Also clear attachment information if present
-    const [updatedMessage] = await db
+    const updateResult = await db
       .update(messages)
       .set({
         isDeleted: true,
@@ -629,9 +634,13 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date(),
       })
       .where(eq(messages.id, messageId))
-      .returning();
+      .returning() as Message[];
 
-    return updatedMessage;
+    if (!updateResult || updateResult.length === 0) {
+      throw new Error(`Failed to update message ${messageId}`);
+    }
+
+    return updateResult[0];
   }
 
   async deleteMessageForUser(messageId: number, userId: number): Promise<void> {
@@ -1019,51 +1028,24 @@ export class DatabaseStorage implements IStorage {
         let contactName = 'Unknown';
         const isIncoming = call.initiatorId !== userId; // Check if call is incoming or outgoing
 
-        if (call.conversationId) {
-          const [conversation] = await db
-            .select()
-            .from(conversations)
-            .where(eq(conversations.id, call.conversationId));
+        // Resolve contact name: always prioritize the other user's name for 1:1 calls
+        const isGroupCall = call.callType?.startsWith('group_');
 
-          if (conversation?.isGroup) {
-            // Group call - use conversation name
-            contactName = conversation.name || 'Group Call';
+        if (isGroupCall) {
+          if (call.conversationId) {
+            const [conversation] = await db.select().from(conversations).where(eq(conversations.id, call.conversationId));
+            contactName = (conversation?.name && !conversation.name.startsWith('Direct Chat'))
+              ? conversation.name
+              : 'Group Call';
           } else {
-            // 1:1 call with conversationId - resolve partner's callsign
-            if (isIncoming) {
-              const [callerUser] = await db
-                .select()
-                .from(users)
-                .where(eq(users.id, call.initiatorId));
-              contactName = callerUser ? (callerUser.callsign || callerUser.fullName || 'Unknown') : 'Unknown';
-            } else {
-              const otherParticipant = call.participants?.find((id: string) => parseInt(id) !== userId);
-              if (otherParticipant) {
-                const [recipientUser] = await db
-                  .select()
-                  .from(users)
-                  .where(eq(users.id, parseInt(otherParticipant)));
-                contactName = recipientUser ? (recipientUser.callsign || recipientUser.fullName || 'Unknown') : 'Unknown';
-              }
-            }
+            contactName = 'Group Call';
           }
         } else {
-          // Individual call without conversationId - get the other user's name
-          if (isIncoming) {
-            const [callerUser] = await db
-              .select()
-              .from(users)
-              .where(eq(users.id, call.initiatorId));
-            contactName = callerUser ? (callerUser.callsign || callerUser.fullName || 'Unknown') : 'Unknown';
-          } else {
-            const otherParticipant = call.participants?.find((id: string) => parseInt(id) !== userId);
-            if (otherParticipant) {
-              const [recipientUser] = await db
-                .select()
-                .from(users)
-                .where(eq(users.id, parseInt(otherParticipant)));
-              contactName = recipientUser ? (recipientUser.callsign || recipientUser.fullName || 'Unknown') : 'Unknown';
-            }
+          // 1:1 call: find the other participant
+          const otherUserId = isIncoming ? call.initiatorId : call.participants?.find((id: string) => parseInt(id) !== userId);
+          if (otherUserId) {
+            const [otherUser] = await db.select().from(users).where(eq(users.id, typeof otherUserId === 'string' ? parseInt(otherUserId) : otherUserId));
+            contactName = otherUser ? (otherUser.callsign || otherUser.fullName || 'Unknown User') : 'Unknown User';
           }
         }
 
@@ -1099,7 +1081,7 @@ export class DatabaseStorage implements IStorage {
 
         // Determine the actual target user for 1:1 calls
         let actualToUserId: number = userId;
-        if (!call.callType?.startsWith('group_')) {
+        if (!isGroupCall) {
           if (isIncoming) {
             // Incoming call: toUserId is the requesting user (self)
             actualToUserId = userId;
@@ -1113,14 +1095,19 @@ export class DatabaseStorage implements IStorage {
         // Resolve fromUserName (caller) and toUserName (recipient) properly
         let fromUserName = 'Unknown';
         let toUserName = 'Unknown';
+
+        // Fetch current user details once to use in names
+        const currentUserResult = await db.select().from(users).where(eq(users.id, userId)) as User[];
+        const currentUser = currentUserResult && currentUserResult.length > 0 ? currentUserResult[0] : undefined;
+        const currentUserName = currentUser ? (currentUser.callsign || currentUser.fullName || 'Me') : 'Me';
+
         if (isIncoming) {
           // Incoming: fromUser is the caller (initiator), toUser is us
-          const [callerUser] = await db.select().from(users).where(eq(users.id, call.initiatorId));
-          fromUserName = callerUser ? (callerUser.callsign || callerUser.fullName || 'Unknown') : 'Unknown';
-          toUserName = contactName;
+          fromUserName = contactName;
+          toUserName = currentUserName;
         } else {
           // Outgoing: fromUser is us, toUser is the recipient
-          fromUserName = contactName;
+          fromUserName = currentUserName;
           toUserName = contactName;
         }
 
@@ -1230,7 +1217,8 @@ export class DatabaseStorage implements IStorage {
 
       // Enrich with caller names
       const enriched = await Promise.all(calls.map(async (call) => {
-        const [caller] = await db.select().from(users).where(eq(users.id, call.initiatorId));
+        const callerResult = await db.select().from(users).where(eq(users.id, call.initiatorId)) as User[];
+        const caller = callerResult && callerResult.length > 0 ? callerResult[0] : undefined;
         return {
           callId: call.callId,
           callType: call.callType,
@@ -1250,7 +1238,8 @@ export class DatabaseStorage implements IStorage {
   // User settings methods
   async getUserSettings(userId: number): Promise<any> {
     try {
-      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      const userResult = await db.select().from(users).where(eq(users.id, userId)) as User[];
+      const user = userResult && userResult.length > 0 ? userResult[0] : undefined;
       if (!user) {
         throw new Error('User not found');
       }
@@ -1260,7 +1249,6 @@ export class DatabaseStorage implements IStorage {
         id: userId,
         theme: 'dark',
         status: user.status || 'online',
-        statusMessage: user.statusMessage || '',
         language: 'id',
         notifications: {
           push: true,
@@ -1298,11 +1286,10 @@ export class DatabaseStorage implements IStorage {
   async updateUserSettings(userId: number, settings: any): Promise<any> {
     try {
       // Update user status if provided
-      if (settings.status || settings.statusMessage) {
+      if (settings.status) {
         await db.update(users)
           .set({
             status: settings.status,
-            statusMessage: settings.statusMessage,
           })
           .where(eq(users.id, userId));
       }
@@ -1329,7 +1316,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createLapsitReport(reportData: any) {
-    const [report] = await db
+    const result = await db
       .insert(lapsitReports)
       .values({
         categoryId: reportData.categoryId,
@@ -1344,7 +1331,11 @@ export class DatabaseStorage implements IStorage {
         reportedById: reportData.reportedById
       })
       .returning();
-    return report;
+
+    if (!result || result.length === 0) {
+      throw new Error("Failed to create lapsit report");
+    }
+    return result[0];
   }
 
   async getLapsitReports() {
@@ -1402,16 +1393,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Update user status
-  async updateUserStatus(userId: number, status: string): Promise<void> {
-    await db
-      .update(users)
-      .set({
-        status,
-        updatedAt: new Date()
-      })
-      .where(eq(users.id, userId));
-  }
+
 
   // Change user password
   async changeUserPassword(userId: number, currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> {
@@ -1457,14 +1439,14 @@ export class DatabaseStorage implements IStorage {
         .select({
           groupId: conversationMembers.conversationId,
           groupName: conversations.name,
-          isRoom: conversations.isRoom
+          isGroup: conversations.isGroup
         })
         .from(conversationMembers)
         .innerJoin(conversations, eq(conversationMembers.conversationId, conversations.id))
         .where(
           and(
             eq(conversationMembers.userId, userId),
-            eq(conversations.isRoom, true) // Only get group rooms
+            eq(conversations.isGroup, true) // Only get group rooms
           )
         );
 
