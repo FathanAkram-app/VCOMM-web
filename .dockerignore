@@ -21,3 +21,5 @@ docker-compose.local.yml
 monitoring-docker-compose.yml
 nginx-logs
 *.log
+
+docker-images/
