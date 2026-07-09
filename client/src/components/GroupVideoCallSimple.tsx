@@ -4,6 +4,7 @@ import { Mic, MicOff, Video, VideoOff, Phone, Camera, RefreshCw } from 'lucide-r
 import { useCall } from '@/hooks/useCall';
 import { useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
+import { getIceServerConfig } from '../lib/webrtcConfig';
 
 /**
  * GroupVideoCallSimple - Sistem group video call yang bersih dan sederhana
@@ -760,7 +761,7 @@ export default function GroupVideoCallSimple() {
       console.log('[GroupVideoCallSimple] Creating new peer connection for user:', userId);
       
       pc = new RTCPeerConnection({
-        iceServers: [], // Offline mode - no external STUN servers
+        ...getIceServerConfig(),
         iceCandidatePoolSize: 10,
         iceGatheringTimeout: 5000
       });

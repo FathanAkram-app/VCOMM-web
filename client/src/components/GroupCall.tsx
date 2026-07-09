@@ -4,6 +4,7 @@ import { Mic, MicOff, PhoneOff, Users, Radio, Shield, Zap, Headphones, Speaker, 
 import { useCall } from '@/hooks/useCall';
 import { useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
+import { getIceServerConfig } from '../lib/webrtcConfig';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { audioManager, setPreferredAudioOutput, isEarphoneConnected, getCurrentAudioOutput } from '@/utils/audioManager';
 
@@ -488,7 +489,7 @@ export default function GroupCall({ groupId, groupName, callType = 'audio' }: Gr
       console.log(`[GroupCall] Creating new peer connection for user ${userId}`);
       
       pc = new RTCPeerConnection({
-        iceServers: [], // Offline mode - no external STUN servers
+        ...getIceServerConfig(),
         iceCandidatePoolSize: 10
       });
 

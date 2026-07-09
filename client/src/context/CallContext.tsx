@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/hooks/useAuth';
+import { getIceServerConfig } from '../lib/webrtcConfig';
 
 // 🚀 CENTRALIZED PROTECTED INTERVAL SYSTEM
 // Initialize global protected intervals set
@@ -1610,12 +1611,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
     
     playRingtone();
     
-    // Create RTCPeerConnection for incoming call (offline/intranet mode)
+    // Create RTCPeerConnection for incoming call (cross-network mode)
     const peerConnection = new RTCPeerConnection({
-      iceServers: [], // Empty array for local network only - no STUN/TURN servers
-      iceTransportPolicy: 'all', // Allow both UDP and TCP
-      bundlePolicy: 'max-bundle',
-      rtcpMuxPolicy: 'require'
+      ...getIceServerConfig()
     });
 
     // Setup ICE candidate handling for incoming call
@@ -1623,8 +1621,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
       if (event.candidate && ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({
           type: 'webrtc_ice_candidate',
-          callId: message.callId,
-          candidate: event.candidate
+          payload: {
+            callId: message.callId,
+            candidate: event.candidate,
+            targetUserId: message.fromUserId || message.payload?.fromUserId,
+            fromUserId: user?.id
+          }
         }));
       }
     };
@@ -1899,10 +1901,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     try {
       // Create RTCPeerConnection for group call (same as handleIncomingCall)
       peerConnection = new RTCPeerConnection({
-        iceServers: [], // Empty array for local network only - no STUN/TURN servers
-        iceTransportPolicy: 'all', // Allow both UDP and TCP
-        bundlePolicy: 'max-bundle',
-        rtcpMuxPolicy: 'require'
+        ...getIceServerConfig()
       });
       
       console.log('[CallContext] ✅ RTCPeerConnection created successfully');
@@ -1917,8 +1916,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
         if (event.candidate && ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({
             type: 'webrtc_ice_candidate',
-            callId: callId,
-            candidate: event.candidate
+            payload: {
+              callId: callId,
+              candidate: event.candidate,
+              targetUserId: message.fromUserId || message.payload?.fromUserId,
+              fromUserId: user?.id
+            }
           }));
         }
       };
@@ -3196,12 +3199,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
       const callId = `call_${Date.now()}_${user.id}_${peerUserId}`;
 
-      // Create RTCPeerConnection for intranet/offline mode (no internet required)
+      // Create RTCPeerConnection for intranet/cross-network mode
       const peerConnection = new RTCPeerConnection({
-        iceServers: [], // Empty array for local network only - no internet connection needed
-        iceTransportPolicy: 'all', // Allow both UDP and TCP
-        bundlePolicy: 'max-bundle',
-        rtcpMuxPolicy: 'require'
+        ...getIceServerConfig()
       });
 
       // Add local stream to peer connection
@@ -3244,8 +3244,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
         if (event.candidate && ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({
             type: 'webrtc_ice_candidate',
-            callId: callId,
-            candidate: event.candidate
+            payload: {
+              callId: callId,
+              candidate: event.candidate,
+              targetUserId: peerUserId,
+              fromUserId: user?.id
+            }
           }));
         }
       };
@@ -3286,8 +3290,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
         // Send offer via WebSocket
         ws.send(JSON.stringify({
           type: 'webrtc_offer',
-          callId: callId,
-          offer: offer
+          payload: {
+            callId: callId,
+            offer: offer,
+            toUserId: peerUserId,
+            fromUserId: user?.id,
+            callType: callType,
+            callerUserId: user?.id,
+            callerName: user?.callsign
+          }
         }));
       } catch (error) {
         console.error('[CallContext] Error creating WebRTC offer:', error);
@@ -4261,10 +4272,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
       // Enhanced RTCPeerConnection for group calls with better stability
       const peerConnection = new RTCPeerConnection({
-        iceServers: [], // Empty array for local intranet operation
-        iceTransportPolicy: 'all',
-        bundlePolicy: 'max-bundle',
-        rtcpMuxPolicy: 'require',
+        ...getIceServerConfig(),
         iceCandidatePoolSize: 10 // Pre-gather candidates for faster connection
       });
 
@@ -4497,10 +4505,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
       // Enhanced RTCPeerConnection for joining group calls
       const peerConnection = new RTCPeerConnection({
-        iceServers: [], // Empty array for local intranet operation
-        iceTransportPolicy: 'all',
-        bundlePolicy: 'max-bundle',
-        rtcpMuxPolicy: 'require',
+        ...getIceServerConfig(),
         iceCandidatePoolSize: 10
       });
 
